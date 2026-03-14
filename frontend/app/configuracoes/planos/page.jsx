@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
@@ -87,7 +87,7 @@ const PRICE_IDS = {
   enterprise: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE,
 }
 
-export default function PlanosPage() {
+function PlanosContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -143,6 +143,7 @@ export default function PlanosPage() {
   return (
     <AppLayout>
       <div className="p-6 max-w-6xl mx-auto">
+
         {/* Toast */}
         {toast && (
           <div className={`mb-6 rounded-xl px-5 py-4 flex items-center justify-between gap-4 ${
@@ -306,5 +307,13 @@ export default function PlanosPage() {
         )}
       </div>
     </AppLayout>
+  )
+}
+
+export default function PlanosPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlanosContent />
+    </Suspense>
   )
 }
