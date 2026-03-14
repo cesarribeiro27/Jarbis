@@ -1023,6 +1023,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
   const [isDragging, setIsDragging] = useState(false)
+  const [hoveredBlockId, setHoveredBlockId] = useState(null)
   const [gridWidth, setGridWidth] = useState(800)
   const sheetRef = useRef(null)
 
@@ -1102,6 +1103,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
         const isSelected = selectedBlockId === block.id
+        const isHovered = hoveredBlockId === block.id
 
         function cloneBlock() {
           const cloned = {
@@ -1117,7 +1119,9 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
           <div
             key={block.id}
             className={`group relative rounded-xl flex flex-col transition-all ${isSelected ? 'border-2 border-violet-500 shadow-lg' : 'border border-gray-200/80 shadow-sm hover:shadow-md hover:border-gray-300'}`}
-            style={{ backgroundColor: block.config?.bg_color || 'white', zIndex: isSelected ? 100 : undefined }}
+            style={{ backgroundColor: block.config?.bg_color || 'white', zIndex: (isSelected || isHovered) ? 100 : undefined }}
+            onMouseEnter={() => setHoveredBlockId(block.id)}
+            onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
             {/* Header — drag handle + title + cross-filter chip only */}
