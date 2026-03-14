@@ -19,6 +19,7 @@ GET    /reports/datasets/{id}/query     — consulta dataset com agregação
 """
 
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
@@ -62,8 +63,16 @@ class DatasetSummary(BaseModel):
 class ApiDatasetCreate(BaseModel):
     name: str
     api_url: str
-    api_headers: dict | None = None
+    method: str = "GET"
+    headers: dict | None = None          # frontend envia como "headers"
+    api_headers: dict | None = None      # alias de compatibilidade
+    body: str | None = None
     api_data_path: str | None = None
+    refresh_interval_minutes: int | None = None
+
+    @property
+    def resolved_headers(self) -> dict | None:
+        return self.headers or self.api_headers
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -340,16 +349,26 @@ async def create_api_dataset(
             current_user.tenant_id,
             body.name,
             body.api_url,
-            body.api_headers,
+            body.resolved_headers,
             body.api_data_path,
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao buscar API: {e}")
+
+    # Salva refresh schedule se informado
+    if body.refresh_interval_minutes:
+        from datetime import timedelta
+        ds.refresh_interval_minutes = body.refresh_interval_minutes
+        ds.next_refresh_at = datetime.now(timezone.utc) + timedelta(minutes=body.refresh_interval_minutes)
+        await db.commit()
+        await db.refresh(ds)
+
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
         api_url=ds.api_url,
         last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
+        refresh_interval_minutes=ds.refresh_interval_minutes,
     )
 
 
