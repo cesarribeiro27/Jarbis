@@ -35,22 +35,22 @@ function InviteModal({ onClose, onCreated }) {
         <form onSubmit={submit} className="p-6 flex flex-col gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome</label>
-            <input required value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" autoFocus />
+            <input required value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">E-mail</label>
-            <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">Senha inicial</label>
-            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">Perfil</label>
             <div className="flex flex-col gap-2">
               {ROLES.map(r => (
-                <label key={r.value} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${form.role === r.value ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <input type="radio" name="role" value={r.value} checked={form.role === r.value} onChange={() => setForm(f => ({ ...f, role: r.value }))} className="accent-indigo-600" />
+                <label key={r.value} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${form.role === r.value ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <input type="radio" name="role" value={r.value} checked={form.role === r.value} onChange={() => setForm(f => ({ ...f, role: r.value }))} className="accent-violet-600" />
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{r.label}</p>
                     <p className="text-xs text-gray-400">{r.desc}</p>
@@ -60,7 +60,7 @@ function InviteModal({ onClose, onCreated }) {
             </div>
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}
-          <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+          <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
             {loading ? 'Criando...' : 'Criar usuário'}
           </button>
         </form>
@@ -98,7 +98,7 @@ export default function UsuariosPage() {
             <p className="text-sm text-gray-500 mt-1">Gerencie os membros da sua equipe</p>
           </div>
           {isAdmin && (
-            <button onClick={() => setShowInvite(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors">
+            <button onClick={() => setShowInvite(true)} className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
               + Convidar
             </button>
           )}
@@ -121,8 +121,8 @@ export default function UsuariosPage() {
                   <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                          <span className="text-indigo-600 font-bold text-sm">{u.full_name?.[0] || '?'}</span>
+                        <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                          <span className="text-violet-600 font-bold text-sm">{u.full_name ? u.full_name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() : '?'}</span>
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-900">{u.full_name}</p>
