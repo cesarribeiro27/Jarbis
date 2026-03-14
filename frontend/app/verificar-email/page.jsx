@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 
-export default function VerificarEmailPage() {
+function VerificarEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
@@ -160,5 +160,13 @@ export default function VerificarEmailPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function VerificarEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerificarEmailContent />
+    </Suspense>
   )
 }
