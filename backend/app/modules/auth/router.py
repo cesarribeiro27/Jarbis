@@ -66,7 +66,7 @@ class SignupRequest(BaseModel):
 async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
     """Cadastro público — cria tenant + usuário owner automaticamente."""
     reg = RegisterRequest(
-        tenant_name=data.name,
+        organization_name=data.name,
         full_name=data.name,
         email=data.email,
         password=data.password,
