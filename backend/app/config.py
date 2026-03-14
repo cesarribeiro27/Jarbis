@@ -47,13 +47,23 @@ class Settings(BaseSettings):
 
     @property
     def async_database_url(self) -> str:
-        """Converte a URL do banco para usar driver assíncrono (asyncpg)."""
-        return self.database_url.replace("postgresql://", "postgresql+asyncpg://")
+        """Converte a URL do banco para usar driver assíncrono (asyncpg). Suporta postgres:// e postgresql://."""
+        url = self.database_url
+        if "+asyncpg" in url:
+            return url
+        url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+        url = url.replace("postgresql://", "postgresql+asyncpg://")
+        url = url.replace("postgres://", "postgresql+asyncpg://")
+        return url
 
     @property
     def sync_database_url(self) -> str:
-        """URL síncrona para o Alembic (migrations)."""
-        return self.database_url.replace("postgresql://", "postgresql+psycopg2://")
+        """URL síncrona para o Alembic (migrations). Suporta postgres://, postgresql://, postgresql+asyncpg://."""
+        url = self.database_url
+        url = url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+        url = url.replace("postgresql://", "postgresql+psycopg2://")
+        url = url.replace("postgres://", "postgresql+psycopg2://")
+        return url
 
 
 @lru_cache
