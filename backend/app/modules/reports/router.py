@@ -24,11 +24,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
 from app.modules.tenants.models import User
+
+from app.modules.billing.guards import (
+    check_alert_limit,
+    check_dashboard_limit,
+    check_dataset_limit,
+)
+from app.modules.tenants.models import Tenant
 
 from .dataset_models import ReportDataset
 from .dataset_service import DatasetService
@@ -93,6 +101,8 @@ async def create_report(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
     service = ReportService(db)
     report = await service.create(current_user.tenant_id, data)
     return report
@@ -319,6 +329,8 @@ async def upload_dataset(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
     filename = file.filename or "dataset"
     content = await file.read()
     if len(content) > 20 * 1024 * 1024:
@@ -343,6 +355,8 @@ async def create_api_dataset(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
     service = DatasetService(db)
     try:
         ds = await service.create_from_api(
@@ -623,6 +637,8 @@ async def create_alert(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_alert_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
     valid_ops = {"gt", "lt", "gte", "lte", "eq"}
     if data.operator not in valid_ops:
         raise HTTPException(status_code=422, detail=f"Operador inválido. Use: {', '.join(valid_ops)}")

@@ -15,6 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.modules.auth.router import router as auth_router
+from app.modules.billing.router import router as billing_router
 from app.modules.reports.router import router as reports_router
 
 
@@ -88,6 +89,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(billing_router)
 app.include_router(reports_router)
 
 

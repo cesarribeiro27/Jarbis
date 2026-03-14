@@ -78,19 +78,28 @@ const PLANS = [
   },
   {
     name: 'Starter',
-    price: 'R$97',
+    price: 'R$197',
     period: '/mês',
     desc: 'Para times em crescimento',
     features: ['10 dashboards', '5 datasets', 'Alertas', 'Embed avançado', '3 usuários'],
     cta: 'Começar agora',
-    highlight: true,
+    highlight: false,
   },
   {
     name: 'Pro',
-    price: 'R$297',
+    price: 'R$597',
     period: '/mês',
     desc: 'Para empresas que escalam',
-    features: ['Ilimitado', 'AI em português', 'White-label', 'Usuários ilimitados', 'Suporte prioritário'],
+    features: ['Ilimitado', 'IA em português', 'White-label', 'Usuários ilimitados', 'Suporte prioritário'],
+    cta: 'Começar agora',
+    highlight: true,
+  },
+  {
+    name: 'Enterprise',
+    price: 'R$1.497',
+    period: '/mês',
+    desc: 'Para grandes operações',
+    features: ['Tudo do Pro', 'SLA garantido', 'Onboarding dedicado', 'Gerente de conta', 'Contrato anual'],
     cta: 'Falar com vendas',
     highlight: false,
   },
@@ -414,10 +423,10 @@ export default function LandingPage() {
             <p className="text-lg text-gray-500">Sem surpresas em dólar. Cancele quando quiser.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-4 gap-6">
             {PLANS.map((plan) => (
               <div key={plan.name}
-                className={`rounded-2xl p-8 relative flex flex-col ${
+                className={`rounded-2xl p-6 relative flex flex-col ${
                   plan.highlight
                     ? 'text-white'
                     : 'bg-white border border-gray-100'

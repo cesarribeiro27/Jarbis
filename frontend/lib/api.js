@@ -45,6 +45,8 @@ function buildQS(params) {
 }
 
 export const api = {
+  fetch: (path, options = {}) => apiFetch(path, options),
+
   login: (email, password) =>
     apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
 

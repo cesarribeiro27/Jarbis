@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     # --- CORS ---
     backend_cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
+    # --- Stripe ---
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_starter: str = ""
+    stripe_price_pro: str = ""
+    stripe_price_enterprise: str = ""
+    frontend_url: str = "https://jarbis.cc"
+
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
