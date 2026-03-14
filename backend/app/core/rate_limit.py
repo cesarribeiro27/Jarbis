@@ -10,19 +10,14 @@ Uso nos routers:
         ...
 """
 
-import os
-
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
-
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=REDIS_URL,
     default_limits=["100/minute"],
 )
 
