@@ -142,7 +142,7 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
         <select
           value={currentVal}
           onChange={e => onFilterChange(block.dataset_id, block.filter_col, e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
         >
           <option value="">Todos</option>
           {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -411,7 +411,7 @@ function ColorPicker({ label, value, onChange, placeholder = '#6366f1' }) {
           value={value || ''}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
         />
         {value && (
           <button onClick={() => onChange('')} className="text-gray-300 hover:text-gray-500 shrink-0" title="Remover">
@@ -454,13 +454,13 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
       <ConfigSection title="Geral">
         <div>
           <label className="block text-xs text-gray-500 mb-1">Título</label>
-          <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.title} onChange={e => upd('title', e.target.value)} />
+          <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.title} onChange={e => upd('title', e.target.value)} />
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Tipo de bloco</label>
           <div className="grid grid-cols-5 gap-1">
             {BLOCK_TYPES.map(bt => (
-              <button key={bt.type} onClick={() => upd('type', bt.type)} title={bt.desc} className={`flex flex-col items-center p-2 rounded-lg border text-[10px] transition-all ${block.type === bt.type ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-400' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}>
+              <button key={bt.type} onClick={() => upd('type', bt.type)} title={bt.desc} className={`flex flex-col items-center p-2 rounded-lg border text-[10px] transition-all ${block.type === bt.type ? 'border-violet-500 bg-violet-50 text-violet-700 ring-1 ring-violet-400' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}>
                 <span className="mb-0.5">{TYPE_ICONS[bt.type]}</span>{bt.label}
               </button>
             ))}
@@ -474,7 +474,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           <div>
             <label className="block text-xs text-gray-500 mb-1">URL da imagem</label>
             <input
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
               placeholder="https://..."
               value={block.config?.image_src || ''}
               onChange={e => updConfig('image_src', e.target.value)}
@@ -482,7 +482,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Ou fazer upload</label>
-            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg p-3 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors">
+            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg p-3 cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-colors">
               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               <span className="text-xs text-gray-500">Clique para selecionar</span>
               <input
@@ -504,7 +504,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             <div className="flex gap-1">
               {[{ v: 'contain', l: 'Conter' }, { v: 'cover', l: 'Cobrir' }, { v: 'fill', l: 'Esticar' }].map(o => (
                 <button key={o.v} onClick={() => updConfig('object_fit', o.v)}
-                  className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${(block.config?.object_fit || 'contain') === o.v ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                  className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${(block.config?.object_fit || 'contain') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                   {o.l}
                 </button>
               ))}
@@ -518,7 +518,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         <ConfigSection title="Filtro">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
-            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, filter_col: null })}>
+            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, filter_col: null })}>
               <option value="">Selecione um dataset...</option>
               {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -526,7 +526,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           {selectedDataset && (
             <div>
               <label className="block text-xs text-gray-500 mb-1">Coluna para filtrar</label>
-              <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.filter_col || ''} onChange={e => upd('filter_col', e.target.value || null)}>
+              <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.filter_col || ''} onChange={e => upd('filter_col', e.target.value || null)}>
                 <option value="">Selecione...</option>
                 {columns.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -534,7 +534,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           )}
           <div>
             <label className="block text-xs text-gray-500 mb-1">Label de exibição</label>
-            <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder={block.filter_col || 'ex: Filtrar por Meio'} value={block.filter_label || ''} onChange={e => upd('filter_label', e.target.value)} />
+            <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={block.filter_col || 'ex: Filtrar por Meio'} value={block.filter_label || ''} onChange={e => upd('filter_label', e.target.value)} />
           </div>
         </ConfigSection>
       )}
@@ -544,7 +544,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         <ConfigSection title="Dados">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
-            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, label_col: null, value_col: null })}>
+            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, label_col: null, value_col: null })}>
               <option value="">Selecione um dataset...</option>
               {datasets.map(d => <option key={d.id} value={d.id}>{d.name} ({d.row_count} linhas)</option>)}
             </select>
@@ -554,21 +554,21 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             <>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Coluna de categoria (eixo X)</label>
-                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.label_col || ''} onChange={e => upd('label_col', e.target.value || null)}>
+                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.label_col || ''} onChange={e => upd('label_col', e.target.value || null)}>
                   <option value="">Selecione...</option>
                   {columns.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Coluna de valor (eixo Y)</label>
-                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.value_col || ''} onChange={e => upd('value_col', e.target.value || null)}>
+                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.value_col || ''} onChange={e => upd('value_col', e.target.value || null)}>
                   <option value="">Selecione...</option>
                   {columns.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Agregação</label>
-                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" value={block.agg || 'sum'} onChange={e => upd('agg', e.target.value)}>
+                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.agg || 'sum'} onChange={e => upd('agg', e.target.value)}>
                   {AGG_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
@@ -585,7 +585,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               <label className="block text-xs text-gray-500 mb-1.5">Formato do valor</label>
               <div className="flex gap-1">
                 {[{ v: 'number', l: '1.234' }, { v: 'currency', l: 'R$' }, { v: 'percent', l: '%' }, { v: 'compact', l: '1.2K' }].map(f => (
-                  <button key={f.v} onClick={() => updConfig('format', f.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${(block.config?.format || 'number') === f.v ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{f.l}</button>
+                  <button key={f.v} onClick={() => updConfig('format', f.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${(block.config?.format || 'number') === f.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{f.l}</button>
                 ))}
               </div>
             </div>
@@ -594,8 +594,8 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Prefixo / Sufixo</label>
               <div className="flex gap-2">
-                <input className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder="Prefixo" value={block.config?.prefix || ''} onChange={e => updConfig('prefix', e.target.value)} />
-                <input className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder="Sufixo" value={block.config?.suffix || ''} onChange={e => updConfig('suffix', e.target.value)} />
+                <input className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Prefixo" value={block.config?.prefix || ''} onChange={e => updConfig('prefix', e.target.value)} />
+                <input className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Sufixo" value={block.config?.suffix || ''} onChange={e => updConfig('suffix', e.target.value)} />
               </div>
             </div>
           )}
@@ -605,14 +605,14 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
                 <label className="block text-xs text-gray-500 mb-1.5">Tamanho do número</label>
                 <div className="flex gap-1">
                   {[{ v: 'lg', l: 'P' }, { v: 'xl', l: 'M' }, { v: '2xl', l: 'G' }, { v: '4xl', l: 'XG' }].map(s => (
-                    <button key={s.v} onClick={() => updConfig('size', s.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-bold transition-all ${(block.config?.size || '4xl') === s.v ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{s.l}</button>
+                    <button key={s.v} onClick={() => updConfig('size', s.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-bold transition-all ${(block.config?.size || '4xl') === s.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{s.l}</button>
                   ))}
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Ícone / Emoji</label>
                 <input
-                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400"
                   placeholder="🚀  📈  💰  ✅  ..."
                   value={block.config?.icon || ''}
                   onChange={e => updConfig('icon', e.target.value)}
@@ -687,7 +687,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             <div>
               <label className="block text-xs text-gray-500 mb-1">Drilldown (coluna de detalhe)</label>
               <select
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
                 value={block.config?.drilldown_col || ''}
                 onChange={e => updConfig('drilldown_col', e.target.value || null)}
               >
@@ -703,7 +703,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               <label className="flex items-center gap-2 cursor-pointer">
                 <div
                   onClick={() => updConfig('crossFilterEnabled', !(block.config?.crossFilterEnabled ?? true))}
-                  className={`w-8 h-4 rounded-full transition-colors relative ${(block.config?.crossFilterEnabled ?? true) ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                  className={`w-8 h-4 rounded-full transition-colors relative ${(block.config?.crossFilterEnabled ?? true) ? 'bg-violet-500' : 'bg-gray-200'}`}
                 >
                   <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${(block.config?.crossFilterEnabled ?? true) ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
@@ -720,11 +720,11 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         <ConfigSection title="Formatação condicional" defaultOpen={false}>
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">Valor mínimo (verde se ≥)</label>
-            <input type="number" step="any" value={block.config?.threshold_ok ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_ok: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 50000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <input type="number" step="any" value={block.config?.threshold_ok ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_ok: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 50000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">Valor de alerta (vermelho se &lt;)</label>
-            <input type="number" step="any" value={block.config?.threshold_warn ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_warn: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 20000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <input type="number" step="any" value={block.config?.threshold_warn ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_warn: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 20000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
           </div>
         </ConfigSection>
       )}
@@ -735,11 +735,11 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">Destacar quando valor</label>
             <div className="flex gap-2">
-              <select value={block.config?.highlight_operator || 'gt'} onChange={e => onChange({ ...block, config: { ...block.config, highlight_operator: e.target.value } })} className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+              <select value={block.config?.highlight_operator || 'gt'} onChange={e => onChange({ ...block, config: { ...block.config, highlight_operator: e.target.value } })} className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400">
                 <option value="gt">&gt; maior que</option>
                 <option value="lt">&lt; menor que</option>
               </select>
-              <input type="number" step="any" value={block.config?.highlight_threshold ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, highlight_threshold: e.target.value === '' ? null : e.target.value } })} placeholder="Limite" className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+              <input type="number" step="any" value={block.config?.highlight_threshold ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, highlight_threshold: e.target.value === '' ? null : e.target.value } })} placeholder="Limite" className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
             </div>
           </div>
           <ColorPicker label="Cor de destaque" value={block.config?.highlight_color || ''} onChange={v => onChange({ ...block, config: { ...block.config, highlight_color: v } })} placeholder="#fef3c7" />
@@ -757,7 +757,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               value={block.config?.reference_value ?? ''}
               onChange={e => onChange({ ...block, config: { ...block.config, reference_value: e.target.value === '' ? null : e.target.value } })}
               placeholder="Ex: 100000"
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
             />
           </div>
           <div>
@@ -767,7 +767,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               value={block.config?.reference_label || ''}
               onChange={e => onChange({ ...block, config: { ...block.config, reference_label: e.target.value } })}
               placeholder="Ex: Meta"
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
             />
           </div>
         </ConfigSection>
@@ -801,7 +801,7 @@ export function CanvasConfigPanel({ config, onChange }) {
         <div className="flex gap-1.5 flex-wrap mb-2">
           {colors.map(c => (
             <button key={c} onClick={() => upd(field, c)}
-              className={`w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 ${config[field] === c ? 'border-indigo-500 scale-110' : 'border-gray-200'}`}
+              className={`w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 ${config[field] === c ? 'border-violet-500 scale-110' : 'border-gray-200'}`}
               style={{ backgroundColor: c }} title={c}
             />
           ))}
@@ -812,7 +812,7 @@ export function CanvasConfigPanel({ config, onChange }) {
             className="w-8 h-8 rounded-lg cursor-pointer border border-gray-200 p-0.5 shrink-0" />
           <input type="text" value={config[field] || ''} onChange={e => upd(field, e.target.value)}
             placeholder={placeholder}
-            className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400" />
           {config[field] && (
             <button onClick={() => upd(field, '')} className="text-gray-300 hover:text-gray-500 shrink-0">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -948,7 +948,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
                     value={ds.refresh_interval_minutes ?? ''}
                     disabled={scheduleSaving === ds.id}
                     onChange={e => handleSchedule(ds.id, e.target.value === '' ? null : parseInt(e.target.value))}
-                    className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
                     title="Refresh automático"
                   >
                     <option value="">Sem refresh</option>
@@ -984,7 +984,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
         {tab === 'upload' && (
           <div className="p-3">
             <p className="text-xs text-gray-400 mb-2">Suporta CSV e Excel (.xlsx)</p>
-            <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg p-4 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg p-4 cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               <span className="text-xs text-gray-500">{uploading ? 'Carregando...' : 'Clique para selecionar'}</span>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleUpload} />
@@ -996,22 +996,22 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
           <form onSubmit={handleApiCreate} className="p-3 space-y-2">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome do dataset</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder="Ex: Vendas Mensais" value={apiForm.name} onChange={e => setApiForm(f => ({ ...f, name: e.target.value }))} required />
+              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Ex: Vendas Mensais" value={apiForm.name} onChange={e => setApiForm(f => ({ ...f, name: e.target.value }))} required />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">URL da API (GET)</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder="https://api.exemplo.com/dados" value={apiForm.api_url} onChange={e => setApiForm(f => ({ ...f, api_url: e.target.value }))} required />
+              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="https://api.exemplo.com/dados" value={apiForm.api_url} onChange={e => setApiForm(f => ({ ...f, api_url: e.target.value }))} required />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Headers (JSON opcional)</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 font-mono" placeholder='{"Authorization":"Bearer token"}' value={apiForm.api_headers} onChange={e => setApiForm(f => ({ ...f, api_headers: e.target.value }))} />
+              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono" placeholder='{"Authorization":"Bearer token"}' value={apiForm.api_headers} onChange={e => setApiForm(f => ({ ...f, api_headers: e.target.value }))} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Caminho no JSON (opcional)</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 font-mono" placeholder="data.items" value={apiForm.api_data_path} onChange={e => setApiForm(f => ({ ...f, api_data_path: e.target.value }))} />
+              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono" placeholder="data.items" value={apiForm.api_data_path} onChange={e => setApiForm(f => ({ ...f, api_data_path: e.target.value }))} />
               <p className="text-xs text-gray-400 mt-1">{'Se o JSON for {"data":[...]}, use "data"'}</p>
             </div>
-            <button type="submit" disabled={apiSaving} className="w-full py-2 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 disabled:opacity-50 mt-1">{apiSaving ? 'Buscando...' : 'Conectar API'}</button>
+            <button type="submit" disabled={apiSaving} className="w-full py-2 bg-violet-600 text-white text-xs font-semibold rounded hover:bg-violet-700 disabled:opacity-50 mt-1">{apiSaving ? 'Buscando...' : 'Conectar API'}</button>
           </form>
         )}
       </div>
@@ -1116,8 +1116,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         return (
           <div
             key={block.id}
-            className={`group relative rounded-xl flex flex-col transition-all ${isSelected ? 'border-2 border-indigo-500 shadow-lg' : 'border border-gray-200/80 shadow-sm hover:shadow-md hover:border-gray-300'}`}
-            style={{ backgroundColor: block.config?.bg_color || 'white' }}
+            className={`group relative rounded-xl flex flex-col transition-all ${isSelected ? 'border-2 border-violet-500 shadow-lg' : 'border border-gray-200/80 shadow-sm hover:shadow-md hover:border-gray-300'}`}
+            style={{ backgroundColor: block.config?.bg_color || 'white', zIndex: isSelected ? 100 : undefined }}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
             {/* Header — drag handle + title + cross-filter chip only */}
@@ -1136,7 +1136,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               {activeCross && (
                 <button
                   onClick={e => { e.stopPropagation(); clearCrossFilter(block.dataset_id) }}
-                  className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded text-[10px] font-medium shrink-0 hover:bg-indigo-200 transition-colors"
+                  className="flex items-center gap-1 px-1.5 py-0.5 bg-violet-100 text-violet-600 rounded text-[10px] font-medium shrink-0 hover:bg-violet-200 transition-colors"
                   title="Limpar filtro"
                 >
                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1169,27 +1169,27 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             {/* Luzmo-style floating toolbar — dark vertical bar, outside-right of block */}
             {!readOnly && (
               <div
-                className={`absolute left-full top-0 ml-1.5 flex flex-col rounded-lg shadow-lg overflow-hidden z-50 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                className={`absolute left-full top-0 ml-1.5 flex flex-col rounded-lg shadow-lg overflow-hidden transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 onClick={e => e.stopPropagation()}
               >
                 <button
                   title="Dados"
                   onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'dados') }}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-indigo-600 text-white transition-colors"
+                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-violet-600 text-white transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V7zM4 15a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z" /></svg>
                 </button>
                 <button
                   title="Configurar"
                   onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'config') }}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-indigo-600 text-white transition-colors border-t border-gray-700"
+                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-violet-600 text-white transition-colors border-t border-gray-700"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
                 </button>
                 <button
                   title="Clonar"
                   onClick={() => cloneBlock()}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-indigo-600 text-white transition-colors border-t border-gray-700"
+                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-violet-600 text-white transition-colors border-t border-gray-700"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 </button>
