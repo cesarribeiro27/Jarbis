@@ -101,6 +101,8 @@ function useBlockData(block, mergedFilters = {}, globalDateFilter = {}, drilldow
 
   useEffect(() => {
     if (block.type === 'text' || block.type === 'filter') return
+    // Use static sample data if no dataset connected
+    if (block.static_data && !block.dataset_id) { setData(block.static_data); return }
     if (!block.dataset_id || !effectiveLabelCol || !block.value_col) { setData(null); return }
     setLoading(true); setError(null)
     const queryFn = shareToken
@@ -184,7 +186,8 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
     )
   }
 
-  if (!block.dataset_id || !block.label_col || !block.value_col) {
+  const isSampleData = block.static_data && !block.dataset_id
+  if (!isSampleData && (!block.dataset_id || !block.label_col || !block.value_col)) {
     return <div className="flex items-center justify-center h-full text-center px-3"><p className="text-xs text-gray-300">Configure a fonte de dados<br/>no painel lateral</p></div>
   }
 
@@ -1155,6 +1158,12 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   onChange={e => onChange(blocks.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
                   onClick={e => e.stopPropagation()}
                 />
+              )}
+              {block.static_data && !block.dataset_id && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[10px] font-semibold shrink-0">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  exemplo
+                </span>
               )}
               {isCrossFiltered && (
                 <button
