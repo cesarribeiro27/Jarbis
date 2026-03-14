@@ -1105,6 +1105,12 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         const isSelected = selectedBlockId === block.id
         const isHovered = hoveredBlockId === block.id
 
+        // Cross-filter highlight logic
+        const anyCrossActive = Object.keys(crossFilters).length > 0
+        const hasDataset = !!block.dataset_id
+        const isCrossFiltered = anyCrossActive && hasDataset && !!crossFilters[block.dataset_id]
+        const isUnrelated = anyCrossActive && hasDataset && !crossFilters[block.dataset_id]
+
         function cloneBlock() {
           const cloned = {
             ...JSON.parse(JSON.stringify(block)),
@@ -1118,8 +1124,21 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         return (
           <div
             key={block.id}
-            className={`group relative rounded-xl flex flex-col transition-all ${isSelected ? 'border-2 border-violet-500 shadow-lg' : 'border border-gray-200/80 shadow-sm hover:shadow-md hover:border-gray-300'}`}
-            style={{ backgroundColor: block.config?.bg_color || 'white', zIndex: (isSelected || isHovered) ? 100 : undefined }}
+            className={`group relative rounded-xl flex flex-col transition-all duration-200 ${
+              isSelected
+                ? 'border-2 border-violet-500 shadow-lg'
+                : isCrossFiltered
+                ? 'border-2 border-emerald-400 shadow-md shadow-emerald-100'
+                : isUnrelated
+                ? 'border border-gray-200/80 shadow-sm opacity-40'
+                : 'border border-gray-200/80 shadow-sm hover:shadow-md hover:border-gray-300'
+            }`}
+            style={{
+              backgroundColor: isCrossFiltered
+                ? (block.config?.bg_color ? block.config.bg_color : '#f0fdf4')
+                : (block.config?.bg_color || 'white'),
+              zIndex: (isSelected || isHovered) ? 100 : undefined,
+            }}
             onMouseEnter={() => setHoveredBlockId(block.id)}
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
@@ -1137,14 +1156,16 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   onClick={e => e.stopPropagation()}
                 />
               )}
-              {activeCross && (
+              {isCrossFiltered && (
                 <button
                   onClick={e => { e.stopPropagation(); clearCrossFilter(block.dataset_id) }}
-                  className="flex items-center gap-1 px-1.5 py-0.5 bg-violet-100 text-violet-600 rounded text-[10px] font-medium shrink-0 hover:bg-violet-200 transition-colors"
-                  title="Limpar filtro"
+                  className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-semibold shrink-0 hover:bg-emerald-200 transition-colors"
+                  title="Filtrado — clique para limpar"
                 >
-                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  <span className="max-w-[60px] truncate">{activeCross.val}</span>
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span className="max-w-[70px] truncate">{activeCross.val}</span>
                 </button>
               )}
               {block.config?.annotations?.length > 0 && (
