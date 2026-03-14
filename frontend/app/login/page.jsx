@@ -18,7 +18,7 @@ export default function LoginPage() {
     setError('')
     try {
       const data = await api.login(email, password)
-      localStorage.setItem('jarbis_token', data.access_token)
+      localStorage.setItem('jarbis_token', data.tokens.access_token)
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       router.push('/dashboard')
     } catch (err) {

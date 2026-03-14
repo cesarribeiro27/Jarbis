@@ -21,7 +21,7 @@ export default function SignupPage() {
     setError('')
     try {
       const data = await api.signup(form.name, form.email, form.password)
-      localStorage.setItem('jarbis_token', data.access_token)
+      localStorage.setItem('jarbis_token', data.tokens.access_token)
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       router.push('/dashboard')
     } catch (err) {
