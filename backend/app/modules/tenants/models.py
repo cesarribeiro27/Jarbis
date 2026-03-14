@@ -9,7 +9,7 @@ configurações são isolados por tenant.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,6 +37,7 @@ class Tenant(Base):
         comment="Plano de assinatura: free, starter, professional, enterprise"
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
@@ -44,6 +45,13 @@ class Tenant(Base):
 
     # Relacionamentos
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")
+
+    @property
+    def trial_days_remaining(self) -> int | None:
+        if not self.trial_ends_at:
+            return None
+        delta = self.trial_ends_at - datetime.now(timezone.utc)
+        return max(0, delta.days)
 
     def __repr__(self) -> str:
         return f"<Tenant {self.slug}>"
@@ -69,6 +77,9 @@ class User(Base):
         comment="Papel no tenant: owner, admin, member, viewer"
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    verification_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
+    verification_code_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(

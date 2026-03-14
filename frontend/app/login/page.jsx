@@ -20,7 +20,14 @@ export default function LoginPage() {
       const data = await api.login(email, password)
       localStorage.setItem('jarbis_token', data.tokens.access_token)
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
-      router.push('/dashboard')
+      if (data.trial_days_remaining !== null && data.trial_days_remaining !== undefined) {
+        localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
+      }
+      if (data.needs_verification) {
+        router.push(`/verificar-email?email=${encodeURIComponent(email)}`)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err) {
       setError(err.message || 'Credenciais inválidas')
     } finally {

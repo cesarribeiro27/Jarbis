@@ -23,7 +23,14 @@ export default function SignupPage() {
       const data = await api.signup(form.name, form.email, form.password)
       localStorage.setItem('jarbis_token', data.tokens.access_token)
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
-      router.push('/dashboard')
+      if (data.trial_days_remaining !== null && data.trial_days_remaining !== undefined) {
+        localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
+      }
+      if (data.needs_verification) {
+        router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err) {
       setError(err.message || 'Erro ao criar conta')
     } finally {
@@ -81,9 +88,9 @@ export default function SignupPage() {
                 value={form.password}
                 onChange={set('password')}
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres, com número"
               />
             </div>
             <button

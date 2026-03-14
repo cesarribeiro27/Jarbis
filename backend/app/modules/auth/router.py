@@ -12,14 +12,14 @@ PATCH /auth/users/{id}         — Atualiza role ou status (owner/admin)
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
-from app.modules.auth.schemas import AuthResponse, LoginRequest, RegisterRequest, UserResponse
+from app.modules.auth.schemas import AuthResponse, LoginRequest, RegisterRequest, UserResponse, validate_password
 from app.modules.auth.service import AuthService
 from app.modules.tenants.models import User
 
@@ -59,7 +59,12 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 class SignupRequest(BaseModel):
     name: str = Field(min_length=2, max_length=200)
     email: EmailStr
-    password: str = Field(min_length=6, max_length=100)
+    password: str = Field(min_length=8, max_length=100)
+
+    @field_validator("password")
+    @classmethod
+    def password_rules(cls, v: str) -> str:
+        return validate_password(v)
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=201)
@@ -80,6 +85,29 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Autentica um usuário e retorna tokens de acesso."""
     service = AuthService(db)
     return await service.login(data)
+
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+@router.post("/verify-email", response_model=AuthResponse)
+async def verify_email(data: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+    """Verifica o código de 6 dígitos e ativa o email do usuário."""
+    service = AuthService(db)
+    return await service.verify_email(data.email, data.code)
+
+
+@router.post("/resend-verification", status_code=204)
+async def resend_verification(data: ResendVerificationRequest, db: AsyncSession = Depends(get_db)):
+    """Reenvia o código de verificação por email."""
+    service = AuthService(db)
+    await service.resend_verification(data.email)
 
 
 @router.get("/me", response_model=UserResponse)

@@ -50,6 +50,12 @@ export const api = {
   signup: (name, email, password) =>
     apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
 
+  verifyEmail: (email, code) =>
+    apiFetch('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email, code }) }),
+
+  resendVerification: (email) =>
+    apiFetch('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }) }),
+
   me: () => apiFetch('/auth/me'),
 
   users: {

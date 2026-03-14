@@ -21,12 +21,15 @@ export default function AppLayout({ children }) {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [trialDays, setTrialDays] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('jarbis_token')
     if (!token) { router.push('/login'); return }
     const u = localStorage.getItem('jarbis_user')
     if (u) setUser(JSON.parse(u))
+    const td = localStorage.getItem('jarbis_trial_days')
+    if (td !== null) setTrialDays(parseInt(td, 10))
   }, [])
 
   function logout() {
@@ -101,8 +104,19 @@ export default function AppLayout({ children }) {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        {trialDays !== null && trialDays <= 7 && (
+          <div className={`px-6 py-2 text-sm font-medium text-center flex items-center justify-center gap-2 ${trialDays <= 2 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+            <span>{trialDays <= 2 ? '⚠️' : '⏱️'}</span>
+            {trialDays === 0
+              ? 'Seu período de teste expirou. Escolha um plano para continuar.'
+              : `Seu período de teste gratuito termina em ${trialDays} dia${trialDays !== 1 ? 's' : ''}.`}
+            <Link href="/configuracoes" className="underline font-semibold ml-1">Ver planos</Link>
+          </div>
+        )}
+        <div className="flex-1">
+          {children}
+        </div>
       </main>
     </div>
   )
