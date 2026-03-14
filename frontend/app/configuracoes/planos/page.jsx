@@ -12,7 +12,8 @@ const PLANS = [
     name: 'Gratuito',
     price: 'R$0',
     period: '',
-    desc: 'Para explorar a plataforma',
+    desc: '7 dias de teste grátis incluídos',
+    trial: true,
     color: 'bg-gray-50 border-gray-200',
     features: [
       '2 dashboards',
@@ -252,7 +253,16 @@ function PlanosContent() {
                         <span className="text-3xl font-black text-gray-900">{plan.price}</span>
                         <span className="text-gray-400 text-sm">{plan.period}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{plan.desc}</p>
+                      {plan.trial ? (
+                        <div className="mt-2 inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                          </svg>
+                          7 dias de teste grátis
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 mt-1">{plan.desc}</p>
+                      )}
                     </div>
 
                     <ul className="space-y-2 mb-6 flex-1">
