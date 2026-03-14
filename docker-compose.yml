@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jarbis_postgres
+    environment:
+      POSTGRES_DB: jarbis
+      POSTGRES_USER: jarbis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jarbis_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jarbis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: jarbis_redis
+
+  backend:
+    build: ./backend
+    container_name: jarbis_backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://jarbis:${POSTGRES_PASSWORD:-jarbis_secret}@postgres:5432/jarbis
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: jarbis_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
+    depends_on:
+      - backend
+    ports:
+      - "3001:3000"
+
+volumes:
+  postgres_data:

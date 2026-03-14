@@ -1,0 +1,82 @@
+"""
+Models de Tenant e User.
+
+Multi-tenancy: cada organização (agência, anunciante, veículo) é um tenant.
+Os dados de mídia são compartilhados, mas workspaces, relatórios e
+configurações são isolados por tenant.
+"""
+
+import uuid
+from datetime import datetime, timezone
+
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class Tenant(Base):
+    """
+    Organização cliente da Lumetra.
+    Pode ser uma agência de publicidade, anunciante, veículo ou pesquisador.
+    """
+    __tablename__ = "tenants"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    slug: Mapped[str] = mapped_column(String(200), unique=True, nullable=False, index=True)
+    plan: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="free",
+        comment="Plano de assinatura: free, starter, professional, enterprise"
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    # Relacionamentos
+    users: Mapped[list["User"]] = relationship("User", back_populates="tenant")
+
+    def __repr__(self) -> str:
+        return f"<Tenant {self.slug}>"
+
+
+class User(Base):
+    """
+    Usuário da plataforma, sempre vinculado a um tenant.
+    """
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="member",
+        comment="Papel no tenant: owner, admin, member, viewer"
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    # Relacionamentos
+    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="users")
+
+    def __repr__(self) -> str:
+        return f"<User {self.email}>"
