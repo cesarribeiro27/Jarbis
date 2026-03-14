@@ -19,6 +19,7 @@ async function apiFetch(path, options = {}) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jarbis_token')
       localStorage.removeItem('jarbis_user')
+      localStorage.removeItem('jarbis_trial_days')
       window.location.href = '/login'
     }
     return
@@ -93,7 +94,7 @@ export const api = {
           headers: { Authorization: `Bearer ${getToken()}` },
           body: formData,
         }).then(async (r) => {
-          if (r.status === 401) { localStorage.removeItem('lumetra_token'); window.location.href = '/login'; return }
+          if (r.status === 401) { localStorage.removeItem('jarbis_token'); window.location.href = '/login'; return }
           if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
           return r.json()
         }),
@@ -126,7 +127,7 @@ export const api = {
         headers: { Authorization: `Bearer ${getToken()}` },
         body: formData,
       }).then(async (r) => {
-        if (r.status === 401) { localStorage.removeItem('lumetra_token'); window.location.href = '/login'; return }
+        if (r.status === 401) { localStorage.removeItem('jarbis_token'); window.location.href = '/login'; return }
         if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
         return r.json()
       }),
@@ -193,7 +194,7 @@ export const api = {
         headers: { Authorization: `Bearer ${getToken()}` },
         body: formData,
       }).then(async (r) => {
-        if (r.status === 401) { localStorage.removeItem('lumetra_token'); window.location.href = '/login'; return }
+        if (r.status === 401) { localStorage.removeItem('jarbis_token'); window.location.href = '/login'; return }
         if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
         return r.json()
       }),

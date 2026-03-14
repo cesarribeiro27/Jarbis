@@ -24,7 +24,7 @@ export default function DashboardHome() {
       <div className="p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">
-            Olá{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
+            Olá{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} 👋
           </h1>
           <p className="text-gray-500 text-sm mt-1">Aqui está um resumo da sua conta</p>
         </div>

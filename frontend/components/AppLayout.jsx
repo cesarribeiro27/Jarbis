@@ -26,8 +26,14 @@ export default function AppLayout({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('jarbis_token')
     if (!token) { router.push('/login'); return }
-    const u = localStorage.getItem('jarbis_user')
-    if (u) setUser(JSON.parse(u))
+    try {
+      const u = localStorage.getItem('jarbis_user')
+      if (u) setUser(JSON.parse(u))
+    } catch {
+      localStorage.removeItem('jarbis_user')
+      router.push('/login')
+      return
+    }
     const td = localStorage.getItem('jarbis_trial_days')
     if (td !== null) setTrialDays(parseInt(td, 10))
   }, [])
@@ -92,7 +98,7 @@ export default function AppLayout({ children }) {
         <div className="p-3 border-t border-gray-100">
           {!collapsed && user && (
             <div className="px-3 py-2 mb-1">
-              <div className="text-xs font-semibold text-gray-700 truncate">{user.name}</div>
+              <div className="text-xs font-semibold text-gray-700 truncate">{user.full_name}</div>
               <div className="text-xs text-gray-400 truncate">{user.email}</div>
             </div>
           )}

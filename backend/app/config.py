@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
 
     # --- Aplicação ---
-    app_name: str = "Lumetra"
+    app_name: str = "Jarbis"
     app_version: str = "0.1.0"
     environment: str = "development"
     debug: bool = True
