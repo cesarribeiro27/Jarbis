@@ -229,41 +229,73 @@ export default function DashboardDetailPage() {
   // EDIT MODE
   if (mode === 'edit') {
     return (
-      <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
-        <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex items-center gap-3 shrink-0">
-          <button onClick={cancelEdit} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+      <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f7]">
+        {/* Luzmo-style top bar */}
+        <div className="bg-white border-b border-gray-200/80 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm">
+          {/* Left: back + title + add */}
+          <button onClick={cancelEdit} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors pr-2 border-r border-gray-200 mr-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 5l-7 7 7 7" /></svg>
-            Voltar
+            <span className="hidden sm:inline font-medium">Voltar</span>
+          </button>
+
+          <button onClick={() => router.push('/dashboards/novo')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-gray-200">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h16M4 9h16M4 13h10" /></svg>
+            <span className="hidden sm:inline">Templates</span>
           </button>
 
           <div className="relative" ref={addMenuRef}>
-            <button onClick={() => setShowAddMenu(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16M4 12h16" /></svg>
+            <button onClick={() => setShowAddMenu(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-xs font-semibold rounded-lg hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16M4 12h16" /></svg>
               Adicionar item
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9l6 6 6-6" /></svg>
+              <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 9l6 6 6-6" /></svg>
             </button>
             {showAddMenu && (
-              <div className="absolute top-full left-0 mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-1">
+              <div className="absolute top-full left-0 mt-1.5 w-60 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-0.5">
                 {BLOCK_TYPES.map(bt => (
-                  <button key={bt.type} onClick={() => { addBlock(bt.type); setShowAddMenu(false) }} className="flex flex-col items-start p-2 rounded-lg hover:bg-violet-50 transition-colors text-left">
-                    <p className="text-xs font-semibold text-gray-800">{bt.label}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{bt.desc}</p>
+                  <button key={bt.type} onClick={() => { addBlock(bt.type); setShowAddMenu(false) }} className="flex flex-col items-start px-2.5 py-2 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group">
+                    <p className="text-xs font-semibold text-gray-800 group-hover:text-violet-700">{bt.label}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{bt.desc}</p>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="flex-1" />
+          {/* Dashboard title in center */}
+          <div className="flex-1 flex justify-center min-w-0 px-4">
+            <input
+              className="text-sm font-semibold text-gray-700 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-400 text-center max-w-xs truncate transition-colors"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              title={editTitle}
+            />
+          </div>
 
-          <button onClick={() => setShowDateFilter(v => !v)} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${showDateFilter || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+          {/* Right: date filter + share + cancel + save */}
+          <button
+            onClick={() => setShowDateFilter(v => !v)}
+            title="Filtro de data"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${showDateFilter || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
-            Data
           </button>
 
-          <button onClick={cancelEdit} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">Cancelar</button>
-          <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
-            {saving ? 'Salvando...' : 'Salvar'}
+          <button onClick={handleShare} disabled={sharingLoading} title="Compartilhar" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+          </button>
+
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+
+          <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shadow-violet-200">
+            {saving ? (
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+            )}
+            {saving ? 'Salvando...' : 'Salvar dashboard'}
           </button>
         </div>
 
@@ -299,10 +331,6 @@ export default function DashboardDetailPage() {
               <button onClick={addPage} className="flex items-center justify-center w-7 h-7 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors text-sm">+</button>
             </div>
 
-            <div className="mb-6" onClick={e => e.stopPropagation()}>
-              <input className="text-2xl font-black text-gray-800 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-300 transition-colors py-1 w-full block" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
-              <input className="text-sm text-gray-500 bg-transparent outline-none mt-1 w-full block" placeholder="Descrição (opcional)" value={editDescription} onChange={e => setEditDescription(e.target.value)} />
-            </div>
 
             <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} />
           </div>
@@ -320,16 +348,41 @@ export default function DashboardDetailPage() {
             </div>
           </aside>
 
-          <div className="w-12 bg-white border-l border-gray-100 flex flex-col items-center py-3 gap-1 shrink-0">
-            <button title="Dados" onClick={() => togglePanel('dados')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'dados' && sidebarOpen ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" /></svg>
-            </button>
-            <button title="Configurar" onClick={() => togglePanel('config')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'config' && sidebarOpen ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" strokeWidth={1.5} /></svg>
-            </button>
-            <button title="Perguntar com IA" onClick={() => setShowAiPanel(true)} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-gray-400 hover:text-violet-600 hover:bg-violet-50">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-            </button>
+          {/* Luzmo-style right icon rail */}
+          <div className="w-11 bg-white border-l border-gray-200/80 flex flex-col items-center py-3 gap-0.5 shrink-0">
+            <div className="w-full flex flex-col items-center gap-0.5 mb-auto">
+              <button
+                title="Editar bloco"
+                onClick={() => selectedBlockId && togglePanel('config')}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'config' && sidebarOpen && selectedBlockId ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              </button>
+              <button
+                title="Dados"
+                onClick={() => togglePanel('dados')}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'dados' && sidebarOpen ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" /></svg>
+              </button>
+              <button
+                title="Configurações do canvas"
+                onClick={() => { setSelectedBlockId(null); togglePanel('config') }}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'config' && sidebarOpen && !selectedBlockId ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" strokeWidth={1.5} /></svg>
+              </button>
+            </div>
+            <div className="w-6 h-px bg-gray-100 my-1" />
+            <div className="w-full flex flex-col items-center gap-0.5">
+              <button
+                title="Perguntar com IA"
+                onClick={() => setShowAiPanel(true)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-gray-400 hover:text-violet-600 hover:bg-violet-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+              </button>
+            </div>
           </div>
         </div>
         {showAiPanel && <AiPanel datasets={datasets} onClose={() => setShowAiPanel(false)} />}

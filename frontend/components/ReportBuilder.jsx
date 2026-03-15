@@ -311,19 +311,17 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
     else if (config.threshold_ok != null && config.threshold_ok !== '' && total >= parseFloat(config.threshold_ok)) valueColor = '#10b981'
     const autoFormat = (format === 'currency' && Math.abs(total) >= 10000) ? 'compact_currency' : format
     return (
-      <div className="flex flex-col justify-between h-full px-3 py-2" style={{ background: `linear-gradient(135deg, ${accentColor}08 0%, transparent 60%)` }}>
-        <div className="flex items-center justify-between">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: accentColor + '20' }}>
-            <svg className="w-4 h-4" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
+      <div className="h-full flex flex-col justify-center gap-2.5 px-3 py-2" style={{ background: `linear-gradient(135deg, ${accentColor}08 0%, transparent 60%)` }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: accentColor + '18' }}>
+          <svg className="w-[18px] h-[18px]" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
         </div>
         <div>
-          <p className="text-2xl font-black leading-none tracking-tight" style={{ color: valueColor }}>
+          <p className="text-3xl font-black leading-none tracking-tight" style={{ color: valueColor }}>
             {autoFormat === 'compact_currency' ? fmtCompactCurrency(total) : fmt(total, format, config)}
           </p>
-          <div className="h-[2px] rounded-full w-6 mt-2" style={{ backgroundColor: accentColor }} />
+          <div className="h-[3px] rounded-full w-8 mt-2" style={{ backgroundColor: accentColor }} />
         </div>
       </div>
     )
