@@ -1366,13 +1366,13 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   }
 
   const sheetStyle = {
-    backgroundColor: sheetConfig.bgColor || '#fafafa',
-    borderRadius: '20px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06)',
+    backgroundColor: sheetConfig.bgColor || '#f8f7fc',
+    borderRadius: '16px',
+    boxShadow: '0 2px 8px rgba(109,40,217,0.04), 0 12px 40px rgba(0,0,0,0.08)',
     minHeight: '640px',
-    padding: '20px 24px',
-    backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)',
-    backgroundSize: '20px 20px',
+    padding: '28px 28px 40px',
+    backgroundImage: 'radial-gradient(circle, rgba(109,40,217,0.08) 1px, transparent 1px)',
+    backgroundSize: '24px 24px',
   }
 
   if (blocks.length === 0) return (
@@ -1409,14 +1409,14 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         return (
           <div
             key={block.id}
-            className={`group relative rounded-2xl flex flex-col transition-all duration-200 ${
+            className={`group relative rounded-xl flex flex-col transition-all duration-200 ${
               isSelected
-                ? 'border-2 border-violet-500 shadow-lg'
+                ? 'border-2 border-violet-500 shadow-[0_0_0_4px_rgba(139,92,246,0.12)] shadow-violet-100'
                 : isCrossFiltered
-                ? 'border-2 border-emerald-400 shadow-md shadow-emerald-100'
+                ? 'border-2 border-emerald-400 shadow-[0_4px_16px_rgba(52,211,153,0.2)]'
                 : isUnrelated
-                ? 'border border-gray-100 shadow-sm opacity-40'
-                : 'border border-gray-100/80 shadow-sm hover:shadow-md hover:border-gray-200'
+                ? 'border border-gray-200/60 opacity-35'
+                : 'border border-gray-200/70 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] hover:border-violet-200/60 hover:-translate-y-px'
             }`}
             style={{
               backgroundColor: isCrossFiltered
@@ -1429,17 +1429,19 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
             {/* Header */}
-            <div className={`flex items-center gap-1.5 px-3 pt-2.5 pb-1 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''}`}>
+            <div className={`flex items-center gap-2 px-3 pt-3 pb-1.5 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''}`}>
               {!readOnly && (
-                <svg className="w-3 h-3 text-gray-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/>
+                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400 shrink-0 transition-colors" viewBox="0 0 10 16" fill="currentColor">
+                  <circle cx="2" cy="3" r="1.5"/><circle cx="8" cy="3" r="1.5"/>
+                  <circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/>
+                  <circle cx="2" cy="13" r="1.5"/><circle cx="8" cy="13" r="1.5"/>
                 </svg>
               )}
               {readOnly ? (
-                <span className="text-[11px] font-semibold text-gray-500 flex-1 truncate">{block.title}</span>
+                <span className="text-xs font-semibold text-gray-600 flex-1 truncate leading-none">{block.title}</span>
               ) : (
                 <input
-                  className="text-[11px] font-semibold text-gray-500 flex-1 bg-transparent outline-none min-w-0"
+                  className="text-xs font-semibold text-gray-600 flex-1 bg-transparent outline-none min-w-0 leading-none placeholder:text-gray-300"
                   value={block.title}
                   onChange={e => onChange(blocks.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
                   onClick={e => e.stopPropagation()}
@@ -1448,7 +1450,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               {isCrossFiltered && (
                 <button
                   onClick={e => { e.stopPropagation(); clearCrossFilter(block.dataset_id) }}
-                  className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-semibold shrink-0 hover:bg-emerald-200 transition-colors"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-semibold shrink-0 hover:bg-emerald-100 transition-colors"
                   title="Filtrado — clique para limpar"
                 >
                   <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1458,7 +1460,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 </button>
               )}
               {block.config?.annotations?.length > 0 && (
-                <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[10px] font-medium shrink-0" title={`${block.config.annotations.length} anotação(ões)`}>
+                <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200/60 rounded-md text-[10px] font-medium shrink-0" title={`${block.config.annotations.length} anotação(ões)`}>
                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>
                   {block.config.annotations.length}
                 </span>
@@ -1466,7 +1468,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             </div>
 
             {/* Content */}
-            <div className="flex-1 px-3 pb-3 pt-0 min-h-0 overflow-hidden">
+            <div className="flex-1 px-3 pb-3 pt-0.5 min-h-0 overflow-hidden">
               <BlockPreview
                 block={block}
                 readOnly={readOnly}
@@ -1482,37 +1484,38 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               />
             </div>
 
-            {/* Luzmo-style floating toolbar — dark vertical bar, outside-right of block */}
+            {/* Floating toolbar — modern pill outside-right */}
             {!readOnly && (
               <div
-                className={`absolute left-full top-0 ml-1.5 flex flex-col rounded-lg shadow-lg overflow-hidden transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                className={`absolute left-full top-2 ml-2 flex flex-col gap-0.5 p-1 bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-150 ${isSelected ? 'opacity-100 translate-x-0' : 'opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0'}`}
                 onClick={e => e.stopPropagation()}
               >
                 <button
                   title="Dados"
                   onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'dados') }}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-violet-600 text-white transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V7zM4 15a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z" /></svg>
                 </button>
                 <button
                   title="Configurar"
                   onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'config') }}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-violet-600 text-white transition-colors border-t border-gray-700"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
                 </button>
                 <button
                   title="Clonar"
                   onClick={() => cloneBlock()}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-violet-600 text-white transition-colors border-t border-gray-700"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 </button>
+                <div className="h-px bg-gray-100 mx-1" />
                 <button
                   title="Excluir"
                   onClick={() => onChange(blocks.filter(b => b.id !== block.id))}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-900 hover:bg-red-600 text-white transition-colors border-t border-gray-700"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
