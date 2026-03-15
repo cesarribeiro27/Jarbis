@@ -72,60 +72,44 @@ const PLANS = [
     price: 'Grátis',
     period: '',
     desc: '7 dias para explorar tudo',
-    features: ['2 dashboards', '1 dataset', 'Link público', 'Embed básico'],
+    features: ['2 dashboards', '1 dataset', 'Link público'],
     cta: 'Começar teste gratuito',
     highlight: false,
     tag: null,
+    isEnterprise: false,
   },
   {
     name: 'Starter',
     price: 'R$197',
     period: '/mês',
     desc: 'Para times em crescimento',
-    features: ['10 dashboards', '5 datasets', 'Alertas', 'Embed avançado', '3 usuários', 'Suporte por e-mail'],
+    features: ['10 dashboards', '5 datasets', '3 usuários', '5 alertas', 'Embed avançado', 'Suporte por e-mail'],
     cta: 'Assinar Starter',
     highlight: false,
     tag: null,
-  },
-  {
-    name: 'Business',
-    price: 'R$349',
-    period: '/mês',
-    desc: 'Para operações em escala',
-    features: ['30 dashboards', '20 datasets', 'IA em português', 'Filtros avançados', '10 usuários', 'Suporte em 24h'],
-    cta: 'Assinar Business',
-    highlight: true,
-    tag: 'Mais popular',
+    isEnterprise: false,
   },
   {
     name: 'Pro',
     price: 'R$597',
     period: '/mês',
-    desc: 'Para empresas que exigem mais',
-    features: ['Dashboards ilimitados', 'Datasets ilimitados', 'White-label', 'Usuários ilimitados', 'Suporte via chat', 'Onboarding por videochamada'],
+    desc: 'Para empresas que escalam',
+    features: ['Dashboards ilimitados', 'Datasets ilimitados', 'Usuários ilimitados', 'IA em português', 'White-label', 'Embed avançado', 'Suporte prioritário'],
     cta: 'Assinar Pro',
-    highlight: false,
-    tag: null,
-  },
-  {
-    name: 'Professional',
-    price: 'R$799',
-    period: '/mês',
-    desc: 'Para revendedores e agências',
-    features: ['Tudo do Pro', 'Multi-tenant', 'Marca própria completa', 'Painel de clientes', 'API dedicada', 'Suporte via WhatsApp'],
-    cta: 'Assinar Professional',
-    highlight: false,
-    tag: 'White-label total',
+    highlight: true,
+    tag: 'Mais popular',
+    isEnterprise: false,
   },
   {
     name: 'Empresa',
     price: 'Sob consulta',
     period: '',
     desc: 'Para grandes operações',
-    features: ['Tudo do Professional', 'Gerente de conta dedicado', 'SLA contratual garantido', 'Onboarding e treinamento', 'Integrações customizadas', 'Contrato anual'],
+    features: ['Tudo do Pro', 'Gerente de conta dedicado', 'SLA contratual garantido', 'Onboarding e treinamento', 'Integrações customizadas', 'Contrato anual'],
     cta: 'Falar com comercial',
     highlight: false,
     tag: 'Enterprise',
+    isEnterprise: true,
   },
 ]
 
@@ -438,7 +422,7 @@ export default function LandingPage() {
             <p className="text-lg text-gray-500">Sem surpresas em dólar. Cancele quando quiser.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
             {PLANS.map((plan) => {
               const isEnterprise = plan.name === 'Empresa'
               return (

@@ -16,7 +16,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
 from app.modules.auth.schemas import AuthResponse, LoginRequest, RegisterRequest, UserResponse, validate_password
@@ -113,6 +113,33 @@ async def resend_verification(data: ResendVerificationRequest, db: AsyncSession 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_active_user)):
     """Retorna os dados do usuário autenticado."""
+    return UserResponse.model_validate(current_user)
+
+
+class UpdateMeRequest(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=200)
+    current_password: str | None = None
+    new_password: str | None = Field(default=None, min_length=6, max_length=100)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    data: UpdateMeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Atualiza nome e/ou senha do usuário autenticado."""
+    if data.full_name:
+        current_user.full_name = data.full_name
+
+    if data.new_password:
+        if not data.current_password:
+            raise HTTPException(status_code=400, detail="Informe a senha atual para trocar a senha.")
+        if not verify_password(data.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Senha atual incorreta.")
+        current_user.hashed_password = hash_password(data.new_password)
+
+    await db.commit()
     return UserResponse.model_validate(current_user)
 
 
