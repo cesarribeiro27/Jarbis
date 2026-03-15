@@ -10,32 +10,41 @@ import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/
 const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr: false })
 
 const BLOCK_TYPES = [
-  { type: 'kpi',     label: 'KPI',       desc: 'Número em destaque' },
-  { type: 'bar',     label: 'Barras',    desc: 'Comparar categorias' },
-  { type: 'bar_h',   label: 'Barras H',  desc: 'Barras horizontais' },
-  { type: 'area',    label: 'Área',      desc: 'Evolução acumulada' },
-  { type: 'line',    label: 'Linhas',    desc: 'Evolução no tempo' },
-  { type: 'pie',     label: 'Pizza',     desc: 'Distribuição %' },
-  { type: 'scatter', label: 'Dispersão', desc: 'Correlação XY' },
-  { type: 'table',   label: 'Tabela',    desc: 'Dados em linhas' },
-  { type: 'text',    label: 'Texto',     desc: 'Comentários' },
-  { type: 'filter',  label: 'Filtro',    desc: 'Filtrar dados' },
-  { type: 'image',   label: 'Imagem',    desc: 'Foto ou logo' },
+  { type: 'kpi',         label: 'KPI',          desc: 'Número em destaque' },
+  { type: 'bar',         label: 'Barras',        desc: 'Comparar categorias' },
+  { type: 'bar_h',       label: 'Barras H',      desc: 'Barras horizontais' },
+  { type: 'area',        label: 'Área',          desc: 'Evolução acumulada' },
+  { type: 'line',        label: 'Linhas',        desc: 'Evolução no tempo' },
+  { type: 'pie',         label: 'Pizza',         desc: 'Distribuição %' },
+  { type: 'combo',       label: 'Combo',         desc: 'Barra + linha' },
+  { type: 'gauge',       label: 'Gauge',         desc: 'Indicador circular' },
+  { type: 'speedometer', label: 'Velocímetro',   desc: 'Indicador semicircular' },
+  { type: 'treemap',     label: 'Treemap',       desc: 'Hierarquia por área' },
+  { type: 'bubble',      label: 'Bolhas',        desc: 'Dispersão por volume' },
+  { type: 'scatter',     label: 'Dispersão',     desc: 'Correlação XY' },
+  { type: 'table',       label: 'Tabela',        desc: 'Dados em linhas' },
+  { type: 'text',        label: 'Texto',         desc: 'Comentários' },
+  { type: 'filter',      label: 'Filtro',        desc: 'Filtrar dados' },
+  { type: 'slider',      label: 'Slider',        desc: 'Filtro por faixa' },
+  { type: 'image',       label: 'Imagem',        desc: 'Foto ou logo' },
 ]
 
 let counter = 0
 function newBlock(type) {
-  const isFilter = type === 'filter'
+  const isFilter = type === 'filter' || type === 'slider'
   const isNoData = isFilter || type === 'text' || type === 'image'
+  const isGauge = type === 'gauge' || type === 'speedometer'
   const col = isFilter ? (counter % 6) * 2 : (counter % 4) * 3
+  const w = isFilter ? 2 : isGauge ? 3 : 3
+  const h = isFilter ? 2 : isGauge ? 4 : 2
   return {
     id: `block_${++counter}_${Date.now()}`,
     type,
     title: BLOCK_TYPES.find(b => b.type === type)?.label || type,
     dataset_id: null,
-    ...(isFilter ? { filter_col: null, filter_label: '' } : isNoData ? {} : { label_col: null, value_col: null, agg: 'sum' }),
+    ...(type === 'filter' ? { filter_col: null, filter_label: '' } : isNoData ? {} : { label_col: null, value_col: null, agg: 'sum' }),
     config: {},
-    layout: { x: col, y: Infinity, w: isFilter ? 2 : 3, h: isFilter ? 2 : 2 },
+    layout: { x: col, y: Infinity, w, h },
   }
 }
 
