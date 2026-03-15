@@ -82,7 +82,7 @@ const PLANS = [
     price: 'R$197',
     period: '/mês',
     desc: 'Para times em crescimento',
-    features: ['10 dashboards', '5 datasets', 'Alertas', 'Embed avançado', '3 usuários'],
+    features: ['10 dashboards', '5 datasets', 'Alertas', 'Embed avançado', '3 usuários', 'Suporte por e-mail'],
     cta: 'Assinar Starter',
     highlight: false,
     tag: null,
@@ -92,7 +92,7 @@ const PLANS = [
     price: 'R$349',
     period: '/mês',
     desc: 'Para operações em escala',
-    features: ['30 dashboards', '20 datasets', 'IA em português', 'Filtros avançados', '10 usuários', 'Suporte prioritário'],
+    features: ['30 dashboards', '20 datasets', 'IA em português', 'Filtros avançados', '10 usuários', 'Suporte em 24h'],
     cta: 'Assinar Business',
     highlight: true,
     tag: 'Mais popular',
@@ -102,7 +102,7 @@ const PLANS = [
     price: 'R$597',
     period: '/mês',
     desc: 'Para empresas que exigem mais',
-    features: ['Dashboards ilimitados', 'Datasets ilimitados', 'White-label', 'Usuários ilimitados', 'SLA garantido', 'Onboarding dedicado'],
+    features: ['Dashboards ilimitados', 'Datasets ilimitados', 'White-label', 'Usuários ilimitados', 'Suporte via chat', 'Onboarding por videochamada'],
     cta: 'Assinar Pro',
     highlight: false,
     tag: null,
@@ -112,10 +112,20 @@ const PLANS = [
     price: 'R$799',
     period: '/mês',
     desc: 'Para revendedores e agências',
-    features: ['Tudo do Pro', 'Multi-tenant', 'Marca própria completa', 'Painel de clientes', 'API dedicada', 'Gerente de conta'],
-    cta: 'Falar com vendas',
+    features: ['Tudo do Pro', 'Multi-tenant', 'Marca própria completa', 'Painel de clientes', 'API dedicada', 'Suporte via WhatsApp'],
+    cta: 'Assinar Professional',
     highlight: false,
     tag: 'White-label total',
+  },
+  {
+    name: 'Empresa',
+    price: 'Sob consulta',
+    period: '',
+    desc: 'Para grandes operações',
+    features: ['Tudo do Professional', 'Gerente de conta dedicado', 'SLA contratual garantido', 'Onboarding e treinamento', 'Integrações customizadas', 'Contrato anual'],
+    cta: 'Falar com comercial',
+    highlight: false,
+    tag: 'Enterprise',
   },
 ]
 
@@ -428,62 +438,75 @@ export default function LandingPage() {
             <p className="text-lg text-gray-500">Sem surpresas em dólar. Cancele quando quiser.</p>
           </div>
 
-          <div className="grid md:grid-cols-5 gap-4">
-            {PLANS.map((plan) => (
+          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {PLANS.map((plan) => {
+              const isEnterprise = plan.name === 'Empresa'
+              return (
               <div key={plan.name}
                 className={`rounded-2xl p-5 relative flex flex-col ${
                   plan.highlight
                     ? 'text-white'
+                    : isEnterprise
+                    ? 'bg-gray-900 text-white border border-gray-800'
                     : 'bg-white border border-gray-100'
                 }`}
                 style={plan.highlight ? { background: 'linear-gradient(145deg, #6d28d9, #7c3aed)' } : {}}>
 
                 {plan.tag && (
                   <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-black px-3 py-1.5 rounded-full shadow-sm whitespace-nowrap ${
-                    plan.highlight ? 'bg-amber-400 text-amber-900' : 'bg-violet-100 text-violet-700'
+                    plan.highlight ? 'bg-amber-400 text-amber-900' : isEnterprise ? 'bg-gray-700 text-gray-300' : 'bg-violet-100 text-violet-700'
                   }`}>
                     {plan.tag}
                   </div>
                 )}
 
-                <div className={`text-xs font-bold mb-3 ${plan.highlight ? 'text-violet-200' : 'text-gray-400'}`}>
+                <div className={`text-xs font-bold mb-3 ${plan.highlight ? 'text-violet-200' : isEnterprise ? 'text-gray-400' : 'text-gray-400'}`}>
                   {plan.name}
                 </div>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className={`text-3xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`font-black ${isEnterprise ? 'text-lg text-white' : 'text-3xl'} ${plan.highlight ? 'text-white' : isEnterprise ? '' : 'text-gray-900'}`}>
                     {plan.price}
                   </span>
-                  <span className={`text-xs ${plan.highlight ? 'text-violet-300' : 'text-gray-400'}`}>
-                    {plan.period}
-                  </span>
+                  {plan.period && (
+                    <span className={`text-xs ${plan.highlight ? 'text-violet-300' : isEnterprise ? 'text-gray-500' : 'text-gray-400'}`}>
+                      {plan.period}
+                    </span>
+                  )}
                 </div>
-                <p className={`text-xs mb-5 ${plan.highlight ? 'text-violet-200' : 'text-gray-400'}`}>
+                <p className={`text-xs mb-5 ${plan.highlight ? 'text-violet-200' : isEnterprise ? 'text-gray-400' : 'text-gray-400'}`}>
                   {plan.desc}
                 </p>
 
                 <ul className="space-y-2.5 mb-6 flex-1">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-xs">
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${plan.highlight ? 'bg-white/20' : 'bg-violet-100'}`}>
-                        <svg className={`w-2.5 h-2.5 ${plan.highlight ? 'text-white' : 'text-violet-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${plan.highlight ? 'bg-white/20' : isEnterprise ? 'bg-gray-700' : 'bg-violet-100'}`}>
+                        <svg className={`w-2.5 h-2.5 ${plan.highlight || isEnterprise ? 'text-white' : 'text-violet-600'}`} viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <span className={plan.highlight ? 'text-violet-100' : 'text-gray-600'}>{f}</span>
+                      <span className={plan.highlight ? 'text-violet-100' : isEnterprise ? 'text-gray-300' : 'text-gray-600'}>{f}</span>
                     </li>
                   ))}
                 </ul>
 
-                <Link href="/signup"
-                  className={`block text-center py-3 rounded-full font-bold text-xs transition-all ${
-                    plan.highlight
-                      ? 'bg-white text-violet-700 hover:bg-violet-50'
-                      : 'bg-gray-900 text-white hover:bg-gray-700'
-                  }`}>
-                  {plan.cta}
-                </Link>
+                {isEnterprise ? (
+                  <a href="mailto:comercial@mazzelag.com"
+                    className="block text-center py-3 rounded-full font-bold text-xs transition-all bg-white text-gray-900 hover:bg-gray-100">
+                    {plan.cta}
+                  </a>
+                ) : (
+                  <Link href="/signup"
+                    className={`block text-center py-3 rounded-full font-bold text-xs transition-all ${
+                      plan.highlight
+                        ? 'bg-white text-violet-700 hover:bg-violet-50'
+                        : 'bg-gray-900 text-white hover:bg-gray-700'
+                    }`}>
+                    {plan.cta}
+                  </Link>
+                )}
               </div>
-            ))}
+            )})}
           </div>
 
           <p className="text-center text-sm text-gray-400 mt-8">
