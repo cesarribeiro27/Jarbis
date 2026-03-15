@@ -84,3 +84,36 @@ async def billing_status(
 ):
     svc = BillingService(db)
     return await svc.get_billing_status(current_user.tenant_id)
+
+
+@router.post("/admin/set-plan", include_in_schema=False)
+async def admin_set_plan(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Endpoint de admin para forçar plano em ambiente de desenvolvimento/testes."""
+    secret = request.headers.get("x-admin-secret", "")
+    if secret != settings.secret_key[:16]:
+        raise HTTPException(status_code=403, detail="Proibido.")
+    body = await request.json()
+    email = body.get("email")
+    plan = body.get("plan", "professional")
+    from sqlalchemy import select
+    from app.modules.tenants.models import Tenant
+    result = await db.execute(
+        select(User).where(User.email == email)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    tenant_result = await db.execute(
+        select(Tenant).where(Tenant.id == user.tenant_id)
+    )
+    tenant = tenant_result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+    tenant.plan = plan
+    tenant.trial_ends_at = None
+    tenant.subscription_status = "active"
+    await db.commit()
+    return {"ok": True, "email": email, "plan": plan}
