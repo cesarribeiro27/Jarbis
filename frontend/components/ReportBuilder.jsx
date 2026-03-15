@@ -662,39 +662,70 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
 
   if (block.type === 'table') {
     const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
+    const tableMode = config.table_mode || 'bar' // 'bar' | 'badge' | 'plain'
+    const accentColor = config.accent_color || '#6366f1'
+    const [sortDir, setSortDir] = useState('desc')
+    const sorted = [...data].sort((a, b) => sortDir === 'desc' ? (b.value || 0) - (a.value || 0) : (a.value || 0) - (b.value || 0))
     return (
-      <div className="overflow-auto h-full" style={{ borderRadius: '0 0 16px 16px' }}>
+      <div className="overflow-auto h-full">
         <table className="min-w-full text-xs border-separate border-spacing-0">
           <thead className="sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-2.5 text-left font-semibold text-[11px] tracking-wide" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white' }}>{block.label_col || 'Label'}</th>
-              <th className="px-4 py-2.5 text-right font-semibold text-[11px] tracking-wide" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white' }}>{block.value_col || 'Valor'}</th>
+              <th className="px-3 py-2 text-left font-semibold text-[11px] text-gray-500 bg-gray-50/90 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider">
+                {block.label_col || 'Label'}
+              </th>
+              <th
+                className="px-3 py-2 text-right font-semibold text-[11px] text-gray-500 bg-gray-50/90 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider cursor-pointer select-none hover:text-violet-600 transition-colors"
+                onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+              >
+                <span className="flex items-center justify-end gap-1">
+                  {block.value_col || 'Valor'}
+                  <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortDir === 'desc' ? 'M19 9l-7 7-7-7' : 'M5 15l7-7 7 7'} />
+                  </svg>
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => {
+            {sorted.map((row, i) => {
               const barPct = Math.round((Math.abs(row.value || 0) / maxVal) * 100)
               let rowHighlight = false
               if (config.highlight_threshold != null && config.highlight_threshold !== '') {
                 const threshold = parseFloat(config.highlight_threshold)
-                if (config.highlight_operator === 'lt') rowHighlight = row.value < threshold
-                else rowHighlight = row.value > threshold
+                rowHighlight = config.highlight_operator === 'lt' ? row.value < threshold : row.value > threshold
               }
+              const rowBg = rowHighlight
+                ? (config.highlight_color || '#fef3c7')
+                : i % 2 === 0 ? 'transparent' : 'rgba(249,250,251,0.6)'
+              const badgeColor = COLORS[i % COLORS.length]
               return (
                 <tr
                   key={i}
-                  className="group cursor-pointer transition-colors"
-                  style={{ opacity: getOpacity(row.label), backgroundColor: rowHighlight ? (config.highlight_color || '#fef3c7') : 'transparent' }}
+                  className="group cursor-pointer"
+                  style={{ opacity: getOpacity(row.label), backgroundColor: rowBg }}
                   onClick={() => handleClick(row.label)}
                 >
-                  <td className="px-4 py-2 text-gray-700 truncate max-w-[140px] font-medium group-hover:bg-violet-50 transition-colors border-b border-gray-50">{row.label}</td>
-                  <td className="px-4 py-2 text-right group-hover:bg-violet-50 transition-colors border-b border-gray-50">
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-[60px]">
-                        <div className="h-full rounded-full bg-violet-400" style={{ width: `${barPct}%` }} />
+                  <td className="px-3 py-1.5 text-gray-700 font-medium border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
+                    {tableMode === 'badge' ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: badgeColor + '18', color: badgeColor }}>
+                        {row.label}
+                      </span>
+                    ) : (
+                      <span className="truncate block max-w-[160px]">{row.label}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5 border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
+                    {tableMode === 'plain' ? (
+                      <span className="flex justify-end tabular-nums text-gray-600 font-semibold">{fmt(row.value, format, config)}</span>
+                    ) : (
+                      <div className="flex items-center gap-2 justify-end">
+                        <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-[80px]">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${barPct}%`, backgroundColor: accentColor + 'aa' }} />
+                        </div>
+                        <span className="tabular-nums text-gray-700 font-semibold whitespace-nowrap text-right min-w-[48px]">{fmt(row.value, format, config)}</span>
                       </div>
-                      <span className="tabular-nums text-gray-600 font-medium whitespace-nowrap">{fmt(row.value, format, config)}</span>
-                    </div>
+                    )}
                   </td>
                 </tr>
               )
@@ -1081,6 +1112,24 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             <label className="block text-xs text-gray-500 mb-1.5">Valor de alerta (vermelho se &lt;)</label>
             <input type="number" step="any" value={block.config?.threshold_warn ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_warn: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 20000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
           </div>
+        </ConfigSection>
+      )}
+
+      {/* MODO DE TABELA */}
+      {block.type === 'table' && (
+        <ConfigSection title="Estilo da tabela">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Coluna de valor</label>
+            <div className="flex gap-1">
+              {[{ v: 'bar', l: 'Barra' }, { v: 'badge', l: 'Badge' }, { v: 'plain', l: 'Simples' }].map(o => (
+                <button key={o.v} onClick={() => onChange({ ...block, config: { ...block.config, table_mode: o.v } })}
+                  className={`flex-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all ${(block.config?.table_mode || 'bar') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ColorPicker label="Cor da barra" value={block.config?.accent_color || ''} onChange={v => onChange({ ...block, config: { ...block.config, accent_color: v } })} />
         </ConfigSection>
       )}
 
