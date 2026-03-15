@@ -92,46 +92,85 @@ function fmtCompactCurrency(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 }
 
-// Merge filter blocks (activeFilters) + cross-filter clicks (crossFilters)
-// crossFilters take priority when both are set for the same dataset
-function mergeFilters(activeFilters, crossFilters) {
-  const result = {}
-  const allKeys = new Set([...Object.keys(activeFilters), ...Object.keys(crossFilters)])
-  allKeys.forEach(dsId => {
-    if (crossFilters[dsId]) {
-      result[dsId] = crossFilters[dsId]
-    } else if (activeFilters[dsId]) {
-      const entries = Object.entries(activeFilters[dsId]).filter(([, v]) => v)
-      if (entries.length > 0) result[dsId] = { col: entries[0][0], val: entries[0][1] }
-    }
-  })
-  return result
+// Monta um QueryRequest v2 a partir do bloco + estado de filtros
+function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown) {
+  const dsId = block.dataset_id
+  const filters = []
+
+  // Cross-filter (clique em gráfico) — tem prioridade sobre slicers
+  const cross = crossFilters[dsId]
+  if (cross) {
+    filters.push({ column: cross.col, operator: 'eq', value: cross.val })
+  } else {
+    // Slicer filters — múltiplas colunas por dataset
+    const active = activeFilters[dsId] || {}
+    Object.entries(active).forEach(([col, val]) => {
+      if (val !== null && val !== undefined && val !== '') {
+        filters.push({ column: col, operator: 'eq', value: String(val) })
+      }
+    })
+  }
+
+  // Range filters (slider)
+  const range = rangeFilters[dsId]
+  if (range?.col) {
+    if (range.min != null) filters.push({ column: range.col, operator: 'gte', value: range.min })
+    if (range.max != null) filters.push({ column: range.col, operator: 'lte', value: range.max })
+  }
+
+  // Drilldown filter
+  const effectiveLabelCol = drilldown ? (block.config?.drilldown_col || block.label_col) : block.label_col
+  if (drilldown) {
+    filters.push({ column: block.label_col, operator: 'eq', value: drilldown.val })
+  }
+
+  const req = {
+    dimensions: [{
+      column: effectiveLabelCol,
+      type: block.config?.dim_type || 'text',
+      granularity: block.config?.granularity || null,
+    }],
+    metrics: [{
+      column: block.value_col,
+      aggregation: block.agg || 'sum',
+    }],
+    filters,
+  }
+
+  // Filtro de data global do dashboard
+  const { dateCol, dateFrom, dateTo } = globalDateFilter || {}
+  if (dateCol && (dateFrom || dateTo)) {
+    req.date_range = { column: dateCol, from: dateFrom || null, to: dateTo || null }
+  }
+
+  // Filtro de data fixo no bloco (override do global)
+  if (block.config?.date_col && (block.config?.date_from || block.config?.date_to)) {
+    req.date_range = { column: block.config.date_col, from: block.config.date_from || null, to: block.config.date_to || null }
+  }
+
+  return req
 }
 
-function useBlockData(block, mergedFilters = {}, globalDateFilter = {}, drilldown = null, shareToken = null) {
+function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters = {}, globalDateFilter = {}, drilldown = null, shareToken = null) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const filter = mergedFilters[block.dataset_id]
-  const { dateCol, dateFrom, dateTo } = globalDateFilter
 
-  // When drilldown is active: use drilldown_col as label and original label_col as filter
-  const effectiveLabelCol = drilldown ? (block.config?.drilldown_col || block.label_col) : block.label_col
-  const effectiveFilterCol = drilldown ? block.label_col : (filter?.col || null)
-  const effectiveFilterVal = drilldown ? drilldown.val : (filter?.val || null)
-
-  const key = JSON.stringify({ d: block.dataset_id, l: effectiveLabelCol, v: block.value_col, a: block.agg, fc: effectiveFilterCol, fv: effectiveFilterVal, dc: dateCol, df: dateFrom, dt: dateTo, st: shareToken })
+  const req = buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown)
+  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken })
 
   useEffect(() => {
-    if (block.type === 'text' || block.type === 'filter' || block.type === 'slider') return
-    // Use static sample data if no dataset connected
+    if (['text', 'filter', 'slider', 'image'].includes(block.type)) return
     if (block.static_data && !block.dataset_id) { setData(block.static_data); return }
-    if (!block.dataset_id || !effectiveLabelCol || !block.value_col) { setData(null); return }
+    if (!block.dataset_id || !block.label_col || !block.value_col) { setData(null); return }
     setLoading(true); setError(null)
     const queryFn = shareToken
-      ? api.reports.publicQuery(shareToken, block.dataset_id, effectiveLabelCol, block.value_col, block.agg || 'sum', effectiveFilterCol, effectiveFilterVal, dateCol || null, dateFrom || null, dateTo || null)
-      : api.reports.datasets.query(block.dataset_id, effectiveLabelCol, block.value_col, block.agg || 'sum', effectiveFilterCol, effectiveFilterVal, dateCol || null, dateFrom || null, dateTo || null)
-    queryFn.then(setData).catch(e => setError(e.message)).finally(() => setLoading(false))
+      ? api.reports.publicQueryV2(shareToken, block.dataset_id, req)
+      : api.reports.datasets.queryV2(block.dataset_id, req)
+    queryFn
+      .then(result => setData(result?.data || result || []))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
   }, [key, block.type])
 
   return { data, loading, error }
@@ -367,11 +406,10 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick }) {
   )
 }
 
-function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFilter, activeFilters, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange }) {
+function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange }) {
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active
-  const [showExport, setShowExport] = useState(false)
-  const { data, loading, error } = useBlockData(block, mergedFilters, globalDateFilter, drilldown, shareToken)
-  const activeCrossVal = drilldown ? null : mergedFilters[block.dataset_id]?.val
+  const { data, loading, error } = useBlockData(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, shareToken)
+  const activeCrossVal = drilldown ? null : crossFilters[block.dataset_id]?.val
   const hasDrilldown = !!block.config?.drilldown_col
   const canExport = data && data.length > 0 && !['text','filter','slider','image'].includes(block.type)
 
@@ -1491,8 +1529,6 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
     return () => observer.disconnect()
   }, [])
 
-  const mergedFilters = mergeFilters(activeFilters, crossFilters)
-
   function handleFilterChange(datasetId, col, val) {
     setActiveFilters(prev => ({
       ...prev,
@@ -1658,9 +1694,9 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 block={block}
                 readOnly={readOnly}
                 onTextChange={text => onChange(blocks.map(b => b.id === block.id ? { ...b, config: { ...b.config, text } } : b))}
-                mergedFilters={mergedFilters}
-                onCrossFilter={handleCrossFilter}
                 activeFilters={activeFilters}
+                crossFilters={crossFilters}
+                onCrossFilter={handleCrossFilter}
                 onFilterChange={handleFilterChange}
                 globalDateFilter={globalDateFilter}
                 shareToken={shareToken}
