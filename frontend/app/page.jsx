@@ -491,7 +491,7 @@ export default function LandingPage() {
                 </ul>
 
                 {isEnterprise ? (
-                  <a href="mailto:comercial@mazzelag.com"
+                  <a href="mailto:comercial@jarbis.cc"
                     className="block text-center py-3 rounded-full font-bold text-xs transition-all bg-white text-gray-900 hover:bg-gray-100">
                     {plan.cta}
                   </a>
