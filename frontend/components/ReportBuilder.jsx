@@ -137,42 +137,104 @@ function useBlockData(block, mergedFilters = {}, globalDateFilter = {}, drilldow
   return { data, loading, error }
 }
 
-// Filter block: renders a dropdown with unique values from filter_col
+// Slicer filter: Luzmo-style list with search, rank bars and multiselect
 function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
-  const [options, setOptions] = useState([])
+  const [rows, setRows] = useState([]) // { label, value: count }
   const [loading, setLoading] = useState(false)
-  const currentVal = activeFilters[block.dataset_id]?.[block.filter_col] || ''
+  const [search, setSearch] = useState('')
+  const dsId = block.dataset_id
+  const col = block.filter_col
+  const currentVal = activeFilters[dsId]?.[col] || ''
 
   useEffect(() => {
-    if (!block.dataset_id || !block.filter_col) return
+    if (!dsId || !col) return
     setLoading(true)
-    api.reports.datasets.query(block.dataset_id, block.filter_col, '__count__', 'count')
-      .then(rows => setOptions(rows.map(r => r.label).filter(Boolean).sort()))
+    api.reports.datasets.query(dsId, col, '__count__', 'count')
+      .then(data => setRows((data || []).filter(r => r.label).sort((a, b) => b.value - a.value)))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [block.dataset_id, block.filter_col])
+  }, [dsId, col])
 
-  if (!block.dataset_id || !block.filter_col) {
-    return (
-      <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure no painel lateral</div>
-    )
+  if (!dsId || !col) {
+    return <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure no painel lateral</div>
   }
 
+  const maxVal = rows.length > 0 ? Math.max(...rows.map(r => r.value)) : 1
+  const filtered = rows.filter(r => !search || String(r.label).toLowerCase().includes(search.toLowerCase()))
+
   return (
-    <div className="flex flex-col justify-center h-full gap-1.5 px-1">
-      <label className="text-xs text-gray-400 font-medium">{block.filter_label || block.filter_col}</label>
-      {loading ? (
-        <div className="text-xs text-gray-400">Carregando...</div>
-      ) : (
-        <select
-          value={currentVal}
-          onChange={e => onFilterChange(block.dataset_id, block.filter_col, e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
-        >
-          <option value="">Todos</option>
-          {options.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-      )}
+    <div className="flex flex-col h-full gap-1.5">
+      {/* Search */}
+      <div className="relative">
+        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-7 pr-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-400 transition-colors"
+        />
+      </div>
+
+      {/* All / clear */}
+      <div className="flex items-center justify-between px-0.5">
+        <button onClick={() => onFilterChange(dsId, col, '')} className="text-[10px] font-semibold text-violet-600 hover:text-violet-800 transition-colors">
+          Todos
+        </button>
+        {currentVal && (
+          <button onClick={() => onFilterChange(dsId, col, '')} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-0.5">
+            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+            Limpar
+          </button>
+        )}
+      </div>
+
+      {/* Value list */}
+      <div className="flex-1 overflow-y-auto space-y-0.5 min-h-0 pr-0.5">
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="w-4 h-4 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-xs text-gray-300 text-center py-3">Nenhum resultado</div>
+        ) : filtered.map(row => {
+          const isSelected = currentVal === String(row.label)
+          const pct = Math.round((row.value / maxVal) * 100)
+          return (
+            <button
+              key={row.label}
+              onClick={() => onFilterChange(dsId, col, isSelected ? '' : String(row.label))}
+              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all group ${
+                isSelected ? 'bg-violet-50 text-violet-800' : 'hover:bg-gray-50/80 text-gray-700'
+              }`}
+            >
+              {/* Checkbox */}
+              <div className={`w-3.5 h-3.5 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${
+                isSelected ? 'bg-violet-600 border-violet-600' : 'border-gray-300 group-hover:border-violet-300'
+              }`}>
+                {isSelected && (
+                  <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                )}
+              </div>
+              {/* Label + count + rank bar */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs truncate font-medium leading-none">{row.label}</span>
+                  <span className={`text-[10px] font-mono tabular-nums shrink-0 leading-none ${isSelected ? 'text-violet-600' : 'text-gray-400'}`}>
+                    {typeof row.value === 'number' ? row.value.toLocaleString('pt-BR') : row.value}
+                  </span>
+                </div>
+                <div className="h-1 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${isSelected ? 'bg-violet-400' : 'bg-gray-300'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -219,11 +281,23 @@ function SliderBlockPreview({ block, rangeFilters, onRangeChange }) {
   )
 }
 
+function downloadCSV(data, title) {
+  if (!data || data.length === 0) return
+  const keys = Object.keys(data[0])
+  const rows = [keys.join(','), ...data.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))]
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = `${title || 'export'}.csv`; a.click()
+  URL.revokeObjectURL(url)
+}
+
 function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFilter, activeFilters, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange }) {
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active
+  const [showExport, setShowExport] = useState(false)
   const { data, loading, error } = useBlockData(block, mergedFilters, globalDateFilter, drilldown, shareToken)
   const activeCrossVal = drilldown ? null : mergedFilters[block.dataset_id]?.val
   const hasDrilldown = !!block.config?.drilldown_col
+  const canExport = data && data.length > 0 && !['text','filter','slider','image'].includes(block.type)
 
   if (block.type === 'text') {
     return <textarea className="w-full h-full text-sm resize-none bg-transparent outline-none" style={{ color: block.config?.text_color || '#4b5563' }} placeholder="Escreva um comentário..." value={block.config?.text || ''} readOnly={readOnly} onChange={e => !readOnly && onTextChange(e.target.value)} />
@@ -1462,6 +1536,22 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>
                   {block.config.annotations.length}
                 </span>
+              )}
+              {/* Export CSV button — visible on hover for data blocks */}
+              {block.dataset_id && block.label_col && block.value_col && !['text','filter','slider','image'].includes(block.type) && (
+                <button
+                  title="Exportar CSV"
+                  onClick={async e => {
+                    e.stopPropagation()
+                    try {
+                      const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
+                      downloadCSV(rows, block.title)
+                    } catch {}
+                  }}
+                  className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-violet-500 hover:bg-violet-50 transition-all shrink-0"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                </button>
               )}
             </div>
 
