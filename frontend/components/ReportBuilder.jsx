@@ -7,12 +7,13 @@ import {
   LineChart, Line, AreaChart, Area,
   ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine,
+  ReferenceLine, Legend,
 } from 'recharts'
 import 'react-grid-layout/css/styles.css'
 import { api } from '@/lib/api'
 
-const COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']
+const COLORS = ['#6366f1', '#10b981', '#0ea5e9', '#f43f5e', '#f59e0b', '#8b5cf6']
+const COLORS_SOFT = ['#e0e7ff', '#d1fae5', '#e0f2fe', '#ffe4e6', '#fef3c7', '#ede9fe']
 
 const BLOCK_TYPES = [
   { type: 'kpi',     label: 'KPI',      desc: 'Número em destaque' },
@@ -67,6 +68,14 @@ function fmt(value, format, config = {}) {
     formatted = value.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
   }
   return `${prefix}${formatted}${suffix}`
+}
+
+function fmtCompactCurrency(value) {
+  if (value == null) return '—'
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return 'R$ ' + (value / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'M'
+  if (abs >= 1_000) return 'R$ ' + (value / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K'
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 }
 
 // Merge filter blocks (activeFilters) + cross-filter clicks (crossFilters)
@@ -236,17 +245,26 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
 
   if (block.type === 'kpi') {
     const total = data.reduce((s, d) => s + (d.value || 0), 0)
-    const sizeClass = { lg: 'text-xl', xl: 'text-2xl', '2xl': 'text-3xl', '4xl': 'text-4xl' }[config.size || '4xl'] || 'text-4xl'
-    let valueColor = config.accent_color || '#111827'
+    const accentColor = config.accent_color || '#6366f1'
+    let valueColor = accentColor
     if (config.threshold_warn != null && config.threshold_warn !== '' && total < parseFloat(config.threshold_warn)) valueColor = '#ef4444'
     else if (config.threshold_ok != null && config.threshold_ok !== '' && total >= parseFloat(config.threshold_ok)) valueColor = '#10b981'
+    const autoFormat = (format === 'currency' && Math.abs(total) >= 10000) ? 'compact_currency' : format
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-1">
-        {config.icon && <span className="text-3xl leading-none">{config.icon}</span>}
-        <p className={`${sizeClass} font-black leading-none`} style={{ color: valueColor }}>
-          {fmt(total, format, config)}
-        </p>
-        <p className="text-xs text-gray-400 mt-1">{block.title}</p>
+      <div className="flex flex-col justify-between h-full px-3 py-2" style={{ background: `linear-gradient(135deg, ${accentColor}08 0%, transparent 60%)` }}>
+        <div className="flex items-center justify-between">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: accentColor + '20' }}>
+            <svg className="w-4 h-4" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <p className="text-2xl font-black leading-none tracking-tight" style={{ color: valueColor }}>
+            {autoFormat === 'compact_currency' ? fmtCompactCurrency(total) : fmt(total, format, config)}
+          </p>
+          <div className="h-[2px] rounded-full w-6 mt-2" style={{ backgroundColor: accentColor }} />
+        </div>
       </div>
     )
   }
@@ -254,146 +272,199 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
   if (block.type === 'bar') return (
     <div className="flex flex-col h-full">
       {DrillChip}
-      <ResponsiveContainer width="100%" height={DrillChip ? 165 : 180}>
-        <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 40 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" interval={0} />
-          <YAxis tick={{ fontSize: 10 }} />
-          <Tooltip contentStyle={{ fontSize: 11 }} formatter={v => fmt(v, format, config)} />
-          <Bar dataKey="value" radius={[3, 3, 0, 0]} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
-            {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
-          </Bar>
-          {config.reference_value != null && config.reference_value !== '' && (
-            <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
-          )}
-        </BarChart>
-      </ResponsiveContainer>
+      <div style={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+            </Bar>
+            {config.reference_value != null && config.reference_value !== '' && (
+              <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+            )}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 
   if (block.type === 'bar_h') return (
     <div className="flex flex-col h-full">
       {DrillChip}
-      <ResponsiveContainer width="100%" height={DrillChip ? 165 : 180}>
-        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 40, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-          <XAxis type="number" tick={{ fontSize: 10 }} />
-          <YAxis dataKey="label" type="category" tick={{ fontSize: 10 }} width={80} />
-          <Tooltip contentStyle={{ fontSize: 11 }} formatter={v => fmt(v, format, config)} />
-          <Bar dataKey="value" radius={[0, 3, 3, 0]} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
-            {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
-          </Bar>
-          {config.reference_value != null && config.reference_value !== '' && (
-            <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
-          )}
-        </BarChart>
-      </ResponsiveContainer>
+      <div style={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 40, bottom: 4 }}>
+            <CartesianGrid horizontal={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+            <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+            </Bar>
+            {config.reference_value != null && config.reference_value !== '' && (
+              <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+            )}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 
   if (block.type === 'area') return (
-    <ResponsiveContainer width="100%" height={180}>
-      <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 40 }}>
-        <defs>
-          <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" interval={0} />
-        <YAxis tick={{ fontSize: 10 }} />
-        <Tooltip contentStyle={{ fontSize: 11 }} formatter={v => fmt(v, format, config)} />
-        <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#grad_${block.id})`} dot={{ r: 2 }} />
-        {config.reference_value != null && config.reference_value !== '' && (
-          <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
-        )}
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col h-full">
+      {DrillChip}
+      <div style={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <defs>
+              <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.2} />
+                <stop offset="95%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={color}
+              strokeWidth={2.5}
+              fill={`url(#grad_${block.id})`}
+              dot={{ r: 3, fill: 'white', stroke: color, strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
+            />
+            {config.reference_value != null && config.reference_value !== '' && (
+              <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 
   if (block.type === 'line') return (
-    <ResponsiveContainer width="100%" height={180}>
-      <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 40 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" interval={0} />
-        <YAxis tick={{ fontSize: 10 }} />
-        <Tooltip contentStyle={{ fontSize: 11 }} formatter={v => fmt(v, format, config)} />
-        <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={{ r: 3 }} />
-        {config.reference_value != null && config.reference_value !== '' && (
-          <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col h-full">
+      {DrillChip}
+      <div style={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={color}
+              strokeWidth={2.5}
+              dot={{ r: 3, fill: 'white', stroke: color, strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
+            />
+            {config.reference_value != null && config.reference_value !== '' && (
+              <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 
   if (block.type === 'pie') return (
     <div className="flex flex-col h-full">
       {DrillChip}
-      <ResponsiveContainer width="100%" height={DrillChip ? 165 : 180}>
+      <div style={{ flex: 1 }}>
+      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={data} dataKey="value" nameKey="label"
-            cx="50%" cy="50%" outerRadius={70} labelLine={false}
+            cx="50%" cy="45%" outerRadius="38%" innerRadius="20%"
+            labelLine={false}
             onClick={entry => handleClick(entry.label)}
             style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}
           >
             {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
           </Pie>
-          <Tooltip contentStyle={{ fontSize: 11 }} formatter={v => fmt(v, format, config)} />
+          <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+          <Legend
+            iconType="circle"
+            iconSize={8}
+            formatter={(value) => <span style={{ fontSize: 10, color: '#6b7280' }}>{value}</span>}
+            wrapperStyle={{ paddingTop: 4 }}
+          />
         </PieChart>
       </ResponsiveContainer>
+      </div>
     </div>
   )
 
   if (block.type === 'scatter') {
     const scatterData = data.map(d => ({ x: parseFloat(d.label) || 0, y: d.value }))
     return (
-      <ResponsiveContainer width="100%" height={180}>
-        <ScatterChart margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="x" type="number" tick={{ fontSize: 10 }} name={block.label_col} />
-          <YAxis dataKey="y" type="number" tick={{ fontSize: 10 }} name={block.value_col} />
-          <Tooltip contentStyle={{ fontSize: 11 }} cursor={{ strokeDasharray: '3 3' }} formatter={v => fmt(v, format, config)} />
-          <Scatter data={scatterData} fill={color} />
-        </ScatterChart>
-      </ResponsiveContainer>
+      <div className="flex flex-col h-full">
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
+              <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+              <XAxis dataKey="x" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.label_col} axisLine={false} tickLine={false} />
+              <YAxis dataKey="y" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.value_col} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} cursor={{ strokeDasharray: '3 3' }} formatter={v => fmt(v, format, config)} />
+              <Scatter data={scatterData} fill={color} />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     )
   }
 
-  if (block.type === 'table') return (
-    <div className="overflow-auto h-full">
-      <table className="min-w-full text-xs">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-3 py-1.5 text-left text-gray-500 font-semibold">{block.label_col}</th>
-            <th className="px-3 py-1.5 text-right text-gray-500 font-semibold">{block.value_col}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {data.map((row, i) => {
-            let rowHighlight = false
-            if (config.highlight_threshold != null && config.highlight_threshold !== '') {
-              const threshold = parseFloat(config.highlight_threshold)
-              if (config.highlight_operator === 'lt') rowHighlight = row.value < threshold
-              else rowHighlight = row.value > threshold
-            }
-            return (
-              <tr
-                key={i}
-                className="hover:bg-gray-50 cursor-pointer"
-                style={{ opacity: getOpacity(row.label), backgroundColor: rowHighlight ? (config.highlight_color || '#fef3c7') : undefined }}
-                onClick={() => handleClick(row.label)}
-              >
-                <td className="px-3 py-1.5 text-gray-700 truncate max-w-[140px]">{row.label}</td>
-                <td className="px-3 py-1.5 text-gray-500 text-right">{fmt(row.value, format, config)}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
+  if (block.type === 'table') {
+    const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
+    return (
+      <div className="overflow-auto h-full" style={{ borderRadius: '0 0 16px 16px' }}>
+        <table className="min-w-full text-xs border-separate border-spacing-0">
+          <thead className="sticky top-0 z-10">
+            <tr>
+              <th className="px-4 py-2.5 text-left font-semibold text-[11px] tracking-wide" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white' }}>{block.label_col || 'Label'}</th>
+              <th className="px-4 py-2.5 text-right font-semibold text-[11px] tracking-wide" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white' }}>{block.value_col || 'Valor'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, i) => {
+              const barPct = Math.round((Math.abs(row.value || 0) / maxVal) * 100)
+              let rowHighlight = false
+              if (config.highlight_threshold != null && config.highlight_threshold !== '') {
+                const threshold = parseFloat(config.highlight_threshold)
+                if (config.highlight_operator === 'lt') rowHighlight = row.value < threshold
+                else rowHighlight = row.value > threshold
+              }
+              return (
+                <tr
+                  key={i}
+                  className="group cursor-pointer transition-colors"
+                  style={{ opacity: getOpacity(row.label), backgroundColor: rowHighlight ? (config.highlight_color || '#fef3c7') : 'transparent' }}
+                  onClick={() => handleClick(row.label)}
+                >
+                  <td className="px-4 py-2 text-gray-700 truncate max-w-[140px] font-medium group-hover:bg-violet-50 transition-colors border-b border-gray-50">{row.label}</td>
+                  <td className="px-4 py-2 text-right group-hover:bg-violet-50 transition-colors border-b border-gray-50">
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-[60px]">
+                        <div className="h-full rounded-full bg-violet-400" style={{ width: `${barPct}%` }} />
+                      </div>
+                      <span className="tabular-nums text-gray-600 font-medium whitespace-nowrap">{fmt(row.value, format, config)}</span>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
 
   return null
 }
@@ -1072,8 +1143,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   const isMobile = gridWidth < 640
   const layout = isMobile
-    ? blocks.map((b, idx) => ({ i: b.id, x: 0, y: idx * (b.layout?.h ?? 3), w: 12, h: b.layout?.h ?? 3, minW: 2, minH: 2 }))
-    : blocks.map(b => ({ i: b.id, x: b.layout?.x ?? 0, y: b.layout?.y ?? 0, w: b.layout?.w ?? 6, h: b.layout?.h ?? 3, minW: 2, minH: 2 }))
+    ? blocks.map((b, idx) => ({ i: b.id, x: 0, y: idx * (b.layout?.h ?? 3), w: 12, h: b.layout?.h ?? 3, minW: 1, minH: 1 }))
+    : blocks.map(b => ({ i: b.id, x: b.layout?.x ?? 0, y: b.layout?.y ?? 0, w: b.layout?.w ?? 6, h: b.layout?.h ?? 3, minW: 1, minH: 1 }))
 
   function handleLayoutChange(newLayout) {
     if (readOnly || !onChange) return
@@ -1081,16 +1152,13 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   }
 
   const sheetStyle = {
-    backgroundColor: sheetConfig.bgColor || '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 6px 24px rgba(0,0,0,0.07)',
+    backgroundColor: sheetConfig.bgColor || '#fafafa',
+    borderRadius: '20px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06)',
     minHeight: '640px',
-    padding: '24px 30px',
-    transition: 'background-image 0.1s ease',
-    backgroundImage: isDragging
-      ? 'linear-gradient(rgba(99,102,241,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.08) 1px, transparent 1px)'
-      : 'none',
-    backgroundSize: '24px 24px',
+    padding: '20px 24px',
+    backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)',
+    backgroundSize: '20px 20px',
   }
 
   if (blocks.length === 0) return (
@@ -1102,7 +1170,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   return (
     <div style={sheetStyle} ref={sheetRef}>
-    <GridLayout className="w-full" layout={layout} cols={12} rowHeight={80} width={gridWidth} isDraggable={!readOnly && !isMobile} isResizable={!readOnly && !isMobile} onLayoutChange={handleLayoutChange} draggableHandle=".drag-handle" onDragStart={() => setIsDragging(true)} onDragStop={() => setIsDragging(false)}>
+    <GridLayout className="w-full" layout={layout} cols={12} rowHeight={56} width={gridWidth} isDraggable={!readOnly && !isMobile} isResizable={!readOnly && !isMobile} onLayoutChange={handleLayoutChange} draggableHandle=".drag-handle" onDragStart={() => setIsDragging(true)} onDragStop={() => setIsDragging(false)}>
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
         const isSelected = selectedBlockId === block.id
@@ -1127,14 +1195,14 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         return (
           <div
             key={block.id}
-            className={`group relative rounded-xl flex flex-col transition-all duration-200 ${
+            className={`group relative rounded-2xl flex flex-col transition-all duration-200 ${
               isSelected
                 ? 'border-2 border-violet-500 shadow-lg'
                 : isCrossFiltered
                 ? 'border-2 border-emerald-400 shadow-md shadow-emerald-100'
                 : isUnrelated
-                ? 'border border-gray-200/80 shadow-sm opacity-40'
-                : 'border border-gray-200/80 shadow-sm hover:shadow-md hover:border-gray-300'
+                ? 'border border-gray-100 shadow-sm opacity-40'
+                : 'border border-gray-100/80 shadow-sm hover:shadow-md hover:border-gray-200'
             }`}
             style={{
               backgroundColor: isCrossFiltered
@@ -1146,24 +1214,22 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
-            {/* Header — drag handle + title + cross-filter chip only */}
-            <div className={`flex items-center gap-2 px-3 py-2 border-b border-gray-100 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''}`}>
-              <span className="text-gray-400 shrink-0">{TYPE_ICONS[block.type] || TYPE_ICONS.bar}</span>
+            {/* Header */}
+            <div className={`flex items-center gap-1.5 px-3 pt-2.5 pb-1 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''}`}>
+              {!readOnly && (
+                <svg className="w-3 h-3 text-gray-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/>
+                </svg>
+              )}
               {readOnly ? (
-                <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{block.title}</span>
+                <span className="text-[11px] font-semibold text-gray-500 flex-1 truncate">{block.title}</span>
               ) : (
                 <input
-                  className="text-xs font-semibold text-gray-700 flex-1 bg-transparent outline-none min-w-0"
+                  className="text-[11px] font-semibold text-gray-500 flex-1 bg-transparent outline-none min-w-0"
                   value={block.title}
                   onChange={e => onChange(blocks.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
                   onClick={e => e.stopPropagation()}
                 />
-              )}
-              {block.static_data && !block.dataset_id && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[10px] font-semibold shrink-0">
-                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  exemplo
-                </span>
               )}
               {isCrossFiltered && (
                 <button
@@ -1186,7 +1252,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             </div>
 
             {/* Content */}
-            <div className="flex-1 px-3 py-2 min-h-0 overflow-hidden">
+            <div className="flex-1 px-3 pb-3 pt-0 min-h-0 overflow-hidden">
               <BlockPreview
                 block={block}
                 readOnly={readOnly}
