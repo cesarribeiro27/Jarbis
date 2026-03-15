@@ -5,7 +5,9 @@ import GridLayout from 'react-grid-layout'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area,
-  ScatterChart, Scatter,
+  ScatterChart, Scatter, ZAxis,
+  ComposedChart, Treemap,
+  RadialBarChart, RadialBar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend,
 } from 'recharts'
@@ -21,12 +23,18 @@ const BLOCK_TYPES = [
   { type: 'bar_h',   label: 'Barras H', desc: 'Barras horizontais' },
   { type: 'area',    label: 'Área',     desc: 'Evolução acumulada' },
   { type: 'line',    label: 'Linhas',   desc: 'Evolução no tempo' },
-  { type: 'pie',     label: 'Pizza',    desc: 'Distribuição %' },
-  { type: 'scatter', label: 'Dispers.', desc: 'Correlação XY' },
-  { type: 'table',   label: 'Tabela',   desc: 'Dados em linhas' },
-  { type: 'text',    label: 'Texto',    desc: 'Comentários' },
-  { type: 'filter',  label: 'Filtro',   desc: 'Filtrar dados' },
-  { type: 'image',   label: 'Imagem',   desc: 'Foto ou logo' },
+  { type: 'pie',         label: 'Pizza',       desc: 'Distribuição %' },
+  { type: 'scatter',     label: 'Dispers.',    desc: 'Correlação XY' },
+  { type: 'combo',       label: 'Combo',       desc: 'Barras + Linha' },
+  { type: 'bubble',      label: 'Bolhas',      desc: 'Scatter com tamanho' },
+  { type: 'treemap',     label: 'Treemap',     desc: 'Hierarquia em blocos' },
+  { type: 'gauge',       label: 'Gauge',       desc: 'Indicador circular' },
+  { type: 'speedometer', label: 'Velocímetro', desc: 'Gauge semicircular' },
+  { type: 'table',       label: 'Tabela',      desc: 'Dados em linhas' },
+  { type: 'text',        label: 'Texto',       desc: 'Comentários' },
+  { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
+  { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
+  { type: 'image',       label: 'Imagem',      desc: 'Foto ou logo' },
 ]
 
 const TYPE_ICONS = {
@@ -39,8 +47,14 @@ const TYPE_ICONS = {
   scatter: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="7" cy="17" r="1.5" fill="currentColor"/><circle cx="12" cy="10" r="1.5" fill="currentColor"/><circle cx="17" cy="14" r="1.5" fill="currentColor"/><circle cx="5" cy="8" r="1.5" fill="currentColor"/></svg>,
   table:   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 6v12M6 6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>,
   text:    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>,
-  filter:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>,
-  image:   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15l-5-5L5 21" /></svg>,
+  filter:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>,
+  image:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15l-5-5L5 21" /></svg>,
+  combo:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-4a2 2 0 00-2-2h-2m8-8l-4 4-4-4" /></svg>,
+  bubble:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="6" cy="17" r="2" fill="currentColor" opacity=".5"/><circle cx="14" cy="10" r="3.5" fill="currentColor" opacity=".7"/><circle cx="19" cy="16" r="1.5" fill="currentColor" opacity=".5"/></svg>,
+  treemap:     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="12" rx="1" strokeWidth={2}/><rect x="13" y="2" width="9" height="6" rx="1" strokeWidth={2}/><rect x="13" y="10" width="9" height="4" rx="1" strokeWidth={2}/><rect x="2" y="16" width="20" height="6" rx="1" strokeWidth={2}/></svg>,
+  gauge:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0 0v-8" /></svg>,
+  speedometer: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C6.48 2 2 6.48 2 12h20c0-5.52-4.48-10-10-10zm0 10l-3-5" /></svg>,
+  slider:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>,
 }
 
 const AGG_OPTIONS = [
@@ -109,7 +123,7 @@ function useBlockData(block, mergedFilters = {}, globalDateFilter = {}, drilldow
   const key = JSON.stringify({ d: block.dataset_id, l: effectiveLabelCol, v: block.value_col, a: block.agg, fc: effectiveFilterCol, fv: effectiveFilterVal, dc: dateCol, df: dateFrom, dt: dateTo, st: shareToken })
 
   useEffect(() => {
-    if (block.type === 'text' || block.type === 'filter') return
+    if (block.type === 'text' || block.type === 'filter' || block.type === 'slider') return
     // Use static sample data if no dataset connected
     if (block.static_data && !block.dataset_id) { setData(block.static_data); return }
     if (!block.dataset_id || !effectiveLabelCol || !block.value_col) { setData(null); return }
@@ -163,7 +177,49 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
   )
 }
 
-function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFilter, activeFilters, onFilterChange, globalDateFilter, shareToken }) {
+function SliderBlockPreview({ block, rangeFilters, onRangeChange }) {
+  const dsId = block.dataset_id
+  const col = block.config?.slider_col
+  const absMin = block.config?.slider_min ?? 0
+  const absMax = block.config?.slider_max ?? 100
+  const label = block.filter_label || col || 'Range'
+  const current = rangeFilters?.[dsId]
+  const curMin = current?.min ?? absMin
+  const curMax = current?.max ?? absMax
+
+  if (!dsId || !col) {
+    return <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure no painel lateral</div>
+  }
+
+  return (
+    <div className="flex flex-col justify-center h-full gap-2 px-1">
+      <div className="flex items-center justify-between">
+        <label className="text-xs text-gray-400 font-medium">{label}</label>
+        <span className="text-xs text-violet-600 font-mono tabular-nums">{curMin} — {curMax}</span>
+      </div>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-400 w-6 shrink-0">Min</span>
+          <input type="range" min={absMin} max={absMax} value={curMin} step={(absMax - absMin) / 100 || 1}
+            onChange={e => onRangeChange?.(dsId, col, +e.target.value, curMax)}
+            className="flex-1 accent-violet-600 h-1.5 cursor-pointer" />
+          <input type="number" value={curMin} onChange={e => onRangeChange?.(dsId, col, +e.target.value, curMax)}
+            className="w-16 border border-gray-200 rounded px-1.5 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-400 w-6 shrink-0">Max</span>
+          <input type="range" min={absMin} max={absMax} value={curMax} step={(absMax - absMin) / 100 || 1}
+            onChange={e => onRangeChange?.(dsId, col, curMin, +e.target.value)}
+            className="flex-1 accent-violet-600 h-1.5 cursor-pointer" />
+          <input type="number" value={curMax} onChange={e => onRangeChange?.(dsId, col, curMin, +e.target.value)}
+            className="w-16 border border-gray-200 rounded px-1.5 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFilter, activeFilters, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange }) {
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active
   const { data, loading, error } = useBlockData(block, mergedFilters, globalDateFilter, drilldown, shareToken)
   const activeCrossVal = drilldown ? null : mergedFilters[block.dataset_id]?.val
@@ -175,6 +231,10 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
 
   if (block.type === 'filter') {
     return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} />
+  }
+
+  if (block.type === 'slider') {
+    return <SliderBlockPreview block={block} rangeFilters={rangeFilters} onRangeChange={onRangeChange} />
   }
 
   if (block.type === 'image') {
@@ -421,6 +481,113 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
     )
   }
 
+  if (block.type === 'combo') return (
+    <div className="flex flex-col h-full">
+      {DrillChip}
+      <div style={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+            <Bar dataKey="value" name={block.value_col || 'Valor'} fill={palette[0]} radius={[4, 4, 0, 0]} opacity={0.85} />
+            <Line type="monotone" dataKey="value" name="" stroke={palette[1] || '#ef4444'} strokeWidth={2} dot={{ r: 2 }} legendType="none" />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+
+  if (block.type === 'bubble') {
+    const bubbleData = data.map(d => ({ x: parseFloat(d.label) || 0, y: d.value, z: Math.abs(d.value) || 1 }))
+    return (
+      <div className="flex flex-col h-full">
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
+              <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+              <XAxis dataKey="x" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.label_col} axisLine={false} tickLine={false} />
+              <YAxis dataKey="y" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.value_col} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+              <ZAxis dataKey="z" range={[40, 600]} />
+              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} cursor={{ strokeDasharray: '3 3' }} formatter={v => fmt(v, format, config)} />
+              <Scatter data={bubbleData}>
+                {bubbleData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={0.72} />)}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
+  }
+
+  if (block.type === 'treemap') {
+    const treeData = data.map((d, i) => ({ name: d.label, size: Math.abs(d.value) || 1, fill: palette[i % palette.length] }))
+    return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <Treemap data={treeData} dataKey="size" stroke="#fff" strokeWidth={2} content={({ x, y, width, height, name, fill }) => (
+              <g>
+                <rect x={x} y={y} width={width} height={height} fill={fill} rx={3} />
+                {width > 40 && height > 20 && (
+                  <text x={x + width / 2} y={y + height / 2 + 4} textAnchor="middle" fontSize={Math.min(11, width / 6)} fill="#fff" fontWeight={600} style={{ pointerEvents: 'none' }}>
+                    {name.length > 14 ? name.slice(0, 13) + '…' : name}
+                  </text>
+                )}
+              </g>
+            )} />
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
+  }
+
+  if (block.type === 'gauge') {
+    const total = data.reduce((s, d) => s + (d.value || 0), 0)
+    const maxVal = parseFloat(config.gauge_max) || 100
+    const pct = Math.min(Math.max(total / maxVal, 0), 1) * 100
+    const gaugeData = [{ name: block.title || 'Valor', value: pct }]
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <ResponsiveContainer width="100%" height={150}>
+          <RadialBarChart innerRadius="55%" outerRadius="85%" data={gaugeData} startAngle={90} endAngle={-270} barSize={20}>
+            <RadialBar dataKey="value" cornerRadius={8} background={{ fill: '#f3f4f6' }} fill={color} />
+          </RadialBarChart>
+        </ResponsiveContainer>
+        <p className="text-2xl font-black -mt-12" style={{ color }}>{fmt(total, format, config)}</p>
+        <p className="text-xs text-gray-400 mt-1">{Math.round(pct)}%</p>
+      </div>
+    )
+  }
+
+  if (block.type === 'speedometer') {
+    const total = data.reduce((s, d) => s + (d.value || 0), 0)
+    const maxVal = parseFloat(config.gauge_max) || 100
+    const pct = Math.min(Math.max(total / maxVal, 0), 1)
+    const cx = 100, cy = 88, r = 68
+    const valAngleRad = (180 - 180 * pct) * Math.PI / 180
+    const vx = (cx + r * Math.cos(valAngleRad)).toFixed(2)
+    const vy = (cy - r * Math.sin(valAngleRad)).toFixed(2)
+    const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 1 0 ${cx + r} ${cy}`
+    const valPath = pct > 0.001 ? `M ${cx - r} ${cy} A ${r} ${r} 0 ${pct > 0.5 ? 1 : 0} 0 ${vx} ${vy}` : null
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <svg viewBox="0 0 200 115" className="w-full" style={{ maxHeight: 130 }}>
+          <path d={bgPath} fill="none" stroke="#f3f4f6" strokeWidth="15" strokeLinecap="round" />
+          {valPath && <path d={valPath} fill="none" stroke={color} strokeWidth="15" strokeLinecap="round" />}
+          <line x1={cx} y1={cy} x2={vx} y2={vy} stroke="#374151" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx={cx} cy={cy} r="5" fill="#374151" />
+          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fontWeight="800" fill={color}>{fmt(total, format, config)}</text>
+          <text x={cx - r + 2} y={cy + 16} fontSize="8" fill="#9ca3af">0</text>
+          <text x={cx + r - 10} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_max || 100}</text>
+        </svg>
+      </div>
+    )
+  }
+
   if (block.type === 'table') {
     const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
     return (
@@ -518,8 +685,8 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   function updConfig(field, value) { onChange({ ...block, config: { ...(block.config || {}), [field]: value } }) }
   const selectedDataset = datasets.find(d => d.id === block.dataset_id)
   const columns = selectedDataset?.columns || []
-  const hasData = !['text', 'filter', 'image'].includes(block.type)
-  const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter'].includes(block.type)
+  const hasData = !['text', 'filter', 'image', 'slider'].includes(block.type)
+  const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer'].includes(block.type)
 
   return (
     <div className="divide-y divide-gray-100">
@@ -613,6 +780,39 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         </ConfigSection>
       )}
 
+      {/* SLIDER config */}
+      {block.type === 'slider' && (
+        <ConfigSection title="Slider de Range">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
+            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}), slider_col: null } })}>
+              <option value="">Selecione um dataset...</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {selectedDataset && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna numérica</label>
+              <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.config?.slider_col || ''} onChange={e => updConfig('slider_col', e.target.value || null)}>
+                <option value="">Selecione...</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Label de exibição</label>
+            <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={block.config?.slider_col || 'ex: Faixa de Valor'} value={block.filter_label || ''} onChange={e => upd('filter_label', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Faixa (mín / máx)</label>
+            <div className="flex gap-2">
+              <input type="number" step="any" value={block.config?.slider_min ?? ''} onChange={e => updConfig('slider_min', e.target.value === '' ? 0 : +e.target.value)} placeholder="0" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              <input type="number" step="any" value={block.config?.slider_max ?? ''} onChange={e => updConfig('slider_max', e.target.value === '' ? 100 : +e.target.value)} placeholder="100" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+            </div>
+          </div>
+        </ConfigSection>
+      )}
+
       {/* DADOS — for chart/table blocks */}
       {hasData && (
         <ConfigSection title="Dados">
@@ -696,7 +896,16 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               <ColorPicker label="Cor do número" value={block.config?.accent_color || ''} onChange={v => updConfig('accent_color', v)} />
             </>
           )}
-          {['bar', 'bar_h', 'area', 'line', 'scatter'].includes(block.type) && (
+          {['gauge', 'speedometer'].includes(block.type) && (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Valor máximo do indicador</label>
+                <input type="number" step="any" value={block.config?.gauge_max ?? ''} onChange={e => updConfig('gauge_max', e.target.value === '' ? null : +e.target.value)} placeholder="100" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              </div>
+              <ColorPicker label="Cor do arco" value={block.config?.color || ''} onChange={v => updConfig('color', v)} />
+            </>
+          )}
+          {['bar', 'bar_h', 'area', 'line', 'scatter', 'combo', 'gauge', 'speedometer'].includes(block.type) && !['gauge', 'speedometer'].includes(block.type) && (
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Cor principal (linha / série única)</label>
               <div className="flex gap-1.5 flex-wrap">
@@ -706,7 +915,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               </div>
             </div>
           )}
-          {['bar', 'bar_h', 'pie', 'scatter'].includes(block.type) && (
+          {['bar', 'bar_h', 'pie', 'scatter', 'combo', 'bubble', 'treemap'].includes(block.type) && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs text-gray-500">Paleta de cores</label>
@@ -1096,6 +1305,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
 export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null }) {
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
+  const [rangeFilters, setRangeFilters] = useState({})
   const [isDragging, setIsDragging] = useState(false)
   const [hoveredBlockId, setHoveredBlockId] = useState(null)
   const [gridWidth, setGridWidth] = useState(800)
@@ -1131,6 +1341,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
       }
       return { ...prev, [datasetId]: { col, val } }
     })
+  }
+
+  function handleRangeChange(datasetId, col, min, max) {
+    setRangeFilters(prev => ({ ...prev, [datasetId]: { col, min, max } }))
   }
 
   function clearCrossFilter(datasetId) {
@@ -1263,6 +1477,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 onFilterChange={handleFilterChange}
                 globalDateFilter={globalDateFilter}
                 shareToken={shareToken}
+                rangeFilters={rangeFilters}
+                onRangeChange={handleRangeChange}
               />
             </div>
 
