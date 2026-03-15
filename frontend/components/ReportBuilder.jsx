@@ -291,6 +291,82 @@ function downloadCSV(data, title) {
   URL.revokeObjectURL(url)
 }
 
+function TableBlock({ block, data, config, format, getOpacity, handleClick }) {
+  const [sortDir, setSortDir] = useState('desc')
+  const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
+  const tableMode = config.table_mode || 'bar'
+  const accentColor = config.accent_color || '#6366f1'
+  const sorted = [...data].sort((a, b) => sortDir === 'desc' ? (b.value || 0) - (a.value || 0) : (a.value || 0) - (b.value || 0))
+  return (
+    <div className="overflow-auto h-full">
+      <table className="min-w-full text-xs border-separate border-spacing-0">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th className="px-3 py-2 text-left font-semibold text-[11px] text-gray-500 bg-gray-50/90 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider">
+              {block.label_col || 'Label'}
+            </th>
+            <th
+              className="px-3 py-2 text-right font-semibold text-[11px] text-gray-500 bg-gray-50/90 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider cursor-pointer select-none hover:text-violet-600 transition-colors"
+              onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+            >
+              <span className="flex items-center justify-end gap-1">
+                {block.value_col || 'Valor'}
+                <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortDir === 'desc' ? 'M19 9l-7 7-7-7' : 'M5 15l7-7 7 7'} />
+                </svg>
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((row, i) => {
+            const barPct = Math.round((Math.abs(row.value || 0) / maxVal) * 100)
+            let rowHighlight = false
+            if (config.highlight_threshold != null && config.highlight_threshold !== '') {
+              const threshold = parseFloat(config.highlight_threshold)
+              rowHighlight = config.highlight_operator === 'lt' ? row.value < threshold : row.value > threshold
+            }
+            const rowBg = rowHighlight
+              ? (config.highlight_color || '#fef3c7')
+              : i % 2 === 0 ? 'transparent' : 'rgba(249,250,251,0.6)'
+            const badgeColor = COLORS[i % COLORS.length]
+            return (
+              <tr
+                key={i}
+                className="group cursor-pointer"
+                style={{ opacity: getOpacity(row.label), backgroundColor: rowBg }}
+                onClick={() => handleClick(row.label)}
+              >
+                <td className="px-3 py-1.5 text-gray-700 font-medium border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
+                  {tableMode === 'badge' ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: badgeColor + '18', color: badgeColor }}>
+                      {row.label}
+                    </span>
+                  ) : (
+                    <span className="truncate block max-w-[160px]">{row.label}</span>
+                  )}
+                </td>
+                <td className="px-3 py-1.5 border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
+                  {tableMode === 'plain' ? (
+                    <span className="flex justify-end tabular-nums text-gray-600 font-semibold">{fmt(row.value, format, config)}</span>
+                  ) : (
+                    <div className="flex items-center gap-2 justify-end">
+                      <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-[80px]">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${barPct}%`, backgroundColor: accentColor + 'aa' }} />
+                      </div>
+                      <span className="tabular-nums text-gray-700 font-semibold whitespace-nowrap text-right min-w-[48px]">{fmt(row.value, format, config)}</span>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFilter, activeFilters, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange }) {
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active
   const [showExport, setShowExport] = useState(false)
@@ -401,18 +477,31 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
     )
   }
 
+  const tickFmt = v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }
+  const tooltipStyle = { fontSize: 11, borderRadius: 10, border: '1px solid #e5e7eb', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '6px 10px' }
+  const showMarkers = config.show_markers !== false
+  const topN = config.top_n ? parseInt(config.top_n) : null
+  const sortBy = config.sort_by // 'asc' | 'desc' | undefined (keep original)
+  const processedData = (() => {
+    let d = [...data]
+    if (sortBy === 'desc') d.sort((a, b) => (b.value || 0) - (a.value || 0))
+    else if (sortBy === 'asc') d.sort((a, b) => (a.value || 0) - (b.value || 0))
+    if (topN) d = d.slice(0, topN)
+    return d
+  })()
+
   if (block.type === 'bar') return (
     <div className="flex flex-col h-full">
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
-            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+          <BarChart data={processedData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
-            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
-            <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
-              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+            <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+              {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
@@ -428,13 +517,13 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 40, bottom: 4 }}>
-            <CartesianGrid horizontal={false} stroke="#f0f0f0" strokeDasharray="0" />
-            <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
+          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: 24, left: 40, bottom: 4 }}>
+            <CartesianGrid horizontal={false} stroke="#f3f4f6" strokeDasharray="0" />
+            <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
-              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+              {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
@@ -453,21 +542,21 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
           <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
             <defs>
               <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.2} />
+                <stop offset="5%" stopColor={color} stopOpacity={0.25} />
                 <stop offset="95%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
-            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+            <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             <Area
               type="monotone"
               dataKey="value"
               stroke={color}
               strokeWidth={2.5}
               fill={`url(#grad_${block.id})`}
-              dot={{ r: 3, fill: 'white', stroke: color, strokeWidth: 2 }}
+              dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
               activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
             />
             {config.reference_value != null && config.reference_value !== '' && (
@@ -485,16 +574,16 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
-            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+            <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
-            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+            <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             <Line
               type="monotone"
               dataKey="value"
               stroke={color}
               strokeWidth={2.5}
-              dot={{ r: 3, fill: 'white', stroke: color, strokeWidth: 2 }}
+              dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
               activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
             />
             {config.reference_value != null && config.reference_value !== '' && (
@@ -661,79 +750,7 @@ function BlockPreview({ block, readOnly, onTextChange, mergedFilters, onCrossFil
   }
 
   if (block.type === 'table') {
-    const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
-    const tableMode = config.table_mode || 'bar' // 'bar' | 'badge' | 'plain'
-    const accentColor = config.accent_color || '#6366f1'
-    const [sortDir, setSortDir] = useState('desc')
-    const sorted = [...data].sort((a, b) => sortDir === 'desc' ? (b.value || 0) - (a.value || 0) : (a.value || 0) - (b.value || 0))
-    return (
-      <div className="overflow-auto h-full">
-        <table className="min-w-full text-xs border-separate border-spacing-0">
-          <thead className="sticky top-0 z-10">
-            <tr>
-              <th className="px-3 py-2 text-left font-semibold text-[11px] text-gray-500 bg-gray-50/90 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider">
-                {block.label_col || 'Label'}
-              </th>
-              <th
-                className="px-3 py-2 text-right font-semibold text-[11px] text-gray-500 bg-gray-50/90 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider cursor-pointer select-none hover:text-violet-600 transition-colors"
-                onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
-              >
-                <span className="flex items-center justify-end gap-1">
-                  {block.value_col || 'Valor'}
-                  <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortDir === 'desc' ? 'M19 9l-7 7-7-7' : 'M5 15l7-7 7 7'} />
-                  </svg>
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((row, i) => {
-              const barPct = Math.round((Math.abs(row.value || 0) / maxVal) * 100)
-              let rowHighlight = false
-              if (config.highlight_threshold != null && config.highlight_threshold !== '') {
-                const threshold = parseFloat(config.highlight_threshold)
-                rowHighlight = config.highlight_operator === 'lt' ? row.value < threshold : row.value > threshold
-              }
-              const rowBg = rowHighlight
-                ? (config.highlight_color || '#fef3c7')
-                : i % 2 === 0 ? 'transparent' : 'rgba(249,250,251,0.6)'
-              const badgeColor = COLORS[i % COLORS.length]
-              return (
-                <tr
-                  key={i}
-                  className="group cursor-pointer"
-                  style={{ opacity: getOpacity(row.label), backgroundColor: rowBg }}
-                  onClick={() => handleClick(row.label)}
-                >
-                  <td className="px-3 py-1.5 text-gray-700 font-medium border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
-                    {tableMode === 'badge' ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: badgeColor + '18', color: badgeColor }}>
-                        {row.label}
-                      </span>
-                    ) : (
-                      <span className="truncate block max-w-[160px]">{row.label}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-1.5 border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
-                    {tableMode === 'plain' ? (
-                      <span className="flex justify-end tabular-nums text-gray-600 font-semibold">{fmt(row.value, format, config)}</span>
-                    ) : (
-                      <div className="flex items-center gap-2 justify-end">
-                        <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-[80px]">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${barPct}%`, backgroundColor: accentColor + 'aa' }} />
-                        </div>
-                        <span className="tabular-nums text-gray-700 font-semibold whitespace-nowrap text-right min-w-[48px]">{fmt(row.value, format, config)}</span>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    )
+    return <TableBlock block={block} data={data} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} />
   }
 
   return null
@@ -1147,6 +1164,37 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             </div>
           </div>
           <ColorPicker label="Cor de destaque" value={block.config?.highlight_color || ''} onChange={v => onChange({ ...block, config: { ...block.config, highlight_color: v } })} placeholder="#fef3c7" />
+        </ConfigSection>
+      )}
+
+      {/* ORDENAÇÃO E RANKING — bar/bar_h */}
+      {['bar', 'bar_h'].includes(block.type) && (
+        <ConfigSection title="Ordenação e Ranking" defaultOpen={false}>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Ordenar por valor</label>
+            <div className="flex gap-1">
+              {[{ v: '', l: 'Original' }, { v: 'desc', l: 'Maior → menor' }, { v: 'asc', l: 'Menor → maior' }].map(o => (
+                <button key={o.v} onClick={() => onChange({ ...block, config: { ...block.config, sort_by: o.v || undefined } })}
+                  className={`flex-1 px-2 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${(block.config?.sort_by || '') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Mostrar top N (0 = todos)</label>
+            <input type="number" min="0" value={block.config?.top_n ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, top_n: e.target.value || undefined } })} placeholder="Ex: 10" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* MARCADORES — line/area */}
+      {['line', 'area'].includes(block.type) && (
+        <ConfigSection title="Linha" defaultOpen={false}>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={block.config?.show_markers !== false} onChange={e => onChange({ ...block, config: { ...block.config, show_markers: e.target.checked } })} className="accent-violet-600" />
+            <span className="text-xs text-gray-600">Mostrar marcadores nos pontos</span>
+          </label>
         </ConfigSection>
       )}
 

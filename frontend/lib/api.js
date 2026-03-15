@@ -104,8 +104,14 @@ export const api = {
       sync: (id) => apiFetch(`/reports/datasets/${id}/sync`, { method: 'POST' }),
       setSchedule: (id, intervalMinutes) => apiFetch(`/reports/datasets/${id}/schedule`, { method: 'PATCH', body: JSON.stringify({ refresh_interval_minutes: intervalMinutes }) }),
       delete: (id) => apiFetch(`/reports/datasets/${id}`, { method: 'DELETE' }),
+      // Query v1 — legado (mantido para compatibilidade)
       query: (id, labelCol, valueCol, agg = 'sum', filterCol = null, filterVal = null, dateCol = null, dateFrom = null, dateTo = null) =>
         apiFetch(`/reports/datasets/${id}/query?${buildQS({ label_col: labelCol, value_col: valueCol, agg, filter_col: filterCol, filter_val: filterVal, date_col: dateCol, date_from: dateFrom, date_to: dateTo })}`),
+      // Query v2 — motor estruturado (dimensões, métricas, filtros, date_range)
+      queryV2: (id, req) =>
+        apiFetch(`/reports/datasets/${id}/query`, { method: 'POST', body: JSON.stringify(req) }),
+      // Colunas com tipos detectados automaticamente
+      columns: (id) => apiFetch(`/reports/datasets/${id}/columns`),
     },
     alerts: {
       list: () => apiFetch('/reports/alerts'),
@@ -119,6 +125,12 @@ export const api = {
     publicQuery: (token, id, labelCol, valueCol, agg = 'sum', filterCol = null, filterVal = null, dateCol = null, dateFrom = null, dateTo = null) =>
       fetch(`${API_URL}/reports/public/${token}/datasets/${id}/query?${buildQS({ label_col: labelCol, value_col: valueCol, agg, filter_col: filterCol, filter_val: filterVal, date_col: dateCol, date_from: dateFrom, date_to: dateTo })}`)
         .then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.detail || 'Erro') })),
+    publicQueryV2: (token, id, req) =>
+      fetch(`${API_URL}/reports/public/${token}/datasets/${id}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      }).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.detail || 'Erro') })),
   },
 
   ooh: {

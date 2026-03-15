@@ -478,6 +478,88 @@ async def query_dataset(
 
 
 # ---------------------------------------------------------------------------
+# Query Engine v2 — motor de query estruturado
+# ---------------------------------------------------------------------------
+
+from .query_engine import QueryRequest, QueryResult, detect_column_types
+
+
+@router.post(
+    "/datasets/{dataset_id}/query",
+    response_model=QueryResult,
+    summary="Consulta dataset com motor de query estruturado (v2)",
+)
+async def query_dataset_v2(
+    dataset_id: uuid.UUID,
+    req: QueryRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Motor de query v2. Aceita dimensões, métricas, filtros, date_range,
+    ordenação e limite. Retorna dados normalizados para qualquer visualização.
+    """
+    from .query_engine import execute_query
+    service = DatasetService(db)
+    ds = await service.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    return execute_query(ds.rows or [], req)
+
+
+@router.post(
+    "/public/{token}/datasets/{dataset_id}/query",
+    response_model=QueryResult,
+    summary="Query pública v2 via share token (sem autenticação)",
+)
+async def public_query_dataset_v2(
+    token: str,
+    dataset_id: uuid.UUID,
+    req: QueryRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    from .query_engine import execute_query
+    report_service = ReportService(db)
+    report = await report_service.get_public_no_increment(token)
+    if not report:
+        raise HTTPException(status_code=404, detail="Link inválido ou expirado")
+    dataset_service = DatasetService(db)
+    ds = await dataset_service.get(dataset_id, report.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    return execute_query(ds.rows or [], req)
+
+
+@router.get(
+    "/datasets/{dataset_id}/columns",
+    summary="Retorna colunas do dataset com tipos detectados automaticamente",
+)
+async def get_dataset_columns(
+    dataset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Retorna lista de colunas com tipo detectado: text | number | date.
+    Usado pelo frontend para montar o painel de configuração de blocos.
+    """
+    service = DatasetService(db)
+    ds = await service.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    types = detect_column_types(ds.rows or [])
+    return {
+        "dataset_id": str(dataset_id),
+        "name": ds.name,
+        "row_count": ds.row_count,
+        "columns": [
+            {"name": col, "type": types.get(col, "text")}
+            for col in (ds.columns or [])
+        ],
+    }
+
+
+# ---------------------------------------------------------------------------
 # AI — query em linguagem natural
 # ---------------------------------------------------------------------------
 
