@@ -31,7 +31,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'Conecte suas fontes',
-    desc: 'Importe CSVs, conecte APIs externas e sincronize automaticamente.',
+    desc: 'Importe CSVs, conecte APIs externas e sincronize automaticamente com seus dados.',
     color: 'bg-emerald-100 text-emerald-600',
   },
   {
@@ -51,7 +51,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'Alertas inteligentes',
-    desc: 'Configure thresholds e receba notificações quando métricas saírem do esperado.',
+    desc: 'Configure thresholds e receba notificações quando suas métricas saírem do esperado.',
     color: 'bg-red-100 text-red-500',
   },
   {
@@ -61,20 +61,21 @@ const FEATURES = [
       </svg>
     ),
     title: 'Compartilhamento white-label',
-    desc: 'Gere links públicos com sua marca para compartilhar com clientes.',
+    desc: 'Gere links públicos com sua marca para compartilhar relatórios com seus clientes.',
     color: 'bg-purple-100 text-purple-600',
   },
 ]
 
 const PLANS = [
   {
-    name: 'Free',
+    name: 'Teste',
     price: 'Grátis',
     period: '',
-    desc: 'Para começar a explorar',
+    desc: '7 dias para explorar tudo',
     features: ['2 dashboards', '1 dataset', 'Link público', 'Embed básico'],
-    cta: 'Começar grátis',
+    cta: 'Começar teste gratuito',
     highlight: false,
+    tag: null,
   },
   {
     name: 'Starter',
@@ -82,37 +83,50 @@ const PLANS = [
     period: '/mês',
     desc: 'Para times em crescimento',
     features: ['10 dashboards', '5 datasets', 'Alertas', 'Embed avançado', '3 usuários'],
-    cta: 'Começar agora',
+    cta: 'Assinar Starter',
     highlight: false,
+    tag: null,
+  },
+  {
+    name: 'Business',
+    price: 'R$349',
+    period: '/mês',
+    desc: 'Para operações em escala',
+    features: ['30 dashboards', '20 datasets', 'IA em português', 'Filtros avançados', '10 usuários', 'Suporte prioritário'],
+    cta: 'Assinar Business',
+    highlight: true,
+    tag: 'Mais popular',
   },
   {
     name: 'Pro',
     price: 'R$597',
     period: '/mês',
-    desc: 'Para empresas que escalam',
-    features: ['Ilimitado', 'IA em português', 'White-label', 'Usuários ilimitados', 'Suporte prioritário'],
-    cta: 'Começar agora',
-    highlight: true,
+    desc: 'Para empresas que exigem mais',
+    features: ['Dashboards ilimitados', 'Datasets ilimitados', 'White-label', 'Usuários ilimitados', 'SLA garantido', 'Onboarding dedicado'],
+    cta: 'Assinar Pro',
+    highlight: false,
+    tag: null,
   },
   {
-    name: 'Enterprise',
-    price: 'R$1.497',
+    name: 'Professional',
+    price: 'R$799',
     period: '/mês',
-    desc: 'Para grandes operações',
-    features: ['Tudo do Pro', 'SLA garantido', 'Onboarding dedicado', 'Gerente de conta', 'Contrato anual'],
+    desc: 'Para revendedores e agências',
+    features: ['Tudo do Pro', 'Multi-tenant', 'Marca própria completa', 'Painel de clientes', 'API dedicada', 'Gerente de conta'],
     cta: 'Falar com vendas',
     highlight: false,
+    tag: 'White-label total',
   },
 ]
 
 const COMPARISON = [
-  { feature: 'Preço inicial', jarbis: 'Grátis', luzmo: '$1.000+/mês', powerbi: 'R$60/usuário' },
+  { feature: 'Preço inicial', jarbis: 'Grátis por 7 dias', luzmo: '$1.000+/mês', powerbi: 'R$60/usuário' },
   { feature: 'Interface em português', jarbis: true, luzmo: false, powerbi: false },
   { feature: 'Suporte em português', jarbis: true, luzmo: false, powerbi: false },
-  { feature: 'Embed via iframe/SDK', jarbis: true, luzmo: true, powerbi: 'Complexo' },
+  { feature: 'Embed via iframe', jarbis: true, luzmo: true, powerbi: 'Complexo' },
   { feature: 'IA em português', jarbis: true, luzmo: false, powerbi: false },
   { feature: 'Setup em minutos', jarbis: true, luzmo: false, powerbi: false },
-  { feature: 'Plano gratuito', jarbis: true, luzmo: false, powerbi: false },
+  { feature: 'Plano de teste gratuito', jarbis: true, luzmo: false, powerbi: false },
 ]
 
 function Logo({ light = false }) {
@@ -163,7 +177,7 @@ export default function LandingPage() {
   return (
     <div className="bg-white text-gray-900 antialiased">
 
-      {/* ── NAV ─────────────────────────────────────────────── */}
+      {/* NAV */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Logo />
@@ -173,7 +187,7 @@ export default function LandingPage() {
             <a href="#compare" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">Comparativo</a>
             <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">Entrar</Link>
             <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
-              Começar grátis
+              Testar grátis por 7 dias
             </Link>
           </div>
           <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setMenuOpen(!menuOpen)}>
@@ -190,21 +204,19 @@ export default function LandingPage() {
             <a href="#pricing" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Preços</a>
             <a href="#compare" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Comparativo</a>
             <Link href="/login" className="text-sm text-gray-600 font-medium">Entrar</Link>
-            <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-3 rounded-full text-center">Começar grátis</Link>
+            <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-3 rounded-full text-center">Testar grátis por 7 dias</Link>
           </div>
         )}
       </nav>
 
-      {/* ── HERO ─────────────────────────────────────────────── */}
+      {/* HERO */}
       <section className="relative pt-28 pb-0 px-6 overflow-hidden" style={{ background: '#0B0A1A' }}>
-        {/* glow orbs */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(124,58,237,0.25) 0%, transparent 70%)' }} />
         <div className="absolute top-20 left-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%)' }} />
 
         <div className="relative max-w-4xl mx-auto text-center">
-          {/* badge */}
           <div className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-8">
             <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
             BI embarcado feito para o Brasil
@@ -218,13 +230,13 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Crie dashboards interativos, incorpore analytics no seu produto e compartilhe insights com clientes — sem precisar de uma equipe de dados.
+            Crie dashboards interativos, incorpore analytics no seu produto e compartilhe insights com clientes. Sem precisar de uma equipe de dados.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Link href="/signup"
               className="inline-flex items-center justify-center gap-2 bg-violet-600 text-white font-bold px-8 py-4 rounded-full hover:bg-violet-500 transition-all text-base shadow-lg shadow-violet-900/50">
-              Começar grátis
+              Testar grátis por 7 dias
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
             </Link>
             <a href="#features"
@@ -232,18 +244,16 @@ export default function LandingPage() {
               Ver como funciona
             </a>
           </div>
-          <p className="text-sm text-gray-600">Sem cartão de crédito · Setup em 2 minutos · 7 dias grátis</p>
+          <p className="text-sm text-gray-600">7 dias de acesso completo · Setup em 2 minutos</p>
         </div>
 
         {/* Dashboard mockup */}
         <div className="relative max-w-5xl mx-auto mt-16">
-          {/* glow under mockup */}
           <div className="absolute -inset-4 rounded-2xl pointer-events-none"
             style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(124,58,237,0.3) 0%, transparent 60%)' }} />
 
           <div className="relative rounded-t-2xl overflow-hidden border border-white/10"
             style={{ background: '#13111F' }}>
-            {/* browser chrome */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5" style={{ background: '#1C1929' }}>
               <div className="w-3 h-3 rounded-full bg-red-500/70" />
               <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
@@ -253,9 +263,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* dashboard content */}
             <div className="p-5 grid grid-cols-12 gap-3">
-              {/* KPI cards */}
               {[
                 { label: 'Total de Vendas', value: 'R$847K', change: '+23%', up: true },
                 { label: 'Novos Clientes', value: '1.284', change: '+12%', up: true },
@@ -269,7 +277,6 @@ export default function LandingPage() {
                 </div>
               ))}
 
-              {/* Bar chart */}
               <div className="col-span-8 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
                 <div className="text-xs text-gray-500 mb-4">Receita por mês</div>
                 <div className="flex items-end gap-1.5 h-28">
@@ -284,7 +291,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Donut-like */}
               <div className="col-span-4 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
                 <div className="text-xs text-gray-500 mb-4">Por canal</div>
                 <div className="space-y-3">
@@ -310,7 +316,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FEATURES ─────────────────────────────────────────── */}
+      {/* FEATURES */}
       <section id="features" className="py-28 px-6" style={{ background: '#FAFAF8' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -319,7 +325,7 @@ export default function LandingPage() {
               Tudo que você precisa,<br />nada do que não precisa
             </h2>
             <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
-              Desenvolvido para times brasileiros que precisam de analytics profissional sem a complexidade — e o preço — das ferramentas gringas.
+              Desenvolvido para times brasileiros que precisam de analytics profissional sem a complexidade e o preço das ferramentas gringas.
             </p>
           </div>
 
@@ -337,7 +343,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ─────────────────────────────────────── */}
+      {/* HOW IT WORKS */}
       <section className="py-28 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -347,7 +353,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* connecting line */}
             <div className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-violet-200 via-violet-400 to-violet-200" />
 
             {[
@@ -371,7 +376,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── COMPARISON ───────────────────────────────────────── */}
+      {/* COMPARISON */}
       <section id="compare" className="py-28 px-6" style={{ background: '#FAFAF8' }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
@@ -414,51 +419,53 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────────── */}
+      {/* PRICING */}
       <section id="pricing" className="py-28 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">Preços</p>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">Preço justo, em real</h2>
             <p className="text-lg text-gray-500">Sem surpresas em dólar. Cancele quando quiser.</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-5 gap-4">
             {PLANS.map((plan) => (
               <div key={plan.name}
-                className={`rounded-2xl p-6 relative flex flex-col ${
+                className={`rounded-2xl p-5 relative flex flex-col ${
                   plan.highlight
                     ? 'text-white'
                     : 'bg-white border border-gray-100'
                 }`}
                 style={plan.highlight ? { background: 'linear-gradient(145deg, #6d28d9, #7c3aed)' } : {}}>
 
-                {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-black px-4 py-1.5 rounded-full shadow-sm whitespace-nowrap">
-                    Mais popular
+                {plan.tag && (
+                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-black px-3 py-1.5 rounded-full shadow-sm whitespace-nowrap ${
+                    plan.highlight ? 'bg-amber-400 text-amber-900' : 'bg-violet-100 text-violet-700'
+                  }`}>
+                    {plan.tag}
                   </div>
                 )}
 
-                <div className={`text-sm font-bold mb-3 ${plan.highlight ? 'text-violet-200' : 'text-gray-400'}`}>
+                <div className={`text-xs font-bold mb-3 ${plan.highlight ? 'text-violet-200' : 'text-gray-400'}`}>
                   {plan.name}
                 </div>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className={`text-4xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`text-3xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
                     {plan.price}
                   </span>
-                  <span className={`text-sm ${plan.highlight ? 'text-violet-300' : 'text-gray-400'}`}>
+                  <span className={`text-xs ${plan.highlight ? 'text-violet-300' : 'text-gray-400'}`}>
                     {plan.period}
                   </span>
                 </div>
-                <p className={`text-sm mb-7 ${plan.highlight ? 'text-violet-200' : 'text-gray-400'}`}>
+                <p className={`text-xs mb-5 ${plan.highlight ? 'text-violet-200' : 'text-gray-400'}`}>
                   {plan.desc}
                 </p>
 
-                <ul className="space-y-3 mb-8 flex-1">
+                <ul className="space-y-2.5 mb-6 flex-1">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${plan.highlight ? 'bg-white/20' : 'bg-violet-100'}`}>
-                        <svg className={`w-3 h-3 ${plan.highlight ? 'text-white' : 'text-violet-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                    <li key={f} className="flex items-start gap-2 text-xs">
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${plan.highlight ? 'bg-white/20' : 'bg-violet-100'}`}>
+                        <svg className={`w-2.5 h-2.5 ${plan.highlight ? 'text-white' : 'text-violet-600'}`} viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
@@ -468,7 +475,7 @@ export default function LandingPage() {
                 </ul>
 
                 <Link href="/signup"
-                  className={`block text-center py-3.5 rounded-full font-bold text-sm transition-all ${
+                  className={`block text-center py-3 rounded-full font-bold text-xs transition-all ${
                     plan.highlight
                       ? 'bg-white text-violet-700 hover:bg-violet-50'
                       : 'bg-gray-900 text-white hover:bg-gray-700'
@@ -480,12 +487,12 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center text-sm text-gray-400 mt-8">
-            Todos os planos incluem 7 dias de teste gratuito. Sem cartão de crédito.
+            Todos os planos pagos incluem 7 dias de teste gratuito para conhecer a plataforma.
           </p>
         </div>
       </section>
 
-      {/* ── CTA FINAL ────────────────────────────────────────── */}
+      {/* CTA FINAL */}
       <section className="py-28 px-6 relative overflow-hidden" style={{ background: '#0B0A1A' }}>
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.2) 0%, transparent 70%)' }} />
@@ -493,21 +500,21 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-5 leading-tight">
             Comece hoje,<br />
             <span style={{ background: 'linear-gradient(135deg, #a78bfa, #67e8f9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              de graça
+              com 7 dias grátis
             </span>
           </h2>
           <p className="text-lg text-gray-400 mb-10">
-            Sem cartão de crédito. Sem prazo. Seu primeiro dashboard em 2 minutos.
+            Acesso completo por 7 dias. Seu primeiro dashboard em 2 minutos.
           </p>
           <Link href="/signup"
             className="inline-flex items-center gap-2 bg-violet-600 text-white font-bold px-10 py-5 rounded-full hover:bg-violet-500 transition-all text-lg shadow-xl shadow-violet-900/50">
-            Criar conta grátis
+            Criar conta e testar grátis
             <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
           </Link>
         </div>
       </section>
 
-      {/* ── FOOTER ───────────────────────────────────────────── */}
+      {/* FOOTER */}
       <footer className="border-t border-gray-100 py-10 px-6 bg-white">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
