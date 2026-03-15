@@ -49,7 +49,7 @@ export default function EmbedPage() {
     if (!containerRef.current) return
     const observer = new ResizeObserver(() => {
       const height = containerRef.current?.scrollHeight || 0
-      window.parent.postMessage({ type: 'lumetra:resize', height, token }, '*')
+      window.parent.postMessage({ type: 'jarbis:resize', height, token }, '*')
     })
     observer.observe(containerRef.current)
     return () => observer.disconnect()

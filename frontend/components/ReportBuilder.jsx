@@ -179,24 +179,30 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
   return { data, loading, error }
 }
 
-function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
+function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const dsId = block.dataset_id
   const col = block.filter_col
   const currentVal = activeFilters[dsId]?.[col]
-  // suporta string ou array
   const selectedVals = Array.isArray(currentVal) ? currentVal : (currentVal ? [currentVal] : [])
 
   useEffect(() => {
     if (!dsId || !col) return
     setLoading(true)
-    api.reports.datasets.query(dsId, col, '__count__', 'count')
-      .then(data => setRows((data || []).filter(r => r.label).sort((a, b) => b.value - a.value)))
+    const req = { dimensions: [{ column: col, type: 'text' }], metrics: [{ column: '__count__', aggregation: 'sum' }] }
+    const queryFn = shareToken
+      ? api.reports.publicQueryV2(shareToken, dsId, req)
+      : api.reports.datasets.queryV2(dsId, req)
+    queryFn
+      .then(result => {
+        const data = result?.data || result || []
+        setRows(data.filter(r => r.label).sort((a, b) => (b.value || 0) - (a.value || 0)))
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [dsId, col])
+  }, [dsId, col, shareToken])
 
   if (!dsId || !col) {
     return <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure no painel lateral</div>
@@ -435,7 +441,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'filter') {
-    return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} />
+    return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} shareToken={shareToken} />
   }
 
   if (block.type === 'slider') {
@@ -859,7 +865,14 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const [colTypes, setColTypes] = useState({})
 
   useEffect(() => {
-    if (!block.dataset_id) { setColTypes({}); return }
+    const ds = datasets.find(d => d.id === block.dataset_id)
+    if (!block.dataset_id || !ds) { setColTypes({}); return }
+    // Usa column_types que já vem no DatasetSummary da API
+    if (ds.column_types && Object.keys(ds.column_types).length > 0) {
+      setColTypes(ds.column_types)
+      return
+    }
+    // Fallback: busca do endpoint dedicado se não veio no summary
     api.reports.datasets.columns(block.dataset_id)
       .then(res => {
         const types = {}
@@ -867,7 +880,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         setColTypes(types)
       })
       .catch(() => {})
-  }, [block.dataset_id])
+  }, [block.dataset_id, datasets])
 
   function upd(field, value) { onChange({ ...block, [field]: value }) }
   function updConfig(field, value) { onChange({ ...block, config: { ...(block.config || {}), [field]: value } }) }

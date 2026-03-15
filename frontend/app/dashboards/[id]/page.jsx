@@ -300,16 +300,33 @@ export default function DashboardDetailPage() {
         </div>
 
         {showDateFilter && (
-          <div className="bg-violet-50 border-b border-violet-100 px-4 py-2 flex items-center gap-3 shrink-0 flex-wrap">
-            <span className="text-xs font-semibold text-violet-700 uppercase tracking-wider">Filtro de Data</span>
-            <select value={globalDateFilter.dateCol} onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))} className="border border-violet-200 rounded-lg px-2 py-1 text-xs bg-white text-gray-700 focus:outline-none">
+          <div className="bg-violet-50 border-b border-violet-100 px-4 py-2.5 flex items-center gap-2 shrink-0 flex-wrap">
+            <span className="text-xs font-semibold text-violet-700 uppercase tracking-wider shrink-0">Filtro de Data</span>
+            <select value={globalDateFilter.dateCol} onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))} className="border border-violet-200 rounded-lg px-2 py-1 text-xs bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-violet-400">
               <option value="">Coluna de data...</option>
-              {[...new Set(datasets.flatMap(ds => ds.columns || []))].sort().map(col => <option key={col} value={col}>{col}</option>)}
+              {[...new Set(datasets.flatMap(ds => Object.entries(ds.column_types || {}).filter(([,t]) => t === 'date').map(([c]) => c).concat(ds.columns || [])))].filter((v,i,a) => a.indexOf(v) === i).sort().map(col => {
+                const isDate = datasets.some(ds => ds.column_types?.[col] === 'date')
+                return <option key={col} value={col}>{isDate ? '📅 ' : ''}{col}</option>
+              })}
             </select>
-            <input type="date" value={globalDateFilter.dateFrom} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="border border-violet-200 rounded-lg px-2 py-1 text-xs bg-white" />
+            <div className="flex items-center gap-1">
+              {[
+                { label: 'Hoje', fn: () => { const t = new Date().toISOString().slice(0,10); return { dateFrom: t, dateTo: t } } },
+                { label: '7 dias', fn: () => { const t = new Date(); const f = new Date(t); f.setDate(f.getDate()-6); return { dateFrom: f.toISOString().slice(0,10), dateTo: t.toISOString().slice(0,10) } } },
+                { label: '30 dias', fn: () => { const t = new Date(); const f = new Date(t); f.setDate(f.getDate()-29); return { dateFrom: f.toISOString().slice(0,10), dateTo: t.toISOString().slice(0,10) } } },
+                { label: 'Este mês', fn: () => { const t = new Date(); return { dateFrom: `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`, dateTo: t.toISOString().slice(0,10) } } },
+                { label: 'Este ano', fn: () => { const t = new Date(); return { dateFrom: `${t.getFullYear()}-01-01`, dateTo: t.toISOString().slice(0,10) } } },
+              ].map(p => (
+                <button key={p.label} onClick={() => setGlobalDateFilter(f => ({ ...f, ...p.fn() }))}
+                  className="px-2 py-0.5 text-[10px] font-semibold text-violet-700 bg-white border border-violet-200 rounded-md hover:bg-violet-100 transition-colors">
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <input type="date" value={globalDateFilter.dateFrom} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="border border-violet-200 rounded-lg px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" />
             <span className="text-xs text-violet-400">até</span>
-            <input type="date" value={globalDateFilter.dateTo} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="border border-violet-200 rounded-lg px-2 py-1 text-xs bg-white" />
-            <button onClick={() => setGlobalDateFilter({ dateCol: '', dateFrom: '', dateTo: '' })} className="text-xs text-violet-500 hover:text-violet-700">Limpar</button>
+            <input type="date" value={globalDateFilter.dateTo} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="border border-violet-200 rounded-lg px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" />
+            <button onClick={() => setGlobalDateFilter({ dateCol: '', dateFrom: '', dateTo: '' })} className="text-xs text-violet-500 hover:text-violet-700 font-medium">Limpar</button>
           </div>
         )}
 

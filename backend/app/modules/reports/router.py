@@ -60,6 +60,7 @@ class DatasetSummary(BaseModel):
     type: str
     columns: list[str]
     row_count: int
+    column_types: dict | None = None
     api_url: str | None = None
     last_synced_at: str | None = None
     refresh_interval_minutes: int | None = None
@@ -302,6 +303,7 @@ async def list_datasets(
 ):
     service = DatasetService(db)
     datasets = await service.list(current_user.tenant_id)
+    from .query_engine import detect_column_types
     return [
         DatasetSummary(
             id=ds.id,
@@ -309,6 +311,7 @@ async def list_datasets(
             type=ds.type,
             columns=ds.columns or [],
             row_count=ds.row_count,
+            column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
             api_url=ds.api_url,
             last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
             refresh_interval_minutes=ds.refresh_interval_minutes,
