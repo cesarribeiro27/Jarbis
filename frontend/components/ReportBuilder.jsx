@@ -102,10 +102,13 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
   if (cross) {
     filters.push({ column: cross.col, operator: 'eq', value: cross.val })
   } else {
-    // Slicer filters — múltiplas colunas por dataset
+    // Slicer filters — múltiplas colunas por dataset, suporte a multi-select (array)
     const active = activeFilters[dsId] || {}
     Object.entries(active).forEach(([col, val]) => {
-      if (val !== null && val !== undefined && val !== '') {
+      if (val === null || val === undefined || val === '') return
+      if (Array.isArray(val)) {
+        if (val.length > 0) filters.push({ column: col, operator: 'in', value: val })
+      } else {
         filters.push({ column: col, operator: 'eq', value: String(val) })
       }
     })
@@ -176,14 +179,15 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
   return { data, loading, error }
 }
 
-// Slicer filter: Luzmo-style list with search, rank bars and multiselect
 function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
-  const [rows, setRows] = useState([]) // { label, value: count }
+  const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const dsId = block.dataset_id
   const col = block.filter_col
-  const currentVal = activeFilters[dsId]?.[col] || ''
+  const currentVal = activeFilters[dsId]?.[col]
+  // suporta string ou array
+  const selectedVals = Array.isArray(currentVal) ? currentVal : (currentVal ? [currentVal] : [])
 
   useEffect(() => {
     if (!dsId || !col) return
@@ -200,54 +204,68 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
 
   const maxVal = rows.length > 0 ? Math.max(...rows.map(r => r.value)) : 1
   const filtered = rows.filter(r => !search || String(r.label).toLowerCase().includes(search.toLowerCase()))
+  const hasActive = selectedVals.length > 0
+
+  function toggleVal(val) {
+    const strVal = String(val)
+    const next = selectedVals.includes(strVal)
+      ? selectedVals.filter(v => v !== strVal)
+      : [...selectedVals, strVal]
+    onFilterChange(dsId, col, next.length === 0 ? '' : next.length === 1 ? next[0] : next)
+  }
 
   return (
     <div className="flex flex-col h-full gap-1.5">
-      {/* Search */}
-      <div className="relative">
-        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-        <input
-          type="text"
-          placeholder="Buscar..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-7 pr-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-400 transition-colors"
-        />
-      </div>
-
-      {/* All / clear */}
-      <div className="flex items-center justify-between px-0.5">
-        <button onClick={() => onFilterChange(dsId, col, '')} className="text-[10px] font-semibold text-violet-600 hover:text-violet-800 transition-colors">
-          Todos
-        </button>
-        {currentVal && (
-          <button onClick={() => onFilterChange(dsId, col, '')} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-0.5">
+      {/* Search + reset */}
+      <div className="flex items-center gap-1.5">
+        <div className="relative flex-1">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={block.filter_label || col || 'Buscar...'}
+            className="w-full pl-7 pr-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-all"
+          />
+        </div>
+        {hasActive && (
+          <button
+            onClick={() => onFilterChange(dsId, col, '')}
+            className="flex items-center gap-0.5 px-2 py-1.5 text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors shrink-0"
+          >
             <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-            Limpar
+            {selectedVals.length}
+          </button>
+        )}
+        {!hasActive && (
+          <button
+            onClick={() => onFilterChange(dsId, col, '')}
+            className="px-2 py-1.5 text-[10px] text-gray-400 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+          >
+            Todos
           </button>
         )}
       </div>
 
-      {/* Value list */}
-      <div className="flex-1 overflow-y-auto space-y-0.5 min-h-0 pr-0.5">
+      {/* List */}
+      <div className="flex-1 overflow-y-auto space-y-0.5 pr-0.5">
         {loading ? (
           <div className="flex items-center justify-center py-4">
-            <div className="w-4 h-4 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-xs text-gray-300 text-center py-3">Nenhum resultado</div>
+          <p className="text-xs text-gray-300 text-center py-3">Nenhum resultado</p>
         ) : filtered.map(row => {
-          const isSelected = currentVal === String(row.label)
+          const isSelected = selectedVals.includes(String(row.label))
           const pct = Math.round((row.value / maxVal) * 100)
           return (
             <button
               key={row.label}
-              onClick={() => onFilterChange(dsId, col, isSelected ? '' : String(row.label))}
+              onClick={() => toggleVal(row.label)}
               className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all group ${
                 isSelected ? 'bg-violet-50 text-violet-800' : 'hover:bg-gray-50/80 text-gray-700'
               }`}
             >
-              {/* Checkbox */}
               <div className={`w-3.5 h-3.5 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${
                 isSelected ? 'bg-violet-600 border-violet-600' : 'border-gray-300 group-hover:border-violet-300'
               }`}>
@@ -255,7 +273,6 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange }) {
                   <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                 )}
               </div>
-              {/* Label + count + rank bar */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-xs truncate font-medium leading-none">{row.label}</span>
@@ -839,12 +856,36 @@ function ConfigSection({ title, children, defaultOpen = true }) {
 }
 
 export function BlockConfigPanel({ block, onChange, datasets = [] }) {
+  const [colTypes, setColTypes] = useState({})
+
+  useEffect(() => {
+    if (!block.dataset_id) { setColTypes({}); return }
+    api.reports.datasets.columns(block.dataset_id)
+      .then(res => {
+        const types = {}
+        res.columns?.forEach(c => { types[c.name] = c.type })
+        setColTypes(types)
+      })
+      .catch(() => {})
+  }, [block.dataset_id])
+
   function upd(field, value) { onChange({ ...block, [field]: value }) }
   function updConfig(field, value) { onChange({ ...block, config: { ...(block.config || {}), [field]: value } }) }
+
+  function selectLabelCol(col) {
+    const detectedType = colTypes[col] || 'text'
+    onChange({ ...block, label_col: col || null, config: { ...(block.config || {}), dim_type: detectedType, granularity: detectedType === 'date' ? (block.config?.granularity || 'month') : null } })
+  }
+
   const selectedDataset = datasets.find(d => d.id === block.dataset_id)
   const columns = selectedDataset?.columns || []
+  const dimColumns = columns.filter(c => colTypes[c] !== 'number')
+  const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
   const hasData = !['text', 'filter', 'image', 'slider'].includes(block.type)
   const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer'].includes(block.type)
+  const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
+
+  const COL_TYPE_BADGE = { text: 'Aa', number: '#', date: '📅' }
 
   return (
     <div className="divide-y divide-gray-100">
@@ -976,7 +1017,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         <ConfigSection title="Dados">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
-            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, label_col: null, value_col: null })}>
+            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, label_col: null, value_col: null, config: { ...(block.config || {}), dim_type: null, granularity: null } })}>
               <option value="">Selecione um dataset...</option>
               {datasets.map(d => <option key={d.id} value={d.id}>{d.name} ({d.row_count} linhas)</option>)}
             </select>
@@ -985,17 +1026,66 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           {selectedDataset && (
             <>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Coluna de categoria (eixo X)</label>
-                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.label_col || ''} onChange={e => upd('label_col', e.target.value || null)}>
-                  <option value="">Selecione...</option>
-                  {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                <label className="block text-xs text-gray-500 mb-1">
+                  Dimensão (eixo X)
+                  {block.label_col && colTypes[block.label_col] && (
+                    <span className="ml-1.5 text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {COL_TYPE_BADGE[colTypes[block.label_col]] || 'Aa'}
+                    </span>
+                  )}
+                </label>
+                <select
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  value={block.label_col || ''}
+                  onChange={e => selectLabelCol(e.target.value)}
+                >
+                  <option value="">Selecione a dimensão...</option>
+                  {dimColumns.length > 0 && <optgroup label="Texto / Data">
+                    {dimColumns.map(c => <option key={c} value={c}>{COL_TYPE_BADGE[colTypes[c]] || 'Aa'} {c}</option>)}
+                  </optgroup>}
+                  {metricColumns.length > 0 && <optgroup label="Números">
+                    {metricColumns.map(c => <option key={c} value={c}># {c}</option>)}
+                  </optgroup>}
                 </select>
               </div>
+
+              {/* Granularidade — aparece automaticamente quando dimensão é data */}
+              {isDimDate && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5">Granularidade de data</label>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[{ v: 'day', l: 'Dia' }, { v: 'week', l: 'Sem' }, { v: 'month', l: 'Mês' }, { v: 'quarter', l: 'Trim' }, { v: 'year', l: 'Ano' }].map(g => (
+                      <button key={g.v} onClick={() => updConfig('granularity', g.v)}
+                        className={`py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${(block.config?.granularity || 'month') === g.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                        {g.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Coluna de valor (eixo Y)</label>
-                <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.value_col || ''} onChange={e => upd('value_col', e.target.value || null)}>
-                  <option value="">Selecione...</option>
-                  {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                <label className="block text-xs text-gray-500 mb-1">
+                  Métrica (eixo Y)
+                  {block.value_col && colTypes[block.value_col] && (
+                    <span className="ml-1.5 text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {COL_TYPE_BADGE[colTypes[block.value_col]] || '#'}
+                    </span>
+                  )}
+                </label>
+                <select
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  value={block.value_col || ''}
+                  onChange={e => upd('value_col', e.target.value || null)}
+                >
+                  <option value="">Selecione a métrica...</option>
+                  {metricColumns.length > 0 && <optgroup label="Números">
+                    {metricColumns.map(c => <option key={c} value={c}># {c}</option>)}
+                  </optgroup>}
+                  {dimColumns.length > 0 && <optgroup label="Outros">
+                    {dimColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </optgroup>}
+                  <option value="__count__">Contar registros</option>
                 </select>
               </div>
               <div>
@@ -1530,10 +1620,12 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   }, [])
 
   function handleFilterChange(datasetId, col, val) {
-    setActiveFilters(prev => ({
-      ...prev,
-      [datasetId]: { ...(prev[datasetId] || {}), [col]: val },
-    }))
+    setActiveFilters(prev => {
+      const colVal = val === '' ? undefined : val
+      const datasetFilters = { ...(prev[datasetId] || {}), [col]: colVal }
+      if (colVal === undefined) delete datasetFilters[col]
+      return { ...prev, [datasetId]: datasetFilters }
+    })
   }
 
   function handleCrossFilter(datasetId, col, val) {
