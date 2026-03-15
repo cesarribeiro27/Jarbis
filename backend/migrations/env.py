@@ -17,15 +17,8 @@ from app.database import Base
 
 # Importa todos os models para o Alembic detectá-los
 # IMPORTANTE: cada novo model deve ser importado aqui
-from app.modules.clients.models import Client  # noqa: F401
-from app.modules.media_plans.models import MediaPlan, MediaPlanItem  # noqa: F401
-from app.modules.municipios.models import Municipio  # noqa: F401
-from app.modules.ooh.models import OohCampaign, OohCampaignShare, OohPanel  # noqa: F401
-from app.modules.organograma.models import OrgMember, OrgShare  # noqa: F401
 from app.modules.reports.models import Report  # noqa: F401
-from app.modules.social.models import SocialToken  # noqa: F401
 from app.modules.tenants.models import Tenant, User  # noqa: F401
-from app.modules.vehicles.models import AudienceRecord, Vehicle  # noqa: F401
 
 config = context.config
 
