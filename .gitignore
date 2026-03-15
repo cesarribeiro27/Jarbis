@@ -13,3 +13,11 @@ build/
 .DS_Store
 .vercel
 lumetra/
+
+# Polaris Code
+.polaris_*
+POLARIS_CONTEXT.md
+CONTEXTO_POLARIS.md
+*.bak
+*.bak2
+.claude/
