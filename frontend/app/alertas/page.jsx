@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
+import { useToast } from '@/lib/toast'
 
 const OPERATORS = [
   { value: 'gt',  label: '> maior que' },
@@ -104,6 +105,7 @@ function CreateModal({ datasets, onClose, onCreated }) {
 }
 
 export default function AlertasPage() {
+  const toast = useToast()
   const [alerts, setAlerts] = useState([])
   const [datasets, setDatasets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -114,7 +116,7 @@ export default function AlertasPage() {
   useEffect(() => {
     Promise.all([api.reports.alerts.list(), api.reports.datasets.list()])
       .then(([al, ds]) => { setAlerts(al); setDatasets(ds) })
-      .catch(console.error)
+      .catch(() => toast('Erro ao carregar alertas.', 'error'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -123,7 +125,9 @@ export default function AlertasPage() {
     try {
       const updated = await api.reports.alerts.check(id)
       setAlerts(prev => prev.map(a => a.id === updated.id ? updated : a))
-    } catch (e) { alert(e.message) }
+      const status = updated.last_status === 'triggered' ? 'warn' : 'success'
+      toast(updated.last_status === 'triggered' ? 'Alerta disparado!' : 'Alerta verificado — tudo OK.', status)
+    } catch (e) { toast(e.message, 'error') }
     finally { setCheckingId(null) }
   }
 
@@ -131,7 +135,8 @@ export default function AlertasPage() {
     try {
       const updated = await api.reports.alerts.toggle(a.id, !a.is_active)
       setAlerts(prev => prev.map(x => x.id === updated.id ? updated : x))
-    } catch (e) { alert(e.message) }
+      toast(updated.is_active ? 'Alerta ativado.' : 'Alerta pausado.', 'info')
+    } catch (e) { toast(e.message, 'error') }
   }
 
   async function deleteAlert(id) {
@@ -139,7 +144,8 @@ export default function AlertasPage() {
       await api.reports.alerts.delete(id)
       setAlerts(prev => prev.filter(a => a.id !== id))
       setDeleteConfirmId(null)
-    } catch (e) { alert(e.message) }
+      toast('Alerta excluído.', 'success')
+    } catch (e) { toast(e.message, 'error') }
   }
 
   const triggered = alerts.filter(a => a.last_status === 'triggered' && a.is_active).length

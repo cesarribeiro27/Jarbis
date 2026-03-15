@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
+import { useToast } from '@/lib/toast'
 
 const PALETTE = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#db2777', '#0891b2', '#7c3aed', '#16a34a']
 
@@ -26,6 +27,7 @@ function PreviewThumb({ report, color }) {
 
 export default function DashboardsPage() {
   const router = useRouter()
+  const toast = useToast()
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(null)
@@ -37,7 +39,7 @@ export default function DashboardsPage() {
   function fetchReports() {
     api.reports.list()
       .then(data => setReports(data || []))
-      .catch(console.error)
+      .catch(() => toast('Erro ao carregar dashboards.', 'error'))
       .finally(() => setLoading(false))
   }
 
@@ -47,8 +49,9 @@ export default function DashboardsPage() {
       setReports(prev => prev.filter(r => r.id !== id))
       setDeleteConfirm(null)
       setMenuOpen(null)
+      toast('Dashboard excluído.', 'success')
     } catch (err) {
-      console.error(err)
+      toast(err.message || 'Erro ao excluir.', 'error')
     }
   }
 
@@ -56,9 +59,11 @@ export default function DashboardsPage() {
     try {
       const res = await api.reports.share(id)
       await navigator.clipboard.writeText(`${window.location.origin}/r/${res.token}`)
-      alert('Link copiado!')
+      toast('Link copiado para a área de transferência!', 'success')
+      setMenuOpen(null)
+      setReports(prev => prev.map(r => r.id === id ? { ...r, is_shared: true, share_token: res.token } : r))
     } catch (err) {
-      alert(err.message)
+      toast(err.message || 'Erro ao compartilhar.', 'error')
     }
   }
 
@@ -74,7 +79,9 @@ export default function DashboardsPage() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-2xl font-black text-gray-900">Dashboards</h1>
-            <p className="text-sm text-gray-400 mt-1">Relatórios interativos conectados aos seus dados</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {reports.length > 0 ? `${reports.length} dashboard${reports.length !== 1 ? 's' : ''}` : 'Relatórios interativos conectados aos seus dados'}
+            </p>
           </div>
           <button
             onClick={() => router.push('/dashboards/novo')}
@@ -101,9 +108,7 @@ export default function DashboardsPage() {
 
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {[1,2,3].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 h-52 animate-pulse" />
-            ))}
+            {[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-gray-100 h-52 animate-pulse" />)}
           </div>
         )}
 
@@ -145,15 +150,13 @@ export default function DashboardsPage() {
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200 relative group overflow-hidden"
                   onClick={() => router.push(`/dashboards/${r.id}`)}
                 >
-                  {/* Preview area */}
+                  {/* Preview */}
                   <div
                     className="h-28 relative overflow-hidden"
                     style={{ background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)` }}
                   >
                     <PreviewThumb report={r} color={color} />
-                    {/* colored top border */}
                     <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ backgroundColor: color }} />
-                    {/* menu button */}
                     <div className="absolute top-2 right-2" onClick={e => e.stopPropagation()}>
                       <button
                         onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id); setDeleteConfirm(null) }}
@@ -165,13 +168,13 @@ export default function DashboardsPage() {
                       </button>
                       {menuOpen === r.id && (
                         <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-xl shadow-xl py-1">
-                          <button onClick={() => router.push(`/dashboards/${r.id}`)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <button onClick={() => { router.push(`/dashboards/${r.id}`); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             Editar
                           </button>
                           <button onClick={() => handleShare(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                            Compartilhar
+                            Copiar link público
                           </button>
                           <div className="h-px bg-gray-100 my-1" />
                           {deleteConfirm === r.id ? (

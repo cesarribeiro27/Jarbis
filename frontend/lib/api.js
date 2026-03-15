@@ -67,18 +67,6 @@ export const api = {
     update: (id, data) => apiFetch(`/auth/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
 
-  vehicles: {
-    list: (params = {}) => apiFetch(`/vehicles?${buildQS(params)}`),
-    get: (id) => apiFetch(`/vehicles/${id}`),
-    enrich: (id, overwrite = false) => apiFetch(`/vehicles/${id}/enrich?overwrite=${overwrite}`, { method: 'POST' }),
-  },
-
-  municipios: {
-    list: (params = {}) => apiFetch(`/municipios?${buildQS(params)}`),
-    get: (codigo) => apiFetch(`/municipios/${codigo}`),
-    bulk: (codes) => apiFetch(`/municipios/bulk?codes=${codes.join(',')}`),
-  },
-
   reports: {
     list: () => apiFetch('/reports'),
     get: (id) => apiFetch(`/reports/${id}`),
@@ -133,99 +121,9 @@ export const api = {
       }).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.detail || 'Erro') })),
   },
 
-  ooh: {
-    template: () => `${API_URL}/ooh/template.csv`,
-    uploadCsv: (formData) =>
-      fetch(`${API_URL}/ooh/campaigns/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: formData,
-      }).then(async (r) => {
-        if (r.status === 401) { localStorage.removeItem('jarbis_token'); window.location.href = '/login'; return }
-        if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
-        return r.json()
-      }),
-    campaigns: {
-      list: () => apiFetch('/ooh/campaigns'),
-      get: (id) => apiFetch(`/ooh/campaigns/${id}`),
-      createShare: (id) => apiFetch(`/ooh/campaigns/${id}/share`, { method: 'POST' }),
-      revokeShare: (id) => apiFetch(`/ooh/campaigns/${id}/share`, { method: 'DELETE' }),
-    },
-    public: (token) => apiFetch(`/ooh/share/${token}`),
-  },
-
-  social: {
-    sync: (vehicleId) => apiFetch(`/social/sync/${vehicleId}`, { method: 'POST' }),
-  },
-
-  audience: {
-    ranking: (params = {}) => apiFetch(`/audience/ranking?${buildQS(params)}`),
-    compare: (ids) => apiFetch(`/audience/compare?${ids.map(id => `ids=${id}`).join('&')}`),
-  },
-
-  analytics: {
-    dashboard: () => apiFetch('/analytics/dashboard'),
-  },
-
-  luzmo: {
-    embedToken: (dashboardId) =>
-      apiFetch('/analytics/luzmo/embed-token', {
-        method: 'POST',
-        body: JSON.stringify({ dashboard_id: dashboardId }),
-      }),
-  },
-
-  organograma: {
-    list: () => apiFetch('/organograma'),
-    create: (data) => apiFetch('/organograma', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => apiFetch(`/organograma/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => apiFetch(`/organograma/${id}`, { method: 'DELETE' }),
-    getShare: () => apiFetch('/organograma/share'),
-    createShare: () => apiFetch('/organograma/share', { method: 'POST' }),
-    revokeShare: () => apiFetch('/organograma/share', { method: 'DELETE' }),
-    public: (token) => apiFetch(`/organograma/public/${token}`),
-  },
-
-  clients: {
-    list: () => apiFetch('/clients'),
-    get: (id) => apiFetch(`/clients/${id}`),
-    create: (data) => apiFetch('/clients', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => apiFetch(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => apiFetch(`/clients/${id}`, { method: 'DELETE' }),
-    plans: (id) => apiFetch(`/clients/${id}/plans`),
-  },
-
-  mediaPlans: {
-    list: () => apiFetch('/media-plans'),
-    materialItems: () => apiFetch('/media-plans/items/material'),
-    get: (id) => apiFetch(`/media-plans/${id}`),
-    delete: (id) => apiFetch(`/media-plans/${id}`, { method: 'DELETE' }),
-    updateItem: (planId, itemId, data) =>
-      apiFetch(`/media-plans/${planId}/items/${itemId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    upload: (formData) =>
-      fetch(`${API_URL}/media-plans/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: formData,
-      }).then(async (r) => {
-        if (r.status === 401) { localStorage.removeItem('jarbis_token'); window.location.href = '/login'; return }
-        if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
-        return r.json()
-      }),
-  },
-
-  importers: {
-    anatel: {
-      trigger: () => apiFetch('/importers/anatel', { method: 'POST' }),
-      status: () => apiFetch('/importers/anatel/status'),
-    },
-    ibge: {
-      trigger: () => apiFetch('/importers/ibge', { method: 'POST' }),
-      status: () => apiFetch('/importers/ibge/status'),
-    },
-    cnpjEnrich: {
-      trigger: (overwrite = false) => apiFetch(`/importers/cnpj-enrich?overwrite=${overwrite}`, { method: 'POST' }),
-      status: () => apiFetch('/importers/cnpj-enrich/status'),
-    },
+  billing: {
+    status: () => apiFetch('/billing/status'),
+    checkout: (priceId) => apiFetch('/billing/checkout', { method: 'POST', body: JSON.stringify({ price_id: priceId }) }),
+    portal: () => apiFetch('/billing/portal', { method: 'POST' }),
   },
 }

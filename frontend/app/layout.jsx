@@ -1,4 +1,5 @@
 import './globals.css'
+import { ToastProvider } from '@/lib/toast'
 
 export const metadata = {
   title: 'Jarbis — BI embarcado para empresas brasileiras',
@@ -8,7 +9,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   )
 }

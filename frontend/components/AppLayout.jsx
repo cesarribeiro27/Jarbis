@@ -7,18 +7,14 @@ import { usePathname, useRouter } from 'next/navigation'
 const Icons = {
   Dashboard: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
   ),
   Charts: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-      <line x1="2" y1="20" x2="22" y2="20" />
+      <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" /><line x1="2" y1="20" x2="22" y2="20" />
     </svg>
   ),
   Database: () => (
@@ -71,19 +67,31 @@ const Icons = {
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   ),
+  Crown: () => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M2 20h20v2H2zM2 17l5-9 5 5 5-8 5 9H2z"/>
+    </svg>
+  ),
 }
 
 const NAV = [
-  { href: '/dashboard', label: 'Dashboard', Icon: Icons.Dashboard },
+  { href: '/dashboard',  label: 'Dashboard', Icon: Icons.Dashboard },
   { href: '/dashboards', label: 'Dashboards', Icon: Icons.Charts },
-  { href: '/datasets', label: 'Dados', Icon: Icons.Database },
-  { href: '/alertas', label: 'Alertas', Icon: Icons.Bell },
+  { href: '/datasets',   label: 'Dados',      Icon: Icons.Database },
+  { href: '/alertas',    label: 'Alertas',    Icon: Icons.Bell },
 ]
 
 const NAV_ADMIN = [
-  { href: '/configuracoes/usuarios', label: 'Usuários', Icon: Icons.Users },
-  { href: '/configuracoes', label: 'Configurações', Icon: Icons.Settings },
+  { href: '/configuracoes/usuarios', label: 'Usuários',       Icon: Icons.Users },
+  { href: '/configuracoes',          label: 'Configurações',  Icon: Icons.Settings },
 ]
+
+const PLAN_BADGES = {
+  free:         { label: 'Trial',        bg: 'bg-gray-100',    text: 'text-gray-500'   },
+  starter:      { label: 'Starter',      bg: 'bg-blue-100',    text: 'text-blue-700'   },
+  professional: { label: 'Pro',          bg: 'bg-violet-100',  text: 'text-violet-700' },
+  enterprise:   { label: 'Enterprise',   bg: 'bg-amber-100',   text: 'text-amber-700'  },
+}
 
 export default function AppLayout({ children }) {
   const pathname = usePathname()
@@ -91,6 +99,7 @@ export default function AppLayout({ children }) {
   const [user, setUser] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
   const [trialDays, setTrialDays] = useState(null)
+  const [plan, setPlan] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('jarbis_token')
@@ -105,11 +114,25 @@ export default function AppLayout({ children }) {
     }
     const td = localStorage.getItem('jarbis_trial_days')
     if (td !== null) setTrialDays(parseInt(td, 10))
+
+    // Busca status do plano
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/billing/status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setPlan(data.plan)
+          if (data.trial_days_remaining !== null) setTrialDays(data.trial_days_remaining)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   function logout() {
     localStorage.removeItem('jarbis_token')
     localStorage.removeItem('jarbis_user')
+    localStorage.removeItem('jarbis_trial_days')
     router.push('/login')
   }
 
@@ -117,13 +140,16 @@ export default function AppLayout({ children }) {
   const initials = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
+  const badge = PLAN_BADGES[plan] || null
+  const showTrial = trialDays !== null && trialDays <= 7
 
   return (
     <div className="flex h-screen bg-[#f8f7fc]">
       {/* Sidebar */}
-      <aside className={`${collapsed ? 'w-[68px]' : 'w-[220px]'} bg-white border-r border-gray-100/80 flex flex-col transition-all duration-200 flex-shrink-0`}
-        style={{ boxShadow: '1px 0 0 0 #f0eef8' }}>
-
+      <aside
+        className={`${collapsed ? 'w-[68px]' : 'w-[220px]'} bg-white border-r border-gray-100/80 flex flex-col transition-all duration-200 flex-shrink-0`}
+        style={{ boxShadow: '1px 0 0 0 #f0eef8' }}
+      >
         {/* Logo */}
         <div className={`h-[60px] flex items-center border-b border-gray-100/80 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
           <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm shadow-violet-200">
@@ -140,7 +166,7 @@ export default function AppLayout({ children }) {
           </button>
         </div>
 
-        {/* Nav */}
+        {/* Nav principal */}
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
           {NAV.map(({ href, label, Icon }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
@@ -169,7 +195,7 @@ export default function AppLayout({ children }) {
                 </div>
               )}
               {NAV_ADMIN.map(({ href, label, Icon }) => {
-                const active = pathname === href
+                const active = pathname === href || pathname.startsWith(href + '/')
                 return (
                   <Link
                     key={href}
@@ -190,18 +216,30 @@ export default function AppLayout({ children }) {
           )}
         </nav>
 
-        {/* User footer */}
+        {/* Footer */}
         <div className="p-2 border-t border-gray-100/80 space-y-0.5">
           {!collapsed && user && (
-            <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5">
+            <Link href="/configuracoes" className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 hover:bg-gray-50 transition-colors group">
               <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black flex-shrink-0">
                 {initials}
               </div>
-              <div className="overflow-hidden">
-                <div className="text-xs font-semibold text-gray-800 truncate">{user.full_name}</div>
+              <div className="overflow-hidden flex-1 min-w-0">
+                <div className="text-xs font-semibold text-gray-800 truncate group-hover:text-violet-700 transition-colors">{user.full_name}</div>
                 <div className="text-[11px] text-gray-400 truncate">{user.email}</div>
               </div>
-            </div>
+              {badge && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${badge.bg} ${badge.text}`}>
+                  {badge.label}
+                </span>
+              )}
+            </Link>
+          )}
+          {collapsed && user && (
+            <Link href="/configuracoes" title="Configurações" className="flex items-center justify-center w-full py-2 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black">
+                {initials}
+              </div>
+            </Link>
           )}
           <button
             onClick={logout}
@@ -216,7 +254,7 @@ export default function AppLayout({ children }) {
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
-        {trialDays !== null && trialDays <= 7 && (
+        {showTrial && (
           <div className={`px-6 py-2.5 text-sm font-medium flex items-center justify-center gap-2 ${
             trialDays <= 2
               ? 'bg-red-50 text-red-700 border-b border-red-100'
