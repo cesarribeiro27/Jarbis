@@ -1,23 +1,19 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-function getToken() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('jarbis_token')
-}
-
 async function apiFetch(path, options = {}) {
-  const token = getToken()
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   }
 
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers })
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  })
 
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('jarbis_token')
       localStorage.removeItem('jarbis_user')
       localStorage.removeItem('jarbis_trial_days')
       window.location.href = '/login'
@@ -60,6 +56,8 @@ export const api = {
   signup: (name, email, password) =>
     apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
 
+  logout: () => apiFetch('/auth/logout', { method: 'POST' }),
+
   verifyEmail: (email, code) =>
     apiFetch('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email, code }) }),
 
@@ -88,10 +86,10 @@ export const api = {
       upload: (formData) =>
         fetch(`${API_URL}/reports/datasets/upload`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
+          credentials: 'include',
           body: formData,
         }).then(async (r) => {
-          if (r.status === 401) { localStorage.removeItem('jarbis_token'); window.location.href = '/login'; return }
+          if (r.status === 401) { localStorage.removeItem('jarbis_user'); window.location.href = '/login'; return }
           if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
           return r.json()
         }),

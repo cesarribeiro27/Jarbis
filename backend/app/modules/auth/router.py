@@ -11,11 +11,12 @@ PATCH /auth/users/{id}         — Atualiza role ou status (owner/admin)
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.security import hash_password, verify_password
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
@@ -26,6 +27,20 @@ from app.modules.tenants.models import User
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 ROLE_ORDER = {"owner": 3, "admin": 2, "member": 1, "viewer": 0}
+
+
+def _set_auth_cookie(response: Response, token: str) -> None:
+    """Define o cookie httpOnly com o JWT de acesso."""
+    is_prod = settings.is_production
+    response.set_cookie(
+        key="jarbis_token",
+        value=token,
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        max_age=settings.access_token_expire_minutes * 60,
+        path="/",
+    )
 VALID_ROLES = {"owner", "admin", "member", "viewer"}
 
 
@@ -51,9 +66,11 @@ class UpdateUserRequest(BaseModel):
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
-async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(data: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
     service = AuthService(db)
-    return await service.register(data)
+    result = await service.register(data)
+    _set_auth_cookie(response, result.tokens.access_token)
+    return result
 
 
 class SignupRequest(BaseModel):
@@ -68,7 +85,7 @@ class SignupRequest(BaseModel):
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=201)
-async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
+async def signup(data: SignupRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Cadastro público — cria tenant + usuário owner automaticamente."""
     reg = RegisterRequest(
         organization_name=data.name,
@@ -77,14 +94,24 @@ async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
         password=data.password,
     )
     service = AuthService(db)
-    return await service.register(reg)
+    result = await service.register(reg)
+    _set_auth_cookie(response, result.tokens.access_token)
+    return result
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(data: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Autentica um usuário e retorna tokens de acesso."""
     service = AuthService(db)
-    return await service.login(data)
+    result = await service.login(data)
+    _set_auth_cookie(response, result.tokens.access_token)
+    return result
+
+
+@router.post("/logout", status_code=204)
+async def logout(response: Response):
+    """Encerra a sessão removendo o cookie de autenticação."""
+    response.delete_cookie(key="jarbis_token", path="/", samesite="none" if settings.is_production else "lax")
 
 
 class VerifyEmailRequest(BaseModel):
@@ -97,10 +124,12 @@ class ResendVerificationRequest(BaseModel):
 
 
 @router.post("/verify-email", response_model=AuthResponse)
-async def verify_email(data: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+async def verify_email(data: VerifyEmailRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Verifica o código de 6 dígitos e ativa o email do usuário."""
     service = AuthService(db)
-    return await service.verify_email(data.email, data.code)
+    result = await service.verify_email(data.email, data.code)
+    _set_auth_cookie(response, result.tokens.access_token)
+    return result
 
 
 @router.post("/resend-verification", status_code=204)

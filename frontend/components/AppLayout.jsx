@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { api } from '@/lib/api'
 
 const Icons = {
   Dashboard: () => (
@@ -102,11 +103,10 @@ export default function AppLayout({ children }) {
   const [plan, setPlan] = useState(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('jarbis_token')
-    if (!token) { router.push('/login'); return }
     try {
       const u = localStorage.getItem('jarbis_user')
-      if (u) setUser(JSON.parse(u))
+      if (!u) { router.push('/login'); return }
+      setUser(JSON.parse(u))
     } catch {
       localStorage.removeItem('jarbis_user')
       router.push('/login')
@@ -115,9 +115,9 @@ export default function AppLayout({ children }) {
     const td = localStorage.getItem('jarbis_trial_days')
     if (td !== null) setTrialDays(parseInt(td, 10))
 
-    // Busca status do plano
+    // Busca status do plano — cookie enviado automaticamente
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/billing/status`, {
-      headers: { Authorization: `Bearer ${token}` }
+      credentials: 'include',
     })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -129,8 +129,8 @@ export default function AppLayout({ children }) {
       .catch(() => {})
   }, [])
 
-  function logout() {
-    localStorage.removeItem('jarbis_token')
+  async function logout() {
+    try { await api.logout() } catch {}
     localStorage.removeItem('jarbis_user')
     localStorage.removeItem('jarbis_trial_days')
     router.push('/login')

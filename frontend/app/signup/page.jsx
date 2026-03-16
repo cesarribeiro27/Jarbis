@@ -50,7 +50,6 @@ export default function SignupPage() {
     setError('')
     try {
       const data = await api.signup(form.name, form.email, form.password)
-      localStorage.setItem('jarbis_token', data.tokens.access_token)
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       if (data.trial_days_remaining !== null && data.trial_days_remaining !== undefined) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
