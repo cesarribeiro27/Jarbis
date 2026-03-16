@@ -9,21 +9,25 @@
  */
 
 export function LogoA({ size = 36, color = '#6D28D9', light = false }) {
-  // Conceito: Órbita — "J" central com arco orbital
+  // Conceito: Órbita + ∴ — três pontos maçônicos no núcleo da órbita
   const ic = light ? '#fff' : color
+  // Em fundo escuro com cor violeta, usa violeta claro para o glow
+  const dotColor = light ? '#fff' : color
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Círculo orbital */}
-      <circle cx="20" cy="20" r="17" stroke={ic} strokeWidth="2" strokeDasharray="6 3" opacity="0.35" />
-      {/* Arco principal */}
-      <path d="M20 4 A16 16 0 0 1 36 20" stroke={ic} strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-      {/* Ponto central */}
-      <circle cx="20" cy="20" r="5" fill={ic} />
-      {/* Satélite */}
-      <circle cx="36" cy="20" r="3" fill={ic} opacity="0.8" />
-      {/* Haste do J */}
-      <rect x="18.5" y="17" width="3" height="8" rx="1.5" fill="white" />
-      <path d="M15 25 Q18.5 28 22 25" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+      {/* Anel orbital externo tracejado */}
+      <circle cx="20" cy="20" r="17" stroke={ic} strokeWidth="1.8" strokeDasharray="5 3" opacity="0.28" />
+      {/* Arco ativo (topo → direita) */}
+      <path d="M20 4 A16 16 0 0 1 36 20" stroke={ic} strokeWidth="2.5" strokeLinecap="round" opacity="0.8" />
+      {/* Satélite no fim do arco */}
+      <circle cx="36" cy="20" r="2.8" fill={ic} />
+      {/* Núcleo — anel interno translúcido */}
+      <circle cx="20" cy="20" r="6.5" fill={ic} opacity="0.07" />
+      <circle cx="20" cy="20" r="6.5" stroke={ic} strokeWidth="1.2" opacity="0.3" />
+      {/* ∴  três pontos em triângulo (símbolo maçônico) */}
+      <circle cx="20"   cy="16.5" r="1.6" fill={dotColor} />  {/* topo */}
+      <circle cx="17.2" cy="22"   r="1.6" fill={dotColor} />  {/* inferior esquerdo */}
+      <circle cx="22.8" cy="22"   r="1.6" fill={dotColor} />  {/* inferior direito */}
     </svg>
   )
 }
@@ -126,9 +130,9 @@ export function LogoE({ size = 36, color = '#6D28D9', light = false }) {
 
 /**
  * LogoWithText — Logo + "Jarbis" em texto, para uso em barras de navegação.
- * variant: 'A' | 'B' | 'C' | 'D' | 'E'  (default: 'E')
+ * variant: 'A' | 'B' | 'C' | 'D' | 'E'  (default: 'A' — logo aprovado)
  */
-export function LogoWithText({ size = 32, color = '#6D28D9', light = false, variant = 'E', className = '' }) {
+export function LogoWithText({ size = 32, color = '#6D28D9', light = false, variant = 'A', className = '' }) {
   const logos = { A: LogoA, B: LogoB, C: LogoC, D: LogoD, E: LogoE }
   const Icon = logos[variant] || LogoE
   const textColor = light ? '#fff' : '#1A1A2E'
@@ -142,4 +146,5 @@ export function LogoWithText({ size = 32, color = '#6D28D9', light = false, vari
   )
 }
 
-export default LogoE
+// Logo oficial aprovado: Órbita + ∴
+export default LogoA

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { LogoA } from '@/components/logos/JarbisLogo'
 
 const Icons = {
   Dashboard: () => (
@@ -112,12 +113,8 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
     <>
       {/* Logo */}
       <div className={`h-[60px] flex items-center border-b border-gray-100/80 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
-        <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm shadow-violet-200">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="white" />
-          </svg>
-        </div>
-        {!collapsed && <span className="font-black text-gray-900 text-[15px] tracking-tight">Jarbis</span>}
+        <LogoA size={32} className="flex-shrink-0" />
+        {!collapsed && <span className="font-black text-gray-900 text-[15px] tracking-tight">jarbis</span>}
         {onClose ? (
           <button onClick={onClose} className="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
             <Icons.X />
@@ -317,12 +314,8 @@ export default function AppLayout({ children }) {
         {/* Header mobile */}
         <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-gray-100 sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center shadow-sm shadow-violet-200">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="white" />
-              </svg>
-            </div>
-            <span className="font-black text-gray-900 text-sm tracking-tight">Jarbis</span>
+            <LogoA size={28} />
+            <span className="font-black text-gray-900 text-sm tracking-tight">jarbis</span>
           </div>
           <button
             onClick={() => setMobileOpen(true)}
