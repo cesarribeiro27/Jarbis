@@ -4,17 +4,65 @@ from __future__ import annotations
 
 import csv
 import io
+import ipaddress
 import json
+import socket
 import uuid
 from datetime import date, datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 import openpyxl
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .dataset_models import ReportDataset
+
+
+_BLOCKED_HOSTS = {
+    "localhost",
+    "metadata.google.internal",
+    "169.254.169.254",  # AWS/GCP metadata
+    "instance-data",
+}
+
+
+def _validate_ssrf(url: str) -> None:
+    """Bloqueia URLs internas/privadas para prevenir SSRF."""
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="URL inválida.")
+
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Apenas URLs http/https são permitidas.")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise HTTPException(status_code=400, detail="URL sem hostname.")
+
+    if hostname.lower() in _BLOCKED_HOSTS:
+        raise HTTPException(status_code=400, detail="URL interna não permitida.")
+
+    # Tenta parsear como IP direto; caso seja hostname, resolve
+    try:
+        addr = ipaddress.ip_address(hostname)
+    except ValueError:
+        try:
+            addr = ipaddress.ip_address(socket.gethostbyname(hostname))
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Não foi possível resolver o hostname: {hostname}")
+
+    if (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+    ):
+        raise HTTPException(status_code=400, detail="URLs de redes privadas não são permitidas.")
 
 
 def _utcnow() -> datetime:
@@ -269,6 +317,7 @@ class DatasetService:
     async def _fetch_api(
         self, url: str, headers: dict, data_path: str | None
     ) -> tuple[list[dict], list[str]]:
+        _validate_ssrf(url)
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(url, headers=headers)
             resp.raise_for_status()
