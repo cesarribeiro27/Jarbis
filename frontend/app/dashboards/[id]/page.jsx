@@ -523,12 +523,12 @@ export default function DashboardDetailPage() {
 
   function addBlock(type) {
     const block = newBlock(type)
-    setBlocks(prev => [...prev, block])
+    setBlocks([...blocks, block])
     setSelectedBlockId(block.id)
   }
 
   function updateActiveBlock(updated) {
-    setBlocks(prev => prev.map(b => b.id === updated.id ? updated : b))
+    setBlocks(blocks.map(b => b.id === updated.id ? updated : b))
   }
 
   function togglePanel(panel) {
