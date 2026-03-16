@@ -7,11 +7,6 @@ import { useToast } from '@/lib/toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-function getToken() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('jarbis_token')
-}
-
 function ApiDatasetModal({ onClose, onCreated }) {
   const toast = useToast()
   const [form, setForm] = useState({ name: '', api_url: '', method: 'GET', headers: '', body: '', refresh_interval_minutes: '' })
@@ -120,7 +115,7 @@ export default function DatasetsPage() {
     try {
       const response = await fetch(`${API_URL}/reports/datasets/upload`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
         body: formData,
       })
       if (!response.ok) { const e = await response.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
@@ -171,21 +166,21 @@ export default function DatasetsPage() {
   return (
     <AppLayout>
       <div className="p-6 max-w-screen-xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-black text-gray-900">Dados</h1>
             <p className="text-sm text-gray-500 mt-1">
-              {datasets.length > 0 ? `${datasets.length} dataset${datasets.length !== 1 ? 's' : ''} conectado${datasets.length !== 1 ? 's' : ''}` : 'Datasets conectados aos seus dashboards'}
+              {datasets.length > 0 ? `${datasets.length} fonte${datasets.length !== 1 ? 's' : ''} de dado${datasets.length !== 1 ? 's' : ''} conectada${datasets.length !== 1 ? 's' : ''}` : 'Conecte suas planilhas, arquivos e APIs'}
             </p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setShowApiModal(true)} className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button onClick={() => setShowApiModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
               Conectar API
             </button>
-            <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shadow-violet-200">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              {uploading ? 'Enviando...' : 'Upload CSV/Excel'}
+            <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shadow-violet-200">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              {uploading ? 'Enviando...' : 'Upload arquivo'}
             </button>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { handleUpload(e.target.files[0]); e.target.value = '' }} />
           </div>
@@ -233,55 +228,55 @@ export default function DatasetsPage() {
             onDrop={onDrop}
           >
             {datasets.map(ds => (
-              <div key={ds.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4 hover:border-gray-200 hover:shadow-sm transition-all">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50' : 'bg-emerald-50'}`}>
-                  {ds.type === 'api' ? (
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                  ) : (
-                    <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 truncate">{ds.name}</p>
-                  <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                    <span className="text-xs text-gray-500 font-medium">{formatRows(ds.row_count)}</span>
-                    {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} colunas</span>}
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                      {ds.type === 'api' ? 'API' : 'Arquivo'}
-                    </span>
-                    {ds.last_synced_at && (
-                      <span className="text-xs text-gray-400">
-                        Sincronizado {new Date(ds.last_synced_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    )}
-                    {ds.type === 'api' && ds.refresh_interval_minutes && (
-                      <span className="text-xs text-gray-400">Auto-sync: {ds.refresh_interval_minutes}min</span>
+              <div key={ds.id} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 hover:border-gray-200 hover:shadow-sm transition-all">
+                <div className="flex items-start gap-3">
+                  {/* Ícone */}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50' : 'bg-emerald-50'}`}>
+                    {ds.type === 'api' ? (
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {ds.type === 'api' && (
-                    <button
-                      onClick={() => handleSync(ds.id)}
-                      disabled={syncingId === ds.id}
-                      title="Sincronizar agora"
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-50"
-                    >
-                      <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    </button>
-                  )}
-                  {deleteConfirmId === ds.id ? (
-                    <div className="flex items-center gap-1 bg-red-50 rounded-lg px-2 py-1">
-                      <span className="text-xs text-gray-500 mr-1">Excluir?</span>
-                      <button onClick={() => handleDelete(ds.id)} className="text-xs text-red-600 font-bold hover:underline">Sim</button>
-                      <span className="text-gray-300">·</span>
-                      <button onClick={() => setDeleteConfirmId(null)} className="text-xs text-gray-400 hover:underline">Não</button>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 truncate">{ds.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-xs text-gray-500 font-medium">{formatRows(ds.row_count)}</span>
+                      {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} colunas</span>}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        {ds.type === 'api' ? 'API' : 'Arquivo'}
+                      </span>
+                      {ds.type === 'api' && ds.refresh_interval_minutes && (
+                        <span className="text-xs text-gray-400 hidden sm:inline">Auto: {ds.refresh_interval_minutes}min</span>
+                      )}
                     </div>
-                  ) : (
-                    <button onClick={() => setDeleteConfirmId(ds.id)} title="Excluir" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-                  )}
+                  </div>
+                  {/* Ações */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {ds.type === 'api' && (
+                      <button
+                        onClick={() => handleSync(ds.id)}
+                        disabled={syncingId === ds.id}
+                        title="Atualizar dados"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-50"
+                      >
+                        <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      </button>
+                    )}
+                    {deleteConfirmId === ds.id ? (
+                      <div className="flex items-center gap-1 bg-red-50 rounded-lg px-2 py-1">
+                        <span className="text-xs text-gray-500 hidden sm:inline mr-1">Excluir?</span>
+                        <button onClick={() => handleDelete(ds.id)} className="text-xs text-red-600 font-bold hover:underline">Sim</button>
+                        <span className="text-gray-300">·</span>
+                        <button onClick={() => setDeleteConfirmId(null)} className="text-xs text-gray-400 hover:underline">Não</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setDeleteConfirmId(ds.id)} title="Excluir" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

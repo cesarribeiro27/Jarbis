@@ -241,8 +241,8 @@ export default function LandingPage() {
           <p className="text-sm text-gray-600">7 dias de acesso completo · Setup em 2 minutos</p>
         </div>
 
-        {/* Dashboard mockup */}
-        <div className="relative max-w-5xl mx-auto mt-16">
+        {/* Dashboard mockup — desktop */}
+        <div className="hidden md:block relative max-w-5xl mx-auto mt-16">
           <div className="absolute -inset-4 rounded-2xl pointer-events-none"
             style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(124,58,237,0.3) 0%, transparent 60%)' }} />
 
@@ -304,6 +304,32 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard mockup simplificado — mobile */}
+        <div className="md:hidden relative max-w-sm mx-auto mt-10">
+          <div className="rounded-2xl overflow-hidden border border-white/10 p-4" style={{ background: '#13111F' }}>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {[
+                { label: 'Vendas', value: 'R$847K', up: true },
+                { label: 'Clientes', value: '1.284', up: true },
+              ].map((kpi) => (
+                <div key={kpi.label} className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
+                  <div className="text-[10px] text-gray-500 mb-1">{kpi.label}</div>
+                  <div className="text-base font-black text-white">{kpi.value}</div>
+                  <div className="text-[10px] font-semibold text-emerald-400">+23%</div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
+              <div className="text-[10px] text-gray-500 mb-2">Receita por mês</div>
+              <div className="flex items-end gap-1 h-16">
+                {[40, 55, 45, 70, 60, 85, 75, 92, 80, 68, 88, 96].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 11 ? 'linear-gradient(to top, #7c3aed, #a78bfa)' : 'rgba(124,58,237,0.25)' }} />
+                ))}
               </div>
             </div>
           </div>
@@ -380,35 +406,37 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr style={{ background: '#FAFAF8' }} className="border-b border-gray-100">
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-400">Funcionalidade</th>
-                  <th className="px-6 py-4 text-center">
-                    <div className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 font-bold text-sm px-3 py-1 rounded-full">
-                      <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />
-                      Jarbis
-                    </div>
-                  </th>
-                  <th className="px-6 py-4 text-center">
-                    <div className="text-sm font-semibold text-gray-400">Luzmo</div>
-                  </th>
-                  <th className="px-6 py-4 text-center">
-                    <div className="text-sm font-semibold text-gray-400">Power BI</div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARISON.map((row, i) => (
-                  <tr key={row.feature} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
-                    <td className="px-6 py-4 text-sm text-gray-600 font-medium">{row.feature}</td>
-                    <td className="px-6 py-4 text-center"><ComparisonCell value={row.jarbis} /></td>
-                    <td className="px-6 py-4 text-center"><ComparisonCell value={row.luzmo} /></td>
-                    <td className="px-6 py-4 text-center"><ComparisonCell value={row.powerbi} /></td>
+            <div className="overflow-x-auto">
+              <table className="min-w-[560px] w-full">
+                <thead>
+                  <tr style={{ background: '#FAFAF8' }} className="border-b border-gray-100">
+                    <th className="text-left px-4 sm:px-6 py-4 text-sm font-semibold text-gray-400">Funcionalidade</th>
+                    <th className="px-4 sm:px-6 py-4 text-center">
+                      <div className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 font-bold text-sm px-3 py-1 rounded-full">
+                        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />
+                        Jarbis
+                      </div>
+                    </th>
+                    <th className="px-4 sm:px-6 py-4 text-center">
+                      <div className="text-sm font-semibold text-gray-400">Luzmo</div>
+                    </th>
+                    <th className="px-4 sm:px-6 py-4 text-center">
+                      <div className="text-sm font-semibold text-gray-400">Power BI</div>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {COMPARISON.map((row, i) => (
+                    <tr key={row.feature} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-gray-600 font-medium whitespace-nowrap">{row.feature}</td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.jarbis} /></td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.luzmo} /></td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.powerbi} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>

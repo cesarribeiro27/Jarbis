@@ -101,7 +101,7 @@ function ImageCropperModal({ onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-[540px] overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[540px] mx-4 sm:mx-0 overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <span className="font-semibold text-gray-800 text-sm">Imagem de capa</span>
@@ -251,10 +251,10 @@ export default function DashboardsPage() {
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-screen-xl mx-auto">
+      <div className="p-4 sm:p-8 max-w-screen-xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <h1 className="text-2xl font-black text-gray-900">Dashboards</h1>
             <p className="text-sm text-gray-400 mt-1">
@@ -263,7 +263,7 @@ export default function DashboardsPage() {
           </div>
           <button
             onClick={() => router.push('/dashboards/novo')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200 sm:w-auto"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
             Novo dashboard

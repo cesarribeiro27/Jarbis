@@ -91,7 +91,7 @@ export default function DashboardHome() {
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-screen-lg mx-auto">
+      <div className="p-4 sm:p-8 max-w-screen-lg mx-auto">
 
         {/* Header */}
         <div className="mb-10">
@@ -174,10 +174,10 @@ export default function DashboardHome() {
                   <Link
                     key={d.id}
                     href={`/dashboards/${d.id}`}
-                    className="flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50/80 transition-colors border-b border-gray-50 last:border-b-0 group"
+                    className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 hover:bg-gray-50/80 transition-colors border-b border-gray-50 last:border-b-0 group"
                   >
-                    {/* mini chart */}
-                    <div className="w-14 h-8 shrink-0 rounded-lg overflow-hidden bg-gray-50/80">
+                    {/* mini chart — oculto em telas muito pequenas */}
+                    <div className="hidden xs:block w-12 sm:w-14 h-7 sm:h-8 shrink-0 rounded-lg overflow-hidden bg-gray-50/80">
                       <MiniChart color={color} seed={i + 1} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -187,7 +187,7 @@ export default function DashboardHome() {
                         {d.share_token && <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Público</span>}
                       </div>
                     </div>
-                    <div className="text-xs text-gray-300 shrink-0 group-hover:text-gray-400 transition-colors">
+                    <div className="text-xs text-gray-300 shrink-0 group-hover:text-gray-400 transition-colors hidden sm:block">
                       {new Date(d.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                     </div>
                     <svg className="w-4 h-4 text-gray-200 group-hover:text-violet-400 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
