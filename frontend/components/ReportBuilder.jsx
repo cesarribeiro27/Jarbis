@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import GridLayout from 'react-grid-layout'
+import GridLayout, { noCompactor } from 'react-grid-layout'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area,
@@ -9,7 +9,7 @@ import {
   ComposedChart, Treemap,
   RadialBarChart, RadialBar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, Legend,
+  ReferenceLine, Legend, LabelList,
 } from 'recharts'
 import 'react-grid-layout/css/styles.css'
 import { api } from '@/lib/api'
@@ -154,6 +154,9 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
   return req
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUUID(v) { return typeof v === 'string' && UUID_RE.test(v) }
+
 function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters = {}, globalDateFilter = {}, drilldown = null, shareToken = null) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -164,8 +167,8 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
 
   useEffect(() => {
     if (['text', 'filter', 'slider', 'image'].includes(block.type)) return
-    if (block.static_data && !block.dataset_id) { setData(block.static_data); return }
-    if (!block.dataset_id || !block.label_col || !block.value_col) { setData(null); return }
+    if (!isUUID(block.dataset_id)) { setData(block.static_data || null); return }
+    if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
     setLoading(true); setError(null)
     const queryFn = shareToken
       ? api.reports.publicQueryV2(shareToken, block.dataset_id, req)
@@ -189,7 +192,7 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken }
   const selectedVals = Array.isArray(currentVal) ? currentVal : (currentVal ? [currentVal] : [])
 
   useEffect(() => {
-    if (!dsId || !col) return
+    if (!isUUID(dsId) || !col) return
     setLoading(true)
     const req = { dimensions: [{ column: col, type: 'text' }], metrics: [{ column: '__count__', aggregation: 'sum' }] }
     const queryFn = shareToken
@@ -521,19 +524,26 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     if (config.threshold_warn != null && config.threshold_warn !== '' && total < parseFloat(config.threshold_warn)) valueColor = '#ef4444'
     else if (config.threshold_ok != null && config.threshold_ok !== '' && total >= parseFloat(config.threshold_ok)) valueColor = '#10b981'
     const autoFormat = (format === 'currency' && Math.abs(total) >= 10000) ? 'compact_currency' : format
+    const sizeMap = { lg: '18px', xl: '20px', '2xl': '24px', '4xl': '31px' }
+    const valueFontSize = sizeMap[config.size || '4xl'] || '31px'
+    const delta = config.delta != null && config.delta !== '' ? String(config.delta) : null
+    const deltaNum = delta ? parseFloat(delta) : null
+    const deltaPositive = deltaNum != null ? deltaNum >= 0 : null
+    const deltaLabel = config.delta_label || 'vs. mês ant.'
     return (
-      <div className="h-full flex flex-col justify-center gap-2.5 px-3 py-2" style={{ background: `linear-gradient(135deg, ${accentColor}08 0%, transparent 60%)` }}>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: accentColor + '18' }}>
-          <svg className="w-[18px] h-[18px]" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-3xl font-black leading-none tracking-tight" style={{ color: valueColor }}>
-            {autoFormat === 'compact_currency' ? fmtCompactCurrency(total) : fmt(total, format, config)}
-          </p>
-          <div className="h-[3px] rounded-full w-8 mt-2" style={{ backgroundColor: accentColor }} />
-        </div>
+      <div className="flex flex-col gap-0 pt-0.5">
+        <p className="font-black leading-none tracking-tight tabular-nums" style={{ color: valueColor, fontSize: valueFontSize }}>
+          {autoFormat === 'compact_currency' ? fmtCompactCurrency(total) : fmt(total, format, config)}
+        </p>
+        {delta && (
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${deltaPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+              {deltaPositive ? '↑' : '↓'} {deltaPositive && deltaNum > 0 ? '+' : ''}{delta}%
+            </span>
+            <span className="text-[10px] text-gray-400 leading-none">{deltaLabel}</span>
+          </div>
+        )}
+        <div className="h-[3px] rounded-full mt-3 shrink-0" style={{ backgroundColor: accentColor, width: '28px' }} />
       </div>
     )
   }
@@ -556,13 +566,15 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: 8, bottom: 32 }}>
             <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
-            <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+            {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
+            <Bar dataKey="value" name={block.title || 'Valor'} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
               {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+              {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
@@ -578,13 +590,15 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: 24, left: 40, bottom: 4 }}>
+          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: config.show_data_labels ? 48 : 24, left: 40, bottom: 4 }}>
             <CartesianGrid horizontal={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
-            <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+            {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
+            <Bar dataKey="value" name={block.title || 'Valor'} radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
               {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+              {config.show_data_labels && <LabelList dataKey="value" position="right" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
@@ -614,12 +628,16 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <Area
               type="monotone"
               dataKey="value"
+              name={block.title || 'Valor'}
               stroke={color}
               strokeWidth={2.5}
               fill={`url(#grad_${block.id})`}
               dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
               activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
-            />
+            >
+              {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
+            </Area>
+            {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
@@ -642,11 +660,15 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <Line
               type="monotone"
               dataKey="value"
+              name={block.title || 'Valor'}
               stroke={color}
               strokeWidth={2.5}
               dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
               activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
-            />
+            >
+              {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
+            </Line>
+            {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || 'Meta', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
@@ -656,33 +678,46 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     </div>
   )
 
-  if (block.type === 'pie') return (
-    <div className="flex flex-col h-full">
-      {DrillChip}
-      <div style={{ flex: 1 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data} dataKey="value" nameKey="label"
-            cx="50%" cy="45%" outerRadius="38%" innerRadius="20%"
-            labelLine={false}
-            onClick={entry => handleClick(entry.label)}
-            style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}
-          >
-            {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
-          </Pie>
-          <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
-          <Legend
-            iconType="circle"
-            iconSize={8}
-            formatter={(value) => <span style={{ fontSize: 10, color: '#6b7280' }}>{value}</span>}
-            wrapperStyle={{ paddingTop: 4 }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+  if (block.type === 'pie') {
+    const pieInner = config.inner_radius_pct != null && config.inner_radius_pct !== '' ? `${config.inner_radius_pct}%` : '22%'
+    const pieOuter = config.outer_radius_pct != null && config.outer_radius_pct !== '' ? `${config.outer_radius_pct}%` : '35%'
+    const pieCY = config.pie_cy != null && config.pie_cy !== '' ? `${config.pie_cy}%` : '54%'
+    const showLegend = config.show_legend !== false
+    return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data} dataKey="value" nameKey="label"
+              cx="50%" cy={pieCY} outerRadius={pieOuter} innerRadius={pieInner}
+              labelLine={false}
+              label={config.show_labels ? ({ cx: pcx, cy: pcy, midAngle, outerRadius: pr, percent }) => {
+                const RADIAN = Math.PI / 180
+                const radius = pr * 1.2
+                const x = pcx + radius * Math.cos(-midAngle * RADIAN)
+                const y = pcy + radius * Math.sin(-midAngle * RADIAN)
+                return percent > 0.03 ? <text x={x} y={y} textAnchor={x > pcx ? 'start' : 'end'} dominantBaseline="central" style={{ fontSize: 9, fill: '#374151' }}>{`${(percent * 100).toFixed(0)}%`}</text> : null
+              } : null}
+              onClick={entry => handleClick(entry.label)}
+              style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}
+            >
+              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+            </Pie>
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => [fmt(v, format, config), '']} />
+            {showLegend && <Legend
+              iconType="circle"
+              iconSize={8}
+              formatter={(value) => <span style={{ fontSize: 10, color: '#6b7280' }}>{value}</span>}
+              wrapperStyle={{ paddingTop: 4 }}
+            />}
+          </PieChart>
+        </ResponsiveContainer>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (block.type === 'scatter') {
     const scatterData = data.map(d => ({ x: parseFloat(d.label) || 0, y: d.value }))
@@ -770,7 +805,8 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   if (block.type === 'gauge') {
     const total = data.reduce((s, d) => s + (d.value || 0), 0)
     const maxVal = parseFloat(config.gauge_max) || 100
-    const pct = Math.min(Math.max(total / maxVal, 0), 1) * 100
+    const minVal = parseFloat(config.gauge_min) || 0
+    const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1) * 100
     const gaugeData = [{ name: block.title || 'Valor', value: pct }]
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -788,7 +824,8 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   if (block.type === 'speedometer') {
     const total = data.reduce((s, d) => s + (d.value || 0), 0)
     const maxVal = parseFloat(config.gauge_max) || 100
-    const pct = Math.min(Math.max(total / maxVal, 0), 1)
+    const minVal = parseFloat(config.gauge_min) || 0
+    const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1)
     const cx = 100, cy = 88, r = 68
     const valAngleRad = (180 - 180 * pct) * Math.PI / 180
     const vx = (cx + r * Math.cos(valAngleRad)).toFixed(2)
@@ -803,7 +840,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
           <line x1={cx} y1={cy} x2={vx} y2={vy} stroke="#374151" strokeWidth="2.5" strokeLinecap="round" />
           <circle cx={cx} cy={cy} r="5" fill="#374151" />
           <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fontWeight="800" fill={color}>{fmt(total, format, config)}</text>
-          <text x={cx - r + 2} y={cy + 16} fontSize="8" fill="#9ca3af">0</text>
+          <text x={cx - r + 2} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_min || 0}</text>
           <text x={cx + r - 10} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_max || 100}</text>
         </svg>
       </div>
@@ -866,7 +903,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
 
   useEffect(() => {
     const ds = datasets.find(d => d.id === block.dataset_id)
-    if (!block.dataset_id || !ds) { setColTypes({}); return }
+    if (!isUUID(block.dataset_id) || !ds) { setColTypes({}); return }
     // Usa column_types que já vem no DatasetSummary da API
     if (ds.column_types && Object.keys(ds.column_types).length > 0) {
       setColTypes(ds.column_types)
@@ -1155,13 +1192,39 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
                 <p className="text-[10px] text-gray-400 mt-1">Cole qualquer emoji ou símbolo</p>
               </div>
               <ColorPicker label="Cor do número" value={block.config?.accent_color || ''} onChange={v => updConfig('accent_color', v)} />
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Delta (variação %)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number" step="any"
+                    value={block.config?.delta ?? ''}
+                    onChange={e => updConfig('delta', e.target.value === '' ? null : e.target.value)}
+                    placeholder="Ex: 12.5"
+                    className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                  <input
+                    type="text"
+                    value={block.config?.delta_label ?? ''}
+                    onChange={e => updConfig('delta_label', e.target.value)}
+                    placeholder="vs. mês ant."
+                    className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Valor positivo = ↑ verde · negativo = ↓ vermelho</p>
+              </div>
             </>
           )}
           {['gauge', 'speedometer'].includes(block.type) && (
             <>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Valor máximo do indicador</label>
-                <input type="number" step="any" value={block.config?.gauge_max ?? ''} onChange={e => updConfig('gauge_max', e.target.value === '' ? null : +e.target.value)} placeholder="100" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Mínimo</label>
+                  <input type="number" step="any" value={block.config?.gauge_min ?? ''} onChange={e => updConfig('gauge_min', e.target.value === '' ? null : +e.target.value)} placeholder="0" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Máximo</label>
+                  <input type="number" step="any" value={block.config?.gauge_max ?? ''} onChange={e => updConfig('gauge_max', e.target.value === '' ? null : +e.target.value)} placeholder="100" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                </div>
               </div>
               <ColorPicker label="Cor do arco" value={block.config?.color || ''} onChange={v => updConfig('color', v)} />
             </>
@@ -1217,11 +1280,98 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
 
       {/* APARÊNCIA */}
       <ConfigSection title="Aparência" defaultOpen={false}>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div
+            onClick={() => updConfig('hide_header', !block.config?.hide_header)}
+            className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.hide_header ? 'bg-violet-500' : 'bg-gray-200'}`}
+          >
+            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.hide_header ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          </div>
+          <span className="text-xs text-gray-600">Ocultar cabeçalho</span>
+        </label>
         <ColorPicker label="Cor de fundo do bloco" value={block.config?.bg_color || ''} onChange={v => updConfig('bg_color', v)} placeholder="#ffffff" />
         {block.type === 'text' && (
           <ColorPicker label="Cor do texto" value={block.config?.text_color || ''} onChange={v => updConfig('text_color', v)} placeholder="#4b5563" />
         )}
+        <div>
+          <label className="block text-xs text-gray-500 mb-1.5">Borda</label>
+          <div className="flex gap-2">
+            <ColorPicker value={block.config?.border_color || ''} onChange={v => updConfig('border_color', v)} placeholder="#e5e7eb" />
+            <div className="flex-1 min-w-0">
+              <input type="number" min="1" max="10" value={block.config?.border_width ?? ''} onChange={e => updConfig('border_width', e.target.value === '' ? null : +e.target.value)} placeholder="Px" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" title="Espessura da borda (px)" />
+            </div>
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1.5">Arredondamento dos cantos (px)</label>
+          <input type="number" min="0" max="32" value={block.config?.border_radius ?? ''} onChange={e => updConfig('border_radius', e.target.value === '' ? null : +e.target.value)} placeholder="12" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1.5">Sombra</label>
+          <div className="flex gap-1">
+            {[{ v: '', l: 'Auto' }, { v: 'none', l: 'Nenhuma' }, { v: 'sm', l: 'Leve' }, { v: 'md', l: 'Média' }, { v: 'lg', l: 'Forte' }, { v: 'xl', l: 'Intensa' }].map(o => (
+              <button key={o.v} onClick={() => updConfig('shadow', o.v || undefined)} className={`flex-1 px-1 py-1 rounded border text-[10px] font-medium transition-all ${(block.config?.shadow || '') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{o.l}</button>
+            ))}
+          </div>
+        </div>
       </ConfigSection>
+
+      {/* GRÁFICO — opções de visualização */}
+      {['bar', 'bar_h', 'line', 'area', 'combo'].includes(block.type) && (
+        <ConfigSection title="Gráfico" defaultOpen={false}>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_data_labels', !block.config?.show_data_labels)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_data_labels ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_data_labels ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Mostrar valores nos dados</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_legend', !block.config?.show_legend)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_legend ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_legend ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Mostrar legenda</span>
+          </label>
+        </ConfigSection>
+      )}
+
+      {/* PIZZA — opções específicas */}
+      {block.type === 'pie' && (
+        <ConfigSection title="Gráfico de pizza" defaultOpen={false}>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Raio interno (0 = pizza sólida, &gt;0 = donut)</label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="0" max="45" value={block.config?.inner_radius_pct ?? 22} onChange={e => updConfig('inner_radius_pct', +e.target.value)} className="flex-1 accent-violet-600" />
+              <span className="text-xs text-gray-500 w-10 text-right">{block.config?.inner_radius_pct ?? 22}%</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Raio externo</label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="20" max="60" value={block.config?.outer_radius_pct ?? 35} onChange={e => updConfig('outer_radius_pct', +e.target.value)} className="flex-1 accent-violet-600" />
+              <span className="text-xs text-gray-500 w-10 text-right">{block.config?.outer_radius_pct ?? 35}%</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Posição vertical do centro</label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="30" max="70" value={block.config?.pie_cy ?? 54} onChange={e => updConfig('pie_cy', +e.target.value)} className="flex-1 accent-violet-600" />
+              <span className="text-xs text-gray-500 w-10 text-right">{block.config?.pie_cy ?? 54}%</span>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_labels', !block.config?.show_labels)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_labels ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_labels ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Mostrar % nas fatias</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_legend', block.config?.show_legend === false ? undefined : false)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_legend !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_legend !== false ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Mostrar legenda</span>
+          </label>
+        </ConfigSection>
+      )}
 
       {/* INTERATIVIDADE */}
       {hasData && block.type !== 'scatter' && (
@@ -1365,6 +1515,17 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           </div>
         </ConfigSection>
       )}
+
+      {/* LAYOUT DO BLOCO */}
+      <ConfigSection title="Layout do bloco" defaultOpen={false}>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div onClick={() => updConfig('locked', !block.config?.locked)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.locked ? 'bg-amber-400' : 'bg-gray-200'}`}>
+            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.locked ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          </div>
+          <span className="text-xs text-gray-600">Travar posição e tamanho</span>
+        </label>
+        <p className="text-[10px] text-gray-400">Quando travado, o bloco não pode ser arrastado nem redimensionado.</p>
+      </ConfigSection>
 
       {/* ID DO BLOCO */}
       <ConfigSection title="ID do bloco" defaultOpen={false}>
@@ -1668,9 +1829,9 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   const isMobile = gridWidth < 640
   const layout = isMobile
     ? blocks.map((b, idx) => ({ i: b.id, x: 0, y: idx * (b.layout?.h ?? 3), w: 12, h: b.layout?.h ?? 3, minW: 1, minH: 1 }))
-    : blocks.map(b => ({ i: b.id, x: b.layout?.x ?? 0, y: b.layout?.y ?? 0, w: b.layout?.w ?? 6, h: b.layout?.h ?? 3, minW: 1, minH: 1 }))
+    : blocks.map(b => ({ i: b.id, x: b.layout?.x ?? 0, y: b.layout?.y ?? 0, w: b.layout?.w ?? 6, h: b.layout?.h ?? 3, minW: 1, minH: 1, static: !!b.config?.locked }))
 
-  function handleLayoutChange(newLayout) {
+  function syncLayout(newLayout) {
     if (readOnly || !onChange) return
     onChange(blocks.map(b => { const l = newLayout.find(n => n.i === b.id); return l ? { ...b, layout: { x: l.x, y: l.y, w: l.w, h: l.h } } : b }))
   }
@@ -1681,7 +1842,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
     boxShadow: '0 2px 8px rgba(109,40,217,0.04), 0 12px 40px rgba(0,0,0,0.08)',
     minHeight: '640px',
     padding: '28px 28px 40px',
-    backgroundImage: 'radial-gradient(circle, rgba(109,40,217,0.08) 1px, transparent 1px)',
+    backgroundImage: `radial-gradient(circle, ${sheetConfig.dotColor || 'rgba(109,40,217,0.08)'} 1px, transparent 1px)`,
     backgroundSize: '24px 24px',
   }
 
@@ -1694,7 +1855,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   return (
     <div style={sheetStyle} ref={sheetRef}>
-    <GridLayout className="w-full" layout={layout} cols={12} rowHeight={56} width={gridWidth} isDraggable={!readOnly && !isMobile} isResizable={!readOnly && !isMobile} onLayoutChange={handleLayoutChange} draggableHandle=".drag-handle" onDragStart={() => setIsDragging(true)} onDragStop={() => setIsDragging(false)}>
+    <GridLayout className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: 52, margin: [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={noCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)} onDragStart={() => setIsDragging(true)}>
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
         const isSelected = selectedBlockId === block.id
@@ -1709,12 +1870,16 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         function cloneBlock() {
           const cloned = {
             ...JSON.parse(JSON.stringify(block)),
-            id: `block_${Date.now()}`,
+            id: crypto.randomUUID(),
             title: block.title + ' (cópia)',
             layout: { ...block.layout, y: block.layout.y + block.layout.h },
           }
           onChange([...blocks, cloned])
         }
+
+        const shadowMap = { sm: '0 1px 4px rgba(0,0,0,0.08)', md: '0 4px 16px rgba(0,0,0,0.14)', lg: '0 8px 32px rgba(0,0,0,0.20)', xl: '0 20px 60px rgba(0,0,0,0.25)', none: 'none' }
+        const customBorderRadius = block.config?.border_radius != null && block.config?.border_radius !== '' ? `${block.config.border_radius}px` : undefined
+        const customShadow = !isSelected && !isCrossFiltered && block.config?.shadow ? shadowMap[block.config.shadow] : undefined
 
         return (
           <div
@@ -1733,13 +1898,19 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 ? (block.config?.bg_color ? block.config.bg_color : '#f0fdf4')
                 : (block.config?.bg_color || 'white'),
               zIndex: (isSelected || isHovered) ? 100 : undefined,
+              ...(customBorderRadius && { borderRadius: customBorderRadius }),
+              ...(customShadow && { boxShadow: customShadow }),
+              ...(!isSelected && !isCrossFiltered && !isUnrelated && block.config?.border_color && {
+                borderColor: block.config.border_color,
+                borderWidth: `${block.config.border_width || 1}px`,
+              }),
             }}
             onMouseEnter={() => setHoveredBlockId(block.id)}
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
             {/* Header */}
-            <div className={`flex items-center gap-2 px-3 pt-3 pb-1.5 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''}`}>
+            <div className={`flex items-center gap-2 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''} ${block.config?.hide_header ? 'px-1 pt-1 pb-0 h-3 overflow-hidden' : 'px-3 pt-3 pb-1.5'}`}>
               {!readOnly && (
                 <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400 shrink-0 transition-colors" viewBox="0 0 10 16" fill="currentColor">
                   <circle cx="2" cy="3" r="1.5"/><circle cx="8" cy="3" r="1.5"/>
@@ -1773,6 +1944,12 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200/60 rounded-md text-[10px] font-medium shrink-0" title={`${block.config.annotations.length} anotação(ões)`}>
                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>
                   {block.config.annotations.length}
+                </span>
+              )}
+              {/* Lock indicator */}
+              {block.config?.locked && (
+                <span title="Bloco travado" className="shrink-0 text-amber-400">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 </span>
               )}
               {/* Export CSV button — visible on hover for data blocks */}
@@ -1836,6 +2013,16 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </button>
+                <button
+                  title={block.config?.locked ? 'Desbloquear posição' : 'Travar posição'}
+                  onClick={() => onChange(blocks.map(b => b.id === block.id ? { ...b, config: { ...(b.config || {}), locked: !b.config?.locked } } : b))}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${block.config?.locked ? 'bg-amber-50 text-amber-500 hover:bg-amber-100' : 'text-gray-500 hover:bg-violet-50 hover:text-violet-600'}`}
+                >
+                  {block.config?.locked
+                    ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                  }
                 </button>
                 <div className="h-px bg-gray-100 mx-1" />
                 <button

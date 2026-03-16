@@ -27,7 +27,14 @@ async function apiFetch(path, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Erro desconhecido' }))
-    throw new Error(error.detail || 'Erro na requisição')
+    const detail = error.detail
+    const message = Array.isArray(detail)
+      ? detail.map(e => e.msg || JSON.stringify(e)).join('; ')
+      : (typeof detail === 'string' ? detail : 'Erro na requisição')
+    if (response.status === 422) {
+      console.error('[API 422] URL:', path, '| Erro:', message)
+    }
+    throw new Error(message)
   }
 
   if (response.status === 204 || response.headers.get('content-length') === '0') return null

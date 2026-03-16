@@ -159,83 +159,8 @@ async def get_data_source(
     return items
 
 
-@router.get(
-    "/{report_id}",
-    response_model=ReportResponse,
-    summary="Detalhe do relatório",
-)
-async def get_report(
-    report_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    service = ReportService(db)
-    report = await service.get(report_id, current_user.tenant_id)
-    if not report:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado")
-    return report
-
-
-@router.put(
-    "/{report_id}",
-    response_model=ReportResponse,
-    summary="Atualiza título, descrição ou blocos do relatório",
-)
-async def update_report(
-    report_id: uuid.UUID,
-    data: ReportUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    service = ReportService(db)
-    report = await service.update(report_id, current_user.tenant_id, data)
-    if not report:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado")
-    return report
-
-
-@router.delete(
-    "/{report_id}",
-    status_code=204,
-    summary="Remove o relatório",
-)
-async def delete_report(
-    report_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    service = ReportService(db)
-    deleted = await service.delete(report_id, current_user.tenant_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado")
-
-
-@router.post(
-    "/{report_id}/share",
-    response_model=ShareResponse,
-    summary="Gera link público de compartilhamento",
-)
-async def create_share_link(
-    report_id: uuid.UUID,
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """
-    Cria (ou retorna) um link público para o relatório ser visualizado sem login.
-    A URL do frontend é gerada substituindo a porta 8000 pela 3000 e usando
-    o caminho /r/{token}.
-    """
-    base_url = str(request.base_url).rstrip("/")
-    service = ReportService(db)
-    result = await service.get_or_create_share(report_id, current_user.tenant_id, base_url)
-    if not result:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado")
-    return ShareResponse(**result)
-
-
 # ---------------------------------------------------------------------------
-# Public endpoint (no auth)
+# Public endpoint (no auth) — MUST come before /{report_id} to avoid capture
 # ---------------------------------------------------------------------------
 
 
@@ -839,3 +764,84 @@ async def delete_alert(
         raise HTTPException(status_code=404, detail="Alerta não encontrado")
     await db.delete(alert)
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Report CRUD — parametrizado /{report_id} deve ficar por ÚLTIMO para não
+# capturar rotas fixas como /datasets, /public, /alerts, /ai-query, /data
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{report_id}",
+    response_model=ReportResponse,
+    summary="Detalhe do relatório",
+)
+async def get_report(
+    report_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = ReportService(db)
+    report = await service.get(report_id, current_user.tenant_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+    return report
+
+
+@router.put(
+    "/{report_id}",
+    response_model=ReportResponse,
+    summary="Atualiza título, descrição ou blocos do relatório",
+)
+async def update_report(
+    report_id: uuid.UUID,
+    data: ReportUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = ReportService(db)
+    report = await service.update(report_id, current_user.tenant_id, data)
+    if not report:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+    return report
+
+
+@router.delete(
+    "/{report_id}",
+    status_code=204,
+    summary="Remove o relatório",
+)
+async def delete_report(
+    report_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = ReportService(db)
+    deleted = await service.delete(report_id, current_user.tenant_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+
+
+@router.post(
+    "/{report_id}/share",
+    response_model=ShareResponse,
+    summary="Gera link público de compartilhamento",
+)
+async def create_share_link(
+    report_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Cria (ou retorna) um link público para o relatório ser visualizado sem login.
+    A URL do frontend é gerada substituindo a porta 8000 pela 3000 e usando
+    o caminho /r/{token}.
+    """
+    base_url = str(request.base_url).rstrip("/")
+    service = ReportService(db)
+    result = await service.get_or_create_share(report_id, current_user.tenant_id, base_url)
+    if not result:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+    return ShareResponse(**result)
