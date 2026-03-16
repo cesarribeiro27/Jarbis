@@ -273,6 +273,8 @@ class DatasetService:
         await self.db.commit()
         return True
 
+    _VALID_AGGS = {"sum", "avg", "count", "max", "min", "none"}
+
     def query(
         self,
         ds: ReportDataset,
@@ -286,6 +288,22 @@ class DatasetService:
         date_to: str | None = None,
     ) -> list[dict]:
         """Agrega as rows do dataset e retorna [{label, value}]."""
+        available = ds.columns or []
+        if agg not in self._VALID_AGGS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Agregação inválida: '{agg}'. Use: {', '.join(sorted(self._VALID_AGGS))}",
+            )
+        if label_col not in available:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Coluna label '{label_col}' não encontrada. Disponíveis: {available}",
+            )
+        if value_col != "__count__" and value_col not in available:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Coluna value '{value_col}' não encontrada. Disponíveis: {available}",
+            )
         if not ds.rows:
             return []
         rows = ds.rows
