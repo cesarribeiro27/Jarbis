@@ -34,6 +34,10 @@ async def create_checkout(
         raise HTTPException(status_code=503, detail="Pagamentos não configurados. Entre em contato com o suporte.")
 
     valid_prices = {
+        settings.stripe_price_solo,
+        settings.stripe_price_equipe,
+        settings.stripe_price_ilimitado,
+        # legados
         settings.stripe_price_starter,
         settings.stripe_price_pro,
         settings.stripe_price_enterprise,

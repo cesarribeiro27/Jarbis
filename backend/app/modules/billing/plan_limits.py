@@ -2,60 +2,148 @@
 Limites por plano do Jarbis.
 
 -1 = ilimitado
+None em price_monthly = sob consulta (Enterprise)
 """
 
+from decimal import Decimal
+from dataclasses import dataclass, field
+from typing import Optional
+
+
+@dataclass
+class PlanLimits:
+    name: str
+    price_monthly: Optional[Decimal]     # None = sob consulta
+    max_dashboards: int                  # -1 = ilimitado
+    max_datasets: int                    # -1 = ilimitado
+    max_users: int                       # -1 = ilimitado
+    max_alerts: int                      # -1 = ilimitado
+    allow_embed: bool = False
+    allow_ai: bool = False
+    allow_white_label: bool = False
+    sla: bool = False
+
+
+PLANS: dict[str, PlanLimits] = {
+    "free": PlanLimits(
+        name="Gratuito",
+        price_monthly=Decimal("0"),
+        max_dashboards=2,
+        max_datasets=1,
+        max_users=1,
+        max_alerts=0,
+        allow_embed=False,
+        allow_ai=False,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "solo": PlanLimits(
+        name="Solo",
+        price_monthly=Decimal("79.90"),   # placeholder — ajustar antes do deploy
+        max_dashboards=8,
+        max_datasets=5,
+        max_users=1,
+        max_alerts=5,
+        allow_embed=True,
+        allow_ai=False,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "equipe": PlanLimits(
+        name="Equipe",
+        price_monthly=Decimal("189.90"),  # placeholder
+        max_dashboards=30,
+        max_datasets=15,
+        max_users=5,
+        max_alerts=15,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "ilimitado": PlanLimits(
+        name="Ilimitado",
+        price_monthly=Decimal("599.90"),  # placeholder — mais caro por custo de storage
+        max_dashboards=-1,
+        max_datasets=-1,
+        max_users=20,
+        max_alerts=-1,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=True,
+        sla=False,
+    ),
+    "enterprise": PlanLimits(
+        name="Enterprise",
+        price_monthly=None,              # sob consulta — negociação manual
+        max_dashboards=-1,
+        max_datasets=-1,
+        max_users=-1,
+        max_alerts=-1,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=True,
+        sla=True,
+    ),
+    # ── Chaves legadas (mantidas para compatibilidade com tenants já criados) ──
+    "starter": PlanLimits(
+        name="Solo",
+        price_monthly=Decimal("79.90"),
+        max_dashboards=8,
+        max_datasets=5,
+        max_users=1,
+        max_alerts=5,
+        allow_embed=True,
+        allow_ai=False,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "professional": PlanLimits(
+        name="Equipe",
+        price_monthly=Decimal("189.90"),
+        max_dashboards=30,
+        max_datasets=15,
+        max_users=5,
+        max_alerts=15,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=False,
+        sla=False,
+    ),
+}
+
+# ── Dicts legados usados em partes do código que ainda lêem como dict ────────
+
 PLAN_LIMITS: dict[str, dict] = {
-    "free": {
-        "dashboards": 2,
-        "datasets": 1,
-        "users": 1,
-        "alerts": 0,
-        "white_label": False,
-        "ai": False,
-        "embed": False,
-    },
-    "starter": {
-        "dashboards": 10,
-        "datasets": 5,
-        "users": 3,
-        "alerts": 5,
-        "white_label": False,
-        "ai": False,
-        "embed": True,
-    },
-    "professional": {
-        "dashboards": -1,
-        "datasets": -1,
-        "users": -1,
-        "alerts": -1,
-        "white_label": True,
-        "ai": True,
-        "embed": True,
-    },
-    "enterprise": {
-        "dashboards": -1,
-        "datasets": -1,
-        "users": -1,
-        "alerts": -1,
-        "white_label": True,
-        "ai": True,
-        "embed": True,
-    },
+    key: {
+        "dashboards":    p.max_dashboards,
+        "datasets":      p.max_datasets,
+        "users":         p.max_users,
+        "alerts":        p.max_alerts,
+        "white_label":   p.allow_white_label,
+        "ai":            p.allow_ai,
+        "embed":         p.allow_embed,
+        "sla":           p.sla,
+    }
+    for key, p in PLANS.items()
 }
 
-PLAN_NAMES = {
-    "free": "Gratuito",
-    "starter": "Starter",
-    "professional": "Pro",
-    "enterprise": "Enterprise",
-}
+PLAN_NAMES: dict[str, str] = {key: p.name for key, p in PLANS.items()}
 
-PLAN_PRICES = {
-    "starter": "R$197/mês",
-    "professional": "R$597/mês",
-    "enterprise": "R$1.497/mês",
+PLAN_PRICES: dict[str, str] = {
+    "solo":      "R$79,90/mês",
+    "equipe":    "R$189,90/mês",
+    "ilimitado": "R$599,90/mês",
+    "enterprise": "Sob consulta",
+    # legado
+    "starter":      "R$79,90/mês",
+    "professional": "R$189,90/mês",
 }
 
 
 def get_limits(plan: str) -> dict:
     return PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+
+
+def get_plan(plan: str) -> PlanLimits:
+    return PLANS.get(plan, PLANS["free"])

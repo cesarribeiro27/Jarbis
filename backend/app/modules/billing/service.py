@@ -25,8 +25,13 @@ def _init_stripe() -> bool:
 def _build_price_map() -> None:
     global PRICE_TO_PLAN
     PRICE_TO_PLAN = {
-        settings.stripe_price_starter: "starter",
-        settings.stripe_price_pro: "professional",
+        # Novos planos
+        settings.stripe_price_solo:      "solo",
+        settings.stripe_price_equipe:    "equipe",
+        settings.stripe_price_ilimitado: "ilimitado",
+        # Legados — para webhooks de subscriptions antigas
+        settings.stripe_price_starter:   "starter",
+        settings.stripe_price_pro:       "professional",
         settings.stripe_price_enterprise: "enterprise",
     }
     PRICE_TO_PLAN = {k: v for k, v in PRICE_TO_PLAN.items() if k}

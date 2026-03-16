@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     # --- Stripe ---
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    # Planos novos
+    stripe_price_solo: str = ""
+    stripe_price_equipe: str = ""
+    stripe_price_ilimitado: str = ""
+    # Enterprise: negociação manual — sem price_id automático
+    # Planos legados (mantidos para webhooks de subscriptions antigas)
     stripe_price_starter: str = ""
     stripe_price_pro: str = ""
     stripe_price_enterprise: str = ""

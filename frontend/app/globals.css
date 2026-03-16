@@ -9,25 +9,77 @@
 }
 
 @layer components {
+  /* ── Buttons ─────────────────────────────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
+    @apply inline-flex items-center justify-center rounded-xl
+           bg-gradient-to-b from-violet-600 to-violet-700
+           px-4 py-2 text-sm font-semibold text-white
+           shadow-brand-sm hover:shadow-brand
+           hover:from-violet-500 hover:to-violet-600
+           focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2
+           disabled:opacity-40 disabled:cursor-not-allowed
+           transition-all duration-150;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 disabled:opacity-40 transition-colors;
+    @apply inline-flex items-center justify-center rounded-xl
+           border border-gray-200 bg-white
+           px-4 py-2 text-sm font-medium text-gray-700
+           shadow-sm hover:bg-gray-50 hover:border-gray-300
+           focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2
+           disabled:opacity-40 transition-all duration-150;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none disabled:opacity-40 transition-colors;
+    @apply inline-flex items-center justify-center rounded-xl
+           px-4 py-2 text-sm font-medium text-gray-600
+           hover:bg-gray-100 hover:text-gray-900
+           focus:outline-none disabled:opacity-40 transition-colors;
   }
+
+  /* ── Inputs ──────────────────────────────────────────────── */
   .input {
-    @apply block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-gray-950 focus:outline-none focus:ring-1 focus:ring-gray-950 transition-colors;
+    @apply block w-full rounded-xl border border-gray-200 bg-white
+           px-3 py-2 text-sm placeholder-gray-400
+           shadow-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500
+           transition-colors;
   }
   .select {
-    @apply block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-gray-950 focus:outline-none focus:ring-1 focus:ring-gray-950 transition-colors;
+    @apply block w-full rounded-xl border border-gray-200 bg-white
+           px-3 py-2 text-sm
+           shadow-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500
+           transition-colors;
   }
+
+  /* ── Cards ───────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
   }
+  .card-elevated {
+    @apply bg-white rounded-2xl border border-gray-100
+           shadow-sm hover:shadow-md hover:-translate-y-0.5
+           transition-all duration-200;
+  }
+
+  /* ── Badges ──────────────────────────────────────────────── */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Plan tier badges */
+  .badge-plan-free      { @apply badge bg-gray-100 text-gray-600; }
+  .badge-plan-solo      { @apply badge bg-blue-50 text-blue-700; }
+  .badge-plan-equipe    { @apply badge bg-violet-100 text-violet-700; }
+  .badge-plan-ilimitado { @apply badge bg-amber-50 text-amber-700; }
+  .badge-plan-enterprise{ @apply badge bg-rose-50 text-rose-700; }
+  .badge-plan-trial     { @apply badge bg-emerald-50 text-emerald-700; }
+  /* legacy keys */
+  .badge-plan-starter      { @apply badge-plan-solo; }
+  .badge-plan-professional { @apply badge-plan-equipe; }
+
+  /* ── Stat card ───────────────────────────────────────────── */
+  .stat-card {
+    @apply relative bg-white rounded-2xl border border-gray-100
+           p-5 shadow-sm overflow-hidden
+           hover:shadow-md hover:-translate-y-0.5
+           transition-all duration-200;
   }
 }
