@@ -48,7 +48,7 @@ def upgrade() -> None:
     sa.Column('founded_year', sa.Integer(), nullable=True),
     sa.Column('cnpj', sa.String(length=18), nullable=True),
     sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('is_verified', sa.Boolean(), nullable=False, comment='Dados verificados pela equipe Lumetra'),
+    sa.Column('is_verified', sa.Boolean(), nullable=False, comment='Dados verificados pela equipe Jarbis'),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint('id')

@@ -1,5 +1,5 @@
 # =============================================================================
-# Lumetra — Comandos de Desenvolvimento
+# Jarbis — Comandos de Desenvolvimento
 # =============================================================================
 
 .PHONY: help up down build logs shell-backend shell-db migrate seed test lint
@@ -7,7 +7,7 @@
 # Exibe todos os comandos disponíveis
 help:
 	@echo ""
-	@echo "  Lumetra — Comandos disponíveis:"
+	@echo "  Jarbis — Comandos disponíveis:"
 	@echo ""
 	@echo "  make up           Sobe todos os serviços"
 	@echo "  make down         Derruba todos os serviços"
@@ -26,7 +26,7 @@ up:
 	@cp -n .env.example .env 2>/dev/null || true
 	docker compose up -d
 	@echo ""
-	@echo "  Lumetra rodando em:"
+	@echo "  Jarbis rodando em:"
 	@echo "  Frontend:  http://localhost:3000"
 	@echo "  Backend:   http://localhost:8000"
 	@echo "  API Docs:  http://localhost:8000/docs"
@@ -55,7 +55,7 @@ shell-backend:
 
 # Shell no PostgreSQL
 shell-db:
-	docker compose exec postgres psql -U lumetra -d lumetra_db
+	docker compose exec postgres psql -U jarbis -d jarbis_db
 
 # Roda as migrations
 migrate:

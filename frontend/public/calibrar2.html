@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calibrar Cards</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f23; color: white; display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 280px; flex-shrink: 0;
+  background: #1a1a2e; border-right: 1px solid #2a2a4a;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-header { padding: 20px 20px 12px; border-bottom: 1px solid #2a2a4a; }
+.sidebar-header h1 { font-size: 15px; font-weight: 800; color: white; margin-bottom: 2px; }
+.sidebar-header p  { font-size: 11px; color: #64748b; }
+
+.section { padding: 14px 20px; border-bottom: 1px solid #1e293b; }
+.section-title { font-size: 10px; font-weight: 700; color: #4c1d95; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+
+.ctrl { margin-bottom: 12px; }
+.ctrl:last-child { margin-bottom: 0; }
+.ctrl-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.ctrl-label { font-size: 12px; color: #94a3b8; font-weight: 500; }
+.ctrl-val { font-size: 12px; font-weight: 800; color: #a78bfa; min-width: 48px; text-align: right; }
+input[type=range] {
+  width: 100%; accent-color: #7c3aed;
+  height: 4px; cursor: pointer;
+}
+.ctrl-hint { font-size: 10px; color: #475569; margin-top: 2px; }
+
+.btn-confirm {
+  margin: 16px 20px 20px;
+  background: #7c3aed; color: white;
+  border: none; border-radius: 10px;
+  padding: 12px; font-size: 13px; font-weight: 800;
+  cursor: pointer; width: calc(100% - 40px);
+  transition: background 0.15s;
+}
+.btn-confirm:hover { background: #6d28d9; }
+
+.output-box {
+  margin: 0 20px 16px;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 8px; padding: 10px 12px;
+  font-size: 11px; font-family: monospace; color: #a78bfa;
+  line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+}
+
+/* ── Canvas ── */
+.canvas-wrap {
+  flex: 1; overflow: auto;
+  padding: 24px;
+  background: #0f0f23;
+}
+
+.sheet {
+  background: #f0ecfd;
+  border-radius: 16px;
+  padding: 24px;
+  background-image: radial-gradient(circle, rgba(109,40,217,0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  min-width: 800px;
+}
+
+.row-label {
+  font-size: 9px; color: #7c3aed; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; margin-bottom: 8px; }
+
+/* ── Card base ── */
+.card {
+  background: white;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.card-header {
+  padding: 8px 10px 4px;
+  font-size: 10px; font-weight: 600; color: #64748b;
+  border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+}
+.card-header .drag-dots { color: #d1d5db; font-size: 8px; }
+.card-body { flex: 1; padding: 6px 10px 8px; display: flex; flex-direction: column; min-height: 0; }
+
+/* KPI */
+.kpi-value { font-weight: 900; line-height: 1; letter-spacing: -0.02em; }
+.kpi-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 700;
+  background: #ecfdf5; color: #059669;
+  padding: 2px 7px; border-radius: 99px;
+  margin-top: 6px; align-self: flex-start;
+}
+.kpi-sublabel { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+.kpi-bar { width: 28px; height: 3px; border-radius: 99px; margin-top: 8px; flex-shrink: 0; }
+
+/* Bar chart */
+.bars-wrap { display: flex; align-items: flex-end; gap: 3px; flex: 1; padding: 4px 0 0; }
+.bar-col { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; }
+.bar-axis { display: flex; justify-content: space-between; margin-top: 2px; }
+.bar-axis span { font-size: 8px; color: #9ca3af; }
+
+/* Line chart */
+.line-wrap { flex: 1; display: flex; align-items: center; }
+.line-wrap svg { width: 100%; height: 100%; overflow: visible; }
+
+/* Pie chart */
+.pie-wrap { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 0; }
+.pie-legend { display: flex; flex-direction: column; gap: 4px; }
+.pie-legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; color: #6b7280; }
+.pie-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* Area chart */
+.area-wrap { flex: 1; display: flex; align-items: center; }
+.area-wrap svg { width: 100%; height: 100%; overflow: visible; }
+
+/* Table */
+.table-wrap { flex: 1; overflow: hidden; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
+.tbl th { font-size: 9px; font-weight: 600; color: #64748b; padding: 3px 6px; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.tbl td { padding: 3px 6px; color: #374151; border-bottom: 1px solid #f9fafb; }
+.tbl tr:last-child td { border-bottom: none; }
+
+/* Gauge */
+.gauge-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>Calibrar Cards</h1>
+    <p>Ajuste e veja ao vivo</p>
+  </div>
+
+  <!-- GRID -->
+  <div class="section">
+    <div class="section-title">Grid base</div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">rowHeight</span>
+        <span class="ctrl-val" id="lbl-rh">46px</span>
+      </div>
+      <input type="range" id="rh" min="30" max="80" step="1" value="46">
+      <div class="ctrl-hint">Unidade base do grid</div>
+    </div>
+  </div>
+
+  <!-- CARD HEIGHTS -->
+  <div class="section">
+    <div class="section-title">Altura dos cards (h)</div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">KPI — h</span>
+        <span class="ctrl-val" id="lbl-kh">h:2 = 100px</span>
+      </div>
+      <input type="range" id="kh" min="1" max="5" step="1" value="2">
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">Gráficos — h</span>
+        <span class="ctrl-val" id="lbl-ch">h:3 = 154px</span>
+      </div>
+      <input type="range" id="ch" min="2" max="8" step="1" value="3">
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="section">
+    <div class="section-title">KPI — Tipografia</div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">Tamanho do valor</span>
+        <span class="ctrl-val" id="lbl-kfs">24px</span>
+      </div>
+      <input type="range" id="kfs" min="14" max="48" step="1" value="24">
+    </div>
+  </div>
+
+  <!-- PIE -->
+  <div class="section">
+    <div class="section-title">Pizza (Pie / Donut)</div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">Raio externo</span>
+        <span class="ctrl-val" id="lbl-por">38%</span>
+      </div>
+      <input type="range" id="por" min="20" max="65" step="1" value="38">
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">Raio interno</span>
+        <span class="ctrl-val" id="lbl-pir">20%</span>
+      </div>
+      <input type="range" id="pir" min="0" max="55" step="1" value="20">
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="ctrl-label">cy (posição Y)</span>
+        <span class="ctrl-val" id="lbl-pcy">45%</span>
+      </div>
+      <input type="range" id="pcy" min="30" max="65" step="1" value="45">
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="output-box" id="output-box">...</div>
+  <button class="btn-confirm" onclick="copyValues()">✓ COPIAR VALORES</button>
+</div>
+
+<!-- ── CANVAS ── -->
+<div class="canvas-wrap">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+const margin = 8
+const COLORS = ['#6366f1','#10b981','#0ea5e9','#f43f5e','#f59e0b','#8b5cf6']
+
+function calcPx(h, rh) {
+  return rh * h + Math.max(0, h - 1) * margin
+}
+
+function getVals() {
+  const rh  = +document.getElementById('rh').value
+  const kh  = +document.getElementById('kh').value
+  const ch  = +document.getElementById('ch').value
+  const kfs = +document.getElementById('kfs').value
+  const por = +document.getElementById('por').value
+  const pir = +document.getElementById('pir').value
+  const pcy = +document.getElementById('pcy').value
+  return { rh, kh, ch, kfs, por, pir, pcy,
+    kpiPx: calcPx(kh, rh),
+    chartPx: calcPx(ch, rh) }
+}
+
+function updateLabels(v) {
+  document.getElementById('lbl-rh').textContent  = v.rh + 'px'
+  document.getElementById('lbl-kh').textContent  = `h:${v.kh} = ${v.kpiPx}px`
+  document.getElementById('lbl-ch').textContent  = `h:${v.ch} = ${v.chartPx}px`
+  document.getElementById('lbl-kfs').textContent = v.kfs + 'px'
+  document.getElementById('lbl-por').textContent = v.por + '%'
+  document.getElementById('lbl-pir').textContent = v.pir + '%'
+  document.getElementById('lbl-pcy').textContent = v.pcy + '%'
+
+  document.getElementById('output-box').textContent =
+    `rowHeight=${v.rh}\nkpiH=${v.kh} (${v.kpiPx}px)\nchartH=${v.ch} (${v.chartPx}px)\nkpiFontSize=${v.kfs}px\npieCY="${v.pcy}%" outerRadius="${v.por}%" innerRadius="${v.pir}%"`
+}
+
+function copyValues() {
+  const v = getVals()
+  const txt = `rowHeight=${v.rh} · kpiH=${v.kh}(${v.kpiPx}px) · chartH=${v.ch}(${v.chartPx}px) · kpiFont=${v.kfs}px · pie cy=${v.pcy}% outer=${v.por}% inner=${v.pir}%`
+  navigator.clipboard.writeText(txt).catch(()=>{})
+  alert('Copiado!\n\n' + txt)
+}
+
+/* ── SVG CHARTS ── */
+
+function svgLine(w, h) {
+  const pts = [40,55,35,70,50,80,60,90,75,95,85,100,65]
+  const xs = pts.map((_,i) => i/(pts.length-1)*w)
+  const ys = pts.map(p => h - p/100*h*0.7 - h*0.1)
+  const d  = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
+  const da = d + ` L${w},${h} L0,${h} Z`
+  return `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${da}" fill="url(#lg1)"/>
+      <path d="${d}" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+}
+
+function svgBar(w, h) {
+  const vals = [40,55,35,70,50,80,60,90,75,95,85,100]
+  const n = Math.min(vals.length, Math.floor(w/8))
+  const bw = (w - (n-1)*3) / n
+  const bars = vals.slice(0,n).map((v,i) => {
+    const bh = v/100*(h*0.75)
+    const x = i*(bw+3)
+    const y = h - bh - 12
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${COLORS[i%COLORS.length]}" opacity="0.85"/>`
+  }).join('')
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">${bars}</svg>`
+}
+
+function svgArea(w, h) {
+  const pts = [30,55,40,65,45,75,55,85,70,90,80,95]
+  const xs = pts.map((_,i) => i/(pts.length-1)*w)
+  const ys = pts.map(p => h - p/100*h*0.7 - h*0.05)
+  const d  = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
+  const da = d + ` L${w},${h} L0,${h} Z`
+  return `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+      <defs>
+        <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${da}" fill="url(#lg2)"/>
+      <path d="${d}" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+}
+
+function svgBarH(w, h) {
+  const labels = ['Norte','Sul','Leste','Oeste','Centro']
+  const vals   = [100, 80, 65, 90, 55]
+  const n = Math.min(labels.length, Math.max(2, Math.floor((h-8)/16)))
+  const bh = Math.min(14, (h - (n-1)*4 - 16) / n)
+  const bars = vals.slice(0,n).map((v,i) => {
+    const bw = v/100*(w - 48)
+    const y  = i*(bh+4)
+    return `
+      <text x="0" y="${(y+bh/2+3.5).toFixed(1)}" font-size="8" fill="#9ca3af">${labels[i]}</text>
+      <rect x="40" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${COLORS[i%COLORS.length]}" opacity="0.85"/>`
+  }).join('')
+  return `<svg viewBox="0 0 ${w} ${n*(bh+4)}" style="width:100%;height:auto;display:block;overflow:visible;">${bars}</svg>`
+}
+
+/* Pie — returns both SVG and legend HTML */
+function buildPie(v, size) {
+  const por = v.por/100, pir = v.pir/100, pcy = v.pcy/100
+  const cx = 0.5, cy = pcy
+  const data = [{ label:'Produto A', pct:0.38 },{ label:'Produto B', pct:0.28 },{ label:'Produto C', pct:0.20 },{ label:'Outros', pct:0.14 }]
+  const r = size * por
+  const ri = size * pir
+  let angle = -Math.PI/2
+  const slices = data.map((d,i) => {
+    const start = angle
+    const end   = angle + d.pct * 2 * Math.PI
+    angle = end
+    const x1 = cx*size + r*Math.cos(start), y1 = cy*size + r*Math.sin(start)
+    const x2 = cx*size + r*Math.cos(end),   y2 = cy*size + r*Math.sin(end)
+    const ix1= cx*size + ri*Math.cos(start), iy1= cy*size + ri*Math.sin(start)
+    const ix2= cx*size + ri*Math.cos(end),   iy2= cy*size + ri*Math.sin(end)
+    const large = d.pct > 0.5 ? 1 : 0
+    const path = ri > 0
+      ? `M${ix1.toFixed(1)},${iy1.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)} A${r.toFixed(1)},${r.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} L${ix2.toFixed(1)},${iy2.toFixed(1)} A${ri.toFixed(1)},${ri.toFixed(1)} 0 ${large} 0 ${ix1.toFixed(1)},${iy1.toFixed(1)} Z`
+      : `M${cx*size},${cy*size} L${x1.toFixed(1)},${y1.toFixed(1)} A${r.toFixed(1)},${r.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} Z`
+    return { path, color: COLORS[i], label: d.label }
+  })
+
+  const slicePaths = slices.map(s => `<path d="${s.path}" fill="${s.color}" stroke="white" stroke-width="1.5"/>`).join('')
+  const legend = slices.map(s =>
+    `<div class="pie-legend-item"><div class="pie-legend-dot" style="background:${s.color}"></div>${s.label}</div>`
+  ).join('')
+
+  const svgH = Math.max(size * pcy * 2 + 8, size * 0.5)
+  return {
+    svg: `<svg viewBox="0 0 ${size} ${svgH.toFixed(0)}" style="width:auto;height:100%;max-height:100%;flex-shrink:0;display:block;">${slicePaths}</svg>`,
+    legend
+  }
+}
+
+function buildGauge(w, h) {
+  const cx = w/2, cy = h * 0.62
+  const r = Math.min(w*0.38, h*0.55)
+  const pct = 0.74
+  const startA = Math.PI
+  const endA   = startA + pct * Math.PI
+  const x1 = cx + r*Math.cos(startA), y1 = cy + r*Math.sin(startA)
+  const x2 = cx + r*Math.cos(endA),   y2 = cy + r*Math.sin(endA)
+  const bx1 = cx + r*0.6*Math.cos(startA), by1 = cy + r*0.6*Math.sin(startA)
+  const bx2 = cx + r*0.6*Math.cos(endA),   by2 = cy + r*0.6*Math.sin(endA)
+  return `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:100%;display:block;overflow:visible;">
+      <path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 0 1 ${(cx+r).toFixed(1)},${cy.toFixed(1)}" fill="none" stroke="#e0e7ff" stroke-width="${(r*0.38).toFixed(0)}" stroke-linecap="round"/>
+      <path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 0 1 ${x2.toFixed(1)},${y2.toFixed(1)}" fill="none" stroke="#8b5cf6" stroke-width="${(r*0.38).toFixed(0)}" stroke-linecap="round"/>
+      <circle cx="${cx}" cy="${cy}" r="${(r*0.28).toFixed(0)}" fill="white" stroke="#e0e7ff" stroke-width="1"/>
+      <text x="${cx}" y="${(cy+4).toFixed(0)}" text-anchor="middle" font-size="${(r*0.32).toFixed(0)}" font-weight="800" fill="#8b5cf6">74%</text>
+      <text x="${cx}" y="${(cy+r*0.82).toFixed(0)}" text-anchor="middle" font-size="${Math.max(8,r*0.18).toFixed(0)}" fill="#9ca3af">NPS</text>
+    </svg>`
+}
+
+/* ── RENDER ── */
+function render() {
+  const v = getVals()
+  updateLabels(v)
+
+  const kpiPx = v.kpiPx + 'px'
+  const chartPx = v.chartPx + 'px'
+
+  const kpis = [
+    { title:'Receita Total',    value:'R$1,2M',  badge:'↑ +8.3%',  color:'#10b981' },
+    { title:'Total de Pedidos', value:'4.821',   badge:'↑ +15.7%', color:'#6366f1' },
+    { title:'Ticket Médio',     value:'R$256',   badge:'↑ +5.2%',  color:'#f59e0b' },
+    { title:'Clientes Únicos',  value:'1.893',   badge:'↑ +12.1%', color:'#8b5cf6' },
+  ]
+
+  const kpiCards = kpis.map(k => `
+    <div class="card" style="grid-column:span 3;height:${kpiPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> ${k.title}</div>
+      <div class="card-body">
+        <div>
+          <div class="kpi-value" style="font-size:${v.kfs}px;color:${k.color}">${k.value}</div>
+          <div class="kpi-badge">${k.badge}</div>
+          <div class="kpi-sublabel">vs. mês ant.</div>
+        </div>
+        <div class="kpi-bar" style="background:${k.color}"></div>
+      </div>
+    </div>`).join('')
+
+  // Pie
+  const pieSize = 150
+  const pie = buildPie(v, pieSize)
+
+  // Chart row 1: line(6) + pie(3) + gauge(3)
+  const row1 = `
+    <div class="card" style="grid-column:span 6;height:${chartPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> Receita Mensal</div>
+      <div class="card-body"><div class="line-wrap">${svgLine(400, v.chartPx - 40)}</div></div>
+    </div>
+    <div class="card" style="grid-column:span 3;height:${chartPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> Mix por Categoria</div>
+      <div class="card-body" style="padding:4px 8px 6px">
+        <div class="pie-wrap">
+          ${pie.svg}
+          <div class="pie-legend">${pie.legend}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="grid-column:span 3;height:${chartPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> Meta do Mês</div>
+      <div class="card-body"><div class="gauge-wrap">${buildGauge(160, v.chartPx - 40)}</div></div>
+    </div>`
+
+  // Chart row 2: bar(4) + area(5) + barH(3)
+  const row2 = `
+    <div class="card" style="grid-column:span 4;height:${chartPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> Por Produto</div>
+      <div class="card-body"><div class="bars-wrap">${svgBar(200, v.chartPx - 40)}</div></div>
+    </div>
+    <div class="card" style="grid-column:span 5;height:${chartPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> Evolução Acumulada</div>
+      <div class="card-body"><div class="area-wrap">${svgArea(300, v.chartPx - 40)}</div></div>
+    </div>
+    <div class="card" style="grid-column:span 3;height:${chartPx}">
+      <div class="card-header"><span class="drag-dots">⠿</span> Por Região</div>
+      <div class="card-body" style="justify-content:center">${svgBarH(160, v.chartPx - 40)}</div>
+    </div>`
+
+  document.getElementById('sheet').innerHTML = `
+    <div class="row-label">KPIs (h:${v.kh} → ${v.kpiPx}px)</div>
+    <div class="grid" style="margin-bottom:8px">${kpiCards}</div>
+    <div class="row-label">Gráficos linha 1 (h:${v.ch} → ${v.chartPx}px)</div>
+    <div class="grid" style="margin-bottom:8px">${row1}</div>
+    <div class="row-label">Gráficos linha 2 (h:${v.ch} → ${v.chartPx}px)</div>
+    <div class="grid">${row2}</div>`
+}
+
+// Bind sliders
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', render))
+
+render()
+</script>
+</body>
+</html>

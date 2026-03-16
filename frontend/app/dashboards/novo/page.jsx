@@ -35,7 +35,7 @@ function newBlock(type) {
   const isNoData = isFilter || type === 'text' || type === 'image'
   const col = isFilter ? (counter % 6) * 2 : (counter % 4) * 3
   return {
-    id: `block_${++counter}_${Date.now()}`,
+    id: crypto.randomUUID(),
     type,
     title: BLOCK_TYPES.find(b => b.type === type)?.label || type,
     dataset_id: null,
@@ -44,6 +44,23 @@ function newBlock(type) {
     layout: { x: col, y: Infinity, w: isFilter ? 2 : 3, h: isFilter ? 2 : 2 },
   }
 }
+
+// Helper functions returning SVG <g> elements (used inside SVG context)
+const KpiCard = ({ x, y, w = 44, h = 22, value, color, title }) => (
+  <g>
+    <rect x={x} y={y} width={w} height={h} rx="3" fill="white" opacity="0.95"/>
+    <text x={x + 5} y={y + 9} fontSize="5.5" fill="#9ca3af" fontFamily="system-ui">{title}</text>
+    <text x={x + 5} y={y + 17} fontSize="8" fill={color} fontWeight="700" fontFamily="system-ui">{value}</text>
+    <rect x={x + 5} y={y + h - 3} width="12" height="2" rx="1" fill={color}/>
+  </g>
+)
+const CardShell = ({ x, y, w, h, title, children }) => (
+  <g>
+    <rect x={x} y={y} width={w} height={h} rx="3" fill="white" opacity="0.92"/>
+    <text x={x + 5} y={y + 9} fontSize="5.5" fill="#9ca3af" fontFamily="system-ui">{title}</text>
+    {children}
+  </g>
+)
 
 // Ilustrações SVG temáticas por template
 const TPL_PREVIEWS = {
@@ -56,186 +73,423 @@ const TPL_PREVIEWS = {
     </div>
   ),
   sales_trends: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#f5f3ff"/>
-      {[20,35,28,50,42,62,55,75,65,88].map((h,i) => <rect key={i} x={10+i*19} y={95-h} width="12" height={h} rx="2" fill={i===9?'#7c3aed':'#c4b5fd'}/>)}
-      <polyline points="16,75 35,60 54,68 73,45 92,53 111,30 130,38 149,20 168,28 187,12" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_st" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f5f3ff"/><stop offset="100%" stopColor="#ede9fe"/></linearGradient><linearGradient id="area_st" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7c3aed" stopOpacity="0.18"/><stop offset="100%" stopColor="#7c3aed" stopOpacity="0"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_st)"/>
+      {/* KPI row */}
+      <KpiCard x={4}  y={4} w={44} h={22} title="Receita" value="R$1,2M" color="#10b981"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Pedidos" value="4.821" color="#6366f1"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Ticket" value="R$256" color="#f59e0b"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Clientes" value="1.893" color="#8b5cf6"/>
+      {/* Combo chart */}
+      <CardShell x={4} y={30} w={122} h={76} title="Receita + Tendência">
+        {[18,24,20,32,28,38,34,44,40,50,46,55].map((h,i)=><rect key={i} x={12+i*9} y={94-h} width="6" height={h} rx="1" fill="#c4b5fd" opacity="0.8"/>)}
+        <polyline points="15,76 24,71 33,74 42,64 51,68 60,58 69,62 78,52 87,56 96,46 105,50 114,44" fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </CardShell>
+      {/* Pie */}
+      <CardShell x={130} y={30} w={66} h={76} title="Categorias">
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#e0e7ff" strokeWidth="12"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#6366f1" strokeWidth="12" strokeDasharray="44 94" strokeDashoffset="0"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#10b981" strokeWidth="12" strokeDasharray="28 110" strokeDashoffset="-44"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#f59e0b" strokeWidth="12" strokeDasharray="18 120" strokeDashoffset="-72"/>
+        <circle cx="163" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
     </svg>
   ),
   sales_pipeline: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#eff6ff"/>
-      {[{y:8,w:180,label:'Leads',c:'#bfdbfe'},{y:28,w:140,label:'Qualif.',c:'#93c5fd'},{y:48,w:100,label:'Proposta',c:'#60a5fa'},{y:68,w:65,label:'Negoc.',c:'#3b82f6'},{y:88,w:35,label:'Fechado',c:'#1d4ed8'}].map((s,i)=>(
-        <g key={i}><rect x={(200-s.w)/2} y={s.y} width={s.w} height="14" rx="3" fill={s.c}/><text x="100" y={s.y+10} textAnchor="middle" fontSize="7" fill="white" fontWeight="600">{s.label}</text></g>
-      ))}
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_sp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#eff6ff"/><stop offset="100%" stopColor="#dbeafe"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_sp)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Leads" value="1.840" color="#3b82f6"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Conversão" value="5,2%" color="#10b981"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Pipeline" value="R$4,2M" color="#6366f1"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Fechados" value="95" color="#f59e0b"/>
+      {/* Funil horizontal bars */}
+      <CardShell x={4} y={30} w={92} h={76} title="Funil">
+        {[{w:74,c:'#bfdbfe',l:'Leads'},{w:58,c:'#93c5fd',l:'Qualif.'},{w:44,c:'#60a5fa',l:'Proposta'},{w:30,c:'#3b82f6',l:'Negoc.'},{w:18,c:'#1d4ed8',l:'Fechado'}].map((b,i)=>(
+          <g key={i}><rect x={10} y={42+i*11} width={b.w} height="8" rx="2" fill={b.c}/><text x={b.w+14} y={49+i*11} fontSize="5" fill="#6b7280">{b.l}</text></g>
+        ))}
+      </CardShell>
+      {/* Line chart */}
+      <CardShell x={100} y={30} w={96} h={76} title="Evolução Pipeline">
+        <polyline points="108,92 120,82 132,85 144,70 156,74 168,60 180,65 192,52" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polyline points="108,92 120,82 132,85 144,70 156,74 168,60 180,65 192,52 192,100 108,100" fill="rgba(59,130,246,0.08)"/>
+        {[92,82,85,70,74,60,65,52].map((y,i)=><circle key={i} cx={108+i*12} cy={y} r="2" fill="#3b82f6"/>)}
+      </CardShell>
     </svg>
   ),
   ecommerce: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#fff7ed"/>
-      <rect x="10" y="20" width="28" height="60" rx="3" fill="#fed7aa"/>
-      <rect x="46" y="35" width="28" height="45" rx="3" fill="#fdba74"/>
-      <rect x="82" y="10" width="28" height="70" rx="3" fill="#f97316"/>
-      <rect x="118" y="28" width="28" height="52" rx="3" fill="#fed7aa"/>
-      <rect x="154" y="42" width="28" height="38" rx="3" fill="#fdba74"/>
-      <polyline points="24,18 60,33 96,8 132,26 168,40" fill="none" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,3" strokeLinecap="round"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_ec" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fff7ed"/><stop offset="100%" stopColor="#fed7aa" stopOpacity="0.4"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_ec)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Pedidos" value="3.842" color="#f97316"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Receita" value="R$984K" color="#10b981"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Ticket" value="R$256" color="#6366f1"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Conversão" value="3,4%" color="#f59e0b"/>
+      {/* Combo chart */}
+      <CardShell x={4} y={30} w={122} h={76} title="Pedidos + Receita">
+        {[22,28,18,36,30,40,34,46,38,50,44,56].map((h,i)=><rect key={i} x={12+i*9} y={94-h} width="6" height={h} rx="1" fill="#fed7aa"/>)}
+        <polyline points="15,72 24,64 33,78 42,56 51,66 60,48 69,58 78,42 87,54 96,38 105,48 114,34" fill="none" stroke="#f97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </CardShell>
+      {/* Pie */}
+      <CardShell x={130} y={30} w={66} h={76} title="Categorias">
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#e5e7eb" strokeWidth="12"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#f97316" strokeWidth="12" strokeDasharray="40 98" strokeDashoffset="0"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#fbbf24" strokeWidth="12" strokeDasharray="28 110" strokeDashoffset="-40"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#10b981" strokeWidth="12" strokeDasharray="20 118" strokeDashoffset="-68"/>
+        <circle cx="163" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
     </svg>
   ),
   web_analytics: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#f0f9ff"/>
-      <polyline points="10,80 35,55 60,65 85,30 110,45 135,20 160,35 185,15" fill="none" stroke="#0ea5e9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="10,80 35,55 60,65 85,30 110,45 135,20 160,35 185,15 185,100 10,100" fill="rgba(14,165,233,0.1)"/>
-      {[10,35,60,85,110,135,160,185].map((x,i) => <circle key={i} cx={x} cy={[80,55,65,30,45,20,35,15][i]} r="3" fill="#0ea5e9"/>)}
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_wa" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f0f9ff"/><stop offset="100%" stopColor="#e0f2fe"/></linearGradient><linearGradient id="area_wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.2"/><stop offset="100%" stopColor="#0ea5e9" stopOpacity="0"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_wa)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Sessões" value="124K" color="#0ea5e9"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Usuários" value="89K" color="#6366f1"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Pageviews" value="312K" color="#8b5cf6"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Rejeição" value="42,3%" color="#f43f5e"/>
+      {/* Area chart large */}
+      <CardShell x={4} y={30} w={122} h={76} title="Sessões no Tempo">
+        <polyline points="12,92 24,78 36,82 48,62 60,70 72,50 84,58 96,42 108,50 120,36" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polygon points="12,92 24,78 36,82 48,62 60,70 72,50 84,58 96,42 108,50 120,36 120,100 12,100" fill="url(#area_wa)"/>
+        {[92,78,82,62,70,50,58,42,50,36].map((y,i)=><circle key={i} cx={12+i*12} cy={y} r="2" fill="#0ea5e9"/>)}
+      </CardShell>
+      {/* Donut - fontes de tráfego */}
+      <CardShell x={130} y={30} w={66} h={76} title="Fontes">
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#e0e7ff" strokeWidth="12"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#0ea5e9" strokeWidth="12" strokeDasharray="52 86" strokeDashoffset="0"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#6366f1" strokeWidth="12" strokeDasharray="30 108" strokeDashoffset="-52"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#8b5cf6" strokeWidth="12" strokeDasharray="16 122" strokeDashoffset="-82"/>
+        <circle cx="163" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
     </svg>
   ),
   marketing: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#faf5ff"/>
-      <circle cx="60" cy="50" r="38" fill="none" stroke="#e9d5ff" strokeWidth="20"/>
-      <circle cx="60" cy="50" r="38" fill="none" stroke="#7c3aed" strokeWidth="20" strokeDasharray="72 167" strokeDashoffset="0"/>
-      <circle cx="60" cy="50" r="38" fill="none" stroke="#a78bfa" strokeWidth="20" strokeDasharray="48 191" strokeDashoffset="-72"/>
-      <circle cx="60" cy="50" r="38" fill="none" stroke="#c4b5fd" strokeWidth="20" strokeDasharray="40 199" strokeDashoffset="-120"/>
-      <rect x="120" y="15" width="65" height="12" rx="3" fill="#7c3aed"/>
-      <rect x="120" y="34" width="50" height="12" rx="3" fill="#a78bfa"/>
-      <rect x="120" y="53" width="38" height="12" rx="3" fill="#c4b5fd"/>
-      <rect x="120" y="72" width="55" height="12" rx="3" fill="#ede9fe"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_mk" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#faf5ff"/><stop offset="100%" stopColor="#ede9fe"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_mk)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Investido" value="R$185K" color="#7c3aed"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Leads" value="2.840" color="#6366f1"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="CPL" value="R$65" color="#f59e0b"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="ROAS" value="4,2x" color="#10b981"/>
+      {/* Donut - budget por canal */}
+      <CardShell x={4} y={30} w={60} h={76} title="Budget Canal">
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#ede9fe" strokeWidth="13"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#7c3aed" strokeWidth="13" strokeDasharray="56 82" strokeDashoffset="0"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#a78bfa" strokeWidth="13" strokeDasharray="34 104" strokeDashoffset="-56"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#c4b5fd" strokeWidth="13" strokeDasharray="22 116" strokeDashoffset="-90"/>
+        <circle cx="34" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
+      {/* Combo chart - leads + investimento */}
+      <CardShell x={68} y={30} w={128} h={76} title="Leads + Investimento">
+        {[20,26,18,32,28,38,30,42,36,46,40,52].map((h,i)=><rect key={i} x={76+i*9} y={94-h} width="6" height={h} rx="1" fill="#e9d5ff"/>)}
+        <polyline points="79,74 88,66 97,72 106,56 115,62 124,48 133,54 142,42 151,48 160,36 169,42 178,30" fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </CardShell>
     </svg>
   ),
   rh_equipe: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#f0fdfa"/>
-      {[0,1,2,3,4].map(i=>(
-        <g key={i} transform={`translate(${20+i*36},0)`}>
-          <circle cx="18" cy="28" r="10" fill={['#99f6e4','#5eead4','#2dd4bf','#14b8a6','#0d9488'][i]}/>
-          <rect x="4" y="42" width="28" height={[25,38,30,45,20][i]} rx="3" fill={['#99f6e4','#5eead4','#2dd4bf','#14b8a6','#0d9488'][i]}/>
-        </g>
-      ))}
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_rh" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f0fdfa"/><stop offset="100%" stopColor="#ccfbf1"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_rh)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Headcount" value="148" color="#0d9488"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Novas Cont." value="12" color="#10b981"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Turnover" value="4,2%" color="#f43f5e"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="eNPS" value="42" color="#8b5cf6"/>
+      {/* Bar chart - performance */}
+      <CardShell x={4} y={30} w={60} h={76} title="Performance">
+        {[{n:'Ana',v:38},{n:'Bruno',v:50},{n:'Carla',v:44},{n:'Diego',v:58},{n:'Elisa',v:35}].map((p,i)=>(
+          <g key={i}><rect x={10} y={42+i*10} width={p.v} height="7" rx="2" fill={`rgba(13,148,136,${0.4+i*0.12})`}/><text x={p.v+13} y={48+i*10} fontSize="5" fill="#6b7280">{p.n}</text></g>
+        ))}
+      </CardShell>
+      {/* Pie - áreas */}
+      <CardShell x={68} y={30} w={60} h={76} title="Por Área">
+        <circle cx="98" cy="74" r="22" fill="none" stroke="#ccfbf1" strokeWidth="13"/>
+        <circle cx="98" cy="74" r="22" fill="none" stroke="#0d9488" strokeWidth="13" strokeDasharray="48 90" strokeDashoffset="0"/>
+        <circle cx="98" cy="74" r="22" fill="none" stroke="#14b8a6" strokeWidth="13" strokeDasharray="30 108" strokeDashoffset="-48"/>
+        <circle cx="98" cy="74" r="22" fill="none" stroke="#2dd4bf" strokeWidth="13" strokeDasharray="20 118" strokeDashoffset="-78"/>
+        <circle cx="98" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
+      {/* Gauge - satisfação */}
+      <CardShell x={132} y={30} w={64} h={76} title="Satisfação">
+        <path d="M 142,96 A 22,22 0 0,1 186,96" fill="none" stroke="#ccfbf1" strokeWidth="8" strokeLinecap="round"/>
+        <path d="M 142,96 A 22,22 0 0,1 186,96" fill="none" stroke="#0d9488" strokeWidth="8" strokeLinecap="round" strokeDasharray="50 69" strokeDashoffset="0"/>
+        <text x="164" y="88" textAnchor="middle" fontSize="9" fill="#0d9488" fontWeight="700" fontFamily="system-ui">78%</text>
+      </CardShell>
     </svg>
   ),
   suporte: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#fff1f2"/>
-      {[{x:10,y:10,w:55,h:22,c:'#fecdd3',tc:'#f43f5e',l:'Aberto'},{x:72,y:10,w:55,h:22,c:'#fde68a',tc:'#d97706',l:'Em andamento'},{x:134,y:10,w:56,h:22,c:'#bbf7d0',tc:'#16a34a',l:'Resolvido'}].map((col,ci)=>(
-        <g key={ci}><rect x={col.x} y={col.y} width={col.w} height={col.h} rx="3" fill={col.c}/><text x={col.x+col.w/2} y={col.y+14} textAnchor="middle" fontSize="7" fill={col.tc} fontWeight="700">{col.l}</text></g>
-      ))}
-      {[1,2,3].map(row=>([10,72,134].map((x,ci)=>(
-        <rect key={`${row}-${ci}`} x={x} y={10+row*26} width={[55,55,56][ci]} height="20" rx="3" fill={['#fecdd3','#fde68a','#bbf7d0'][ci]} opacity={1-row*0.2}/>
-      ))))}
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_su" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fff1f2"/><stop offset="100%" stopColor="#ffe4e6"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_su)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Abertos" value="34" color="#f43f5e"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Resolvidos" value="47" color="#10b981"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="TMA (min)" value="8,4" color="#f59e0b"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="CSAT" value="92,1%" color="#8b5cf6"/>
+      {/* Donut - status */}
+      <CardShell x={4} y={30} w={60} h={76} title="Por Status">
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#fee2e2" strokeWidth="13"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#f43f5e" strokeWidth="13" strokeDasharray="30 108" strokeDashoffset="0"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#fbbf24" strokeWidth="13" strokeDasharray="20 118" strokeDashoffset="-30"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#10b981" strokeWidth="13" strokeDasharray="44 94" strokeDashoffset="-50"/>
+        <circle cx="34" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
+      {/* Area - volume */}
+      <CardShell x={68} y={30} w={128} h={76} title="Volume ao Longo do Tempo">
+        <polyline points="76,92 89,80 102,84 115,68 128,74 141,56 154,62 167,46 180,52 193,40" fill="none" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polygon points="76,92 89,80 102,84 115,68 128,74 141,56 154,62 167,46 180,52 193,40 193,100 76,100" fill="rgba(244,63,94,0.08)"/>
+        {[92,80,84,68,74,56,62,46,52,40].map((y,i)=><circle key={i} cx={76+i*13} cy={y} r="2" fill="#f43f5e"/>)}
+      </CardShell>
     </svg>
   ),
   logistica: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#fffbeb"/>
-      <polyline points="15,80 55,80 75,55 110,55 130,30 175,30" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5,3"/>
-      <circle cx="15" cy="80" r="6" fill="#d97706"/>
-      <circle cx="175" cy="30" r="6" fill="#10b981"/>
-      <circle cx="75" cy="55" r="5" fill="#f59e0b" opacity="0.8"/>
-      <circle cx="130" cy="30" r="5" fill="#f59e0b" opacity="0.8"/>
-      <rect x="140" y="50" width="50" height="30" rx="4" fill="#fde68a"/>
-      <rect x="155" y="60" width="20" height="12" rx="2" fill="#d97706"/>
-      <circle cx="150" cy="82" r="5" fill="#92400e"/>
-      <circle cx="178" cy="82" r="5" fill="#92400e"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fffbeb"/><stop offset="100%" stopColor="#fef3c7"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_lg)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Em Estoque" value="6.820" color="#d97706"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Em Trânsito" value="248" color="#f59e0b"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Lead Time" value="3,2d" color="#10b981"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="No Prazo" value="94,7%" color="#6366f1"/>
+      {/* Pie status estoque */}
+      <CardShell x={4} y={30} w={60} h={76} title="Estoque">
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#fef3c7" strokeWidth="13"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#d97706" strokeWidth="13" strokeDasharray="54 84" strokeDashoffset="0"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#f59e0b" strokeWidth="13" strokeDasharray="22 116" strokeDashoffset="-54"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#fbbf24" strokeWidth="13" strokeDasharray="12 126" strokeDashoffset="-76"/>
+        <circle cx="34" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
+      {/* Line - pedidos no tempo */}
+      <CardShell x={68} y={30} w={128} h={76} title="Pedidos no Tempo">
+        <polyline points="76,90 89,78 102,82 115,66 128,72 141,54 154,60 167,44 180,50 193,38" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polygon points="76,90 89,78 102,82 115,66 128,72 141,54 154,60 167,44 180,50 193,38 193,100 76,100" fill="rgba(217,119,6,0.08)"/>
+        {[90,78,82,66,72,54,60,44,50,38].map((y,i)=><circle key={i} cx={76+i*13} cy={y} r="2" fill="#d97706"/>)}
+      </CardShell>
     </svg>
   ),
   educacao: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#eef2ff"/>
-      {[{l:'React',p:85},{l:'Python',p:72},{l:'Design',p:60},{l:'SQL',p:91}].map((c,i)=>(
-        <g key={i} transform={`translate(0,${i*22+8})`}>
-          <text x="10" y="12" fontSize="8" fill="#4b5563" fontWeight="500">{c.l}</text>
-          <rect x="50" y="4" width="130" height="10" rx="5" fill="#e0e7ff"/>
-          <rect x="50" y="4" width={130*c.p/100} height="10" rx="5" fill={['#6366f1','#8b5cf6','#a78bfa','#4f46e5'][i]}/>
-          <text x="186" y="12" fontSize="7" fill="#6366f1" fontWeight="700">{c.p}%</text>
-        </g>
-      ))}
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_ed" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#eef2ff"/><stop offset="100%" stopColor="#e0e7ff"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_ed)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Alunos" value="2.340" color="#6366f1"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Conclusões" value="1.820" color="#10b981"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Taxa" value="77,8%" color="#f59e0b"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="NPS Edu." value="68" color="#8b5cf6"/>
+      {/* Horizontal bars - progresso cursos */}
+      <CardShell x={4} y={30} w={92} h={76} title="Progresso por Curso">
+        {[{l:'SQL',p:91},{l:'React',p:85},{l:'Gestão',p:78},{l:'Python',p:72},{l:'Design',p:60}].map((c,i)=>(
+          <g key={i}>
+            <text x="10" y={44+i*11} fontSize="5.5" fill="#6b7280" fontFamily="system-ui">{c.l}</text>
+            <rect x="32" y={37+i*11} width="52" height="6" rx="3" fill="#e0e7ff"/>
+            <rect x="32" y={37+i*11} width={52*c.p/100} height="6" rx="3" fill={['#4f46e5','#6366f1','#8b5cf6','#a78bfa','#c4b5fd'][i]}/>
+            <text x="88" y={43+i*11} fontSize="5" fill="#6366f1" fontWeight="700" fontFamily="system-ui">{c.p}%</text>
+          </g>
+        ))}
+      </CardShell>
+      {/* Line - conclusões no tempo */}
+      <CardShell x={100} y={30} w={96} h={76} title="Conclusões no Tempo">
+        <polyline points="108,90 120,80 132,83 144,68 156,74 168,58 180,64 192,50" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polygon points="108,90 120,80 132,83 144,68 156,74 168,58 180,64 192,50 192,100 108,100" fill="rgba(99,102,241,0.08)"/>
+        {[90,80,83,68,74,58,64,50].map((y,i)=><circle key={i} cx={108+i*12} cy={y} r="2" fill="#6366f1"/>)}
+      </CardShell>
     </svg>
   ),
   financeiro: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#f0fdf4"/>
-      {[{x:10,h:40,c:'#86efac'},{x:30,h:55,c:'#4ade80'},{x:50,h:35,c:'#86efac'},{x:70,h:65,c:'#22c55e'},{x:90,h:48,c:'#4ade80'},{x:110,h:70,c:'#16a34a'},{x:130,h:58,c:'#22c55e'},{x:150,h:80,c:'#15803d'},{x:170,h:72,c:'#166534'}].map((b,i)=>(
-        <rect key={i} x={b.x} y={95-b.h} width="16" height={b.h} rx="2" fill={b.c}/>
-      ))}
-      <polyline points="18,55 38,40 58,60 78,30 98,47 118,25 138,32 158,15 178,23" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4,2" strokeLinecap="round"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_fi" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f0fdf4"/><stop offset="100%" stopColor="#dcfce7"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_fi)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Receita" value="R$3,0M" color="#16a34a"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Despesas" value="R$1,4M" color="#f43f5e"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Lucro" value="R$1,6M" color="#10b981"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Margem" value="53,9%" color="#8b5cf6"/>
+      {/* Combo receita vs despesas */}
+      <CardShell x={4} y={30} w={122} h={76} title="Receita vs Despesas">
+        {[28,34,24,40,36,46,38,50].map((h,i)=><rect key={i} x={12+i*14} y={94-h} width="8" height={h} rx="1" fill="#86efac"/>)}
+        {[18,22,16,28,24,32,26,36].map((h,i)=><rect key={i} x={21+i*14} y={94-h} width="6" height={h} rx="1" fill="#fca5a5"/>)}
+        <polyline points="16,66 30,60 44,68 58,52 72,58 86,44 100,50 114,38" fill="none" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </CardShell>
+      {/* Pie despesas */}
+      <CardShell x={130} y={30} w={66} h={76} title="Despesas">
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#dcfce7" strokeWidth="12"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#16a34a" strokeWidth="12" strokeDasharray="48 90" strokeDashoffset="0"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#4ade80" strokeWidth="12" strokeDasharray="26 112" strokeDashoffset="-48"/>
+        <circle cx="163" cy="74" r="22" fill="none" stroke="#86efac" strokeWidth="12" strokeDasharray="16 122" strokeDashoffset="-74"/>
+        <circle cx="163" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
     </svg>
   ),
   executive: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#faf5ff"/>
-      <rect x="10" y="10" width="55" height="28" rx="4" fill="#7c3aed"/>
-      <rect x="73" y="10" width="55" height="28" rx="4" fill="#6366f1"/>
-      <rect x="136" y="10" width="54" height="28" rx="4" fill="#8b5cf6"/>
-      <text x="37" y="28" textAnchor="middle" fontSize="11" fill="white" fontWeight="900">R$2.4M</text>
-      <text x="100" y="28" textAnchor="middle" fontSize="11" fill="white" fontWeight="900">+18%</text>
-      <text x="163" y="28" textAnchor="middle" fontSize="11" fill="white" fontWeight="900">4.8k</text>
-      <polyline points="10,80 40,65 70,70 100,48 130,55 160,35 190,40" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="10,80 40,65 70,70 100,48 130,55 160,35 190,40 190,100 10,100" fill="rgba(124,58,237,0.08)"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_ex" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#faf5ff"/><stop offset="100%" stopColor="#ede9fe"/></linearGradient><linearGradient id="area_ex" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7c3aed" stopOpacity="0.15"/><stop offset="100%" stopColor="#7c3aed" stopOpacity="0"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_ex)"/>
+      {/* Text banner */}
+      <rect x="4" y="4" width="192" height="20" rx="3" fill="white" opacity="0.7"/>
+      <text x="10" y="16" fontSize="6" fill="#374151" fontFamily="system-ui">Sumário Executivo — Q1 2026</text>
+      {/* 3 KPIs wide */}
+      <KpiCard x={4}  y={28} w={60} h={22} title="Resultado" value="R$8,7M" color="#111827"/>
+      <KpiCard x={68} y={28} w={60} h={22} title="Volume" value="14.230" color="#6366f1"/>
+      <KpiCard x={132} y={28} w={64} h={22} title="Crescimento" value="+18,4%" color="#10b981"/>
+      {/* Area chart */}
+      <CardShell x={4} y={54} w={122} h={54} title="Evolução no Período">
+        <polyline points="12,96 24,86 36,90 48,74 60,80 72,62 84,68 96,52 108,58 120,44" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polygon points="12,96 24,86 36,90 48,74 60,80 72,62 84,68 96,52 108,58 120,44 120,104 12,104" fill="url(#area_ex)"/>
+      </CardShell>
+      {/* Donut composição */}
+      <CardShell x={130} y={54} w={66} h={54} title="Composição">
+        <circle cx="163" cy="88" r="18" fill="none" stroke="#ede9fe" strokeWidth="10"/>
+        <circle cx="163" cy="88" r="18" fill="none" stroke="#7c3aed" strokeWidth="10" strokeDasharray="40 73" strokeDashoffset="0"/>
+        <circle cx="163" cy="88" r="18" fill="none" stroke="#a78bfa" strokeWidth="10" strokeDasharray="24 89" strokeDashoffset="-40"/>
+        <circle cx="163" cy="88" r="18" fill="none" stroke="#c4b5fd" strokeWidth="10" strokeDasharray="16 97" strokeDashoffset="-64"/>
+        <circle cx="163" cy="88" r="6" fill="white" opacity="0.92"/>
+      </CardShell>
     </svg>
   ),
   media: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#eef2ff"/>
-      <circle cx="70" cy="50" r="38" fill="none" stroke="#e0e7ff" strokeWidth="18"/>
-      <circle cx="70" cy="50" r="38" fill="none" stroke="#6366f1" strokeWidth="18" strokeDasharray="85 154"/>
-      <circle cx="70" cy="50" r="38" fill="none" stroke="#818cf8" strokeWidth="18" strokeDasharray="50 189" strokeDashoffset="-85"/>
-      <circle cx="70" cy="50" r="38" fill="none" stroke="#a5b4fc" strokeWidth="18" strokeDasharray="40 199" strokeDashoffset="-135"/>
-      <rect x="125" y="20" width="65" height="12" rx="3" fill="#6366f1"/>
-      <rect x="125" y="38" width="50" height="12" rx="3" fill="#818cf8"/>
-      <rect x="125" y="56" width="38" height="12" rx="3" fill="#a5b4fc"/>
-      <rect x="125" y="74" width="55" height="12" rx="3" fill="#e0e7ff"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_md" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#eef2ff"/><stop offset="100%" stopColor="#e0e7ff"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_md)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Investido" value="R$4,4M" color="#6366f1"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Nº de PIs" value="312" color="#8b5cf6"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Veículos" value="48" color="#06b6d4"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Clientes" value="23" color="#10b981"/>
+      {/* Donut por meio */}
+      <CardShell x={4} y={30} w={60} h={76} title="Por Meio">
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#e0e7ff" strokeWidth="13"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#6366f1" strokeWidth="13" strokeDasharray="52 86" strokeDashoffset="0"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#818cf8" strokeWidth="13" strokeDasharray="30 108" strokeDashoffset="-52"/>
+        <circle cx="34" cy="74" r="22" fill="none" stroke="#a5b4fc" strokeWidth="13" strokeDasharray="16 122" strokeDashoffset="-82"/>
+        <circle cx="34" cy="74" r="8" fill="white" opacity="0.92"/>
+      </CardShell>
+      {/* Horizontal bars - top veículos */}
+      <CardShell x={68} y={30} w={128} h={76} title="Top Veículos">
+        {[{l:'Globo',v:90},{l:'SBT',v:66},{l:'G.Ads',v:60},{l:'Meta',v:48},{l:'Band',v:40},{l:'Record',v:36}].map((b,i)=>(
+          <g key={i}><rect x={76} y={42+i*10} width={b.v} height="7" rx="2" fill={`rgba(99,102,241,${0.3+i*0.1})`}/><text x={b.v+79} y={48+i*10} fontSize="5" fill="#6b7280" fontFamily="system-ui">{b.l}</text></g>
+        ))}
+      </CardShell>
     </svg>
   ),
   okrs_metas: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#faf5ff"/>
-      {[{cx:35,cy:65,label:'Receita',pct:82,c:'#7c3aed'},{cx:100,cy:65,label:'Clientes',pct:65,c:'#6366f1'},{cx:165,cy:65,label:'NPS',pct:91,c:'#8b5cf6'}].map((g,i)=>(
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_ok" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#faf5ff"/><stop offset="100%" stopColor="#ede9fe"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_ok)"/>
+      {/* Period banner */}
+      <rect x="4" y="4" width="192" height="14" rx="3" fill="white" opacity="0.7"/>
+      <text x="10" y="13.5" fontSize="6" fill="#374151" fontFamily="system-ui">OKRs — Q2 2026</text>
+      {/* 3 speedometers */}
+      {[{cx:35,pct:82,c:'#7c3aed',l:'Receita'},{cx:100,pct:65,c:'#6366f1',l:'NPS'},{cx:165,pct:91,c:'#10b981',l:'Retenção'}].map((g,i)=>(
         <g key={i}>
-          <path d={`M ${g.cx-24},${g.cy} A 24,24 0 0,1 ${g.cx+24},${g.cy}`} fill="none" stroke="#e9d5ff" strokeWidth="7" strokeLinecap="round"/>
-          <path d={`M ${g.cx-24},${g.cy} A 24,24 0 0,1 ${g.cx+24},${g.cy}`} fill="none" stroke={g.c} strokeWidth="7" strokeLinecap="round" strokeDasharray={`${g.pct*0.754} 100`}/>
-          <text x={g.cx} y={g.cy-6} textAnchor="middle" fontSize="9" fill={g.c} fontWeight="900">{g.pct}%</text>
-          <text x={g.cx} y={g.cy+14} textAnchor="middle" fontSize="7" fill="#6b7280">{g.label}</text>
+          <rect x={g.cx-32} y={22} width={64} height={46} rx="3" fill="white" opacity="0.85"/>
+          <path d={`M ${g.cx-22},60 A 22,22 0 0,1 ${g.cx+22},60`} fill="none" stroke="#e9d5ff" strokeWidth="7" strokeLinecap="round"/>
+          <path d={`M ${g.cx-22},60 A 22,22 0 0,1 ${g.cx+22},60`} fill="none" stroke={g.c} strokeWidth="7" strokeLinecap="round" strokeDasharray={`${g.pct*0.69} 100`}/>
+          <text x={g.cx} y="55" textAnchor="middle" fontSize="9" fill={g.c} fontWeight="800" fontFamily="system-ui">{g.pct}%</text>
+          <text x={g.cx} y="63" textAnchor="middle" fontSize="5.5" fill="#9ca3af" fontFamily="system-ui">{g.l}</text>
         </g>
       ))}
+      {/* Bar + line row */}
+      <CardShell x={4} y={72} w={92} h={36} title="Por Equipe">
+        {[48,62,55,71,44].map((v,i)=><rect key={i} x={12+i*16} y={96-v*0.3} width="10" height={v*0.3} rx="1" fill={`rgba(124,58,237,${0.3+i*0.1})`}/>)}
+      </CardShell>
+      <CardShell x={100} y={72} w={96} h={36} title="Evolução Trimestral">
+        <polyline points="108,100 120,92 132,95 144,84 156,88 168,76 180,80 192,70" fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </CardShell>
     </svg>
   ),
   portfolio: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#ecfeff"/>
-      <rect x="8" y="8" width="90" height="55" rx="3" fill="#0891b2"/>
-      <text x="53" y="40" textAnchor="middle" fontSize="10" fill="white" fontWeight="700">Produto A</text>
-      <text x="53" y="53" textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.8)">R$1.2M</text>
-      <rect x="103" y="8" width="45" height="55" rx="3" fill="#06b6d4"/>
-      <text x="125" y="38" textAnchor="middle" fontSize="8" fill="white" fontWeight="600">B</text>
-      <rect x="153" y="8" width="39" height="55" rx="3" fill="#67e8f9"/>
-      <text x="172" y="38" textAnchor="middle" fontSize="8" fill="#0e7490" fontWeight="600">C</text>
-      <rect x="8" y="68" width="55" height="26" rx="3" fill="#a5f3fc"/>
-      <rect x="68" y="68" width="45" height="26" rx="3" fill="#06b6d4"/>
-      <rect x="118" y="68" width="74" height="26" rx="3" fill="#0891b2"/>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_pf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ecfeff"/><stop offset="100%" stopColor="#cffafe"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_pf)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Projetos" value="12" color="#0891b2"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Budget" value="R$4,8M" color="#06b6d4"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Concluídos" value="7" color="#10b981"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="Em Risco" value="2" color="#f43f5e"/>
+      {/* Treemap */}
+      <CardShell x={4} y={30} w={92} h={76} title="Portfólio por Valor">
+        <rect x="10" y="40" width="52" height="32" rx="2" fill="#0891b2"/>
+        <text x="36" y="59" textAnchor="middle" fontSize="6" fill="white" fontWeight="600" fontFamily="system-ui">Alpha</text>
+        <rect x="65" y="40" width="25" height="32" rx="2" fill="#06b6d4"/>
+        <text x="77" y="59" textAnchor="middle" fontSize="5.5" fill="white" fontFamily="system-ui">Beta</text>
+        <rect x="10" y="74" width="32" height="26" rx="2" fill="#22d3ee"/>
+        <rect x="44" y="74" width="46" height="26" rx="2" fill="#67e8f9"/>
+        <text x="67" y="90" textAnchor="middle" fontSize="5.5" fill="#0e7490" fontFamily="system-ui">Delta</text>
+      </CardShell>
+      {/* Donut status + gauge progresso */}
+      <CardShell x={100} y={30} w={44} h={76} title="Status">
+        <circle cx="122" cy="74" r="18" fill="none" stroke="#cffafe" strokeWidth="10"/>
+        <circle cx="122" cy="74" r="18" fill="none" stroke="#0891b2" strokeWidth="10" strokeDasharray="38 75" strokeDashoffset="0"/>
+        <circle cx="122" cy="74" r="18" fill="none" stroke="#fbbf24" strokeWidth="10" strokeDasharray="24 89" strokeDashoffset="-38"/>
+        <circle cx="122" cy="74" r="18" fill="none" stroke="#f43f5e" strokeWidth="10" strokeDasharray="13 100" strokeDashoffset="-62"/>
+        <circle cx="122" cy="74" r="6" fill="white" opacity="0.92"/>
+      </CardShell>
+      <CardShell x={148} y={30} w={48} h={76} title="Progresso">
+        <path d="M 158,96 A 18,18 0 0,1 190,96" fill="none" stroke="#cffafe" strokeWidth="8" strokeLinecap="round"/>
+        <path d="M 158,96 A 18,18 0 0,1 190,96" fill="none" stroke="#0891b2" strokeWidth="8" strokeLinecap="round" strokeDasharray="38 57" strokeDashoffset="0"/>
+        <text x="174" y="88" textAnchor="middle" fontSize="8" fill="#0891b2" fontWeight="700" fontFamily="system-ui">68%</text>
+      </CardShell>
     </svg>
   ),
   vendas_avancado: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#f5f3ff"/>
-      {[25,38,30,55,45,70,58].map((h,i)=><rect key={i} x={10+i*26} y={90-h} width="18" height={h} rx="2" fill="rgba(124,58,237,0.25)"/>)}
-      <polyline points="19,65 45,52 71,60 97,35 123,45 149,20 175,32" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      {[65,52,60,35,45,20,32].map((y,i)=><circle key={i} cx={19+i*26} cy={y} r="3.5" fill="#7c3aed"/>)}
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_va" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f5f3ff"/><stop offset="100%" stopColor="#ede9fe"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_va)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Receita" value="R$5,8M" color="#7c3aed"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Meta" value="R$6,0M" color="#6366f1"/>
+      {/* Speedometer */}
+      <g><rect x="100" y="4" width="44" height="22" rx="3" fill="white" opacity="0.85"/>
+        <path d="M 108,22 A 14,14 0 0,1 136,22" fill="none" stroke="#e9d5ff" strokeWidth="5" strokeLinecap="round"/>
+        <path d="M 108,22 A 14,14 0 0,1 136,22" fill="none" stroke="#7c3aed" strokeWidth="5" strokeLinecap="round" strokeDasharray="29 44" strokeDashoffset="0"/>
+        <text x="122" y="20" textAnchor="middle" fontSize="7" fill="#7c3aed" fontWeight="700" fontFamily="system-ui">82%</text>
+        <text x="122" y="9" textAnchor="middle" fontSize="4.5" fill="#9ca3af" fontFamily="system-ui">Atingimento</text>
+      </g>
+      {/* Gauge */}
+      <g><rect x="148" y="4" width="48" height="22" rx="3" fill="white" opacity="0.85"/>
+        <path d="M 156,22 A 14,14 0 0,1 188,22" fill="none" stroke="#d1fae5" strokeWidth="5" strokeLinecap="round"/>
+        <path d="M 156,22 A 14,14 0 0,1 188,22" fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" strokeDasharray="32 44" strokeDashoffset="0"/>
+        <text x="172" y="20" textAnchor="middle" fontSize="7" fill="#10b981" fontWeight="700" fontFamily="system-ui">78%</text>
+        <text x="172" y="9" textAnchor="middle" fontSize="4.5" fill="#9ca3af" fontFamily="system-ui">NPS</text>
+      </g>
+      {/* Treemap */}
+      <CardShell x={4} y={30} w={92} h={76} title="Portfólio por Receita">
+        <rect x="10" y="40" width="50" height="28" rx="2" fill="#7c3aed"/>
+        <text x="35" y="57" textAnchor="middle" fontSize="5.5" fill="white" fontFamily="system-ui">Produto A</text>
+        <rect x="63" y="40" width="27" height="28" rx="2" fill="#a78bfa"/>
+        <rect x="10" y="70" width="34" height="30" rx="2" fill="#c4b5fd"/>
+        <rect x="46" y="70" width="44" height="30" rx="2" fill="#6366f1"/>
+        <text x="68" y="88" textAnchor="middle" fontSize="5.5" fill="white" fontFamily="system-ui">Produto D</text>
+      </CardShell>
+      {/* Combo full */}
+      <CardShell x={100} y={30} w={96} h={76} title="Volume + Receita">
+        {[18,24,20,30,26,34,30,38].map((h,i)=><rect key={i} x={108+i*11} y={94-h} width="7" height={h} rx="1" fill="#e9d5ff"/>)}
+        <polyline points="111,76 122,68 133,72 144,60 155,64 166,54 177,58 188,48" fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </CardShell>
     </svg>
   ),
   operacoes_noc: (
-    <svg viewBox="0 0 200 100" className="w-full h-full">
-      <rect width="200" height="100" fill="#f8fafc"/>
-      <path d="M 30,85 A 50,50 0 0,1 130,85" fill="none" stroke="#e5e7eb" strokeWidth="14" strokeLinecap="round"/>
-      <path d="M 30,85 A 50,50 0 0,1 130,85" fill="none" stroke="#10b981" strokeWidth="14" strokeLinecap="round" strokeDasharray="110 157" />
-      <line x1="80" y1="85" x2="108" y2="42" stroke="#1f2937" strokeWidth="3" strokeLinecap="round"/>
-      <circle cx="80" cy="85" r="5" fill="#374151"/>
-      <text x="80" y="78" textAnchor="middle" fontSize="9" fill="#374151" fontWeight="900">99.8%</text>
-      <rect x="148" y="15" width="44" height="18" rx="3" fill="#dcfce7"/>
-      <text x="170" y="28" textAnchor="middle" fontSize="8" fill="#16a34a" fontWeight="700">Online</text>
-      <rect x="148" y="40" width="44" height="18" rx="3" fill="#fef9c3"/>
-      <text x="170" y="53" textAnchor="middle" fontSize="8" fill="#ca8a04" fontWeight="700">1 Alerta</text>
-      <rect x="148" y="65" width="44" height="18" rx="3" fill="#fee2e2"/>
-      <text x="170" y="78" textAnchor="middle" fontSize="8" fill="#dc2626" fontWeight="700">SLA 94%</text>
+    <svg viewBox="0 0 200 112" className="w-full h-full">
+      <defs><linearGradient id="bg_noc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f8fafc"/><stop offset="100%" stopColor="#f1f5f9"/></linearGradient></defs>
+      <rect width="200" height="112" fill="url(#bg_noc)"/>
+      <KpiCard x={4}  y={4} w={44} h={22} title="Uptime" value="99,8%" color="#10b981"/>
+      <KpiCard x={52} y={4} w={44} h={22} title="Alertas" value="3" color="#f59e0b"/>
+      <KpiCard x={100} y={4} w={44} h={22} title="Incidentes" value="7" color="#f43f5e"/>
+      <KpiCard x={148} y={4} w={48} h={22} title="MTTR" value="14 min" color="#8b5cf6"/>
+      {/* Speedometer SLA */}
+      <CardShell x={4} y={30} w={60} h={76} title="SLA Cumprimento">
+        <path d="M 14,92 A 26,26 0 0,1 58,92" fill="none" stroke="#dcfce7" strokeWidth="9" strokeLinecap="round"/>
+        <path d="M 14,92 A 26,26 0 0,1 58,92" fill="none" stroke="#10b981" strokeWidth="9" strokeLinecap="round" strokeDasharray="52 82" strokeDashoffset="0"/>
+        <line x1="36" y1="92" x2="50" y2="66" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="36" cy="92" r="3" fill="#374151"/>
+        <text x="36" y="82" textAnchor="middle" fontSize="8" fill="#10b981" fontWeight="700" fontFamily="system-ui">94%</text>
+      </CardShell>
+      {/* Area - latência */}
+      <CardShell x={68} y={30} w={128} h={76} title="Latência no Tempo">
+        <polyline points="76,90 89,76 102,80 115,64 128,70 141,52 154,58 167,42 180,48 193,36" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polygon points="76,90 89,76 102,80 115,64 128,70 141,52 154,58 167,42 180,48 193,36 193,100 76,100" fill="rgba(99,102,241,0.07)"/>
+        {/* Status badges */}
+        <rect x="148" y="38" width="34" height="10" rx="2" fill="#dcfce7"/>
+        <text x="165" y="46" textAnchor="middle" fontSize="5.5" fill="#16a34a" fontWeight="700" fontFamily="system-ui">Online ✓</text>
+        <rect x="148" y="52" width="34" height="10" rx="2" fill="#fef9c3"/>
+        <text x="165" y="60" textAnchor="middle" fontSize="5.5" fill="#ca8a04" fontWeight="600" fontFamily="system-ui">1 Alerta</text>
+        <rect x="148" y="66" width="34" height="10" rx="2" fill="#fee2e2"/>
+        <text x="165" y="74" textAnchor="middle" fontSize="5.5" fill="#dc2626" fontWeight="600" fontFamily="system-ui">SLA 94%</text>
+      </CardShell>
     </svg>
   ),
 }
@@ -310,7 +564,7 @@ function TemplateGallery({ onSelect }) {
                   className="group text-left bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 transition-all duration-200"
                 >
                   {/* Preview ilustrado */}
-                  <div className={`w-full h-28 bg-gradient-to-br ${gradientClass} overflow-hidden relative`}>
+                  <div className={`w-full h-32 bg-gradient-to-br ${gradientClass} overflow-hidden relative`}>
                     {preview}
                     {tpl.badges && tpl.badges.length > 0 && (
                       <div className="absolute top-2 right-2 flex gap-1">
@@ -363,6 +617,7 @@ export default function NovoDashboardPage() {
   const [datasets, setDatasets] = useState([])
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [canvasConfig, setCanvasConfig] = useState({ bgColor: '', sheetBgColor: '' })
+  const [layoutKey, setLayoutKey] = useState(0)
   const addMenuRef = useRef()
 
   useEffect(() => {
@@ -379,7 +634,9 @@ export default function NovoDashboardPage() {
 
   function applyTemplate(tpl) {
     setTitle(tpl.id === 'blank' ? '' : tpl.title)
-    setBlocks(tpl.blocks.map((b, i) => ({ ...b, id: `tpl_${tpl.id}_${i}_${Date.now()}` })))
+    setBlocks(tpl.blocks.map((b) => ({ ...b, id: crypto.randomUUID() })))
+    if (tpl.canvasConfig) setCanvasConfig(tpl.canvasConfig)
+    setLayoutKey(k => k + 1)
     setTemplateSelected(true)
   }
 
@@ -400,11 +657,20 @@ export default function NovoDashboardPage() {
     else { setSidePanel(panel); setSidebarOpen(true) }
   }
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  function sanitizeBlocks(bs) {
+    return bs.map(b => ({
+      ...b,
+      id: UUID_RE.test(b.id) ? b.id : crypto.randomUUID(),
+      dataset_id: UUID_RE.test(b.dataset_id) ? b.dataset_id : null,
+    }))
+  }
+
   async function handleSave() {
     if (!title.trim()) { setError('Informe o título'); return }
     setSaving(true); setError('')
     try {
-      const report = await api.reports.create({ title, description: description || null, blocks })
+      const report = await api.reports.create({ title, description: description || null, blocks: sanitizeBlocks(blocks) })
       router.push(`/dashboards/${report.id}`)
     } catch (err) {
       setError(err.message)
@@ -459,7 +725,7 @@ export default function NovoDashboardPage() {
             <input className="text-2xl font-black text-gray-800 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-300 transition-colors py-1 w-full block" placeholder="Título do dashboard..." value={title} onChange={e => setTitle(e.target.value)} />
             <input className="text-sm text-gray-500 bg-transparent outline-none mt-1 w-full block" placeholder="Descrição (opcional)" value={description} onChange={e => setDescription(e.target.value)} />
           </div>
-          <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} />
+          <ReportBuilder key={layoutKey} blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor, dotColor: canvasConfig.dotColor }} />
         </div>
 
         <aside className={`${sidebarOpen && sidePanel ? 'w-72' : 'w-0'} bg-white border-l border-gray-100 flex flex-col shrink-0 overflow-hidden transition-[width] duration-200`}>

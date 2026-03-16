@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Calibração — Sidebar Icon Rail</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { font-family: -apple-system, sans-serif; background: #f0f0f5; display: flex; height: 100vh; overflow: hidden }
+
+  /* CONTROLS */
+  #controls {
+    width: 320px; background: #fff; border-right: 1px solid #e5e7eb;
+    overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;
+  }
+  #controls h1 { font-size: 14px; font-weight: 800; color: #111; letter-spacing: -0.3px }
+  #controls h2 { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px }
+  .group { display: flex; flex-direction: column; gap: 10px }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+  .row label { font-size: 11px; color: #4b5563; flex: 1; white-space: nowrap }
+  .row input[type=range] { flex: 1; accent-color: #7c3aed }
+  .row .val { font-size: 11px; font-weight: 700; color: #7c3aed; min-width: 36px; text-align: right; font-variant-numeric: tabular-nums }
+  .row input[type=color] { width: 32px; height: 28px; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; padding: 2px }
+  .sep { height: 1px; background: #f3f4f6 }
+  button.copy-btn {
+    width: 100%; padding: 10px; background: #7c3aed; color: #fff; border: none;
+    border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 0.2px;
+  }
+  button.copy-btn:hover { background: #6d28d9 }
+  #copied-msg { text-align: center; font-size: 11px; color: #10b981; display: none; margin-top: 4px }
+
+  /* PREVIEW AREA */
+  #preview {
+    flex: 1; display: flex; align-items: stretch; justify-content: center;
+    padding: 40px; gap: 0;
+  }
+
+  /* FAKE EDITOR LAYOUT */
+  #editor {
+    display: flex; height: 100%; max-height: 680px; border-radius: 16px;
+    overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.18); background: #f5f5f7;
+  }
+  #canvas-area {
+    width: 480px; background: #f3f4f6; padding: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  #canvas-area .block {
+    background: white; border-radius: 12px; border: 1px solid #e5e7eb;
+    padding: 12px; font-size: 11px; color: #9ca3af;
+  }
+  #canvas-area .block.selected { border: 2px solid #7c3aed; }
+
+  /* SIDEBAR PANEL */
+  #sidebar-panel {
+    width: 240px; background: white; border-right: 1px solid #e5e7eb;
+    padding: 12px; font-size: 11px; color: #6b7280;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  #sidebar-panel .panel-title {
+    font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f3f4f6;
+  }
+
+  /* ICON RAIL */
+  #rail {
+    background: white;
+    border-left: 1px solid #e5e7eb;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0;
+    gap: 2px;
+    transition: all 0.15s;
+  }
+  .rail-top { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100% }
+  .rail-bottom { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100% }
+  .rail-sep { height: 1px; background: #f3f4f6; margin: 4px auto }
+
+  .rail-btn {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; cursor: pointer; border: none; background: transparent;
+    border-radius: 10px; transition: all 0.15s;
+  }
+  .rail-btn:hover { background: #f3f4f6; color: #374151 }
+  .rail-btn.active { background: #ede9fe; color: #7c3aed }
+  .rail-btn.disabled { color: #d1d5db; cursor: default }
+  .rail-btn.disabled:hover { background: transparent; color: #d1d5db }
+  .rail-btn svg { display: block; flex-shrink: 0 }
+  .rail-btn span { font-weight: 600; line-height: 1; white-space: nowrap }
+  .badge {
+    position: absolute; top: 4px; right: 4px;
+    min-width: 14px; height: 14px; background: #7c3aed; color: white;
+    border-radius: 999px; font-size: 8px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 2px; line-height: 1;
+  }
+</style>
+</head>
+<body>
+
+<!-- CONTROLS -->
+<div id="controls">
+  <h1>⚙️ Calibração — Sidebar Rail</h1>
+
+  <div class="group">
+    <h2>Dimensões</h2>
+    <div class="row">
+      <label>Largura do rail</label>
+      <input type="range" id="railWidth" min="44" max="90" value="58" step="1">
+      <span class="val" id="railWidthVal">58px</span>
+    </div>
+    <div class="row">
+      <label>Largura do botão</label>
+      <input type="range" id="btnWidth" min="32" max="78" value="46" step="1">
+      <span class="val" id="btnWidthVal">46px</span>
+    </div>
+    <div class="row">
+      <label>Padding vertical btn</label>
+      <input type="range" id="btnPadY" min="4" max="18" value="10" step="1">
+      <span class="val" id="btnPadYVal">10px</span>
+    </div>
+    <div class="row">
+      <label>Tamanho do ícone</label>
+      <input type="range" id="iconSize" min="14" max="28" value="20" step="1">
+      <span class="val" id="iconSizeVal">20px</span>
+    </div>
+    <div class="row">
+      <label>Tamanho da label</label>
+      <input type="range" id="labelSize" min="7" max="13" value="9" step="1">
+      <span class="val" id="labelSizeVal">9px</span>
+    </div>
+    <div class="row">
+      <label>Gap ícone→label</label>
+      <input type="range" id="iconGap" min="0" max="8" value="2" step="1">
+      <span class="val" id="iconGapVal">2px</span>
+    </div>
+    <div class="row">
+      <label>Gap entre botões</label>
+      <input type="range" id="btnGap" min="0" max="10" value="2" step="1">
+      <span class="val" id="btnGapVal">2px</span>
+    </div>
+    <div class="row">
+      <label>Border radius btn</label>
+      <input type="range" id="btnRadius" min="4" max="20" value="10" step="1">
+      <span class="val" id="btnRadiusVal">10px</span>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="group">
+    <h2>Cores</h2>
+    <div class="row">
+      <label>Fundo rail</label>
+      <input type="color" id="railBg" value="#ffffff">
+    </div>
+    <div class="row">
+      <label>Ícone inativo</label>
+      <input type="color" id="colorInactive" value="#9ca3af">
+    </div>
+    <div class="row">
+      <label>Ícone hover</label>
+      <input type="color" id="colorHover" value="#374151">
+    </div>
+    <div class="row">
+      <label>Fundo hover</label>
+      <input type="color" id="bgHover" value="#f3f4f6">
+    </div>
+    <div class="row">
+      <label>Ícone ativo</label>
+      <input type="color" id="colorActive" value="#7c3aed">
+    </div>
+    <div class="row">
+      <label>Fundo ativo</label>
+      <input type="color" id="bgActive" value="#ede9fe">
+    </div>
+    <div class="row">
+      <label>Cor badge</label>
+      <input type="color" id="badgeColor" value="#7c3aed">
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="group">
+    <h2>Mostrar labels</h2>
+    <div class="row">
+      <label>Exibir texto abaixo</label>
+      <input type="checkbox" id="showLabels" checked style="width:16px;height:16px;accent-color:#7c3aed">
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <button class="copy-btn" onclick="copyValues()">📋 Copiar valores para o código</button>
+  <div id="copied-msg">✅ Copiado!</div>
+
+  <div class="sep"></div>
+  <div style="font-size:10px;color:#9ca3af;line-height:1.6">
+    <b>Dica:</b> Clique nos botões para ver estado ativo/inativo. O botão "Editar" está desabilitado por padrão (precisa selecionar um bloco).
+  </div>
+</div>
+
+<!-- PREVIEW -->
+<div id="preview">
+  <div id="editor">
+    <!-- Canvas -->
+    <div id="canvas-area">
+      <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">Dashboard — Modo Edição</div>
+      <div class="block selected">📊 KPI — Receita Total <span style="float:right;color:#7c3aed;font-size:9px">selecionado</span></div>
+      <div class="block">📈 Barras — Vendas por mês</div>
+      <div class="block">🍕 Pizza — Participação</div>
+      <div class="block">🔽 Filtro de região</div>
+    </div>
+
+    <!-- Sidebar panel -->
+    <div id="sidebar-panel">
+      <div class="panel-title">Configurar bloco</div>
+      <div style="font-size:11px;color:#6b7280;">Título: KPI — Receita Total</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:6px;">Tipo: KPI</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:6px;">Formato: Moeda</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:6px;">Cor: #6366f1</div>
+    </div>
+
+    <!-- Icon rail -->
+    <div id="rail">
+      <div class="rail-top" id="rail-top">
+        <!-- buttons injected by JS -->
+      </div>
+      <div class="rail-sep" id="rail-sep-el" style="width:28px"></div>
+      <div class="rail-bottom" id="rail-bottom">
+        <!-- help + collapse -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BTNS = [
+  {
+    id: 'edit', label: 'Editar', active: true, disabled: false,
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`
+  },
+  {
+    id: 'dados', label: 'Dados', active: false, disabled: false,
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg>`
+  },
+  {
+    id: 'filtros', label: 'Filtros', active: false, disabled: false, badge: 2,
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>`
+  },
+  {
+    id: 'settings', label: 'Config', active: false, disabled: false,
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="1.5"/></svg>`
+  },
+  {
+    id: 'notas', label: 'Notas', active: false, disabled: false, badge: 3,
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/></svg>`
+  },
+  {
+    id: 'ai', label: 'IA', active: false, disabled: false,
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>`
+  },
+]
+
+const BOTTOM_BTNS = [
+  {
+    id: 'help', label: 'Ajuda',
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>`
+  },
+  {
+    id: 'collapse', label: 'Fechar',
+    svg: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7"/></svg>`
+  },
+]
+
+function getVals() {
+  return {
+    railWidth: +document.getElementById('railWidth').value,
+    btnWidth: +document.getElementById('btnWidth').value,
+    btnPadY: +document.getElementById('btnPadY').value,
+    iconSize: +document.getElementById('iconSize').value,
+    labelSize: +document.getElementById('labelSize').value,
+    iconGap: +document.getElementById('iconGap').value,
+    btnGap: +document.getElementById('btnGap').value,
+    btnRadius: +document.getElementById('btnRadius').value,
+    railBg: document.getElementById('railBg').value,
+    colorInactive: document.getElementById('colorInactive').value,
+    colorHover: document.getElementById('colorHover').value,
+    bgHover: document.getElementById('bgHover').value,
+    colorActive: document.getElementById('colorActive').value,
+    bgActive: document.getElementById('bgActive').value,
+    badgeColor: document.getElementById('badgeColor').value,
+    showLabels: document.getElementById('showLabels').checked,
+  }
+}
+
+function renderRail() {
+  const v = getVals()
+  const rail = document.getElementById('rail')
+  const top = document.getElementById('rail-top')
+  const bottom = document.getElementById('rail-bottom')
+
+  rail.style.width = v.railWidth + 'px'
+  rail.style.background = v.railBg
+  top.style.gap = v.btnGap + 'px'
+  bottom.style.gap = v.btnGap + 'px'
+
+  function makeBtn(btn, isBottom) {
+    const el = document.createElement('button')
+    el.className = 'rail-btn' + (btn.active ? ' active' : '') + (btn.disabled ? ' disabled' : '')
+    el.style.width = v.btnWidth + 'px'
+    el.style.paddingTop = v.btnPadY + 'px'
+    el.style.paddingBottom = v.btnPadY + 'px'
+    el.style.borderRadius = v.btnRadius + 'px'
+    el.style.gap = v.iconGap + 'px'
+    el.style.color = btn.active ? v.colorActive : v.colorInactive
+
+    if (!btn.disabled) {
+      el.addEventListener('mouseenter', () => {
+        if (!btn.active) { el.style.background = v.bgHover; el.style.color = v.colorHover }
+      })
+      el.addEventListener('mouseleave', () => {
+        el.style.background = btn.active ? v.bgActive : 'transparent'
+        el.style.color = btn.active ? v.colorActive : v.colorInactive
+      })
+      el.addEventListener('click', () => {
+        if (btn.disabled) return
+        BTNS.forEach(b => b.active = false)
+        btn.active = !btn.active
+        renderRail()
+      })
+    }
+
+    if (btn.active) el.style.background = v.bgActive
+
+    if (btn.badge) {
+      const badge = document.createElement('span')
+      badge.className = 'badge'
+      badge.textContent = btn.badge
+      badge.style.background = v.badgeColor
+      el.appendChild(badge)
+    }
+
+    const svgWrap = document.createElement('span')
+    svgWrap.innerHTML = btn.svg
+    const svgEl = svgWrap.querySelector('svg')
+    svgEl.style.width = v.iconSize + 'px'
+    svgEl.style.height = v.iconSize + 'px'
+    el.appendChild(svgEl)
+
+    if (v.showLabels) {
+      const lbl = document.createElement('span')
+      lbl.textContent = btn.label
+      lbl.style.fontSize = v.labelSize + 'px'
+      el.appendChild(lbl)
+    }
+
+    return el
+  }
+
+  top.innerHTML = ''
+  BTNS.forEach(btn => top.appendChild(makeBtn(btn, false)))
+
+  bottom.innerHTML = ''
+  BOTTOM_BTNS.forEach(btn => bottom.appendChild(makeBtn({...btn, active: false, disabled: false}, true)))
+}
+
+function updateVals() {
+  const ids = ['railWidth','btnWidth','btnPadY','iconSize','labelSize','iconGap','btnGap','btnRadius']
+  ids.forEach(id => {
+    const el = document.getElementById(id)
+    document.getElementById(id + 'Val').textContent = el.value + 'px'
+  })
+  renderRail()
+}
+
+function copyValues() {
+  const v = getVals()
+  const code = `// Icon Rail — valores calibrados
+// Tailwind classes equivalentes:
+// rail width: w-[${v.railWidth}px]
+// button width: w-[${v.btnWidth}px]
+// button padding y: py-[${v.btnPadY}px]
+// icon size: w-${v.iconSize === 20 ? '5' : Math.round(v.iconSize/4)} h-${v.iconSize === 20 ? '5' : Math.round(v.iconSize/4)} (${v.iconSize}px)
+// label font size: text-[${v.labelSize}px]
+// gap icon→label: gap-[${v.iconGap}px]
+// gap between buttons: gap-[${v.btnGap}px]
+// border radius: rounded-[${v.btnRadius}px]
+//
+// className do botão inativo:
+// "text-[${v.colorInactive}] hover:text-[${v.colorHover}] hover:bg-[${v.bgHover}]"
+//
+// className do botão ativo:
+// "bg-[${v.bgActive}] text-[${v.colorActive}]"
+//
+// showLabels: ${v.showLabels}
+//
+// JSX:
+<div className="w-[${v.railWidth}px] bg-white border-l border-gray-200/80 flex flex-col items-center py-2 gap-[${v.btnGap}px] shrink-0">
+  <button className="relative flex flex-col items-center justify-center gap-[${v.iconGap}px] w-[${v.btnWidth}px] py-[${v.btnPadY}px] rounded-[${v.btnRadius}px] ...">
+    <svg className="w-[${v.iconSize}px] h-[${v.iconSize}px]" .../>
+    ${v.showLabels ? `<span className="text-[${v.labelSize}px] font-semibold leading-none">Label</span>` : '<!-- labels ocultos -->'}
+  </button>
+</div>`
+
+  navigator.clipboard.writeText(code).then(() => {
+    const msg = document.getElementById('copied-msg')
+    msg.style.display = 'block'
+    setTimeout(() => msg.style.display = 'none', 2500)
+  })
+}
+
+// Init
+document.querySelectorAll('input[type=range], input[type=color], input[type=checkbox]').forEach(el => {
+  el.addEventListener('input', updateVals)
+})
+
+renderRail()
+</script>
+</body>
+</html>

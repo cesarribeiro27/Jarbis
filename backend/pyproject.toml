@@ -1,7 +1,7 @@
 [project]
-name = "lumetra-backend"
+name = "jarbis-backend"
 version = "0.1.0"
-description = "Lumetra - Plataforma de Inteligência de Mídia"
+description = "Jarbis - Plataforma de Inteligência de Mídia"
 requires-python = ">=3.12"
 
 dependencies = [

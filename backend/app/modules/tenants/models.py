@@ -22,7 +22,7 @@ def utcnow() -> datetime:
 
 class Tenant(Base):
     """
-    Organização cliente da Lumetra.
+    Organização cliente do Jarbis.
     Pode ser uma agência de publicidade, anunciante, veículo ou pesquisador.
     """
     __tablename__ = "tenants"

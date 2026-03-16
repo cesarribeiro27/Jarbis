@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calibrar Templates</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f23; padding: 24px; color: white; }
+  h1 { font-size: 18px; font-weight: 800; color: white; margin-bottom: 4px; }
+  p  { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+
+  .options-bar {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .opt-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1.5px solid #334155;
+    background: #1e293b; color: #94a3b8; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .opt-btn:hover { border-color: #7c3aed; color: white; }
+  .opt-btn.active { background: #7c3aed; border-color: #7c3aed; color: white; }
+
+  .canvas {
+    background: #ede9fe;
+    border-radius: 16px;
+    padding: 24px;
+    background-image: radial-gradient(circle, rgba(109,40,217,0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
+    position: relative;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
+
+  .card {
+    background: white;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .card-header {
+    padding: 8px 10px 5px;
+    font-size: 10px; font-weight: 600; color: #64748b;
+    border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+  .card-body { flex: 1; padding: 6px 10px 8px; display: flex; flex-direction: column; justify-content: space-between; }
+
+  .kpi-value { font-size: 20px; font-weight: 900; line-height: 1; letter-spacing: -0.02em; }
+  .kpi-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 700;
+    background: #ecfdf5; color: #059669;
+    padding: 2px 6px; border-radius: 99px;
+    margin-top: 4px; align-self: flex-start;
+  }
+  .kpi-bar { width: 24px; height: 3px; border-radius: 99px; }
+
+  /* Chart mockups */
+  .chart-body { flex: 1; padding: 6px 10px 8px; display: flex; align-items: flex-end; gap: 3px; }
+  .bar-item { flex: 1; border-radius: 3px 3px 0 0; opacity: 0.85; }
+
+  .chart-line { flex: 1; padding: 6px 10px 8px; display: flex; align-items: center; }
+  .chart-line svg { width: 100%; height: 100%; }
+
+  .pie-body { flex: 1; padding: 6px 10px 8px; display: flex; align-items: center; justify-content: center; }
+
+  /* Bottom bar */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #1e293b; border-top: 1px solid #334155;
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .bottom-bar .info { font-size: 13px; color: #94a3b8; }
+  .bottom-bar .info strong { color: #a78bfa; }
+  .btn-confirm {
+    margin-left: auto;
+    background: #7c3aed; color: white;
+    border: none; border-radius: 8px;
+    padding: 10px 28px; font-size: 13px; font-weight: 800;
+    cursor: pointer;
+  }
+  .btn-confirm:hover { background: #6d28d9; }
+  .btn-confirm:disabled { background: #4c1d95; opacity: 0.5; cursor: default; }
+
+  body { padding-bottom: 72px; }
+
+  .row-label {
+    font-size: 9px; color: #94a3b8; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+
+<h1>Calibrar Layout dos Templates</h1>
+<p>Escolha o tamanho que deixa os cards KPI e gráficos proporcionais. Clique em <strong>CONFIRMAR</strong> para enviar ao Claude.</p>
+
+<div class="options-bar" id="opts"></div>
+
+<div class="canvas" id="canvas"></div>
+
+<div class="bottom-bar">
+  <div class="info" id="info">Selecione uma opção acima</div>
+  <button class="btn-confirm" id="btn" disabled onclick="confirm()">✓ CONFIRMAR ESSE TAMANHO</button>
+</div>
+
+<script>
+const options = [
+  { label: 'XS',  kpiH: 56,  chartH: 120, rowHeight: 22 },
+  { label: 'SM',  kpiH: 72,  chartH: 140, rowHeight: 30 },
+  { label: 'MD',  kpiH: 88,  chartH: 160, rowHeight: 38 },
+  { label: 'LG',  kpiH: 104, chartH: 184, rowHeight: 46 },
+  { label: 'XL',  kpiH: 120, chartH: 208, rowHeight: 54 },
+  { label: '2XL', kpiH: 140, chartH: 240, rowHeight: 64 },
+]
+
+let selected = null
+
+const kpiCards = [
+  { title: 'Receita Total',   value: 'R$1,2M',  badge: '↑ +8.3%',  color: '#10b981' },
+  { title: 'Total de Pedidos', value: '4.821',   badge: '↑ +15.7%', color: '#6366f1' },
+  { title: 'Ticket Médio',    value: 'R$256',   badge: '↑ +5.2%',  color: '#f59e0b' },
+  { title: 'Clientes Únicos', value: '1.893',   badge: '↑ +12.1%', color: '#8b5cf6' },
+]
+
+const barColors = ['#c4b5fd','#a78bfa','#818cf8','#6366f1','#4f46e5']
+
+function buildKpi(card, height) {
+  return `
+    <div class="card" style="grid-column: span 3; height: ${height}px;">
+      <div class="card-header">${card.title}</div>
+      <div class="card-body">
+        <div>
+          <div class="kpi-value" style="color:${card.color}">${card.value}</div>
+          <div class="kpi-badge">${card.badge}</div>
+        </div>
+        <div class="kpi-bar" style="background:${card.color}"></div>
+      </div>
+    </div>
+  `
+}
+
+function buildBar(title, height, span) {
+  const heights = [40, 55, 35, 70, 50, 80, 60, 90, 75, 95, 85, 100]
+  const bars = heights.map((h, i) =>
+    `<div class="bar-item" style="height:${h}%; background:${barColors[i % barColors.length]}"></div>`
+  ).join('')
+  return `
+    <div class="card" style="grid-column: span ${span}; height: ${height}px;">
+      <div class="card-header">${title}</div>
+      <div class="chart-body">${bars}</div>
+    </div>
+  `
+}
+
+function buildPie(title, height, span) {
+  return `
+    <div class="card" style="grid-column: span ${span}; height: ${height}px;">
+      <div class="card-header">${title}</div>
+      <div class="pie-body">
+        <svg viewBox="0 0 80 80" width="72" height="72">
+          <circle cx="40" cy="40" r="28" fill="none" stroke="#e0e7ff" stroke-width="14"/>
+          <circle cx="40" cy="40" r="28" fill="none" stroke="#6366f1" stroke-width="14" stroke-dasharray="56 120" stroke-dashoffset="0"/>
+          <circle cx="40" cy="40" r="28" fill="none" stroke="#10b981" stroke-width="14" stroke-dasharray="34 142" stroke-dashoffset="-56"/>
+          <circle cx="40" cy="40" r="28" fill="none" stroke="#f59e0b" stroke-width="14" stroke-dasharray="22 154" stroke-dashoffset="-90"/>
+          <circle cx="40" cy="40" r="10" fill="white"/>
+        </svg>
+      </div>
+    </div>
+  `
+}
+
+function buildLine(title, height, span) {
+  return `
+    <div class="card" style="grid-column: span ${span}; height: ${height}px;">
+      <div class="card-header">${title}</div>
+      <div class="chart-line">
+        <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,50 L16,44 32,46 48,38 64,40 80,30 96,34 112,22 128,28 144,14 160,18 176,8 200,10"
+            fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M0,50 L16,44 32,46 48,38 64,40 80,30 96,34 112,22 128,28 144,14 160,18 176,8 200,10 L200,60 L0,60 Z"
+            fill="url(#lg)"/>
+        </svg>
+      </div>
+    </div>
+  `
+}
+
+function render(opt) {
+  const canvas = document.getElementById('canvas')
+  const { kpiH, chartH } = opt
+  canvas.innerHTML = `
+    <div class="row-label">KPIs</div>
+    <div class="grid" style="margin-bottom:8px;">
+      ${kpiCards.map(c => buildKpi(c, kpiH)).join('')}
+    </div>
+    <div class="row-label">Gráficos — Linha 1</div>
+    <div class="grid" style="margin-bottom:8px;">
+      ${buildLine('Receita Mensal', chartH, 6)}
+      ${buildPie('Mix por Categoria', chartH, 3)}
+      ${buildBar('Meta do Mês', chartH, 3)}
+    </div>
+    <div class="row-label">Gráficos — Linha 2</div>
+    <div class="grid">
+      ${buildBar('Por Produto', chartH, 4)}
+      ${buildLine('Evolução', chartH, 5)}
+      ${buildBar('Por Região', chartH, 3)}
+    </div>
+  `
+}
+
+function select(label) {
+  selected = options.find(o => o.label === label)
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.toggle('active', b.dataset.label === label))
+  document.getElementById('info').innerHTML = `Selecionado: <strong>${label}</strong> — KPI: ${selected.kpiH}px · Gráficos: ${selected.chartH}px · rowHeight: ${selected.rowHeight}`
+  document.getElementById('btn').disabled = false
+  render(selected)
+}
+
+function confirm() {
+  const s = selected
+  const msg = `rowHeight=${s.rowHeight} → KPI h:2=${s.kpiH}px · charts h:3=${s.chartH}px`
+  navigator.clipboard.writeText(msg).catch(() => {})
+  alert('COPIADO! Cole no chat:\n\n' + msg)
+}
+
+// Build buttons
+const bar = document.getElementById('opts')
+options.forEach(o => {
+  const b = document.createElement('button')
+  b.className = 'opt-btn'
+  b.dataset.label = o.label
+  b.textContent = `${o.label} — KPI ${o.kpiH}px`
+  b.onclick = () => select(o.label)
+  bar.appendChild(b)
+})
+
+// Default
+select('XL')
+</script>
+</body>
+</html>

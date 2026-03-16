@@ -20,7 +20,7 @@ httptools==0.7.1
 httpx==0.28.1
 idna==3.11
 iniconfig==2.3.0
-# Editable install with no version control (lumetra-backend==0.1.0)
+# Editable install with no version control (jarbis-backend==0.1.0)
 -e /app
 Mako==1.3.10
 MarkupSafe==3.0.3
