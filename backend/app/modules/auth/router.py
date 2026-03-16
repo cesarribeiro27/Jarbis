@@ -11,12 +11,13 @@ PATCH /auth/users/{id}         — Atualiza role ou status (owner/admin)
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.rate_limit import limiter
 from app.core.security import hash_password, verify_password
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
@@ -66,7 +67,8 @@ class UpdateUserRequest(BaseModel):
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
-async def register(data: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(request: Request, data: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
     service = AuthService(db)
     result = await service.register(data)
     _set_auth_cookie(response, result.tokens.access_token)
@@ -85,7 +87,8 @@ class SignupRequest(BaseModel):
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=201)
-async def signup(data: SignupRequest, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def signup(request: Request, data: SignupRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Cadastro público — cria tenant + usuário owner automaticamente."""
     reg = RegisterRequest(
         organization_name=data.name,
@@ -100,7 +103,8 @@ async def signup(data: SignupRequest, response: Response, db: AsyncSession = Dep
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(data: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, data: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Autentica um usuário e retorna tokens de acesso."""
     service = AuthService(db)
     result = await service.login(data)
@@ -124,7 +128,8 @@ class ResendVerificationRequest(BaseModel):
 
 
 @router.post("/verify-email", response_model=AuthResponse)
-async def verify_email(data: VerifyEmailRequest, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/hour")
+async def verify_email(request: Request, data: VerifyEmailRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Verifica o código de 6 dígitos e ativa o email do usuário."""
     service = AuthService(db)
     result = await service.verify_email(data.email, data.code)
