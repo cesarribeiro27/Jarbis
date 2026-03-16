@@ -75,8 +75,8 @@ const Icons = {
 }
 
 const NAV = [
-  { href: '/dashboard',  label: 'Dashboard', Icon: Icons.Dashboard },
-  { href: '/dashboards', label: 'Dashboards', Icon: Icons.Charts },
+  { href: '/dashboard',  label: 'Painel',    Icon: Icons.Dashboard },
+  { href: '/dashboards', label: 'Dashboard', Icon: Icons.Charts },
   { href: '/datasets',   label: 'Dados',      Icon: Icons.Database },
   { href: '/alertas',    label: 'Alertas',    Icon: Icons.Bell },
 ]
@@ -195,7 +195,7 @@ export default function AppLayout({ children }) {
                 </div>
               )}
               {NAV_ADMIN.map(({ href, label, Icon }) => {
-                const active = pathname === href || pathname.startsWith(href + '/')
+                const active = pathname === href || (href !== '/configuracoes' && pathname.startsWith(href + '/'))
                 return (
                   <Link
                     key={href}
