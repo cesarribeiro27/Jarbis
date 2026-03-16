@@ -50,6 +50,7 @@ class ReportService:
                 "id": r.id,
                 "title": r.title,
                 "description": r.description,
+                "cover_image": r.cover_image,
                 "is_shared": r.is_shared,
                 "block_count": len(r.blocks) if r.blocks else 0,
                 "created_at": r.created_at,
@@ -85,6 +86,8 @@ class ReportService:
             report.blocks = data.blocks
         if data.pages is not None:
             report.pages = data.pages
+        if data.cover_image is not None:
+            report.cover_image = data.cover_image
 
         report.updated_at = datetime.now(timezone.utc)
         await self.db.commit()

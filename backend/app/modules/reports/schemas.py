@@ -26,6 +26,7 @@ class ReportUpdate(BaseModel):
     description: str | None = None
     blocks: list[dict[str, Any]] | None = None
     pages: list[dict[str, Any]] | None = None
+    cover_image: str | None = None
 
 
 class ReportResponse(BaseModel):
@@ -34,6 +35,7 @@ class ReportResponse(BaseModel):
     description: str | None
     blocks: list[dict[str, Any]]
     pages: list[dict[str, Any]]
+    cover_image: str | None
     is_shared: bool
     share_token: str | None
     share_view_count: int
@@ -47,6 +49,7 @@ class ReportSummary(BaseModel):
     id: uuid.UUID
     title: str
     description: str | None
+    cover_image: str | None
     is_shared: bool
     block_count: int
     created_at: datetime

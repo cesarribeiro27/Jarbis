@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
@@ -25,6 +25,160 @@ function PreviewThumb({ report, color }) {
   )
 }
 
+// ─── Cropper estilo Instagram ────────────────────────────────────────────────
+function ImageCropperModal({ onSave, onClose }) {
+  const [imgSrc, setImgSrc] = useState(null)
+  const [imgSize, setImgSize] = useState({ w: 0, h: 0 })
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const [dragStart, setDragStart] = useState(null)
+  const containerRef = useRef()
+  const fileRef = useRef()
+
+  // Área de corte fixa: 16:9, 480×270 no modal
+  const CROP_W = 480
+  const CROP_H = 270
+
+  function loadFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const img = new Image()
+      img.onload = () => {
+        // Escala a imagem para caber minimamente na área de corte
+        const scale = Math.max(CROP_W / img.width, CROP_H / img.height)
+        const w = img.width * scale
+        const h = img.height * scale
+        setImgSize({ w, h })
+        setOffset({ x: -(w - CROP_W) / 2, y: -(h - CROP_H) / 2 })
+        setImgSrc(ev.target.result)
+      }
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function onMouseDown(e) {
+    e.preventDefault()
+    setDragging(true)
+    setDragStart({ mx: e.clientX, my: e.clientY, ox: offset.x, oy: offset.y })
+  }
+
+  const onMouseMove = useCallback((e) => {
+    if (!dragging || !dragStart) return
+    const dx = e.clientX - dragStart.mx
+    const dy = e.clientY - dragStart.my
+    const newX = Math.min(0, Math.max(CROP_W - imgSize.w, dragStart.ox + dx))
+    const newY = Math.min(0, Math.max(CROP_H - imgSize.h, dragStart.oy + dy))
+    setOffset({ x: newX, y: newY })
+  }, [dragging, dragStart, imgSize])
+
+  const onMouseUp = useCallback(() => setDragging(false), [])
+
+  useEffect(() => {
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [onMouseMove, onMouseUp])
+
+  function handleSave() {
+    if (!imgSrc) return
+    const canvas = document.createElement('canvas')
+    canvas.width = CROP_W
+    canvas.height = CROP_H
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = () => {
+      ctx.drawImage(img, offset.x, offset.y, imgSize.w, imgSize.h)
+      onSave(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.src = imgSrc
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-[540px] overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <span className="font-semibold text-gray-800 text-sm">Imagem de capa</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="p-5 flex flex-col gap-4">
+          {!imgSrc ? (
+            /* Upload zone */
+            <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-200 rounded-xl p-10 cursor-pointer hover:border-violet-400 hover:bg-violet-50/30 transition-colors">
+              <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-700">Clique para escolher uma imagem</p>
+                <p className="text-xs text-gray-400 mt-1">PNG, JPG ou WEBP · Logo da empresa, foto, ilustração</p>
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={loadFile} />
+            </label>
+          ) : (
+            <>
+              <p className="text-xs text-gray-400 text-center">Arraste a imagem para ajustar o enquadramento</p>
+              {/* Crop area */}
+              <div
+                ref={containerRef}
+                className="relative mx-auto rounded-xl overflow-hidden select-none"
+                style={{ width: CROP_W, height: CROP_H, cursor: dragging ? 'grabbing' : 'grab', background: '#e5e7eb' }}
+                onMouseDown={onMouseDown}
+              >
+                {/* Imagem arrastável */}
+                <img
+                  src={imgSrc}
+                  alt=""
+                  draggable={false}
+                  style={{
+                    position: 'absolute',
+                    left: offset.x,
+                    top: offset.y,
+                    width: imgSize.w,
+                    height: imgSize.h,
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  }}
+                />
+                {/* Grid de guia (estilo Instagram) */}
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
+                  backgroundSize: `${CROP_W/3}px ${CROP_H/3}px`,
+                }} />
+                {/* Borda de corte */}
+                <div className="absolute inset-0 border-2 border-white/60 rounded-xl pointer-events-none" />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setImgSrc(null); if (fileRef.current) fileRef.current.value = '' }}
+                  className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Trocar imagem
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex-1 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors"
+                >
+                  Salvar capa
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardsPage() {
   const router = useRouter()
   const toast = useToast()
@@ -33,6 +187,7 @@ export default function DashboardsPage() {
   const [menuOpen, setMenuOpen] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [search, setSearch] = useState('')
+  const [cropTargetId, setCropTargetId] = useState(null)
 
   useEffect(() => { fetchReports() }, [])
 
@@ -64,6 +219,29 @@ export default function DashboardsPage() {
       setReports(prev => prev.map(r => r.id === id ? { ...r, is_shared: true, share_token: res.token } : r))
     } catch (err) {
       toast(err.message || 'Erro ao compartilhar.', 'error')
+    }
+  }
+
+  async function handleSaveCover(reportId, coverDataUrl) {
+    try {
+      await api.reports.update(reportId, { cover_image: coverDataUrl })
+      setReports(prev => prev.map(r => r.id === reportId ? { ...r, cover_image: coverDataUrl } : r))
+      setCropTargetId(null)
+      setMenuOpen(null)
+      toast('Capa atualizada!', 'success')
+    } catch (err) {
+      toast('Erro ao salvar capa.', 'error')
+    }
+  }
+
+  async function handleRemoveCover(reportId) {
+    try {
+      await api.reports.update(reportId, { cover_image: '' })
+      setReports(prev => prev.map(r => r.id === reportId ? { ...r, cover_image: null } : r))
+      setMenuOpen(null)
+      toast('Capa removida.', 'success')
+    } catch (err) {
+      toast('Erro ao remover capa.', 'error')
     }
   }
 
@@ -150,13 +328,31 @@ export default function DashboardsPage() {
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200 relative group overflow-hidden"
                   onClick={() => router.push(`/dashboards/${r.id}`)}
                 >
-                  {/* Preview */}
+                  {/* Preview / Capa */}
                   <div
-                    className="h-28 relative overflow-hidden"
-                    style={{ background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)` }}
+                    className="h-36 relative overflow-hidden"
+                    style={r.cover_image ? {} : { background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)` }}
                   >
-                    <PreviewThumb report={r} color={color} />
-                    <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ backgroundColor: color }} />
+                    {r.cover_image ? (
+                      <img
+                        src={r.cover_image}
+                        alt="Capa"
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                      />
+                    ) : (
+                      <PreviewThumb report={r} color={color} />
+                    )}
+                    {/* Barra de cor no topo */}
+                    {!r.cover_image && (
+                      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ backgroundColor: color }} />
+                    )}
+                    {/* Overlay escuro ao hover na capa */}
+                    {r.cover_image && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
+                    )}
+
+                    {/* Botão de 3 pontos */}
                     <div className="absolute top-2 right-2" onClick={e => e.stopPropagation()}>
                       <button
                         onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id); setDeleteConfirm(null) }}
@@ -167,11 +363,21 @@ export default function DashboardsPage() {
                         </svg>
                       </button>
                       {menuOpen === r.id && (
-                        <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-xl shadow-xl py-1">
+                        <div className="absolute right-0 top-8 z-20 w-48 bg-white border border-gray-200 rounded-xl shadow-xl py-1">
                           <button onClick={() => { router.push(`/dashboards/${r.id}`); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             Editar
                           </button>
+                          <button onClick={() => { setCropTargetId(r.id); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            {r.cover_image ? 'Alterar capa' : 'Adicionar capa'}
+                          </button>
+                          {r.cover_image && (
+                            <button onClick={() => handleRemoveCover(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2">
+                              <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              Remover capa
+                            </button>
+                          )}
                           <button onClick={() => handleShare(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                             Copiar link público
@@ -194,6 +400,17 @@ export default function DashboardsPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Botão "Adicionar capa" inline quando sem capa */}
+                    {!r.cover_image && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setCropTargetId(r.id) }}
+                        className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-2.5 py-1 bg-white/80 backdrop-blur-sm rounded-lg text-[11px] font-semibold text-gray-600 hover:bg-white transition-all shadow-sm"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        Adicionar capa
+                      </button>
+                    )}
                   </div>
 
                   {/* Card body */}
@@ -221,6 +438,14 @@ export default function DashboardsPage() {
           </div>
         )}
       </div>
+
+      {/* Cropper modal */}
+      {cropTargetId && (
+        <ImageCropperModal
+          onSave={dataUrl => handleSaveCover(cropTargetId, dataUrl)}
+          onClose={() => setCropTargetId(null)}
+        />
+      )}
     </AppLayout>
   )
 }

@@ -38,6 +38,9 @@ class Report(Base):
     # Se preenchido, tem prioridade sobre blocks (que fica como compat com legado)
     pages: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
+    # Imagem de capa (base64 data URL da imagem recortada)
+    cover_image: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Share
     share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
     is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
