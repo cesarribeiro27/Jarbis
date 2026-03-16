@@ -1174,12 +1174,32 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           {block.type === 'kpi' && (
             <>
               <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Alinhamento</label>
+                <div className="flex gap-1">
+                  {[{ v: 'left', l: '⬛◻◻' }, { v: 'center', l: '◻⬛◻' }, { v: 'right', l: '◻◻⬛' }].map(a => (
+                    <button key={a.v} onClick={() => updConfig('align', a.v)}
+                      className={`flex-1 px-2 py-1.5 rounded border text-xs font-medium transition-all ${(block.config?.align || 'left') === a.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                      {a.v === 'left' ? 'Esq' : a.v === 'center' ? 'Centro' : 'Dir'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <label className="block text-xs text-gray-500 mb-1.5">Tamanho do número</label>
                 <div className="flex gap-1">
                   {[{ v: 'lg', l: 'P' }, { v: 'xl', l: 'M' }, { v: '2xl', l: 'G' }, { v: '4xl', l: 'XG' }].map(s => (
                     <button key={s.v} onClick={() => updConfig('size', s.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-bold transition-all ${(block.config?.size || '4xl') === s.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{s.l}</button>
                   ))}
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Subtítulo / rótulo secundário</label>
+                <input
+                  className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  placeholder="Ex: Total acumulado no período"
+                  value={block.config?.subtitle || ''}
+                  onChange={e => updConfig('subtitle', e.target.value)}
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Ícone / Emoji</label>
@@ -1212,6 +1232,15 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1">Valor positivo = ↑ verde · negativo = ↓ vermelho</p>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div onClick={() => updConfig('auto_delta', !block.config?.auto_delta)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.auto_delta ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.auto_delta ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-xs text-gray-600">Delta automático (período anterior)</span>
+              </label>
+              {block.config?.auto_delta && (
+                <p className="text-[10px] text-gray-400 -mt-1">Calcula variação automaticamente quando filtro de período estiver ativo.</p>
+              )}
             </>
           )}
           {['gauge', 'speedometer'].includes(block.type) && (
@@ -1331,6 +1360,50 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             </div>
             <span className="text-xs text-gray-600">Mostrar legenda</span>
           </label>
+          {['bar', 'bar_h', 'combo'].includes(block.type) && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => updConfig('stacked', !block.config?.stacked)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.stacked ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.stacked ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-600">Barras empilhadas (stacked)</span>
+            </label>
+          )}
+          {['line', 'area'].includes(block.type) && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => updConfig('smooth', !block.config?.smooth)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.smooth ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.smooth ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-600">Linha suavizada (curva)</span>
+            </label>
+          )}
+          {block.type === 'area' && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Opacidade do preenchimento</label>
+              <div className="flex items-center gap-3">
+                <input type="range" min="0" max="100" value={Math.round((block.config?.fill_opacity ?? 0.3) * 100)} onChange={e => updConfig('fill_opacity', +e.target.value / 100)} className="flex-1 accent-violet-600" />
+                <span className="text-xs text-gray-500 w-10 text-right">{Math.round((block.config?.fill_opacity ?? 0.3) * 100)}%</span>
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Eixo Y — limites manuais</label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input type="number" step="any" value={block.config?.y_min ?? ''} onChange={e => updConfig('y_min', e.target.value === '' ? null : +e.target.value)} placeholder="Mín (auto)" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              </div>
+              <div className="flex-1">
+                <input type="number" step="any" value={block.config?.y_max ?? ''} onChange={e => updConfig('y_max', e.target.value === '' ? null : +e.target.value)} placeholder="Máx (auto)" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Título do eixo Y</label>
+            <input type="text" value={block.config?.y_axis_title || ''} onChange={e => updConfig('y_axis_title', e.target.value)} placeholder="Ex: Receita (R$)" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Título do eixo X</label>
+            <input type="text" value={block.config?.x_axis_title || ''} onChange={e => updConfig('x_axis_title', e.target.value)} placeholder="Ex: Mês" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          </div>
         </ConfigSection>
       )}
 
@@ -1412,13 +1485,35 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
       {/* FORMATAÇÃO CONDICIONAL — KPI */}
       {block.type === 'kpi' && (
         <ConfigSection title="Formatação condicional" defaultOpen={false}>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Valor mínimo (verde se ≥)</label>
-            <input type="number" step="any" value={block.config?.threshold_ok ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_ok: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 50000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Valor de alerta (vermelho se &lt;)</label>
-            <input type="number" step="any" value={block.config?.threshold_warn ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_warn: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 20000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+          <p className="text-[10px] text-gray-400 -mt-1">Valor ≥ OK → cor OK · valor ≥ Alerta → cor Alerta · abaixo do Alerta → cor Crítico</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-gray-400 mb-1">Limite OK (≥)</label>
+                <input type="number" step="any" value={block.config?.threshold_ok ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_ok: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 50000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              </div>
+              <div className="shrink-0 mt-4">
+                <input type="color" value={block.config?.color_ok || '#16a34a'} onChange={e => onChange({ ...block, config: { ...block.config, color_ok: e.target.value } })} className="w-8 h-8 rounded cursor-pointer border border-gray-200 p-0.5" title="Cor OK" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-gray-400 mb-1">Limite Alerta (≥)</label>
+                <input type="number" step="any" value={block.config?.threshold_warn ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, threshold_warn: e.target.value === '' ? null : e.target.value } })} placeholder="Ex: 20000" className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+              </div>
+              <div className="shrink-0 mt-4">
+                <input type="color" value={block.config?.color_warn || '#d97706'} onChange={e => onChange({ ...block, config: { ...block.config, color_warn: e.target.value } })} className="w-8 h-8 rounded cursor-pointer border border-gray-200 p-0.5" title="Cor Alerta" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-gray-400 mb-1">Abaixo do Alerta = Crítico</label>
+                <div className="h-8 flex items-center px-2 border border-gray-100 rounded bg-gray-50 text-[10px] text-gray-400">automático</div>
+              </div>
+              <div className="shrink-0 mt-4">
+                <input type="color" value={block.config?.color_critical || '#dc2626'} onChange={e => onChange({ ...block, config: { ...block.config, color_critical: e.target.value } })} className="w-8 h-8 rounded cursor-pointer border border-gray-200 p-0.5" title="Cor Crítico" />
+              </div>
+            </div>
           </div>
         </ConfigSection>
       )}
@@ -1438,6 +1533,40 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             </div>
           </div>
           <ColorPicker label="Cor da barra" value={block.config?.accent_color || ''} onChange={v => onChange({ ...block, config: { ...block.config, accent_color: v } })} />
+          {selectedDataset && columns.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Colunas ocultas</label>
+              <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                {columns.map(col => {
+                  const hidden = (block.config?.hidden_cols || []).includes(col)
+                  return (
+                    <label key={col} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={hidden}
+                        onChange={() => {
+                          const cur = block.config?.hidden_cols || []
+                          updConfig('hidden_cols', hidden ? cur.filter(c => c !== col) : [...cur, col])
+                        }}
+                        className="accent-violet-600 w-3.5 h-3.5"
+                      />
+                      <span className={`text-xs ${hidden ? 'line-through text-gray-300' : 'text-gray-600'}`}>{col}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('paginate', !block.config?.paginate)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.paginate ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.paginate ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Paginação</span>
+          </label>
+          {block.config?.paginate && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Linhas por página</label>
+              <input type="number" min="5" max="100" value={block.config?.page_size ?? 10} onChange={e => updConfig('page_size', +e.target.value || 10)} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+            </div>
+          )}
         </ConfigSection>
       )}
 
@@ -1577,13 +1706,41 @@ export function CanvasConfigPanel({ config, onChange }) {
     )
   }
 
+  const QUICK_THEMES = [
+    { name: 'Padrão', sheet: '#ffffff', bg: '#f3f4f6', accent: '#7c3aed' },
+    { name: 'Noite', sheet: '#1e1e2e', bg: '#18181b', accent: '#a78bfa' },
+    { name: 'Oceano', sheet: '#f0f9ff', bg: '#dbeafe', accent: '#2563eb' },
+    { name: 'Floresta', sheet: '#f0fdf4', bg: '#dcfce7', accent: '#16a34a' },
+    { name: 'Pôr do sol', sheet: '#fffbeb', bg: '#fef3c7', accent: '#d97706' },
+    { name: 'Lavanda', sheet: '#faf5ff', bg: '#ede9fe', accent: '#7c3aed' },
+  ]
+
   return (
     <div className="space-y-5">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ambiente do dashboard</p>
-      <p className="text-[10px] text-gray-400 -mt-2">A grade milimetrada aparece ao arrastar blocos.</p>
+
+      {/* TEMA RÁPIDO */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-2">Tema rápido</label>
+        <div className="grid grid-cols-3 gap-1.5">
+          {QUICK_THEMES.map(t => (
+            <button key={t.name}
+              onClick={() => { upd('sheetBgColor', t.sheet); upd('bgColor', t.bg); upd('accentColor', t.accent) }}
+              className="flex flex-col items-center gap-1 p-2 rounded-lg border border-gray-200 hover:border-violet-300 hover:bg-violet-50/30 transition-colors"
+            >
+              <div className="flex gap-0.5">
+                <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: t.sheet }} />
+                <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: t.bg }} />
+                <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: t.accent }} />
+              </div>
+              <span className="text-[9px] text-gray-500 font-medium leading-none">{t.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Sheet */}
-      <div>
+      <div className="border-t border-gray-100 pt-4">
         <label className="block text-xs font-medium text-gray-700 mb-2">Cor da folha</label>
         <SwatchPicker
           field="sheetBgColor"
@@ -1599,6 +1756,39 @@ export function CanvasConfigPanel({ config, onChange }) {
           colors={['#f3f4f6', '#e5e7eb', '#dbeafe', '#ede9fe', '#dcfce7', '#fef3c7', '#18181b']}
           placeholder="#f3f4f6"
         />
+      </div>
+
+      {/* Arredondamento folha */}
+      <div className="border-t border-gray-100 pt-4">
+        <label className="block text-xs font-medium text-gray-700 mb-2">Arredondamento da folha (px)</label>
+        <div className="flex items-center gap-3">
+          <input type="range" min="0" max="32" value={config.sheetRadius ?? 0} onChange={e => upd('sheetRadius', +e.target.value)} className="flex-1 accent-violet-600" />
+          <span className="text-xs text-gray-500 w-10 text-right">{config.sheetRadius ?? 0}px</span>
+        </div>
+      </div>
+
+      {/* Tipografia */}
+      <div className="border-t border-gray-100 pt-4">
+        <label className="block text-xs font-medium text-gray-700 mb-2">Tipografia</label>
+        <select value={config.fontFamily || 'inter'} onChange={e => upd('fontFamily', e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+          <option value="inter">Inter (padrão)</option>
+          <option value="roboto">Roboto</option>
+          <option value="poppins">Poppins</option>
+          <option value="dm-sans">DM Sans</option>
+          <option value="open-sans">Open Sans</option>
+          <option value="mono">Monospace</option>
+        </select>
+      </div>
+
+      {/* Grade */}
+      <div className="border-t border-gray-100 pt-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div onClick={() => upd('showGrid', !config.showGrid)} className={`w-8 h-4 rounded-full transition-colors relative ${config.showGrid ? 'bg-violet-500' : 'bg-gray-200'}`}>
+            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${config.showGrid ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          </div>
+          <span className="text-xs font-medium text-gray-700">Mostrar grade permanente</span>
+        </label>
+        <p className="text-[10px] text-gray-400 mt-1">Por padrão a grade aparece apenas ao arrastar blocos.</p>
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { api } from '@/lib/api'
 import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/ReportBuilder'
+import DashboardRail from '@/components/DashboardRail'
 import { TEMPLATES } from '@/lib/templates'
 
 const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr: false })
@@ -618,6 +619,8 @@ export default function NovoDashboardPage() {
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [canvasConfig, setCanvasConfig] = useState({ bgColor: '', sheetBgColor: '' })
   const [layoutKey, setLayoutKey] = useState(0)
+  const [globalDateFilter, setGlobalDateFilter] = useState({ dateCol: '', dateFrom: '', dateTo: '' })
+  const [showAiPanel, setShowAiPanel] = useState(false)
   const addMenuRef = useRef()
 
   useEffect(() => {
@@ -730,7 +733,12 @@ export default function NovoDashboardPage() {
 
         <aside className={`${sidebarOpen && sidePanel ? 'w-72' : 'w-0'} bg-white border-l border-gray-100 flex flex-col shrink-0 overflow-hidden transition-[width] duration-200`}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-widest">{sidePanel === 'dados' ? 'Dados' : activeBlock ? 'Configurar bloco' : 'Dashboard'}</span>
+            <span className="text-xs font-semibold text-gray-700 uppercase tracking-widest">
+              {sidePanel === 'dados' ? 'Dados' :
+               sidePanel === 'filtros' ? 'Filtros' :
+               sidePanel === 'comentarios' ? 'Comentários' :
+               activeBlock ? 'Configurar bloco' : 'Dashboard'}
+            </span>
             <button onClick={() => { setSidebarOpen(false); setSidePanel(null) }} className="text-gray-400 hover:text-gray-700 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -738,17 +746,51 @@ export default function NovoDashboardPage() {
           <div className="flex-1 overflow-y-auto p-4">
             {sidePanel === 'dados' && <DatasetPanel datasets={datasets} onDatasetsChange={setDatasets} />}
             {sidePanel === 'config' && (activeBlock ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} /> : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />)}
+            {sidePanel === 'filtros' && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filtro de data global</p>
+                <div className={`rounded-xl border p-3 space-y-2.5 ${(globalDateFilter.dateFrom || globalDateFilter.dateTo) ? 'bg-violet-50 border-violet-200' : 'bg-gray-50 border-gray-100'}`}>
+                  <div className="flex gap-2">
+                    <input type="date" value={globalDateFilter.dateFrom || ''} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
+                    <span className="text-xs text-gray-400 self-center">até</span>
+                    <input type="date" value={globalDateFilter.dateTo || ''} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {[
+                      { l: 'Hoje', fn: () => { const t = new Date().toISOString().slice(0,10); return { dateFrom: t, dateTo: t } } },
+                      { l: '7d', fn: () => { const t = new Date(); const f = new Date(t); f.setDate(f.getDate()-6); return { dateFrom: f.toISOString().slice(0,10), dateTo: t.toISOString().slice(0,10) } } },
+                      { l: '30d', fn: () => { const t = new Date(); const f = new Date(t); f.setDate(f.getDate()-29); return { dateFrom: f.toISOString().slice(0,10), dateTo: t.toISOString().slice(0,10) } } },
+                      { l: 'Mês', fn: () => { const t = new Date(); return { dateFrom: `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`, dateTo: t.toISOString().slice(0,10) } } },
+                      { l: 'Ano', fn: () => { const t = new Date(); return { dateFrom: `${t.getFullYear()}-01-01`, dateTo: t.toISOString().slice(0,10) } } },
+                    ].map(p => (
+                      <button key={p.l} onClick={() => setGlobalDateFilter(f => ({ ...f, ...p.fn() }))} className="px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-white hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">{p.l}</button>
+                    ))}
+                  </div>
+                  {(globalDateFilter.dateFrom || globalDateFilter.dateTo) && (
+                    <button onClick={() => setGlobalDateFilter(f => ({ ...f, dateFrom: '', dateTo: '' }))} className="text-[10px] text-red-400 hover:text-red-600 font-medium">Limpar datas</button>
+                  )}
+                </div>
+              </div>
+            )}
+            {sidePanel === 'comentarios' && (
+              <div className="text-center py-8">
+                <p className="text-xs text-gray-400">Salve o dashboard para adicionar notas.</p>
+              </div>
+            )}
           </div>
         </aside>
 
-        <div className="w-12 bg-white border-l border-gray-100 flex flex-col items-center py-3 gap-1 shrink-0">
-          <button title="Dados" onClick={() => togglePanel('dados')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'dados' && sidebarOpen ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" /></svg>
-          </button>
-          <button title="Configurar" onClick={() => togglePanel('config')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'config' && sidebarOpen ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" strokeWidth={1.5} /></svg>
-          </button>
-        </div>
+        <DashboardRail
+          blocks={blocks}
+          globalDateFilter={globalDateFilter}
+          sidePanel={sidePanel}
+          sidebarOpen={sidebarOpen}
+          selectedBlockId={selectedBlockId}
+          togglePanel={togglePanel}
+          setSidebarOpen={setSidebarOpen}
+          setSidePanel={setSidePanel}
+          setShowAiPanel={setShowAiPanel}
+        />
       </div>
     </div>
   )

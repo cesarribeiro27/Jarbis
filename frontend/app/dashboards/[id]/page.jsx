@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/ReportBuilder'
+import DashboardRail from '@/components/DashboardRail'
 
 const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr: false })
 
@@ -48,51 +49,141 @@ function newBlock(type) {
   }
 }
 
-function AiPanel({ datasets, onClose }) {
+function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
   const [datasetId, setDatasetId] = useState(datasets[0]?.id || '')
   const [question, setQuestion] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [history, setHistory] = useState([])
+  const historyRef = useRef(null)
 
-  async function ask() {
-    if (!datasetId || !question.trim()) return
-    setLoading(true); setError(null); setResult(null)
-    try { setResult(await api.reports.aiQuery(datasetId, question)) }
-    catch (e) { setError(e.message) }
-    finally { setLoading(false) }
+  const selectedDs = datasets.find(d => d.id === datasetId)
+  const numCols = Object.entries(selectedDs?.column_types || {}).filter(([, t]) => t === 'number').map(([c]) => c)
+  const dimCols = Object.entries(selectedDs?.column_types || {}).filter(([, t]) => t !== 'number').map(([c]) => c)
+
+  const SUGGESTIONS = [
+    numCols[0] && `Qual é a soma de ${numCols[0]}?`,
+    dimCols[0] && numCols[0] && `Qual ${dimCols[0]} tem maior ${numCols[0]}?`,
+    numCols[0] && `Mostre a tendência de ${numCols[0]} ao longo do tempo`,
+    `Quais são as principais categorias?`,
+    `Há alguma anomalia nos dados?`,
+  ].filter(Boolean).slice(0, 4)
+
+  async function ask(q) {
+    const qText = q || question.trim()
+    if (!datasetId || !qText) return
+    setLoading(true); setError(null)
+    const entry = { id: crypto.randomUUID(), question: qText, answer: null, error: null, ts: new Date().toISOString() }
+    setHistory(h => [entry, ...h])
+    if (!q) setQuestion('')
+    try {
+      const result = await api.reports.aiQuery(datasetId, qText)
+      setHistory(h => h.map(e => e.id === entry.id ? { ...e, answer: result.answer } : e))
+    } catch (e) {
+      setHistory(h => h.map(e => e.id === entry.id ? { ...e, error: e.message } : e))
+      setError(e.message)
+    } finally { setLoading(false) }
+  }
+
+  function fmtDate(ts) {
+    return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <span className="font-semibold text-gray-800 text-sm">✨ Perguntar sobre os dados</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85vh]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+          <span className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+            <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+            IA — Exploração de dados
+          </span>
+          <div className="flex items-center gap-2">
+            {history.length > 0 && (
+              <button onClick={() => setHistory([])} className="text-[10px] text-gray-400 hover:text-gray-600 font-medium">Limpar</button>
+            )}
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
         </div>
-        <div className="p-5 flex flex-col gap-4">
+
+        <div className="flex-1 overflow-y-auto" ref={historyRef}>
           {datasets.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">Nenhum dataset disponível.</p>
+            <div className="p-8 text-center">
+              <p className="text-sm text-gray-400">Nenhum dataset disponível. Adicione dados primeiro.</p>
+            </div>
           ) : (
-            <>
+            <div className="p-5 flex flex-col gap-4">
+              {/* Dataset selector */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Dataset</label>
                 <select value={datasetId} onChange={e => setDatasetId(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                  {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name}</option>)}
+                  {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name} ({ds.row_count} linhas)</option>)}
                 </select>
+                {selectedDs && (
+                  <p className="text-[10px] text-gray-400 mt-1">{selectedDs.columns?.length} colunas: {selectedDs.columns?.slice(0,5).join(', ')}{(selectedDs.columns?.length || 0) > 5 ? '...' : ''}</p>
+                )}
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Pergunta</label>
-                <div className="flex gap-2">
-                  <input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => e.key === 'Enter' && ask()} placeholder="Ex: qual produto vendeu mais?" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
-                  <button onClick={ask} disabled={loading || !datasetId || !question.trim()} className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-40 transition-colors">
-                    {loading ? '...' : 'Enviar'}
-                  </button>
+
+              {/* Sugestões */}
+              {SUGGESTIONS.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Sugestões</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SUGGESTIONS.map((s, i) => (
+                      <button key={i} onClick={() => ask(s)} className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* Input */}
+              <div className="flex gap-2">
+                <input
+                  value={question}
+                  onChange={e => setQuestion(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !loading && ask()}
+                  placeholder="Faça uma pergunta sobre os dados..."
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  autoFocus
+                  disabled={loading}
+                />
+                <button onClick={() => ask()} disabled={loading || !datasetId || !question.trim()} className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-40 transition-colors shrink-0">
+                  {loading ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> : 'Enviar'}
+                </button>
               </div>
-              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}
-              {result?.answer && <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3"><p className="text-sm text-violet-900">{result.answer}</p></div>}
-            </>
+
+              {/* Histórico */}
+              {history.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Histórico</p>
+                  {history.map(entry => (
+                    <div key={entry.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                      <div className="bg-gray-50 px-3 py-2 flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-gray-700 flex-1">{entry.question}</p>
+                        <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(entry.ts)}</span>
+                      </div>
+                      {entry.answer ? (
+                        <div className="bg-violet-50 px-3 py-2.5">
+                          <p className="text-sm text-violet-900 leading-relaxed">{entry.answer}</p>
+                        </div>
+                      ) : entry.error ? (
+                        <div className="bg-red-50 px-3 py-2.5">
+                          <p className="text-xs text-red-600">{entry.error}</p>
+                        </div>
+                      ) : (
+                        <div className="bg-violet-50 px-3 py-2.5 flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                          <span className="text-xs text-violet-400">Analisando...</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -107,9 +198,37 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
     Object.entries(ds.column_types || {}).filter(([, t]) => t === 'date').map(([c]) => c)
   ))].sort()
 
+  // Chips de filtros ativos
+  const activeChips = []
+  if (hasDateFilter) {
+    const label = [globalDateFilter.dateFrom, globalDateFilter.dateTo].filter(Boolean).join(' → ')
+    activeChips.push({ key: 'date', label: `📅 ${label}`, onRemove: () => onGlobalDateFilterChange({ ...globalDateFilter, dateFrom: '', dateTo: '' }) })
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filtros do dashboard</p>
+
+      {/* Chips de filtros ativos */}
+      {activeChips.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Ativos</p>
+          <div className="flex flex-wrap gap-1.5">
+            {activeChips.map(chip => (
+              <span key={chip.key} className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-700 text-xs rounded-full font-medium">
+                {chip.label}
+                <button onClick={chip.onRemove} className="text-violet-400 hover:text-violet-700 ml-0.5">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </span>
+            ))}
+            <button onClick={() => onGlobalDateFilterChange({ dateCol: globalDateFilter.dateCol, dateFrom: '', dateTo: '' })}
+              className="text-[10px] text-red-400 hover:text-red-600 font-medium px-2 py-1">
+              Limpar todos
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filtro de data global */}
       <div className={`rounded-xl border p-3 space-y-2.5 ${hasDateFilter ? 'bg-violet-50 border-violet-200' : 'bg-gray-50 border-gray-100'}`}>
@@ -146,6 +265,22 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
             <button key={p.l} onClick={() => onGlobalDateFilterChange({ ...globalDateFilter, ...p.fn() })} className="px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-white hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">{p.l}</button>
           ))}
         </div>
+
+        {/* Comparação de período */}
+        {hasDateFilter && (
+          <div className="border-t border-violet-100 pt-2.5 space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => onGlobalDateFilterChange({ ...globalDateFilter, comparePrevious: !globalDateFilter.comparePrevious })}
+                className={`w-8 h-4 rounded-full transition-colors relative ${globalDateFilter.comparePrevious ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${globalDateFilter.comparePrevious ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-700 font-medium">Comparar com período anterior</span>
+            </label>
+            {globalDateFilter.comparePrevious && (
+              <p className="text-[10px] text-violet-600">Blocos KPI com "delta automático" mostrarão variação em relação ao período equivalente anterior.</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Blocos de filtro */}
@@ -545,117 +680,19 @@ export default function DashboardDetailPage() {
             </div>
           </aside>
 
-          {/* Luzmo-style right icon rail */}
-          {(() => {
-            const filterCount = blocks.filter(b => b.type === 'filter' || b.type === 'slider').length + (globalDateFilter.dateFrom || globalDateFilter.dateTo ? 1 : 0)
-            const commentsCount = blocks.reduce((s, b) => s + (b.config?.annotations?.length || 0), 0)
-            const railBtns = [
-              {
-                id: 'edit',
-                label: 'Editar',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
-                badge: null,
-                active: sidePanel === 'config' && sidebarOpen && !!selectedBlockId,
-                disabled: !selectedBlockId,
-                onClick: () => selectedBlockId && togglePanel('config'),
-              },
-              {
-                id: 'dados',
-                label: 'Dados',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" /></svg>,
-                badge: null,
-                active: sidePanel === 'dados' && sidebarOpen,
-                disabled: false,
-                onClick: () => togglePanel('dados'),
-              },
-              {
-                id: 'filtros',
-                label: 'Filtros',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>,
-                badge: filterCount || null,
-                active: sidePanel === 'filtros' && sidebarOpen,
-                disabled: false,
-                onClick: () => togglePanel('filtros'),
-              },
-              {
-                id: 'settings',
-                label: 'Config',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" strokeWidth={1.5} /></svg>,
-                badge: null,
-                active: sidePanel === 'config' && sidebarOpen && !selectedBlockId,
-                disabled: false,
-                onClick: () => { setSelectedBlockId(null); togglePanel('config') },
-              },
-              {
-                id: 'comentarios',
-                label: 'Notas',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>,
-                badge: commentsCount || null,
-                active: sidePanel === 'comentarios' && sidebarOpen,
-                disabled: false,
-                onClick: () => togglePanel('comentarios'),
-              },
-              {
-                id: 'ai',
-                label: 'IA',
-                icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>,
-                badge: null,
-                active: false,
-                disabled: false,
-                onClick: () => setShowAiPanel(true),
-              },
-            ]
-            return (
-              <div className="w-[72px] bg-white border-l border-gray-200/80 flex flex-col items-center py-2 gap-[3px] shrink-0">
-                <div className="flex flex-col items-center gap-[3px] w-full mb-auto">
-                  {railBtns.map((btn) => (
-                    <button
-                      key={btn.id}
-                      onClick={btn.onClick}
-                      disabled={btn.disabled}
-                      title={btn.label}
-                      className={`relative flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-[11px] transition-all duration-150 ${
-                        btn.active
-                          ? 'bg-[#ede9fe] text-[#7c3aed]'
-                          : btn.disabled
-                          ? 'text-gray-200 cursor-not-allowed'
-                          : 'text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6]'
-                      }`}
-                    >
-                      {btn.badge != null && (
-                        <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] bg-violet-600 text-white rounded-full text-[8px] font-bold flex items-center justify-center px-0.5 leading-none">
-                          {btn.badge > 9 ? '9+' : btn.badge}
-                        </span>
-                      )}
-                      {btn.icon}
-                      <span className="text-[9px] font-semibold leading-none">{btn.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="w-8 h-px bg-gray-100 my-1" />
-                <div className="flex flex-col items-center gap-[3px] w-full">
-                  <button
-                    title="Atalhos e ajuda"
-                    onClick={() => {}}
-                    className="flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-[11px] text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6] transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" /></svg>
-                    <span className="text-[9px] font-semibold leading-none">Ajuda</span>
-                  </button>
-                  <button
-                    title={sidebarOpen ? 'Fechar painel' : 'Abrir painel'}
-                    onClick={() => { if (sidebarOpen) { setSidebarOpen(false); setSidePanel(null) } else if (sidePanel) setSidebarOpen(true) }}
-                    className="flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-[11px] text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6] transition-colors"
-                  >
-                    <svg className={`w-5 h-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" /></svg>
-                    <span className="text-[9px] font-semibold leading-none">{sidebarOpen ? 'Fechar' : 'Abrir'}</span>
-                  </button>
-                </div>
-              </div>
-            )
-          })()}
+          <DashboardRail
+            blocks={blocks}
+            globalDateFilter={globalDateFilter}
+            sidePanel={sidePanel}
+            sidebarOpen={sidebarOpen}
+            selectedBlockId={selectedBlockId}
+            togglePanel={togglePanel}
+            setSidebarOpen={setSidebarOpen}
+            setSidePanel={setSidePanel}
+            setShowAiPanel={setShowAiPanel}
+          />
         </div>
-        {showAiPanel && <AiPanel datasets={datasets} onClose={() => setShowAiPanel(false)} />}
+        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} />}
       </div>
     )
   }
@@ -732,7 +769,7 @@ export default function DashboardDetailPage() {
 
         <ReportBuilder blocks={pages.find(p => p.id === activePageId)?.blocks || report.blocks || []} readOnly={true} datasets={datasets} globalDateFilter={globalDateFilter} />
       </div>
-      {showAiPanel && <AiPanel datasets={datasets} onClose={() => setShowAiPanel(false)} />}
+      {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} />}
     </AppLayout>
   )
 }
