@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: 'Jarbis — BI embarcado para empresas brasileiras',
+  title: 'Jarbis',
   description: 'Dashboards profissionais, analytics avançado e relatórios interativos. Simples de configurar, poderoso para crescer.',
 }
 
