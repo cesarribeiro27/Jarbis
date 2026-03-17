@@ -7,6 +7,7 @@ imediatamente se uma variável obrigatória estiver ausente.
 """
 
 from functools import lru_cache
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -68,6 +69,15 @@ class Settings(BaseSettings):
     stripe_price_enterprise: str = ""
     frontend_url: str = "https://jarbis.cc"
     backend_url: str = "https://jarbis-production.up.railway.app"
+    admin_emails: list[str] = []
+
+    @field_validator("admin_emails", mode="before")
+    @classmethod
+    def parse_admin_emails(cls, v):
+        """Aceita CSV: ADMIN_EMAILS=a@b.com,c@d.com ou lista JSON."""
+        if isinstance(v, str):
+            return [e.strip() for e in v.split(",") if e.strip()]
+        return v or []
 
     @property
     def is_production(self) -> bool:

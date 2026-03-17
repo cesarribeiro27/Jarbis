@@ -11,7 +11,7 @@ PATCH /auth/users/{id}         — Atualiza role ou status (owner/admin)
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -88,8 +88,15 @@ class SignupRequest(BaseModel):
 
 @router.post("/signup", response_model=AuthResponse, status_code=201)
 @limiter.limit("3/minute")
-async def signup(request: Request, data: SignupRequest, response: Response, db: AsyncSession = Depends(get_db)):
+async def signup(
+    request: Request,
+    data: SignupRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    ref: str | None = Query(default=None, description="Código de afiliado"),
+):
     """Cadastro público — cria tenant + usuário owner automaticamente."""
+    from app.modules.tenants.models import Tenant as TenantModel
     reg = RegisterRequest(
         organization_name=data.name,
         full_name=data.name,
@@ -98,6 +105,16 @@ async def signup(request: Request, data: SignupRequest, response: Response, db: 
     )
     service = AuthService(db)
     result = await service.register(reg)
+
+    # Salva código de afiliado se fornecido
+    if ref:
+        user = await db.scalar(select(User).where(User.email == data.email))
+        if user:
+            tenant = await db.scalar(select(TenantModel).where(TenantModel.id == user.tenant_id))
+            if tenant:
+                tenant.affiliate_code = ref.upper()
+                await db.commit()
+
     _set_auth_cookie(response, result.tokens.access_token)
     return result
 
@@ -277,7 +294,7 @@ async def oauth_authorize(provider: str):
 
 
 @router.get("/oauth/{provider}/callback", summary="Callback OAuth — troca code por JWT", include_in_schema=False)
-async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(get_db)):
+async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(get_db), state: str | None = None):
     """
     Recebe o code do provedor, busca/cria usuário e redireciona para o frontend
     com token JWT como query param.
@@ -309,13 +326,20 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
         slug = f"{slug_base}-{secrets.token_hex(3)}"
         name = profile.get("name") or slug_base
 
-        tenant = Tenant(name=name, slug=slug, plan="free")
-        db.add(tenant)
-        await db.flush()
+        # state pode conter "provider:REF_CODE" para rastreamento de afiliado
+        affiliate_ref = None
+        if state and ":" in state:
+            affiliate_ref = state.split(":", 1)[1].upper() or None
 
         from datetime import datetime, timezone, timedelta
         trial_ends = datetime.now(timezone.utc) + timedelta(days=7)
-        tenant.trial_ends_at = trial_ends
+        tenant = Tenant(
+            name=name, slug=slug, plan="free",
+            trial_ends_at=trial_ends,
+            affiliate_code=affiliate_ref,
+        )
+        db.add(tenant)
+        await db.flush()
 
         user = User(
             tenant_id=tenant.id,

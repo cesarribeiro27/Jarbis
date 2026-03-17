@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -46,10 +46,17 @@ const OAUTH_ICONS = {
   ),
 }
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const t = useTranslations('signup')
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [refCode, setRefCode] = useState(null)
+
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) setRefCode(ref.toUpperCase())
+  }, [searchParams])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -80,7 +87,7 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
     try {
-      const data = await api.signup(form.name, form.email, form.password)
+      const data = await api.signup(form.name, form.email, form.password, refCode)
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       if (data.trial_days_remaining != null) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
@@ -258,7 +265,7 @@ export default function SignupPage() {
 
           {/* OAuth buttons */}
           <div className="space-y-2">
-            {(['google', 'microsoft', 'github']).map(provider => (
+            {(['google', 'github']).map(provider => (
               <button
                 key={provider}
                 type="button"
@@ -287,5 +294,13 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   )
 }

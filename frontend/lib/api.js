@@ -63,8 +63,10 @@ export const api = {
   login: (email, password) =>
     apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
-  signup: (name, email, password) =>
-    apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
+  signup: (name, email, password, ref = null) => {
+    const qs = ref ? `?ref=${encodeURIComponent(ref)}` : ''
+    return apiFetch(`/auth/signup${qs}`, { method: 'POST', body: JSON.stringify({ name, email, password }) })
+  },
 
   logout: () => apiFetch('/auth/logout', { method: 'POST' }),
 
