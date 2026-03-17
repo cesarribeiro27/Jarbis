@@ -242,6 +242,23 @@ export default function AppLayout({ children }) {
   const [plan, setPlan] = useState(null)
   const [pastDue, setPastDue] = useState(false)
   const [upgradeModal, setUpgradeModal] = useState(null)
+  const [impersonation, setImpersonation] = useState(null)
+
+  useEffect(() => {
+    const impBy = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_by') : null
+    const impTenant = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_tenant') : null
+    if (impBy) setImpersonation({ email: impBy, tenant: impTenant })
+  }, [])
+
+  function exitImpersonation() {
+    const backup = localStorage.getItem('jarbis_token_impersonation_backup')
+    if (backup) localStorage.setItem('jarbis_token', backup)
+    localStorage.removeItem('jarbis_token_impersonation_backup')
+    localStorage.removeItem('jarbis_impersonated_by')
+    localStorage.removeItem('jarbis_impersonated_tenant')
+    window.close()
+    router.push('/admin/tenants')
+  }
 
   useEffect(() => {
     try {
@@ -352,6 +369,22 @@ export default function AppLayout({ children }) {
             </button>
           </div>
         </div>
+
+        {/* Banner de impersonação */}
+        {impersonation && (
+          <div className="px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-3 flex-shrink-0 bg-amber-900/80 text-amber-200 border-b border-amber-700">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>Você está navegando como <strong>{impersonation.tenant}</strong> (sessão de diagnóstico por {impersonation.email})</span>
+            <button
+              onClick={exitImpersonation}
+              className="ml-2 px-3 py-1 bg-amber-700/60 hover:bg-amber-700 rounded-lg text-xs font-bold transition-colors"
+            >
+              Encerrar sessão
+            </button>
+          </div>
+        )}
 
         {/* Banner de pagamento pendente */}
         {pastDue && (

@@ -148,6 +148,8 @@ class BillingService:
             await self._on_subscription_updated(data)
         elif etype == "customer.subscription.deleted":
             await self._on_subscription_deleted(data)
+        elif etype == "invoice.paid":
+            await self._on_invoice_paid(data)
         elif etype == "invoice.payment_failed":
             await self._on_payment_failed(data)
 
@@ -223,7 +225,71 @@ class BillingService:
         tenant.stripe_subscription_id = None
         await self.db.commit()
 
+    async def _on_invoice_paid(self, invoice: dict) -> None:
+        """Salva fatura paga localmente para histórico e relatórios financeiros."""
+        from datetime import datetime, timezone
+        from decimal import Decimal
+        from app.modules.billing.invoice_model import Invoice
+
+        stripe_invoice_id = invoice.get("id")
+        if not stripe_invoice_id:
+            return
+
+        # Evita duplicatas
+        existing = await self.db.scalar(
+            select(Invoice).where(Invoice.stripe_invoice_id == stripe_invoice_id)
+        )
+        if existing:
+            existing.status = "paid"
+            existing.paid_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            return
+
+        # Descobre tenant via stripe_customer_id
+        customer_id = invoice.get("customer")
+        tenant = None
+        if customer_id:
+            tenant = await self.db.scalar(
+                select(Tenant).where(Tenant.stripe_customer_id == customer_id)
+            )
+
+        # Valor em centavos → reais
+        amount_cents = invoice.get("amount_paid", 0) or 0
+        amount = Decimal(str(amount_cents)) / 100
+
+        # Período da fatura
+        lines = invoice.get("lines", {}).get("data", [])
+        period_start = period_end = None
+        if lines:
+            p = lines[0].get("period", {})
+            if p.get("start"):
+                period_start = datetime.fromtimestamp(p["start"], tz=timezone.utc)
+            if p.get("end"):
+                period_end = datetime.fromtimestamp(p["end"], tz=timezone.utc)
+
+        # Plano do tenant no momento
+        plan = tenant.plan if tenant else None
+
+        inv = Invoice(
+            tenant_id=tenant.id if tenant else None,
+            stripe_invoice_id=stripe_invoice_id,
+            amount=amount,
+            currency=(invoice.get("currency") or "brl").lower(),
+            status="paid",
+            period_start=period_start,
+            period_end=period_end,
+            paid_at=datetime.now(timezone.utc),
+            invoice_pdf=invoice.get("invoice_pdf"),
+            plan=plan,
+        )
+        self.db.add(inv)
+        await self.db.commit()
+
     async def _on_payment_failed(self, invoice: dict) -> None:
+        from datetime import datetime, timezone
+        from decimal import Decimal
+        from app.modules.billing.invoice_model import Invoice
+
         customer_id = invoice.get("customer")
         if not customer_id:
             return
@@ -233,6 +299,25 @@ class BillingService:
         if not tenant:
             return
         tenant.subscription_status = "past_due"
+
+        # Registra fatura com falha também
+        stripe_invoice_id = invoice.get("id")
+        if stripe_invoice_id:
+            existing = await self.db.scalar(
+                select(Invoice).where(Invoice.stripe_invoice_id == stripe_invoice_id)
+            )
+            if not existing:
+                amount_cents = invoice.get("amount_due", 0) or 0
+                inv = Invoice(
+                    tenant_id=tenant.id,
+                    stripe_invoice_id=stripe_invoice_id,
+                    amount=Decimal(str(amount_cents)) / 100,
+                    currency=(invoice.get("currency") or "brl").lower(),
+                    status="open",
+                    plan=tenant.plan,
+                )
+                self.db.add(inv)
+
         await self.db.commit()
 
     async def get_billing_status(self, tenant_id: uuid.UUID) -> dict:

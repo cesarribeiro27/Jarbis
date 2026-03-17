@@ -52,10 +52,17 @@ function SignupForm() {
   const t = useTranslations('signup')
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [refCode, setRefCode] = useState(null)
+  const [utms, setUtms] = useState({})
 
   useEffect(() => {
     const ref = searchParams.get('ref')
     if (ref) setRefCode(ref.toUpperCase())
+    const utmParams = {}
+    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
+      const val = searchParams.get(key)
+      if (val) utmParams[key] = val
+    }
+    if (Object.keys(utmParams).length > 0) setUtms(utmParams)
   }, [searchParams])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -87,7 +94,7 @@ function SignupForm() {
     setLoading(true)
     setError('')
     try {
-      const data = await api.signup(form.name, form.email, form.password, refCode)
+      const data = await api.signup(form.name, form.email, form.password, refCode, utms)
       if (data.tokens?.access_token) {
         localStorage.setItem('jarbis_token', data.tokens.access_token)
       }

@@ -1,15 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { LogoA } from '@/components/logos/JarbisLogo'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
+export const AdminRoleContext = createContext({ role: null, email: null })
+export const useAdminRole = () => useContext(AdminRoleContext)
+
+// Definição da navegação com controle de roles
 const NAV = [
   {
     href: '/admin',
     label: 'Métricas',
+    roles: ['full', 'vendas', 'financeiro', 'marketing', 'suporte'],
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
@@ -20,6 +26,7 @@ const NAV = [
   {
     href: '/admin/tenants',
     label: 'Tenants',
+    roles: ['full', 'vendas', 'financeiro', 'suporte'],
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -30,6 +37,7 @@ const NAV = [
   {
     href: '/admin/afiliados',
     label: 'Afiliados',
+    roles: ['full', 'vendas', 'marketing'],
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -37,41 +45,189 @@ const NAV = [
       </svg>
     ),
   },
+  {
+    href: '/admin/cupons',
+    label: 'Cupons',
+    roles: ['full', 'vendas', 'marketing'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+        <line x1="7" y1="7" x2="7.01" y2="7" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/customer-success',
+    label: 'CS / Retenção',
+    roles: ['full', 'vendas', 'suporte'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/crm',
+    label: 'CRM',
+    roles: ['full', 'vendas'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="8" width="5" height="13" rx="1"/><rect x="17" y="5" width="5" height="16" rx="1"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/emails',
+    label: 'Emails',
+    roles: ['full', 'vendas', 'marketing'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/alertas',
+    label: 'Alertas',
+    roles: ['full', 'vendas', 'suporte', 'financeiro'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/suporte',
+    label: 'Suporte',
+    roles: ['full', 'vendas', 'suporte'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/financeiro',
+    label: 'Financeiro',
+    roles: ['full', 'financeiro'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/marketing',
+    label: 'Marketing',
+    roles: ['full', 'marketing', 'vendas'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/equipe',
+    label: 'Equipe',
+    roles: ['full'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/auditoria',
+    label: 'Auditoria',
+    roles: ['full'],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+      </svg>
+    ),
+  },
 ]
+
+const ROLE_BADGE = {
+  full:        { label: 'Full',        cls: 'bg-violet-900/60 text-violet-300' },
+  vendas:      { label: 'Vendas',      cls: 'bg-blue-900/60 text-blue-300' },
+  financeiro:  { label: 'Financeiro',  cls: 'bg-emerald-900/60 text-emerald-300' },
+  marketing:   { label: 'Marketing',   cls: 'bg-amber-900/60 text-amber-300' },
+  suporte:     { label: 'Suporte',     cls: 'bg-gray-800 text-gray-400' },
+}
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [checking, setChecking] = useState(true)
   const [adminEmail, setAdminEmail] = useState(null)
+  const [adminRole, setAdminRole] = useState(null)
+  const [alertCount, setAlertCount] = useState(0)
+  const [ticketCount, setTicketCount] = useState(0)
+  const [sseData, setSseData] = useState(null)
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-    const headers = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    if (!token) {
+      router.replace('/admin/login')
+      return
+    }
+
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
 
     fetch(`${API_URL}/admin/me`, { credentials: 'include', headers })
       .then(r => {
-        if (r.status === 401) {
-          // Sessão inválida ou expirada — vai direto para login
-          router.replace('/login')
-          return null
-        }
-        if (r.status === 403) {
-          // Logado mas não é admin
-          router.replace('/dashboard')
-          return null
-        }
+        if (r.status === 401) { router.replace('/admin/login'); return null }
+        if (r.status === 403) { router.replace('/dashboard'); return null }
         return r.json()
       })
       .then(data => {
-        if (data?.is_superadmin) {
+        if (data?.role) {
           setAdminEmail(data.email)
+          setAdminRole(data.role)
           setChecking(false)
+        } else if (data?.is_superadmin) {
+          // retrocompatibilidade
+          setAdminEmail(data.email)
+          setAdminRole('full')
+          setChecking(false)
+        } else if (data) {
+          router.replace('/dashboard')
         }
       })
-      .catch(() => router.replace('/login'))
+      .catch(() => router.replace('/admin/login'))
   }, [])
+
+  // SSE: recebe updates em tempo real do backend
+  useEffect(() => {
+    if (!adminRole) return
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+    if (!token) return
+
+    // Carrega alertas e tickets na primeira vez
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+    fetch(`${API_URL}/admin/alerts`, { credentials: 'include', headers })
+      .then(r => r.json()).then(d => setAlertCount(d.total || 0)).catch(() => {})
+    fetch(`${API_URL}/admin/support/tickets?status=open&page_size=1`, { credentials: 'include', headers })
+      .then(r => r.json()).then(d => setTicketCount(d.total || 0)).catch(() => {})
+
+    // SSE connection
+    const evtSource = new EventSource(
+      `${API_URL}/admin/events`,
+      // EventSource não suporta headers nativamente; usa token via cookie ou query param não é ideal
+      // Para auth via Bearer, usamos fetch manual com ReadableStream
+    )
+    // Fallback: polling a cada 60s via fetch (EventSource não suporta headers custom no browser)
+    const interval = setInterval(() => {
+      fetch(`${API_URL}/admin/alerts`, { credentials: 'include', headers })
+        .then(r => r.json()).then(d => setAlertCount(d.total || 0)).catch(() => {})
+    }, 60000)
+
+    evtSource.close() // fecha o EventSource sem auth — usamos o polling acima
+
+    return () => clearInterval(interval)
+  }, [adminRole])
 
   if (checking) {
     return (
@@ -81,67 +237,83 @@ export default function AdminLayout({ children }) {
     )
   }
 
+  const visibleNav = NAV.filter(item => item.roles.includes(adminRole))
+  const roleBadge = ROLE_BADGE[adminRole] || ROLE_BADGE.suporte
+
   return (
-    <div className="flex h-screen bg-gray-950">
-      {/* Sidebar */}
-      <aside className="w-[220px] bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0">
-        {/* Header */}
-        <div className="px-4 py-5 border-b border-gray-800">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
-              <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4">
-                <rect x="3" y="10" width="4" height="7" rx="1" fill="white" fillOpacity="0.9" />
-                <rect x="8" y="6" width="4" height="11" rx="1" fill="white" />
-                <rect x="13" y="3" width="4" height="14" rx="1" fill="white" fillOpacity="0.7" />
+    <AdminRoleContext.Provider value={{ role: adminRole, email: adminEmail }}>
+      <div className="flex h-screen bg-gray-950">
+        {/* Sidebar */}
+        <aside className="w-[220px] bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0">
+          {/* Header */}
+          <div className="px-4 py-5 border-b border-gray-800">
+            <Link href="/admin" className="flex items-center gap-2.5">
+              <LogoA size={28} color="#fff" light={true} />
+              <div>
+                <span className="font-black text-white text-sm tracking-tight">jarbis</span>
+                <span className="ml-1.5 text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Nav */}
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            {visibleNav.map(({ href, label, icon }) => {
+              const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
+              const isAlerts  = href === '/admin/alertas'
+              const isSupport = href === '/admin/suporte'
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-violet-600/20 text-violet-400'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                  }`}
+                >
+                  <span className={active ? 'text-violet-400' : ''}>{icon}</span>
+                  <span className="flex-1">{label}</span>
+                  {isAlerts && alertCount > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                      {alertCount > 99 ? '99+' : alertCount}
+                    </span>
+                  )}
+                  {isSupport && ticketCount > 0 && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                      {ticketCount > 99 ? '99+' : ticketCount}
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* Footer */}
+          <div className="px-3 py-4 border-t border-gray-800 space-y-1">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
               </svg>
+              Voltar ao app
+            </Link>
+            <div className="px-3 py-2 space-y-1">
+              <div className="text-xs text-gray-600 truncate">{adminEmail}</div>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${roleBadge.cls}`}>
+                {roleBadge.label}
+              </span>
             </div>
-            <div>
-              <span className="font-black text-white text-sm tracking-tight">jarbis</span>
-              <span className="ml-1.5 text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
-            </div>
-          </Link>
-        </div>
+          </div>
+        </aside>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV.map(({ href, label, icon }) => {
-            const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-violet-600/20 text-violet-400'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                }`}
-              >
-                <span className={active ? 'text-violet-400' : ''}>{icon}</span>
-                {label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        {/* Footer */}
-        <div className="px-3 py-4 border-t border-gray-800 space-y-1">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
-            </svg>
-            Voltar ao app
-          </Link>
-          <div className="px-3 py-1.5 text-xs text-gray-600 truncate">{adminEmail}</div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 overflow-y-auto bg-gray-950">
-        {children}
-      </main>
-    </div>
+        {/* Main */}
+        <main className="flex-1 overflow-y-auto bg-gray-950">
+          {children}
+        </main>
+      </div>
+    </AdminRoleContext.Provider>
   )
 }

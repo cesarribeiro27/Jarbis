@@ -62,7 +62,7 @@ PLANS: dict[str, PlanLimits] = {
         sla=False,
     ),
     "ilimitado": PlanLimits(
-        name="Ilimitado",
+        name="Equipe",
         price_monthly=Decimal("599.90"),
         max_dashboards=50,
         max_datasets=30,

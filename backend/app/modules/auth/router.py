@@ -79,6 +79,12 @@ class SignupRequest(BaseModel):
     name: str = Field(min_length=2, max_length=200)
     email: EmailStr
     password: str = Field(min_length=8, max_length=100)
+    # UTM tracking — capturados no frontend via query params do URL de landing
+    utm_source: str | None = Field(default=None, max_length=100)
+    utm_medium: str | None = Field(default=None, max_length=100)
+    utm_campaign: str | None = Field(default=None, max_length=200)
+    utm_term: str | None = Field(default=None, max_length=200)
+    utm_content: str | None = Field(default=None, max_length=200)
 
     @field_validator("password")
     @classmethod
@@ -106,13 +112,24 @@ async def signup(
     service = AuthService(db)
     result = await service.register(reg)
 
-    # Salva código de afiliado se fornecido
-    if ref:
+    # Salva código de afiliado e UTMs no tenant
+    if ref or data.utm_source or data.utm_medium or data.utm_campaign or data.utm_term or data.utm_content:
         user = await db.scalar(select(User).where(User.email == data.email))
         if user:
             tenant = await db.scalar(select(TenantModel).where(TenantModel.id == user.tenant_id))
             if tenant:
-                tenant.affiliate_code = ref.upper()
+                if ref:
+                    tenant.affiliate_code = ref.upper()
+                if data.utm_source:
+                    tenant.utm_source = data.utm_source
+                if data.utm_medium:
+                    tenant.utm_medium = data.utm_medium
+                if data.utm_campaign:
+                    tenant.utm_campaign = data.utm_campaign
+                if data.utm_term:
+                    tenant.utm_term = data.utm_term
+                if data.utm_content:
+                    tenant.utm_content = data.utm_content
                 await db.commit()
 
     _set_auth_cookie(response, result.tokens.access_token)

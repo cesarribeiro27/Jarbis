@@ -279,6 +279,22 @@ export default function ConfiguracoesPage() {
             </div>
           )}
         </div>
+
+        {/* Card — API Keys */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-800">Chaves de API</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Integre o Jarbis com outros sistemas via API</p>
+            </div>
+            <Link
+              href="/configuracoes/api-keys"
+              className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Gerenciar
+            </Link>
+          </div>
+        </div>
       </div>
     </AppLayout>
   )

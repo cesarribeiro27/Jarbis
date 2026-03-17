@@ -71,3 +71,33 @@ async def send_verification_email(to_email: str, full_name: str, code: str) -> N
         )
         if resp.status_code not in (200, 201):
             print(f"[EMAIL] Erro ao enviar: {resp.status_code} {resp.text}")
+
+
+async def send_admin_email(to_email: str, subject: str, html: str) -> bool:
+    """
+    Envia um email avulso via Resend.
+    Retorna True se enviado com sucesso, False caso contrário.
+    """
+    if not RESEND_API_KEY:
+        print(f"[EMAIL] RESEND_API_KEY não configurada. Simulando envio para {to_email}: {subject}")
+        return True
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": FROM_EMAIL,
+                "to": [to_email],
+                "subject": subject,
+                "html": html,
+            },
+            timeout=10,
+        )
+        if resp.status_code not in (200, 201):
+            print(f"[EMAIL] Erro ao enviar para {to_email}: {resp.status_code} {resp.text}")
+            return False
+        return True

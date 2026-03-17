@@ -35,10 +35,29 @@ export default function AdminAfiliadoDetailPage() {
   // Edit state
   const [form, setForm] = useState({})
 
+  // Pagamentos de comissão
+  const [payments, setPayments] = useState([])
+  const [paymentForm, setPaymentForm] = useState({ amount: '', period_description: '', note: '' })
+  const [savingPayment, setSavingPayment] = useState(false)
+  const [paymentMsg, setPaymentMsg] = useState(null)
+
+  function authHeaders() {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : ''
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  }
+
+  async function loadPayments() {
+    const r = await fetch(`${API_URL}/admin/affiliates/${id}/payments`, { headers: authHeaders() })
+    if (r.ok) {
+      const d = await r.json()
+      setPayments(d.items || [])
+    }
+  }
+
   useEffect(() => {
     // Backend returns flat object: {id, name, email, code, commission_percent, is_active, notes,
     //   referral_link, referrals: [{tenant_id, name, plan, plan_name, ...}], total_commission_estimated, created_at}
-    fetch(`${API_URL}/admin/affiliates/${id}`, { credentials: 'include' })
+    fetch(`${API_URL}/admin/affiliates/${id}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => {
         setData(d)
@@ -55,6 +74,7 @@ export default function AdminAfiliadoDetailPage() {
         if (e === 403 || e === 401) router.replace('/admin')
         setLoading(false)
       })
+    loadPayments()
   }, [id])
 
   const referralLink = data?.referral_link || (data ? `${FRONTEND_URL}/signup?ref=${data.code}` : '')
@@ -65,13 +85,37 @@ export default function AdminAfiliadoDetailPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function registerPayment(e) {
+    e.preventDefault()
+    if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) return
+    setSavingPayment(true)
+    setPaymentMsg(null)
+    const r = await fetch(`${API_URL}/admin/affiliates/${id}/payments`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        amount: parseFloat(paymentForm.amount),
+        period_description: paymentForm.period_description,
+        note: paymentForm.note,
+      }),
+    })
+    if (r.ok) {
+      setPaymentForm({ amount: '', period_description: '', note: '' })
+      setPaymentMsg({ type: 'ok', text: 'Pagamento registrado!' })
+      loadPayments()
+    } else {
+      const d = await r.json().catch(() => ({}))
+      setPaymentMsg({ type: 'err', text: d.detail || 'Erro ao registrar pagamento.' })
+    }
+    setSavingPayment(false)
+  }
+
   const save = async () => {
     setSaving(true)
     setMsg(null)
     const r = await fetch(`${API_URL}/admin/affiliates/${id}`, {
       method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(form),
     })
     if (r.ok) {
@@ -229,8 +273,86 @@ export default function AdminAfiliadoDetailPage() {
             </div>
           </div>
 
-          {/* Right — referrals */}
-          <div className="lg:col-span-2">
+          {/* Right — referrals + pagamentos */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Pagamentos de comissão */}
+            <div className="rounded-2xl border border-gray-800 bg-gray-900/40 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-800">
+                <h2 className="text-sm font-semibold text-gray-400">Pagamentos de Comissão</h2>
+                <p className="text-xs text-gray-600 mt-0.5">Registre pagamentos já realizados para manter o histórico</p>
+              </div>
+
+              {/* Formulário */}
+              <form onSubmit={registerPayment} className="px-5 py-4 border-b border-gray-800/50">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Valor (R$)</label>
+                    <input
+                      type="number" min="0.01" step="0.01" placeholder="0,00"
+                      value={paymentForm.amount}
+                      onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-violet-500 placeholder-gray-600"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Período</label>
+                    <input
+                      placeholder="Ex: Março/2026"
+                      value={paymentForm.period_description}
+                      onChange={e => setPaymentForm(f => ({ ...f, period_description: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-violet-500 placeholder-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Observação</label>
+                    <input
+                      placeholder="PIX, transferência..."
+                      value={paymentForm.note}
+                      onChange={e => setPaymentForm(f => ({ ...f, note: e.target.value }))}
+                      className="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-violet-500 placeholder-gray-600"
+                    />
+                  </div>
+                </div>
+                {paymentMsg && (
+                  <p className={`text-xs mt-2 px-3 py-1.5 rounded-lg ${paymentMsg.type === 'ok' ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
+                    {paymentMsg.text}
+                  </p>
+                )}
+                <button type="submit" disabled={savingPayment || !paymentForm.amount}
+                  className="mt-3 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
+                  {savingPayment ? 'Registrando...' : 'Registrar pagamento'}
+                </button>
+              </form>
+
+              {/* Histórico */}
+              {payments.length === 0 ? (
+                <div className="text-gray-600 text-xs text-center py-6">Nenhum pagamento registrado ainda.</div>
+              ) : (
+                <div className="divide-y divide-gray-800/50">
+                  {payments.map(p => (
+                    <div key={p.id} className="px-5 py-3 flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-emerald-400 font-bold">
+                            {parseFloat(p.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                          {p.period_description && (
+                            <span className="text-xs text-gray-500">{p.period_description}</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-0.5 flex gap-2">
+                          {p.note && <span>{p.note}</span>}
+                          <span>· por {p.created_by}</span>
+                          <span>· {new Date(p.created_at).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="rounded-2xl border border-gray-800 bg-gray-900/40 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-400">

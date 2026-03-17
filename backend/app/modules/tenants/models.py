@@ -44,6 +44,31 @@ class Tenant(Base):
     addon_packs: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Número de packs de expansão ativos (+1 user +5 dash +3 datasets por pack)")
     plan_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     affiliate_code: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="Código do afiliado que indicou este tenant")
+    canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="Data de cancelamento da assinatura")
+    crm_stage: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="novo",
+        comment="Estágio CRM: novo | contato | demo_agendada | proposta | cliente | perdido"
+    )
+
+    # ── UTM tracking (canal de aquisição) ────────────────────────────────────
+    utm_source: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="Ex: google, instagram, email")
+    utm_medium: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="Ex: cpc, organic, referral")
+    utm_campaign: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Nome da campanha")
+    utm_term: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Palavra-chave (Google Ads)")
+    utm_content: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Variação do anúncio")
+
+    # ── Dados fiscais (para emissão de NF-e) ─────────────────────────────────
+    cnpj: Mapped[str | None] = mapped_column(String(18), nullable=True, comment="CNPJ formatado: XX.XXX.XXX/XXXX-XX")
+    razao_social: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    inscricao_estadual: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    cep: Mapped[str | None] = mapped_column(String(9), nullable=True)
+    logradouro: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    numero: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    complemento: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bairro: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cidade: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    estado: Mapped[str | None] = mapped_column(String(2), nullable=True, comment="UF: SP, RJ, etc.")
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow

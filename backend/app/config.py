@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     # O router acessa via settings.admin_emails (lista derivada abaixo).
     admin_emails_csv: str = ""  # env var: ADMIN_EMAILS_CSV=a@b.com,c@d.com
 
+    # --- NFe.io ---
+    nfeio_api_key: str = ""
+    nfeio_company_id: str = ""
+
     @property
     def admin_emails(self) -> list[str]:
         return [e.strip() for e in self.admin_emails_csv.split(",") if e.strip()]
