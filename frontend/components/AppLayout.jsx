@@ -284,6 +284,7 @@ export default function AppLayout({ children }) {
     try { await api.logout() } catch {}
     localStorage.removeItem('jarbis_user')
     localStorage.removeItem('jarbis_trial_days')
+    localStorage.removeItem('jarbis_token')
     router.push('/login')
   }
 

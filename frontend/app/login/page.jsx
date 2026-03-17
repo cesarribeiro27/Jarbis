@@ -47,6 +47,9 @@ export default function LoginPage() {
     setError('')
     try {
       const data = await api.login(email, password)
+      if (data.tokens?.access_token) {
+        localStorage.setItem('jarbis_token', data.tokens.access_token)
+      }
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       if (data.trial_days_remaining != null) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))

@@ -46,9 +46,19 @@ export default function AdminLayout({ children }) {
   const [adminEmail, setAdminEmail] = useState(null)
 
   useEffect(() => {
-    fetch(`${API_URL}/admin/me`, { credentials: 'include' })
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    fetch(`${API_URL}/admin/me`, { credentials: 'include', headers })
       .then(r => {
-        if (r.status === 403 || r.status === 401) {
+        if (r.status === 401) {
+          // Sessão inválida ou expirada — vai direto para login
+          router.replace('/login')
+          return null
+        }
+        if (r.status === 403) {
+          // Logado mas não é admin
           router.replace('/dashboard')
           return null
         }
@@ -60,7 +70,7 @@ export default function AdminLayout({ children }) {
           setChecking(false)
         }
       })
-      .catch(() => router.replace('/dashboard'))
+      .catch(() => router.replace('/login'))
   }, [])
 
   if (checking) {

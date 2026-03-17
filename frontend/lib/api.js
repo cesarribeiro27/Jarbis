@@ -1,8 +1,10 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 async function apiFetch(path, options = {}) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   }
 
@@ -16,6 +18,7 @@ async function apiFetch(path, options = {}) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jarbis_user')
       localStorage.removeItem('jarbis_trial_days')
+      localStorage.removeItem('jarbis_token')
       window.location.href = '/login'
     }
     return
