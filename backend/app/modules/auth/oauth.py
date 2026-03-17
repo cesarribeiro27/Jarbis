@@ -42,7 +42,7 @@ PROVIDERS = {
 
 
 def _redirect_uri(provider: str) -> str:
-    return f"{settings.frontend_url}/auth/callback/backend?provider={provider}"
+    return f"{settings.backend_url}/auth/oauth/{provider}/callback"
 
 
 def get_authorization_url(provider: str) -> str:

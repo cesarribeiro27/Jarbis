@@ -67,6 +67,7 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""
     stripe_price_enterprise: str = ""
     frontend_url: str = "https://jarbis.cc"
+    backend_url: str = "https://jarbis-production.up.railway.app"
 
     @property
     def is_production(self) -> bool:
