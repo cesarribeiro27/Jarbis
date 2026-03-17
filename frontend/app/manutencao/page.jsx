@@ -1,37 +1,116 @@
+'use client'
+
+import { LogoA } from '../../components/logos/JarbisLogo'
+
 export default function ManutencaoPage() {
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        {/* Logo / ícone */}
-        <div className="mb-8 flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+    <div
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4"
+      style={{ background: '#0B0A1A' }}
+    >
+      {/* Orbs de fundo */}
+      <div
+        className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-20 animate-pulse"
+        style={{
+          background: 'radial-gradient(circle, #6D28D9 0%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+      <div
+        className="absolute bottom-[-15%] right-[-5%] w-[500px] h-[500px] rounded-full opacity-15 animate-pulse"
+        style={{
+          background: 'radial-gradient(circle, #4F46E5 0%, transparent 70%)',
+          filter: 'blur(100px)',
+          animationDelay: '1s',
+        }}
+      />
+
+      {/* Conteúdo principal */}
+      <div className="relative z-10 flex flex-col items-center text-center max-w-lg">
+
+        {/* Logo */}
+        <div className="mb-3 flex justify-center">
+          <LogoA size={64} light />
+        </div>
+        <p className="text-white font-bold text-2xl tracking-tight mb-8">
+          jarbis
+        </p>
+
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-sm text-amber-300 font-medium mb-8">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+          Em desenvolvimento
+        </div>
+
+        {/* Headline */}
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
+          Algo incrível
+          <br />
+          <span
+            className="bg-clip-text text-transparent"
+            style={{
+              backgroundImage: 'linear-gradient(90deg, #A78BFA, #818CF8)',
+            }}
+          >
+            está a caminho
+          </span>
+        </h1>
+
+        {/* Subtítulo */}
+        <p className="text-gray-400 text-lg leading-relaxed mb-10">
+          Estamos finalizando os últimos detalhes do Jarbis — o BI embarcado feito para empresas brasileiras.
+          <br />
+          Em breve você terá acesso completo.
+        </p>
+
+        {/* Barra de progresso */}
+        <div className="w-full max-w-xs mb-10">
+          <div className="flex justify-between text-xs text-gray-500 mb-2">
+            <span>Progresso</span>
+            <span>Em breve</span>
+          </div>
+          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: '72%',
+                background: 'linear-gradient(90deg, #7C3AED, #6366F1)',
+                animation: 'progress-shine 2.5s ease-in-out infinite',
+              }}
+            />
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-3">
-          Em manutenção
-        </h1>
-        <p className="text-gray-400 text-lg mb-2">
-          Estamos fazendo melhorias no Jarbis.
-        </p>
-        <p className="text-gray-500 text-sm mb-8">
-          Voltamos em breve com novidades. Obrigado pela paciência!
-        </p>
-
-        <div className="inline-flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-full px-4 py-2 text-sm text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
-          Previsão: em breve
-        </div>
-
-        <p className="mt-10 text-xs text-gray-600">
-          Dúvidas? <a href="mailto:suporte@jarbis.cc" className="text-indigo-400 hover:underline">suporte@jarbis.cc</a>
+        {/* CTA email */}
+        <p className="text-gray-500 text-sm">
+          Quer saber mais ou fazer parceria?{' '}
+          <a
+            href="mailto:comercial@jarbis.cc"
+            className="text-violet-400 hover:text-violet-300 transition-colors font-medium"
+          >
+            comercial@jarbis.cc
+          </a>
         </p>
       </div>
+
+      {/* Rodapé */}
+      <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-1">
+        <p className="text-xs text-gray-600 font-medium tracking-wide uppercase">
+          Transformando Sorte em Estratégia
+        </p>
+        <p className="text-xs text-gray-700">
+          © {new Date().getFullYear()} Jarbis. Todos os direitos reservados.
+        </p>
+      </div>
+
+      {/* Keyframes */}
+      <style>{`
+        @keyframes progress-shine {
+          0%   { opacity: 0.7; }
+          50%  { opacity: 1; }
+          100% { opacity: 0.7; }
+        }
+      `}</style>
     </div>
   )
 }
