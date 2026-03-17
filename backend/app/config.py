@@ -69,15 +69,14 @@ class Settings(BaseSettings):
     stripe_price_enterprise: str = ""
     frontend_url: str = "https://jarbis.cc"
     backend_url: str = "https://jarbis-production.up.railway.app"
-    admin_emails: list[str] = []
+    # Declarar como str para evitar que pydantic-settings tente JSON-decode
+    # antes do field_validator (que ocorre com list[str]).
+    # O router acessa via settings.admin_emails (lista derivada abaixo).
+    admin_emails_csv: str = ""  # env var: ADMIN_EMAILS_CSV=a@b.com,c@d.com
 
-    @field_validator("admin_emails", mode="before")
-    @classmethod
-    def parse_admin_emails(cls, v):
-        """Aceita CSV: ADMIN_EMAILS=a@b.com,c@d.com ou lista JSON."""
-        if isinstance(v, str):
-            return [e.strip() for e in v.split(",") if e.strip()]
-        return v or []
+    @property
+    def admin_emails(self) -> list[str]:
+        return [e.strip() for e in self.admin_emails_csv.split(",") if e.strip()]
 
     @property
     def is_production(self) -> bool:
