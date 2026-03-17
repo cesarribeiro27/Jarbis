@@ -13,6 +13,13 @@ const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr:
 
 const BLOCK_TYPE_KEYS = ['kpi','bar','bar_h','area','line','pie','combo','gauge','speedometer','treemap','bubble','scatter','table','text','filter','slider','image']
 
+// Detect auto-generated default page titles across all locales
+const DEFAULT_PAGE_TITLE_RE = /^(Página|Page|Seite|Pagina|ページ|页)\s*\d+$/
+function normalizePageTitle(title) {
+  if (!title || DEFAULT_PAGE_TITLE_RE.test(title)) return ''
+  return title
+}
+
 const SHARE_LANGS = [
   { code: 'pt-BR', flag: '🇧🇷', label: 'Português' },
   { code: 'en',    flag: '🇺🇸', label: 'English' },
@@ -95,11 +102,11 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
   const dimCols = Object.entries(selectedDs?.column_types || {}).filter(([, t]) => t !== 'number').map(([c]) => c)
 
   const SUGGESTIONS = [
-    numCols[0] && `Qual é a soma de ${numCols[0]}?`,
-    dimCols[0] && numCols[0] && `Qual ${dimCols[0]} tem maior ${numCols[0]}?`,
-    numCols[0] && `Mostre a tendência de ${numCols[0]} ao longo do tempo`,
-    `Quais são as principais categorias?`,
-    `Há alguma anomalia nos dados?`,
+    numCols[0] && t('ai.suggSum', { col: numCols[0] }),
+    dimCols[0] && numCols[0] && t('ai.suggTop', { dim: dimCols[0], metric: numCols[0] }),
+    numCols[0] && t('ai.suggTrend', { col: numCols[0] }),
+    t('ai.suggCategories'),
+    t('ai.suggAnomalies'),
   ].filter(Boolean).slice(0, 4)
 
   async function ask(q) {
@@ -151,10 +158,10 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('ai.datasetLabel')}</label>
                 <select value={datasetId} onChange={e => setDatasetId(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                  {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name} ({ds.row_count} linhas)</option>)}
+                  {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name} ({t('ai.rowsCount', { n: ds.row_count })})</option>)}
                 </select>
                 {selectedDs && (
-                  <p className="text-[10px] text-gray-400 mt-1">{selectedDs.columns?.length} colunas: {selectedDs.columns?.slice(0,5).join(', ')}{(selectedDs.columns?.length || 0) > 5 ? '...' : ''}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">{t('ai.colsInfo', { n: selectedDs.columns?.length })}: {selectedDs.columns?.slice(0,5).join(', ')}{(selectedDs.columns?.length || 0) > 5 ? '...' : ''}</p>
                 )}
               </div>
 
@@ -311,7 +318,7 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
               <span className="text-xs text-gray-700 font-medium">{t('filters.comparePrevious')}</span>
             </label>
             {globalDateFilter.comparePrevious && (
-              <p className="text-[10px] text-violet-600">Blocos KPI com "delta automático" mostrarão variação em relação ao período equivalente anterior.</p>
+              <p className="text-[10px] text-violet-600">{t('filters.autoDeltaHint')}</p>
             )}
           </div>
         )}
@@ -333,10 +340,10 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
                 <div key={block.id} className="bg-gray-50 rounded-xl border border-gray-100 p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-semibold text-gray-700 truncate flex-1">{block.title}</span>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2 shrink-0 ${block.type === 'slider' ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>{block.type === 'slider' ? 'SLIDER' : 'FILTRO'}</span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2 shrink-0 ${block.type === 'slider' ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>{block.type === 'slider' ? t('filters.badgeSlider') : t('filters.badgeFilter')}</span>
                   </div>
-                  {block.filter_col && <p className="text-[10px] text-gray-400">Coluna: <span className="font-mono">{block.filter_col}</span></p>}
-                  {ds && <p className="text-[10px] text-gray-400">Dataset: {ds.name}</p>}
+                  {block.filter_col && <p className="text-[10px] text-gray-400">{t('filters.labelColumn')} <span className="font-mono">{block.filter_col}</span></p>}
+                  {ds && <p className="text-[10px] text-gray-400">{t('filters.labelDataset')} {ds.name}</p>}
                 </div>
               )
             })}
@@ -426,7 +433,7 @@ function CommentsPanel({ blocks, onBlocksChange }) {
                 <button
                   onClick={() => deleteComment(a.blockId, a.id)}
                   className="text-gray-300 hover:text-red-400 shrink-0 transition-colors"
-                  title="Remover nota"
+                  title={t('comments.removeNote')}
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -478,13 +485,15 @@ export default function DashboardDetailPage() {
   const [globalDateFilter, setGlobalDateFilter] = useState({ dateCol: '', dateFrom: '', dateTo: '' })
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
+  const [nearLimit, setNearLimit] = useState(false)
   const addMenuRef = useRef()
 
   useEffect(() => {
     Promise.all([api.reports.get(id), api.reports.datasets.list()])
       .then(([r, ds]) => {
         setReport(r); setDatasets(ds)
-        const ps = (r.pages && r.pages.length > 0) ? r.pages : [{ id: 'page_1', title: t('pageName', { n: 1 }), blocks: r.blocks || [] }]
+        const rawPs = (r.pages && r.pages.length > 0) ? r.pages : [{ id: 'page_1', title: '', blocks: r.blocks || [] }]
+        const ps = rawPs.map(p => ({ ...p, title: normalizePageTitle(p.title) }))
         setPages(ps); setActivePageId(ps[0].id)
         if (r.language) setCanvasConfig(prev => ({ ...prev, language: r.language }))
       })
@@ -513,6 +522,18 @@ export default function DashboardDetailPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    api.billing.status().then(data => {
+      if (!data?.usage || !data?.limits) return
+      const keys = ['dashboards', 'datasets', 'users']
+      const near = keys.some(k => {
+        const limit = data.limits[k]
+        return limit > 0 && data.usage[k] / limit >= 0.8
+      })
+      setNearLimit(near)
+    }).catch(() => {})
+  }, [])
+
   const blocks = pages.find(p => p.id === activePageId)?.blocks || []
 
   function setBlocks(newBlocks) {
@@ -521,7 +542,8 @@ export default function DashboardDetailPage() {
 
   function enterEditMode() {
     if (!report) return
-    const ps = (report.pages && report.pages.length > 0) ? JSON.parse(JSON.stringify(report.pages)) : [{ id: 'page_1', title: t('pageName', { n: 1 }), blocks: JSON.parse(JSON.stringify(report.blocks || [])) }]
+    const rawPs = (report.pages && report.pages.length > 0) ? JSON.parse(JSON.stringify(report.pages)) : [{ id: 'page_1', title: '', blocks: JSON.parse(JSON.stringify(report.blocks || [])) }]
+    const ps = rawPs.map(p => ({ ...p, title: normalizePageTitle(p.title) }))
     setPages(ps); setActivePageId(ps[0].id)
     setEditTitle(report.title); setEditDescription(report.description || '')
     setSelectedBlockId(null); setSidebarOpen(false); setSidePanel(null); setMode('edit')
@@ -531,7 +553,7 @@ export default function DashboardDetailPage() {
 
   function addPage() {
     const newId = `page_${Date.now()}`
-    setPages(prev => [...prev, { id: newId, title: t('pageName', { n: prev.length + 1 }), blocks: [] }])
+    setPages(prev => [...prev, { id: newId, title: '', blocks: [] }])
     setActivePageId(newId); setSelectedBlockId(null)
   }
 
@@ -651,13 +673,13 @@ export default function DashboardDetailPage() {
           {/* Right: date filter → opens filters panel + share + cancel + save */}
           <button
             onClick={() => togglePanel('filtros')}
-            title="Filtros"
+            title={t('titleFilters')}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'filtros' && sidebarOpen || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
           </button>
 
-          <button onClick={handleShare} disabled={sharingLoading} title="Compartilhar" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          <button onClick={handleShare} disabled={sharingLoading} title={t('titleShare')} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
           </button>
 
@@ -690,13 +712,13 @@ export default function DashboardDetailPage() {
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 overflow-auto p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
             <div className="flex items-center gap-1 mb-4 flex-wrap" onClick={e => e.stopPropagation()}>
-              {pages.map(page => (
+              {pages.map((page, pageIdx) => (
                 <div key={page.id} className={`group flex items-center gap-1 rounded-lg border transition-colors ${activePageId === page.id ? 'bg-white border-violet-300 shadow-sm' : 'bg-transparent border-transparent hover:border-gray-200'}`}>
                   {renamingPageId === page.id ? (
-                    <input autoFocus className="text-xs font-medium px-2 py-1.5 bg-transparent outline-none w-24" value={page.title} onChange={e => renamePage(page.id, e.target.value)} onBlur={() => setRenamingPageId(null)} onKeyDown={e => e.key === 'Enter' && setRenamingPageId(null)} />
+                    <input autoFocus className="text-xs font-medium px-2 py-1.5 bg-transparent outline-none w-24" placeholder={t('pageName', { n: pageIdx + 1 })} value={page.title} onChange={e => renamePage(page.id, e.target.value)} onBlur={() => setRenamingPageId(null)} onKeyDown={e => e.key === 'Enter' && setRenamingPageId(null)} />
                   ) : (
                     <button className={`text-xs font-medium px-2.5 py-1.5 rounded-lg ${activePageId === page.id ? 'text-violet-700' : 'text-gray-500 hover:text-gray-800'}`} onClick={() => { setActivePageId(page.id); setSelectedBlockId(null) }} onDoubleClick={() => setRenamingPageId(page.id)}>
-                      {page.title}
+                      {page.title || t('pageName', { n: pageIdx + 1 })}
                     </button>
                   )}
                   {pages.length > 1 && <button onClick={() => removePage(page.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 pr-1 text-xs">×</button>}
@@ -762,6 +784,15 @@ export default function DashboardDetailPage() {
   // VIEW MODE
   return (
     <AppLayout>
+      {nearLimit && (
+        <div className="px-6 py-2.5 text-sm font-medium flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border-b border-amber-100">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Você está próximo do limite do seu plano.</span>
+          <a href="/configuracoes/planos" className="underline font-bold whitespace-nowrap">Ver planos</a>
+        </div>
+      )}
       <div className="p-6 max-w-screen-xl mx-auto">
         <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
           <div>
@@ -840,15 +871,15 @@ export default function DashboardDetailPage() {
         {translating && (
           <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-            Traduzindo...
+            {t('translating')}
           </div>
         )}
 
         {((displayReport ?? report).pages || pages).length > 1 && (
           <div className="flex items-center gap-1 mb-4 flex-wrap border-b border-gray-100 pb-3">
-            {((displayReport ?? report).pages || pages).map(page => (
+            {((displayReport ?? report).pages || pages).map((page, pageIdx) => (
               <button key={page.id} onClick={() => setActivePageId(page.id)} className={`px-3 py-1.5 text-sm rounded-xl transition-colors ${activePageId === page.id ? 'bg-violet-600 text-white font-bold' : 'text-gray-600 hover:bg-gray-100'}`}>
-                {page.title}
+                {page.title || t('pageName', { n: pageIdx + 1 })}
               </button>
             ))}
           </div>

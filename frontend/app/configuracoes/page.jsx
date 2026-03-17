@@ -248,19 +248,21 @@ export default function ConfiguracoesPage() {
                   const unlimited = item.max === -1
                   const pct = unlimited ? 0 : Math.min(100, (item.used / item.max) * 100)
                   const atLimit = !unlimited && item.used >= item.max
+                  const nearLimit = !unlimited && !atLimit && pct >= 80
                   return (
                     <div key={item.label} className="bg-gray-50 rounded-xl p-3">
                       <div className="flex justify-between items-baseline mb-1.5">
                         <span className="text-xs text-gray-500 font-medium">{item.label}</span>
-                        <span className={`text-xs font-bold ${atLimit ? 'text-red-500' : 'text-gray-700'}`}>
+                        <span className={`text-xs font-bold ${atLimit ? 'text-red-500' : nearLimit ? 'text-amber-600' : 'text-gray-700'}`}>
                           {item.used}{unlimited ? '' : `/${item.max}`}
+                          {nearLimit && <span className="ml-1 font-normal text-amber-500">Próximo do limite</span>}
                         </span>
                       </div>
                       {unlimited ? (
                         <p className="text-xs text-emerald-600 font-semibold">{t('plan.unlimited')}</p>
                       ) : (
                         <div className="h-1.5 bg-gray-200 rounded-full">
-                          <div className={`h-1.5 rounded-full transition-all ${atLimit ? 'bg-red-400' : item.color}`} style={{ width: `${pct}%` }} />
+                          <div className={`h-1.5 rounded-full transition-all ${atLimit ? 'bg-red-400' : nearLimit ? 'bg-amber-400' : item.color}`} style={{ width: `${pct}%` }} />
                         </div>
                       )}
                     </div>

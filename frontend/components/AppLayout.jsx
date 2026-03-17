@@ -8,6 +8,7 @@ import { api } from '@/lib/api'
 import { LogoA } from '@/components/logos/JarbisLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
+import UpgradeModal from '@/components/UpgradeModal'
 
 const Icons = {
   Dashboard: () => (
@@ -239,6 +240,8 @@ export default function AppLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [trialDays, setTrialDays] = useState(null)
   const [plan, setPlan] = useState(null)
+  const [pastDue, setPastDue] = useState(false)
+  const [upgradeModal, setUpgradeModal] = useState(null)
 
   useEffect(() => {
     try {
@@ -261,9 +264,17 @@ export default function AppLayout({ children }) {
         if (data) {
           setPlan(data.plan)
           if (data.trial_days_remaining !== null) setTrialDays(data.trial_days_remaining)
+          if (data.subscription_status === 'past_due') setPastDue(true)
         }
       })
       .catch(() => {})
+  }, [])
+
+  // Listener global para erros 402/403 disparados por api.js
+  useEffect(() => {
+    const handler = (e) => setUpgradeModal(e.detail)
+    window.addEventListener('upgrade-required', handler)
+    return () => window.removeEventListener('upgrade-required', handler)
   }, [])
 
   // Fecha drawer ao navegar
@@ -341,6 +352,22 @@ export default function AppLayout({ children }) {
           </div>
         </div>
 
+        {/* Banner de pagamento pendente */}
+        {pastDue && (
+          <div className="px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0 bg-red-50 text-red-700 border-b border-red-100">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>Pagamento pendente. Atualize seu método de pagamento para não perder o acesso.</span>
+            <button
+              onClick={async () => { try { const r = await api.billing.portal(); if (r?.url) window.open(r.url, '_blank') } catch {} }}
+              className="underline font-bold ml-1 whitespace-nowrap"
+            >
+              Gerenciar pagamento
+            </button>
+          </div>
+        )}
+
         {/* Banner de trial */}
         {showTrial && (
           <div className={`px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0 ${
@@ -364,6 +391,11 @@ export default function AppLayout({ children }) {
       </main>
 
       <SupportChat />
+
+      {/* Modal de upgrade universal */}
+      {upgradeModal && (
+        <UpgradeModal errorData={upgradeModal} onClose={() => setUpgradeModal(null)} />
+      )}
 
       {/* ── Bottom navigation mobile (< md) ── */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-30 safe-area-inset-bottom">

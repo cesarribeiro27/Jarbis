@@ -21,6 +21,16 @@ async function apiFetch(path, options = {}) {
     return
   }
 
+  if (response.status === 402 || response.status === 403) {
+    const errorData = await response.json().catch(() => ({}))
+    const detail = errorData.detail || {}
+    const payload = typeof detail === 'object' ? detail : { code: 'error', message: String(detail) }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('upgrade-required', { detail: payload }))
+    }
+    throw new Error(payload.message || 'Acesso negado')
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Erro desconhecido' }))
     const detail = error.detail

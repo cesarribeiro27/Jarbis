@@ -35,6 +35,7 @@ from app.modules.billing.guards import (
     check_alert_limit,
     check_dashboard_limit,
     check_dataset_limit,
+    check_feature_allowed,
 )
 from app.modules.tenants.models import Tenant
 
@@ -178,6 +179,8 @@ async def get_public_report(token: str, db: AsyncSession = Depends(get_db)):
     report = await service.get_public(token)
     if not report:
         raise HTTPException(status_code=404, detail="Link inválido ou expirado")
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == report.tenant_id))
+    check_feature_allowed("embed", tenant.plan if tenant else "free")
     return report
 
 
@@ -507,6 +510,9 @@ async def ai_query_endpoint(
     import re
 
     import anthropic as ant
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    check_feature_allowed("ai", tenant.plan if tenant else "free")
 
     svc = DatasetService(db)
     ds = await svc.get(data.dataset_id, current_user.tenant_id)

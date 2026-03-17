@@ -59,5 +59,31 @@ class PlanLimitError(JarbisException):
     def __init__(self, message: str = "Limite do plano atingido. Faça upgrade para continuar."):
         super().__init__(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=message,
+            detail={"code": "plan_limit_exceeded", "message": message},
+        )
+
+
+class FeatureNotAvailableError(JarbisException):
+    """Lançada quando o plano do tenant não inclui a feature solicitada."""
+    def __init__(self, feature: str, required_plan: str):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "feature_not_available",
+                "feature": feature,
+                "required_plan": required_plan,
+                "message": f"Feature '{feature}' requer o plano '{required_plan}' ou superior.",
+            },
+        )
+
+
+class TrialExpiredError(JarbisException):
+    """Lançada quando o trial do tenant expirou e ele não tem plano pago."""
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail={
+                "code": "trial_expired",
+                "message": "Trial expirado. Escolha um plano para continuar.",
+            },
         )

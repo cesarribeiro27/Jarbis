@@ -6,12 +6,37 @@ Cada função verifica se o tenant atingiu o limite do seu plano
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import PlanLimitError
-from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, get_effective_limits
+from app.core.exceptions import FeatureNotAvailableError, PlanLimitError, TrialExpiredError
+from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, PLANS, get_effective_limits
+
+# Plano mínimo para cada feature (chave = slug do plano em PLANS)
+_FEATURE_MIN_PLAN: dict[str, str] = {
+    "ai": "equipe",
+    "embed": "solo",
+    "white_label": "ilimitado",
+}
+
+
+def check_feature_allowed(feature: str, plan: str) -> None:
+    """Lança FeatureNotAvailableError se o plano não inclui a feature."""
+    limits = PLANS.get(plan, PLANS["free"])
+    allowed = getattr(limits, f"allow_{feature}", False)
+    if not allowed:
+        required = _FEATURE_MIN_PLAN.get(feature, "equipe")
+        required_name = PLAN_NAMES.get(required, required)
+        raise FeatureNotAvailableError(feature=feature, required_plan=required_name)
+
+
+def check_trial_active(tenant) -> None:
+    """Lança TrialExpiredError se o trial do tenant já encerrou e o plano ainda é free."""
+    if tenant.trial_ends_at is not None and tenant.plan in ("free", None):
+        if tenant.trial_ends_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+            raise TrialExpiredError()
 
 
 async def check_dashboard_limit(
