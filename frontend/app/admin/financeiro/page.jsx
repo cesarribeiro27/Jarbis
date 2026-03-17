@@ -295,7 +295,119 @@ export default function AdminFinanceiroPage() {
           Se a tabela estiver vazia, é porque ainda não houve pagamentos processados após a ativação desta funcionalidade.
           Pagamentos anteriores não são retroativos.
         </div>
+
+        {/* MRR Movements */}
+        <MrrMovements />
+
+        {/* Cohort Analysis */}
+        <CohortAnalysis />
       </div>
     </AdminLayout>
+  )
+}
+
+function MrrMovements() {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    fetch(`${API_URL}/admin/metrics/mrr-movements?months=6`, {
+      headers: authHeaders(), credentials: 'include'
+    }).then(r => r.ok ? r.json() : null).then(d => d && setData(d)).catch(() => {})
+  }, [])
+
+  if (!data) return null
+  const months = data.months || []
+
+  return (
+    <div className="rounded-2xl border border-gray-800 bg-gray-900/20 p-5">
+      <h2 className="text-sm font-semibold text-gray-400 mb-4">Movimentação de MRR por mês</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-500 border-b border-gray-800">
+              <th className="text-left pb-2 font-medium">Mês</th>
+              <th className="text-right pb-2 font-medium">MRR Início</th>
+              <th className="text-right pb-2 font-medium">MRR Fim</th>
+              <th className="text-right pb-2 font-medium text-emerald-400">Novo MRR</th>
+              <th className="text-right pb-2 font-medium text-red-400">Churn MRR</th>
+              <th className="text-right pb-2 font-medium">Net New</th>
+            </tr>
+          </thead>
+          <tbody>
+            {months.map(m => (
+              <tr key={m.month} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                <td className="py-2 text-gray-300 font-mono">{m.month}</td>
+                <td className="py-2 text-right text-gray-400">{fmtBRL(m.mrr_start)}</td>
+                <td className="py-2 text-right text-gray-300">{fmtBRL(m.mrr_end)}</td>
+                <td className="py-2 text-right text-emerald-400">+{fmtBRL(m.new_mrr)}</td>
+                <td className="py-2 text-right text-red-400">-{fmtBRL(m.churned_mrr)}</td>
+                <td className={`py-2 text-right font-bold ${m.net_new_mrr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {m.net_new_mrr >= 0 ? '+' : ''}{fmtBRL(m.net_new_mrr)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {months.length === 0 && (
+          <p className="text-gray-600 text-center py-6 text-xs">Dados insuficientes — os snapshots diários preencherão esta tabela automaticamente.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CohortAnalysis() {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    fetch(`${API_URL}/admin/metrics/cohort`, {
+      headers: authHeaders(), credentials: 'include'
+    }).then(r => r.ok ? r.json() : null).then(d => d && setData(d)).catch(() => {})
+  }, [])
+
+  if (!data || !data.cohorts?.length) return null
+
+  function retentionColor(pct) {
+    if (pct === null) return 'text-gray-700 bg-gray-800/40'
+    if (pct >= 80) return 'text-emerald-300 bg-emerald-900/30'
+    if (pct >= 60) return 'text-amber-300 bg-amber-900/30'
+    return 'text-red-300 bg-red-900/30'
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-800 bg-gray-900/20 p-5">
+      <h2 className="text-sm font-semibold text-gray-400 mb-4">Análise de Coorte — Retenção por mês de cadastro</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-500 border-b border-gray-800">
+              <th className="text-left pb-2 font-medium">Coorte</th>
+              <th className="text-right pb-2 font-medium">Cadastros</th>
+              <th className="text-center pb-2 font-medium">M+1</th>
+              <th className="text-center pb-2 font-medium">M+3</th>
+              <th className="text-center pb-2 font-medium">M+6</th>
+              <th className="text-center pb-2 font-medium">M+12</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.cohorts.map(c => (
+              <tr key={c.cohort} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                <td className="py-2 text-gray-300 font-mono">{c.cohort}</td>
+                <td className="py-2 text-right text-gray-400">{c.total}</td>
+                {['m1','m3','m6','m12'].map(key => (
+                  <td key={key} className="py-2 text-center">
+                    {c[key] === null
+                      ? <span className="text-gray-700">—</span>
+                      : <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${retentionColor(c[key])}`}>
+                          {c[key]}%
+                        </span>
+                    }
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[10px] text-gray-600 mt-3">— = período ainda não atingido</p>
+    </div>
   )
 }

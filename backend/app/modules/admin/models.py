@@ -336,3 +336,50 @@ class ApiKey(Base):
 
     def __repr__(self) -> str:
         return f"<ApiKey {self.key_prefix}... tenant={self.tenant_id}>"
+
+
+class LifecycleEmailLog(Base):
+    """
+    Registro de email de ciclo de vida enviado para um tenant.
+    Evita reenvio: cada (tenant_id, email_type) é enviado no máximo uma vez.
+    """
+    __tablename__ = "lifecycle_email_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    email_type: Mapped[str] = mapped_column(
+        String(50), nullable=False,
+        comment="d1_welcome | d3_activation | d7_engagement | d30_retention"
+    )
+    recipient_email: Mapped[str] = mapped_column(String(254), nullable=False)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<LifecycleEmailLog {self.email_type} tenant={self.tenant_id}>"
+
+
+class NpsSurvey(Base):
+    """
+    Resposta de NPS (Net Promoter Score) de um usuário.
+    Exibida como modal in-app após 30 dias de conta.
+    """
+    __tablename__ = "nps_surveys"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    score: Mapped[int] = mapped_column(Integer, nullable=False, comment="0-10")
+    comment: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<NpsSurvey score={self.score} tenant={self.tenant_id}>"

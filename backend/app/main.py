@@ -24,14 +24,15 @@ from app.modules.support.router import router as support_router
 
 
 async def _refresh_loop():
-    """Background task: auto-refresh datasets on schedule + MRR snapshot diário."""
+    """Background task: auto-refresh datasets + MRR snapshot + lifecycle emails."""
     from decimal import Decimal
+    from app.core.email import send_lifecycle_email
     from app.database import AsyncSessionLocal
-    from app.modules.admin.models import MrrSnapshot
+    from app.modules.admin.models import LifecycleEmailLog, MrrSnapshot
     from app.modules.reports.dataset_models import ReportDataset
     from app.modules.reports.dataset_service import DatasetService
-    from app.modules.tenants.models import Tenant
-    from sqlalchemy import func, select, and_
+    from app.modules.tenants.models import Tenant, User
+    from sqlalchemy import func, select, and_, tuple_
 
     PLAN_MRR = {"solo": 79.90, "starter": 79.90, "equipe": 189.90, "professional": 189.90, "ilimitado": 599.90}
 
@@ -111,6 +112,45 @@ async def _refresh_loop():
                     )
                     db.add(snapshot)
                     await db.commit()
+
+                # ── Lifecycle emails (D+1, D+3, D+7, D+30) ───────────────────
+                LIFECYCLE_DAYS = {
+                    "d1_welcome": 1,
+                    "d3_activation": 3,
+                    "d7_engagement": 7,
+                    "d30_retention": 30,
+                }
+                active_tenants = await db.scalars(
+                    select(Tenant).where(Tenant.is_active == True)  # noqa: E712
+                )
+                for tenant in active_tenants.all():
+                    age_days = (now - tenant.created_at).days
+                    owner = await db.scalar(
+                        select(User).where(User.tenant_id == tenant.id, User.role == "owner")
+                    )
+                    if not owner:
+                        continue
+                    for email_type, trigger_day in LIFECYCLE_DAYS.items():
+                        if age_days < trigger_day:
+                            continue
+                        already_sent = await db.scalar(
+                            select(LifecycleEmailLog).where(
+                                LifecycleEmailLog.tenant_id == tenant.id,
+                                LifecycleEmailLog.email_type == email_type,
+                            )
+                        )
+                        if already_sent:
+                            continue
+                        sent = await send_lifecycle_email(owner.email, tenant.name, email_type)
+                        if sent:
+                            db.add(LifecycleEmailLog(
+                                tenant_id=tenant.id,
+                                email_type=email_type,
+                                recipient_email=owner.email,
+                            ))
+                if True:  # flush lifecycle logs
+                    await db.commit()
+
         except Exception:
             pass
 

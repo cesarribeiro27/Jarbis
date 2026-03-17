@@ -243,12 +243,59 @@ export default function AppLayout({ children }) {
   const [pastDue, setPastDue] = useState(false)
   const [upgradeModal, setUpgradeModal] = useState(null)
   const [impersonation, setImpersonation] = useState(null)
+  const [npsModal, setNpsModal] = useState(false)
+  const [npsScore, setNpsScore] = useState(null)
+  const [npsComment, setNpsComment] = useState('')
+  const [npsSending, setNpsSending] = useState(false)
+  const [npsDone, setNpsDone] = useState(false)
 
   useEffect(() => {
     const impBy = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_by') : null
     const impTenant = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_tenant') : null
     if (impBy) setImpersonation({ email: impBy, tenant: impTenant })
+
+    // NPS: mostrar após 30 dias se não respondeu
+    try {
+      const u = localStorage.getItem('jarbis_user')
+      if (!u) return
+      const parsed = JSON.parse(u)
+      const createdAt = parsed.created_at || parsed.tenant_created_at
+      if (!createdAt) return
+      const ageDays = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      if (ageDays < 30) return
+      const dismissed = localStorage.getItem('jarbis_nps_dismissed')
+      if (dismissed) return
+      const token = localStorage.getItem('jarbis_token')
+      if (!token) return
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'}/admin/nps/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r => r.ok ? r.json() : null).then(d => {
+        if (d && !d.submitted) setTimeout(() => setNpsModal(true), 3000)
+      }).catch(() => {})
+    } catch {}
   }, [])
+
+  async function submitNps() {
+    if (npsScore === null) return
+    setNpsSending(true)
+    try {
+      const token = localStorage.getItem('jarbis_token')
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'}/admin/nps/submit`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score: npsScore, comment: npsComment }),
+      })
+      setNpsDone(true)
+      setTimeout(() => setNpsModal(false), 2000)
+    } finally {
+      setNpsSending(false)
+    }
+  }
+
+  function dismissNps() {
+    localStorage.setItem('jarbis_nps_dismissed', '1')
+    setNpsModal(false)
+  }
 
   function exitImpersonation() {
     const backup = localStorage.getItem('jarbis_token_impersonation_backup')
@@ -425,6 +472,73 @@ export default function AppLayout({ children }) {
       </main>
 
       <SupportChat />
+
+      {/* Modal NPS */}
+      {npsModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            {npsDone ? (
+              <div className="text-center py-4">
+                <div className="text-4xl mb-3">🙏</div>
+                <h3 className="font-bold text-gray-900">Obrigado pelo feedback!</h3>
+                <p className="text-sm text-gray-500 mt-1">Sua resposta nos ajuda a melhorar o Jarbis.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-gray-900">Uma pergunta rápida</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">De 0 a 10, o quanto você indicaria o Jarbis a um colega?</p>
+                  </div>
+                  <button onClick={dismissNps} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
+                </div>
+                <div className="flex gap-1 mb-4 flex-wrap justify-center">
+                  {[0,1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setNpsScore(n)}
+                      className={`w-9 h-9 rounded-xl text-sm font-bold transition-colors ${
+                        npsScore === n
+                          ? n >= 9 ? 'bg-emerald-600 text-white'
+                            : n >= 7 ? 'bg-amber-500 text-white'
+                            : 'bg-red-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between text-[10px] text-gray-400 mb-4 px-1">
+                  <span>Jamais indicaria</span>
+                  <span>Com certeza indicaria</span>
+                </div>
+                {npsScore !== null && (
+                  <textarea
+                    value={npsComment}
+                    onChange={e => setNpsComment(e.target.value)}
+                    placeholder="Comentário opcional — o que podemos melhorar?"
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-violet-400 resize-none mb-3"
+                  />
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={submitNps}
+                    disabled={npsScore === null || npsSending}
+                    className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-colors"
+                  >
+                    {npsSending ? 'Enviando...' : 'Enviar'}
+                  </button>
+                  <button onClick={dismissNps} className="px-4 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+                    Depois
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de upgrade universal */}
       {upgradeModal && (

@@ -39,7 +39,8 @@ from app.core.security import create_access_token
 from app.database import get_db, AsyncSessionLocal
 from app.modules.admin.models import (
     Affiliate, AdminUser, AdminAuditLog, AffiliatePayment, ApiKey, Coupon,
-    MrrSnapshot, NfeDocument, SupportTicket, SupportTicketComment, TenantNote,
+    LifecycleEmailLog, MrrSnapshot, NfeDocument, NpsSurvey,
+    SupportTicket, SupportTicketComment, TenantNote,
 )
 from app.modules.auth.dependencies import get_current_active_user
 from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, PLANS, get_effective_limits
@@ -2668,3 +2669,273 @@ async def revoke_api_key(
     await _audit(db, user.email, "api_key_revoke", "tenant", str(tenant_id), None, key.name)
     await db.commit()
     return {"ok": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FASE 7 — MRR Movements, Cohort, NPS, Onboarding/me, Lifecycle logs
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Fase 7 — MRR Movements ────────────────────────────────────────────────────
+
+@router.get("/metrics/mrr-movements")
+async def admin_mrr_movements(
+    months: int = Query(default=12, ge=1, le=24),
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Breakdown mensal de MRR: MRR início, fim, novos tenants, churned, net new."""
+    role = await _get_admin_role(user.email, db)
+    if role not in ("full", "financeiro", "vendas"):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    now = datetime.now(timezone.utc)
+    result = []
+    ARPA = 159.90  # ARPA estimado médio
+
+    for i in range(months - 1, -1, -1):
+        month_start = (now.replace(day=1) - timedelta(days=i * 28)).replace(day=1)
+        month_end_approx = (month_start + timedelta(days=32)).replace(day=1)
+
+        snap_start = await db.scalar(
+            select(MrrSnapshot)
+            .where(MrrSnapshot.snapshot_date >= month_start.date(),
+                   MrrSnapshot.snapshot_date < month_end_approx.date())
+            .order_by(MrrSnapshot.snapshot_date.asc())
+        )
+        snap_end = await db.scalar(
+            select(MrrSnapshot)
+            .where(MrrSnapshot.snapshot_date >= month_start.date(),
+                   MrrSnapshot.snapshot_date < month_end_approx.date())
+            .order_by(MrrSnapshot.snapshot_date.desc())
+        )
+
+        mrr_start = float(snap_start.mrr) if snap_start else 0.0
+        mrr_end = float(snap_end.mrr) if snap_end else 0.0
+
+        new_t = await db.scalar(
+            select(func.sum(MrrSnapshot.new_tenants))
+            .where(MrrSnapshot.snapshot_date >= month_start.date(),
+                   MrrSnapshot.snapshot_date < month_end_approx.date())
+        ) or 0
+        churned_t = await db.scalar(
+            select(func.sum(MrrSnapshot.churned_tenants))
+            .where(MrrSnapshot.snapshot_date >= month_start.date(),
+                   MrrSnapshot.snapshot_date < month_end_approx.date())
+        ) or 0
+
+        result.append({
+            "month": month_start.strftime("%Y-%m"),
+            "mrr_start": round(mrr_start, 2),
+            "mrr_end": round(mrr_end, 2),
+            "new_mrr": round(int(new_t) * ARPA, 2),
+            "churned_mrr": round(int(churned_t) * ARPA, 2),
+            "net_new_mrr": round(mrr_end - mrr_start, 2),
+            "new_tenants": int(new_t),
+            "churned_tenants": int(churned_t),
+        })
+
+    return {"months": result}
+
+
+# ── Fase 7 — Cohort Analysis ──────────────────────────────────────────────────
+
+@router.get("/metrics/cohort")
+async def admin_cohort(
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retenção por coorte: para cada mês de cadastro, % ainda ativos em M+1, M+3, M+6, M+12."""
+    role = await _get_admin_role(user.email, db)
+    if role not in ("full", "financeiro", "vendas"):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    now = datetime.now(timezone.utc)
+    cohorts = []
+
+    for i in range(11, -1, -1):
+        cohort_start = (now.replace(day=1) - timedelta(days=i * 28)).replace(day=1)
+        cohort_end = (cohort_start + timedelta(days=32)).replace(day=1)
+
+        total = await db.scalar(
+            select(func.count()).select_from(Tenant).where(
+                Tenant.created_at >= cohort_start,
+                Tenant.created_at < cohort_end,
+            )
+        ) or 0
+        if total == 0:
+            continue
+
+        retention = {}
+        for months_after, label in [(1, "m1"), (3, "m3"), (6, "m6"), (12, "m12")]:
+            check_date = cohort_start + timedelta(days=months_after * 30)
+            if check_date > now:
+                retention[label] = None
+                continue
+            still_active = await db.scalar(
+                select(func.count()).select_from(Tenant).where(
+                    Tenant.created_at >= cohort_start,
+                    Tenant.created_at < cohort_end,
+                    Tenant.is_active == True,  # noqa: E712
+                    (Tenant.canceled_at.is_(None)) | (Tenant.canceled_at > check_date),
+                )
+            ) or 0
+            retention[label] = round(still_active / total * 100, 1)
+
+        cohorts.append({"cohort": cohort_start.strftime("%Y-%m"), "total": total, **retention})
+
+    return {"cohorts": cohorts}
+
+
+# ── Fase 7 — NPS Admin ────────────────────────────────────────────────────────
+
+@router.get("/nps")
+async def admin_nps_results(
+    months: int = Query(default=6, ge=1, le=24),
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resultados de NPS: score médio, distribuição e comentários recentes."""
+    role = await _get_admin_role(user.email, db)
+    if role not in ("full", "vendas", "suporte"):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    from_dt = datetime.now(timezone.utc) - timedelta(days=months * 30)
+    rows = await db.scalars(
+        select(NpsSurvey).where(NpsSurvey.created_at >= from_dt).order_by(NpsSurvey.created_at.desc())
+    )
+    surveys = list(rows)
+
+    if not surveys:
+        return {"total": 0, "avg_score": None, "nps": None, "distribution": {}, "recent_comments": []}
+
+    scores = [s.score for s in surveys]
+    promoters = sum(1 for s in scores if s >= 9)
+    detractors = sum(1 for s in scores if s <= 6)
+    nps_score = round((promoters - detractors) / len(scores) * 100, 1)
+
+    recent = []
+    for s in surveys[:20]:
+        if s.comment:
+            t = await db.scalar(select(Tenant).where(Tenant.id == s.tenant_id))
+            recent.append({
+                "score": s.score,
+                "comment": s.comment,
+                "tenant_name": t.name if t else None,
+                "created_at": s.created_at.isoformat(),
+            })
+
+    return {
+        "total": len(surveys),
+        "avg_score": round(sum(scores) / len(scores), 1),
+        "nps": nps_score,
+        "promoters_pct": round(promoters / len(scores) * 100, 1),
+        "detractors_pct": round(detractors / len(scores) * 100, 1),
+        "distribution": {str(s): sum(1 for sc in scores if sc == s) for s in range(0, 11)},
+        "recent_comments": recent,
+    }
+
+
+# ── Fase 7 — NPS Submit (tenant) ─────────────────────────────────────────────
+
+class NpsSubmitInput(BaseModel):
+    score: int
+    comment: str = ""
+
+
+@router.post("/nps/submit")
+async def submit_nps(
+    body: NpsSubmitInput,
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tenant submete resposta de NPS (uma vez por usuário)."""
+    if not 0 <= body.score <= 10:
+        raise HTTPException(status_code=400, detail="Score deve ser entre 0 e 10")
+
+    existing = await db.scalar(select(NpsSurvey).where(NpsSurvey.user_id == user.id))
+    if existing:
+        return {"ok": True, "already_submitted": True}
+
+    db.add(NpsSurvey(tenant_id=user.tenant_id, user_id=user.id,
+                      score=body.score, comment=body.comment))
+    await db.commit()
+    return {"ok": True, "already_submitted": False}
+
+
+@router.get("/nps/me")
+async def get_nps_status(
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Verifica se o usuário já respondeu o NPS."""
+    existing = await db.scalar(select(NpsSurvey).where(NpsSurvey.user_id == user.id))
+    return {"submitted": existing is not None}
+
+
+# ── Fase 7 — Onboarding para o tenant logado ─────────────────────────────────
+
+@router.get("/onboarding/me")
+async def get_my_onboarding(
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Checklist de onboarding do tenant logado — usado no dashboard in-app."""
+    from app.modules.reports.models import Report
+    from app.modules.reports.dataset_models import ReportDataset
+
+    tid = user.tenant_id
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == tid))
+
+    dash_count = await db.scalar(
+        select(func.count()).select_from(Report).where(Report.tenant_id == tid)) or 0
+    ds_count = await db.scalar(
+        select(func.count()).select_from(ReportDataset).where(ReportDataset.tenant_id == tid)) or 0
+    user_count = await db.scalar(
+        select(func.count()).select_from(User).where(User.tenant_id == tid)) or 1
+    is_paid = tenant and tenant.subscription_status == "active" and tenant.plan != "free"
+
+    steps = [
+        {"key": "email_verified",    "label": "Verificar email",           "done": bool(user.is_verified),        "href": None},
+        {"key": "first_login",       "label": "Fazer o primeiro login",     "done": user.last_login_at is not None, "href": None},
+        {"key": "dashboard_created", "label": "Criar primeiro dashboard",   "done": dash_count > 0,                 "href": "/dashboards/novo"},
+        {"key": "dataset_connected", "label": "Conectar um dataset",        "done": ds_count > 0,                   "href": "/datasets"},
+        {"key": "user_invited",      "label": "Convidar um colega",         "done": user_count > 1,                 "href": "/configuracoes/usuarios"},
+        {"key": "plan_upgraded",     "label": "Fazer upgrade do plano",     "done": bool(is_paid),                  "href": "/configuracoes/planos"},
+    ]
+    done_count = sum(1 for s in steps if s["done"])
+    return {
+        "steps": steps,
+        "done_count": done_count,
+        "total": len(steps),
+        "percent": round(done_count / len(steps) * 100),
+        "completed": done_count == len(steps),
+    }
+
+
+# ── Fase 7 — Lifecycle email logs (admin) ────────────────────────────────────
+
+@router.get("/lifecycle-emails")
+async def list_lifecycle_emails(
+    limit: int = Query(default=100, ge=1, le=500),
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lifecycle emails enviados — monitoramento."""
+    role = await _get_admin_role(user.email, db)
+    if role not in ("full", "marketing"):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    rows = await db.scalars(
+        select(LifecycleEmailLog).order_by(LifecycleEmailLog.sent_at.desc()).limit(limit)
+    )
+    result = []
+    for r in rows.all():
+        t = await db.scalar(select(Tenant).where(Tenant.id == r.tenant_id))
+        result.append({
+            "id": str(r.id),
+            "tenant_name": t.name if t else None,
+            "email_type": r.email_type,
+            "recipient_email": r.recipient_email,
+            "sent_at": r.sent_at.isoformat(),
+        })
+    return {"items": result, "total": len(result)}

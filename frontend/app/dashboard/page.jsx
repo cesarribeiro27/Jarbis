@@ -6,6 +6,62 @@ import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useTranslations, useLocale } from 'next-intl'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+
+function OnboardingChecklist({ onDismiss }) {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    const token = localStorage.getItem('jarbis_token')
+    if (!token) return
+    fetch(`${API_URL}/admin/onboarding/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.ok ? r.json() : null).then(d => d && setData(d)).catch(() => {})
+  }, [])
+
+  if (!data || data.completed) return null
+
+  return (
+    <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-2xl border border-violet-100 p-5 mb-8">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="font-bold text-gray-900 text-sm">Primeiros passos</h3>
+          <p className="text-xs text-gray-500 mt-0.5">{data.done_count} de {data.total} concluídos</p>
+        </div>
+        <button onClick={onDismiss} className="text-gray-400 hover:text-gray-600 transition-colors text-xs">✕</button>
+      </div>
+      {/* Barra de progresso */}
+      <div className="h-1.5 bg-violet-100 rounded-full mb-4 overflow-hidden">
+        <div
+          className="h-full bg-violet-600 rounded-full transition-all duration-500"
+          style={{ width: `${data.percent}%` }}
+        />
+      </div>
+      <div className="space-y-2">
+        {data.steps.map(step => (
+          <div key={step.key} className="flex items-center gap-3">
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-violet-600' : 'bg-white border-2 border-gray-200'}`}>
+              {step.done && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+            {step.href && !step.done ? (
+              <Link href={step.href} className="text-sm text-violet-700 hover:underline font-medium">
+                {step.label}
+              </Link>
+            ) : (
+              <span className={`text-sm ${step.done ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                {step.label}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const PALETTE = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#db2777', '#0891b2']
 
 function MiniChart({ color, seed = 0 }) {
@@ -72,6 +128,7 @@ export default function DashboardHome() {
   const [datasets, setDatasets] = useState([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
+  const [showOnboarding, setShowOnboarding] = useState(true)
 
   useEffect(() => {
     const u = localStorage.getItem('jarbis_user')
@@ -110,6 +167,11 @@ export default function DashboardHome() {
             </div>
           </div>
         </div>
+
+        {/* Onboarding checklist */}
+        {showOnboarding && (
+          <OnboardingChecklist onDismiss={() => setShowOnboarding(false)} />
+        )}
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
