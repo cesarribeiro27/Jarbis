@@ -7,6 +7,17 @@ Formato: `vMAJOR.MINOR.PATCH`
 
 ---
 
+## v01.0.01 — 2026-03-17
+
+### i18n — DashboardRail + tradução dinâmica de conteúdo
+
+- DashboardRail: barra lateral totalmente localizada (Edit, Data, Filters, Config, Notes, AI, Help, Open/Close) em 8 idiomas
+- Dashboards em modo VIEW: título, páginas e blocos traduzidos automaticamente via Google Translate API ao trocar idioma
+- Modo edição mantém conteúdo original em pt-BR
+- Script `translate-messages.mjs` para propagação automática de novas chaves
+
+---
+
 ## v01.0.00 — 2026-03-17
 
 ### Lançamento inicial em produção
