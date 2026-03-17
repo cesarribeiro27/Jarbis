@@ -219,9 +219,9 @@
         ]
       },
       "ilimitado": {
-        "name": "Unlimited",
+        "name": "Team",
         "desc": "For growing companies",
-        "cta": "Get Unlimited",
+        "cta": "Get Team",
         "features": [
           "50 dashboards",
           "30 data sources",
@@ -1085,7 +1085,7 @@
         "desc": "For small businesses"
       },
       "ilimitado": {
-        "name": "Unlimited",
+        "name": "Team",
         "desc": "For growing companies"
       },
       "enterprise": {

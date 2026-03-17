@@ -153,9 +153,9 @@
         "features": ["20 dashboards", "15 fontes de dados", "1 usuário", "15 alertas", "IA em português", "Incorporar no site"]
       },
       "ilimitado": {
-        "name": "Ilimitado",
+        "name": "Equipe",
         "desc": "Para empresas em crescimento",
-        "cta": "Assinar Ilimitado",
+        "cta": "Assinar Equipe",
         "features": ["50 dashboards", "30 fontes de dados", "5 usuários", "50 alertas", "IA em português", "Marca própria no dashboard"]
       },
       "enterprise": {
@@ -898,7 +898,7 @@
       "free":       { "name": "Gratuito",      "desc": "Para experimentar" },
       "solo":       { "name": "Solo",          "desc": "Para autônomos e MEIs" },
       "equipe":     { "name": "Profissional",  "desc": "Para pequenas empresas" },
-      "ilimitado":  { "name": "Ilimitado",     "desc": "Para empresas em crescimento" },
+      "ilimitado":  { "name": "Equipe",         "desc": "Para empresas em crescimento" },
       "enterprise": { "name": "Enterprise",    "desc": "Para grandes operações" }
     }
   },

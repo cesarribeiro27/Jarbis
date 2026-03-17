@@ -219,9 +219,9 @@
         ]
       },
       "ilimitado": {
-        "name": "Ilimitado",
+        "name": "Equipo",
         "desc": "Para empresas en crecimiento",
-        "cta": "Contratar Ilimitado",
+        "cta": "Contratar Equipo",
         "features": [
           "50 dashboards",
           "30 fuentes de datos",
@@ -1085,7 +1085,7 @@
         "desc": "Para pequeñas empresas"
       },
       "ilimitado": {
-        "name": "Ilimitado",
+        "name": "Equipo",
         "desc": "Para empresas en crecimiento"
       },
       "enterprise": {
