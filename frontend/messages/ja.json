@@ -28,7 +28,20 @@
       "organic": "オーガニック",
       "paid": "有料"
     },
-    "months": ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
+    "months": [
+      "1月",
+      "2月",
+      "3月",
+      "4月",
+      "5月",
+      "6月",
+      "7月",
+      "8月",
+      "9月",
+      "10月",
+      "11月",
+      "12月"
+    ]
   },
   "problem": {
     "label": "課題",
@@ -112,13 +125,48 @@
     "subtitle": "成長企業向けに構築された組み込みBIプラットフォーム。",
     "colFeature": "機能",
     "rows": [
-      { "feature": "開始価格", "jarbis": "7日間無料", "luzmo": "$1,000+/月", "powerbi": "$10/ユーザー" },
-      { "feature": "日本語インターフェース", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "日本語サポート", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "iframeで埋め込み", "jarbis": true, "luzmo": true, "powerbi": "複雑" },
-      { "feature": "自然言語AI", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "数分でセットアップ", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "トライアルにカード不要", "jarbis": true, "luzmo": false, "powerbi": false }
+      {
+        "feature": "開始価格",
+        "jarbis": "7日間無料",
+        "luzmo": "$1,000+/月",
+        "powerbi": "$10/ユーザー"
+      },
+      {
+        "feature": "日本語インターフェース",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "日本語サポート",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "iframeで埋め込み",
+        "jarbis": true,
+        "luzmo": true,
+        "powerbi": "複雑"
+      },
+      {
+        "feature": "自然言語AI",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "数分でセットアップ",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "トライアルにカード不要",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -138,31 +186,62 @@
         "name": "無料",
         "desc": "コミットメントなしで試す",
         "cta": "無料アカウント作成",
-        "features": ["ダッシュボード2つ", "データソース2つ", "ユーザー1人", "公開リンク"]
+        "features": [
+          "ダッシュボード2つ",
+          "データソース2つ",
+          "ユーザー1人",
+          "公開リンク"
+        ]
       },
       "solo": {
         "name": "Solo",
         "desc": "フリーランスと個人起業家向け",
         "cta": "Soloを選ぶ",
-        "features": ["ダッシュボード8つ", "データソース8つ", "ユーザー1人", "アラート5件", "ウェブサイトに埋め込み"]
+        "features": [
+          "ダッシュボード8つ",
+          "データソース8つ",
+          "ユーザー1人",
+          "アラート5件",
+          "ウェブサイトに埋め込み"
+        ]
       },
       "equipe": {
         "name": "プロフェッショナル",
         "desc": "中小企業向け",
         "cta": "プロフェッショナルを選ぶ",
-        "features": ["ダッシュボード20つ", "データソース15つ", "ユーザー1人", "アラート15件", "AIアシスタント", "ウェブサイトに埋め込み"]
+        "features": [
+          "ダッシュボード20つ",
+          "データソース15つ",
+          "ユーザー1人",
+          "アラート15件",
+          "AIアシスタント",
+          "ウェブサイトに埋め込み"
+        ]
       },
       "ilimitado": {
         "name": "無制限",
         "desc": "成長企業向け",
         "cta": "無制限を選ぶ",
-        "features": ["ダッシュボード50つ", "データソース30つ", "ユーザー5人", "アラート50件", "AIアシスタント", "ホワイトラベルダッシュボード"]
+        "features": [
+          "ダッシュボード50つ",
+          "データソース30つ",
+          "ユーザー5人",
+          "アラート50件",
+          "AIアシスタント",
+          "ホワイトラベルダッシュボード"
+        ]
       },
       "enterprise": {
         "name": "エンタープライズ",
         "desc": "大規模企業向け",
         "cta": "営業に連絡",
-        "features": ["すべて無制限", "無制限ユーザー", "SLA保証", "専任アカウントマネージャー", "カスタムオンボーディング"]
+        "features": [
+          "すべて無制限",
+          "無制限ユーザー",
+          "SLA保証",
+          "専任アカウントマネージャー",
+          "カスタムオンボーディング"
+        ]
       }
     }
   },
@@ -251,11 +330,26 @@
     "hasAccount": "すでにアカウントをお持ちですか？",
     "loginLink": "ログイン",
     "bullets": [
-      { "icon": "⚡", "text": "2分でセットアップ" },
-      { "icon": "🌐", "text": "あなたの言語のインターフェース" },
-      { "icon": "🔒", "text": "クラウドでデータを安全に保護" },
-      { "icon": "💳", "text": "クレジットカード不要" },
-      { "icon": "🤖", "text": "AI アシスタント内蔵" }
+      {
+        "icon": "⚡",
+        "text": "2分でセットアップ"
+      },
+      {
+        "icon": "🌐",
+        "text": "あなたの言語のインターフェース"
+      },
+      {
+        "icon": "🔒",
+        "text": "クラウドでデータを安全に保護"
+      },
+      {
+        "icon": "💳",
+        "text": "クレジットカード不要"
+      },
+      {
+        "icon": "🤖",
+        "text": "AI アシスタント内蔵"
+      }
     ]
   },
   "login": {
@@ -286,6 +380,546 @@
       "users": "ユーザー",
       "settings": "設定",
       "logout": "ログアウト"
+    },
+    "admin": "管理者",
+    "trialExpired": "試用期間が終了しました。続行するにはプランを選択してください。",
+    "trialDays": "無料トライアルは {days} 日に終了します。",
+    "trialCta": "プランを見る",
+    "openMenu": "メニューを開く"
+  },
+  "dashboard": {
+    "stats": {
+      "shared": "共有",
+      "views": "ビュー"
+    },
+    "greeting": {
+      "morning": "おはよう",
+      "afternoon": "こんにちは",
+      "evening": "おやすみ"
+    },
+    "subtitle": "コントロールパネルへようこそ",
+    "recent": "最近の",
+    "newBtn": "新しいダッシュボード",
+    "loading": "読み込み中...",
+    "blocks": "ブロック",
+    "public": "公共",
+    "seeAll": "Ver todos os {count} dashboards",
+    "empty": {
+      "title": "ダッシュボードはまだありません",
+      "desc": "既製のテンプレートを使用して最初のダッシュボードの作成を開始します",
+      "cta": "最初のダッシュボードを作成する"
+    }
+  },
+  "datasets": {
+    "title": "データ",
+    "subtitle": "{count} 接続されたデータ ソース",
+    "subtitleEmpty": "スプレッドシート、ファイル、API を接続する",
+    "connectBtn": "APIを接続する",
+    "uploadBtn": "ファイルをアップロードする",
+    "uploading": "送信中...",
+    "dropHint": "↑ ここにCSV/Excelファイルをドラッグしてインポートします",
+    "dropRelease": "リリースしてインポートする",
+    "columns": "列",
+    "rowsM": "Mライン",
+    "rowsK": "K 行",
+    "rows": "行",
+    "typeApi": "API",
+    "typeFile": "ファイル",
+    "autoRefresh": "自動: {interval}分",
+    "refreshBtn": "データを更新する",
+    "deleteConfirm": "消去？",
+    "yes": "はい",
+    "no": "いいえ",
+    "uploadBtn2": "アップロード",
+    "empty": {
+      "title": "まだデータセットがありません",
+      "desc": "ここにファイルをドラッグするか、クリックしてアップロードします",
+      "hint": "CSV、Excel対応・50MB制限"
+    },
+    "modal": {
+      "title": "APIを接続する",
+      "subtitle": "任意の REST エンドポイントからデータをインポートする",
+      "nameLabel": "データセット名",
+      "namePlaceholder": "例: 月あたりの売上高",
+      "urlLabel": "API URL",
+      "urlPlaceholder": "https://api.exemplo.com/dados",
+      "methodLabel": "方法",
+      "headersLabel": "ヘッダー (オプションの JSON)",
+      "intervalLabel": "(分) ごとに自動的に更新します",
+      "intervalPlaceholder": "例: 60 (更新しない場合は空のままにします)",
+      "connectBtn": "データの接続とインポート",
+      "connecting": "接続中..."
+    },
+    "toast": {
+      "connected": "データセットが正常に接続されました。",
+      "loadError": "データセットのロード中にエラーが発生しました。",
+      "invalidFormat": "無効な形式です。 CSV または Excel (.xlsx/.xls) を使用します。",
+      "fileTooLarge": "非常に大きなファイル。制限: 50MB",
+      "uploadSuccess": "{name} は正常にインポートされました。 {rows}行。",
+      "uploadError": "アップロード中にエラーが発生しました。",
+      "syncSuccess": "データセットは正常に同期されました。",
+      "syncError": "同期中にエラーが発生しました。",
+      "deleteSuccess": "データセットが削除されました。",
+      "deleteError": "削除中にエラーが発生しました。",
+      "headersInvalid": "無効なヘッダー - JSON 形式を使用してください"
+    }
+  },
+  "alerts": {
+    "title": "アラート",
+    "subtitle": "メトリクスを監視し、しきい値を超えた場合に警告を受け取る",
+    "checkAllBtn": "すべてチェックしてください",
+    "newBtn": "+ 新しいアラート",
+    "loading": "読み込み中...",
+    "deleteConfirm": "消去？",
+    "yes": "はい",
+    "no": "いいえ",
+    "lastValue": "最後の値:",
+    "empty": {
+      "title": "アラートが設定されていません",
+      "desc": "アラートを作成してメトリクスを自動的に監視する",
+      "cta": "最初のアラートを作成する"
+    },
+    "noDataset": {
+      "title": "利用可能なデータセットがありません",
+      "desc": "アラートを作成する前にデータセットをアップロードします。"
+    },
+    "status": {
+      "pending": "未検証",
+      "triggered": "解雇された",
+      "ok": "わかりました"
+    },
+    "operators": {
+      "gt": "> より大きい",
+      "gte": "≥ 以上",
+      "lt": "< 未満",
+      "lte": "≤ 以下",
+      "eq": "= に等しい"
+    },
+    "aggregations": {
+      "sum": "和",
+      "count": "カウント",
+      "avg": "平均",
+      "max": "最大",
+      "min": "最小"
+    },
+    "modal": {
+      "title": "アラートの作成",
+      "nameLabel": "アラート名",
+      "namePlaceholder": "例: 売上が目標を下回る",
+      "datasetLabel": "データセット",
+      "columnLabel": "値列",
+      "selectDefault": "選択してください...",
+      "aggLabel": "集計",
+      "conditionLabel": "状態",
+      "thresholdLabel": "限界値",
+      "thresholdPlaceholder": "例: 10000",
+      "createBtn": "アラートの作成",
+      "creating": "作成..."
+    },
+    "toast": {
+      "loadError": "アラートの読み込み中にエラーが発生しました。",
+      "triggered": "アラートが発動しました!",
+      "ok": "アラートが確認されました - すべて OK。",
+      "enabled": "アラートがアクティブになりました。",
+      "paused": "アラートは一時停止されました。",
+      "deleted": "アラートが削除されました。"
+    }
+  },
+  "dashboards": {
+    "title": "ダッシュボード",
+    "subtitleOne": "1 ダッシュボード",
+    "subtitleMany": "{count} ダッシュボード",
+    "subtitleEmpty": "データに接続された対話型レポート",
+    "newBtn": "新しいダッシュボード",
+    "searchPlaceholder": "ダッシュボードを検索...",
+    "noResults": "「{query}」の結果はありません",
+    "clearSearch": "検索をクリア",
+    "public": "公共",
+    "blocks": "ブロック",
+    "block": "ブロック",
+    "addCoverBtn": "カバーを追加する",
+    "empty": {
+      "title": "ダッシュボードが作成されていません",
+      "desc": "データに接続されたグラフ、KPI、テーブルを含むダッシュボードを作成します",
+      "cta": "最初のダッシュボードを作成する"
+    },
+    "menu": {
+      "edit": "編集",
+      "addCover": "カバーを追加する",
+      "changeCover": "カバーを変更する",
+      "removeCover": "カバーを外す",
+      "copyLink": "パブリックリンクをコピーする",
+      "clone": "クローン",
+      "delete": "消去",
+      "confirmDelete": "削除を確認しますか?",
+      "cancel": "キャンセル"
+    },
+    "cropper": {
+      "title": "表紙画像",
+      "clickToChoose": "クリックして画像を選択してください",
+      "dragToAdjust": "画像をドラッグしてフレームを調整します",
+      "swap": "イメージを変更する",
+      "save": "表紙を保存"
+    },
+    "toast": {
+      "loadError": "ダッシュボードの読み込みエラー。",
+      "deleted": "ダッシュボードが削除されました。",
+      "deleteError": "削除中にエラーが発生しました。",
+      "copied": "リンクがクリップボードにコピーされました!",
+      "shareError": "共有エラー。",
+      "cloned": "ダッシュボードのクローンが正常に作成されました。",
+      "cloneError": "クローン作成時のエラー。",
+      "coverSaved": "表紙を更新しました！",
+      "coverError": "表紙の保存中にエラーが発生しました。",
+      "coverRemoved": "カバーを取り外した状態。",
+      "coverRemoveError": "カバーの取り外し中にエラーが発生しました。"
+    }
+  },
+  "dashboardEditor": {
+    "loading": "読み込み中...",
+    "notFound": "ダッシュボードが見つかりません",
+    "back": "ダッシュボード",
+    "edit": "編集",
+    "ask": "尋ねるには",
+    "share": "共有するには",
+    "sharing": "生成中...",
+    "delete": "消去",
+    "confirm": "確認する？",
+    "yes": "はい",
+    "no": "いいえ",
+    "shareLinkLang": "リンク言語:",
+    "copied": "コピーしました！",
+    "copyLink": "リンクをコピー",
+    "dateFilter": "日付フィルター",
+    "dateFilterActive": "アクティブな日付フィルター:",
+    "dateTo": "それまで",
+    "clear": "掃除するには",
+    "addItem": "アイテムの追加",
+    "templates": "テンプレート",
+    "backEdit": "戻るには",
+    "cancel": "キャンセル",
+    "saving": "保存中...",
+    "save": "ダッシュボードの保存",
+    "pageName": "ページ{n}",
+    "sidePanel": {
+      "dados": "データ",
+      "filtros": "フィルター",
+      "comentarios": "コメント",
+      "config": "ブロックの設定",
+      "settings": "設定"
+    },
+    "filters": {
+      "title": "ダッシュボードフィルター",
+      "active": "資産",
+      "clearAll": "すべてクリア",
+      "dateFilterLabel": "日付フィルター",
+      "clearDate": "掃除するには",
+      "dateColPlaceholder": "日付列...",
+      "presets": {
+        "today": "今日",
+        "7d": "7日",
+        "30d": "30日",
+        "month": "月",
+        "year": "年"
+      },
+      "comparePrevious": "前期との比較",
+      "filterBlocks": "フィルターブロック ({count})",
+      "noFilterBlocks": "ダッシュボードに「フィルター」または「スライダー」ブロックを追加する"
+    },
+    "ai": {
+      "title": "AI — データ探索",
+      "clearHistory": "掃除するには",
+      "noDataset": "利用可能なデータセットがありません。まずデータを追加します。",
+      "datasetLabel": "データセット",
+      "suggestions": "提案",
+      "history": "歴史",
+      "analyzing": "分析中...",
+      "askPlaceholder": "データについて質問する...",
+      "send": "送信するには"
+    },
+    "comments": {
+      "title": "コメントとメモ",
+      "selectBlock": "ブロックを選択してください...",
+      "placeholder": "コメントを書く... (送信するには Ctrl+Enter)",
+      "addBtn": "メモを追加",
+      "empty": "まだメモはありません。ブロックにコメントを追加します。"
+    },
+    "blockTypes": {
+      "kpi": {
+        "label": "KPI",
+        "desc": "強調表示された番号"
+      },
+      "bar": {
+        "label": "バー",
+        "desc": "カテゴリを比較する"
+      },
+      "bar_h": {
+        "label": "Hバー",
+        "desc": "横棒"
+      },
+      "area": {
+        "label": "エリア",
+        "desc": "進化の積み重ね"
+      },
+      "line": {
+        "label": "ライン",
+        "desc": "時間の経過による進化"
+      },
+      "pie": {
+        "label": "ピザ",
+        "desc": "分布 ％"
+      },
+      "combo": {
+        "label": "コンボ",
+        "desc": "スラッシュ + ライン"
+      },
+      "gauge": {
+        "label": "ゲージ",
+        "desc": "円形インジケーター"
+      },
+      "speedometer": {
+        "label": "スピードメーター",
+        "desc": "半円形インジケーター"
+      },
+      "treemap": {
+        "label": "ツリーマップ",
+        "desc": "エリア別の階層"
+      },
+      "bubble": {
+        "label": "泡",
+        "desc": "体積の分散"
+      },
+      "scatter": {
+        "label": "分散",
+        "desc": "XY相関"
+      },
+      "table": {
+        "label": "テーブル",
+        "desc": "行内のデータ"
+      },
+      "text": {
+        "label": "文章",
+        "desc": "コメント"
+      },
+      "filter": {
+        "label": "フィルター",
+        "desc": "データをフィルタリングする"
+      },
+      "slider": {
+        "label": "スライダー",
+        "desc": "範囲でフィルタリングする"
+      },
+      "image": {
+        "label": "画像",
+        "desc": "写真またはロゴ"
+      }
+    }
+  },
+  "configuracoes": {
+    "title": "設定",
+    "subtitle": "プロフィールとアカウントを管理する",
+    "profile": {
+      "title": "プロフィール",
+      "fullNameLabel": "フルネーム",
+      "placeholder": "あなたの名前",
+      "saving": "保存中...",
+      "save": "保存"
+    },
+    "password": {
+      "title": "パスワードを変更する",
+      "currentLabel": "現在のパスワード",
+      "newLabel": "新しいパスワード",
+      "confirmLabel": "新しいパスワードを確認します",
+      "newPlaceholder": "最小6文字",
+      "confirmPlaceholder": "新しいパスワードを繰り返します",
+      "changing": "変化...",
+      "change": "パスワードを変更する"
+    },
+    "plan": {
+      "title": "プランと使い方",
+      "viewAll": "すべてのプランを見る→",
+      "upgrade": "アップグレード",
+      "manage": "計画を管理する",
+      "trialRemaining": "試用版残り {days} 日",
+      "statusActive": "アクティブ",
+      "statusPastDue": "支払い保留中",
+      "statusTrial": "トライアル",
+      "unlimited": "無制限"
+    },
+    "roles": {
+      "owner": "所有者",
+      "admin": "管理者",
+      "member": "メンバー",
+      "viewer": "ビューア"
+    },
+    "usage": {
+      "dashboards": "ダッシュボード",
+      "datasets": "データセット",
+      "users": "ユーザー",
+      "alerts": "アラート"
+    },
+    "toast": {
+      "nameSaved": "名前が正常に更新されました。",
+      "nameError": "名前の更新中にエラーが発生しました。",
+      "passwordMismatch": "パスワードが一致しません。",
+      "passwordTooShort": "新しいパスワードは 6 文字以上である必要があります。",
+      "passwordSaved": "パスワードが正常に変更されました。",
+      "passwordError": "パスワード変更中にエラーが発生しました。"
+    }
+  },
+  "planos": {
+    "title": "予定",
+    "currentPlan": "現在の計画:",
+    "trialRemaining": "· テスト残り {days} 日",
+    "monthly": "毎月",
+    "annual": "年間",
+    "manageSubscription": "サブスクリプションの管理 →",
+    "opening": "オープニング...",
+    "planCurrentBadge": "現在の計画",
+    "planPopularBadge": "最も人気のある",
+    "planEnterpriseBadge": "企業",
+    "priceOnRequest": "ご要望に応じて",
+    "priceFree": "無料",
+    "perMonth": "/月",
+    "billedAnnually": "R${price}/年請求",
+    "trialBadge": "7日間無料",
+    "planCurrentCta": "現在の計画 ✓",
+    "contactSales": "店員さんに相談→",
+    "redirecting": "リダイレクト中...",
+    "doUpgrade": "アップグレード →",
+    "changePlan": "このプランに切り替える",
+    "annualNote": "毎年請求 · 月額プランより 20% 割引 · いつでもキャンセル可能",
+    "monthlyNote": "有料プランは毎月請求されます · いつでも好きなときにキャンセルできます · 隠れた料金はありません",
+    "unlimited": "無制限",
+    "usage": {
+      "dashboards": "ダッシュボード",
+      "datasets": "データソース",
+      "users": "ユーザー",
+      "alerts": "アラート"
+    },
+    "addon": {
+      "title": "拡張パック",
+      "price": "パックあたり R$49.90/月",
+      "desc": "アップグレードせずにプランの制限を拡張します。",
+      "users": "パックあたり +1 ユーザー",
+      "dashboards": "パックあたり +5 ダッシュボード",
+      "datasets": "パックごとに +3 データ ソース",
+      "addPack": "パックを追加→",
+      "adding": "リダイレクト中..."
+    },
+    "toast": {
+      "success": "サブスクリプションが正常にアクティベートされました。プランが更新されました。",
+      "addon": "拡張パックが正常にアクティベートされました。",
+      "canceled": "チェックアウトがキャンセルされました。請求は行われませんでした。",
+      "noPayment": "セットアップ中の支払い。 comercial@jarbis.cc までご連絡ください。",
+      "checkoutError": "チェックアウトの開始時にエラーが発生しました。",
+      "addonError": "拡張パックの構成。 comercial@jarbis.cc までご連絡ください。",
+      "portalError": "ポータルを開くときにエラーが発生しました。"
+    },
+    "plans": {
+      "free": {
+        "name": "無料",
+        "desc": "試してみる"
+      },
+      "solo": {
+        "name": "土壌",
+        "desc": "自営業者・MEI向け"
+      },
+      "equipe": {
+        "name": "プロ",
+        "desc": "中小企業向け"
+      },
+      "ilimitado": {
+        "name": "無制限",
+        "desc": "成長する企業のために"
+      },
+      "enterprise": {
+        "name": "企業",
+        "desc": "大規模な操作の場合"
+      }
+    }
+  },
+  "usuarios": {
+    "title": "ユーザー",
+    "manageTeam": "チームメンバーを管理する",
+    "activeCount": "{active, plural, one {{active} アセット、合計 {total} 個} その他の {{active} アセット、合計 {total} 個}}",
+    "inviteBtn": "招待するには",
+    "noUsers": "ユーザーがいません",
+    "statusActive": "アクティブ",
+    "statusInactive": "非アクティブ",
+    "you": "あなた",
+    "footerHint": "変更するにはプロフィールバッジをクリックしてください · 右側の有効化/無効化アイコン",
+    "roles": {
+      "owner": "所有者",
+      "admin": "管理者",
+      "member": "メンバー",
+      "viewer": "ビューア"
+    },
+    "roleDescs": {
+      "admin": "所有者の削除を除くフルアクセス",
+      "member": "ダッシュボードの作成と編集",
+      "viewer": "見るだけ"
+    },
+    "toast": {
+      "loadError": "ユーザーの読み込み中にエラーが発生しました。",
+      "activated": "{name} がアクティブになりました。",
+      "deactivated": "{name} が無効になりました。",
+      "toggleError": "ユーザーの更新中にエラーが発生しました。",
+      "roleChanged": "{name} のプロファイルが {role} に変更されました。",
+      "roleError": "プロファイル変更中にエラーが発生しました。"
+    },
+    "modal": {
+      "title": "ユーザーを招待する",
+      "subtitle": "チームにメンバーを追加する",
+      "nameLabel": "名前",
+      "emailLabel": "電子メール",
+      "passwordLabel": "初期パスワード",
+      "passwordPlaceholder": "最低6文字",
+      "roleLabel": "アクセスプロファイル",
+      "creating": "作成...",
+      "createBtn": "ユーザーの作成",
+      "successToast": "{name} が正常に追加されました。"
+    }
+  },
+  "dashboardNovo": {
+    "gallery": {
+      "nav": "新しいダッシュボード",
+      "title": "テンプレートを選択してください",
+      "subtitle": "ゼロから始めるか、既製のテンプレートを使用して、データを接続するだけです。",
+      "searchPlaceholder": "テンプレートを検索...",
+      "blocksCount": "{n} ブロック",
+      "blankCanvas": "空白のキャンバス"
+    },
+    "editor": {
+      "back": "戻るには",
+      "templates": "テンプレート",
+      "addItem": "アイテムの追加",
+      "cancel": "キャンセル",
+      "save": "ダッシュボードの保存",
+      "saving": "保存中...",
+      "titlePlaceholder": "ダッシュボードのタイトル...",
+      "descPlaceholder": "説明 (オプション)",
+      "titleRequired": "タイトルを入力してください"
+    },
+    "sidebar": {
+      "data": "データ",
+      "filters": "フィルター",
+      "comments": "コメント",
+      "configBlock": "ブロックの構成",
+      "configDashboard": "ダッシュボード"
+    },
+    "filters": {
+      "dateFilterTitle": "グローバル日付フィルター",
+      "dateSeparator": "それまで",
+      "today": "今日",
+      "last7d": "7日",
+      "last30d": "30日",
+      "thisMonth": "月",
+      "thisYear": "年",
+      "clearDates": "日付を明確にする"
+    },
+    "comments": {
+      "saveTip": "ダッシュボードを保存してメモを追加します。"
     }
   }
 }

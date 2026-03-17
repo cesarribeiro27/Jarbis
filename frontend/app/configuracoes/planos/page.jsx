@@ -6,6 +6,7 @@ import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { useTranslations } from 'next-intl'
 
 // ─── Dados dos planos ─────────────────────────────────────────────────────────
 
@@ -95,6 +96,7 @@ function planRank(key) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 function PlanosContent() {
+  const t = useTranslations('planos')
   const searchParams = useSearchParams()
   const toast = useToast()
   const [status, setStatus]             = useState(null)
@@ -106,11 +108,11 @@ function PlanosContent() {
 
   useEffect(() => {
     if (searchParams.get('success') === '1') {
-      toast('Assinatura ativada com sucesso! Seu plano foi atualizado.', 'success', 6000)
+      toast(t('toast.success'), 'success', 6000)
     } else if (searchParams.get('addon') === '1') {
-      toast('Pack de expansão ativado com sucesso!', 'success', 6000)
+      toast(t('toast.addon'), 'success', 6000)
     } else if (searchParams.get('canceled') === '1') {
-      toast('Checkout cancelado. Nenhuma cobrança foi realizada.', 'info')
+      toast(t('toast.canceled'), 'info')
     }
     api.billing.status()
       .then(setStatus)
@@ -121,7 +123,7 @@ function PlanosContent() {
   async function handleUpgrade(plan) {
     const priceId = PRICE_IDS[plan.key]
     if (!priceId) {
-      toast('Pagamentos em configuração. Entre em contato pelo comercial@jarbis.cc.', 'warn')
+      toast(t('toast.noPayment'), 'warn')
       return
     }
     setUpgrading(plan.key)
@@ -129,7 +131,7 @@ function PlanosContent() {
       const data = await api.billing.checkout(priceId)
       window.location.href = data.checkout_url
     } catch (err) {
-      toast(err.message || 'Erro ao iniciar checkout.', 'error')
+      toast(err.message || t('toast.checkoutError'), 'error')
       setUpgrading(null)
     }
   }
@@ -140,7 +142,7 @@ function PlanosContent() {
       const data = await api.billing.addonCheckout()
       window.location.href = data.checkout_url
     } catch (err) {
-      toast(err.message || 'Pack de expansão em configuração. Entre em contato pelo comercial@jarbis.cc.', 'warn')
+      toast(err.message || t('toast.addonError'), 'warn')
       setAddonLoading(false)
     }
   }
@@ -151,7 +153,7 @@ function PlanosContent() {
       const data = await api.billing.portal()
       window.location.href = data.portal_url
     } catch (err) {
-      toast(err.message || 'Erro ao abrir portal.', 'error')
+      toast(err.message || t('toast.portalError'), 'error')
       setPortalLoading(false)
     }
   }
@@ -171,13 +173,13 @@ function PlanosContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Planos</h1>
+            <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Plano atual:{' '}
-              <span className="font-semibold text-violet-700">{status?.plan_name || 'Gratuito'}</span>
+              {t('currentPlan')}{' '}
+              <span className="font-semibold text-violet-700">{status?.plan_name || t('plans.free.name')}</span>
               {status?.trial_days_remaining > 0 && (
                 <span className="ml-2 text-amber-600 font-medium">
-                  · {status.trial_days_remaining} dias de teste restantes
+                  {t('trialRemaining', { days: status.trial_days_remaining })}
                 </span>
               )}
             </p>
@@ -190,13 +192,13 @@ function PlanosContent() {
                 onClick={() => setAnnual(false)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${!annual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
               >
-                Mensal
+                {t('monthly')}
               </button>
               <button
                 onClick={() => setAnnual(true)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${annual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
               >
-                Anual
+                {t('annual')}
                 <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">-20%</span>
               </button>
             </div>
@@ -206,7 +208,7 @@ function PlanosContent() {
                 disabled={portalLoading}
                 className="px-4 py-2 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
               >
-                {portalLoading ? 'Abrindo...' : 'Gerenciar assinatura →'}
+                {portalLoading ? t('opening') : t('manageSubscription')}
               </button>
             )}
           </div>
@@ -222,10 +224,10 @@ function PlanosContent() {
             {status && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                 {[
-                  { label: 'Dashboards', used: status.usage.dashboards, max: status.limits.dashboards },
-                  { label: 'Fontes de dados', used: status.usage.datasets, max: status.limits.datasets },
-                  { label: 'Usuários', used: status.usage.users, max: status.limits.users },
-                  { label: 'Alertas', used: status.usage.alerts, max: status.limits.alerts },
+                  { label: t('usage.dashboards'), used: status.usage.dashboards, max: status.limits.dashboards },
+                  { label: t('usage.datasets'),   used: status.usage.datasets,   max: status.limits.datasets },
+                  { label: t('usage.users'),       used: status.usage.users,      max: status.limits.users },
+                  { label: t('usage.alerts'),      used: status.usage.alerts,     max: status.limits.alerts },
                 ].map(item => {
                   const pct = item.max === -1 ? 0 : Math.min(100, (item.used / item.max) * 100)
                   const atLimit = item.max !== -1 && item.used >= item.max
@@ -245,7 +247,7 @@ function PlanosContent() {
                           />
                         </div>
                       ) : (
-                        <div className="text-xs text-emerald-600 font-semibold">Ilimitado</div>
+                        <div className="text-xs text-emerald-600 font-semibold">{t('unlimited')}</div>
                       )}
                     </div>
                   )
@@ -276,56 +278,56 @@ function PlanosContent() {
                     {/* Badge topo */}
                     {isCurrent && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full whitespace-nowrap">
-                        Plano atual
+                        {t('planCurrentBadge')}
                       </div>
                     )}
                     {plan.highlight && !isCurrent && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-black px-3 py-1 rounded-full whitespace-nowrap">
-                        Mais popular
+                        {t('planPopularBadge')}
                       </div>
                     )}
                     {plan.enterprise && !isCurrent && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-3 py-1 rounded-full whitespace-nowrap">
-                        Enterprise
+                        {t('planEnterpriseBadge')}
                       </div>
                     )}
 
                     {/* Cabeçalho do plano */}
                     <div className="mb-4">
                       <p className={`text-xs font-bold mb-1 ${plan.enterprise ? 'text-gray-400' : plan.accentColor}`}>
-                        {plan.name}
+                        {t(`plans.${plan.key}.name`, { defaultValue: plan.name })}
                       </p>
 
                       {price === null ? (
                         <span className={`font-black text-base ${plan.enterprise ? 'text-white' : 'text-gray-900'}`}>
-                          Sob consulta
+                          {t('priceOnRequest')}
                         </span>
                       ) : price === 0 ? (
-                        <span className="font-black text-3xl text-gray-900">Grátis</span>
+                        <span className="font-black text-3xl text-gray-900">{t('priceFree')}</span>
                       ) : (
                         <div className="flex items-baseline gap-1">
                           <span className={`font-black text-2xl ${plan.enterprise ? 'text-white' : 'text-gray-900'}`}>
                             R${price.toFixed(2).replace('.', ',')}
                           </span>
-                          <span className={`text-xs ${plan.enterprise ? 'text-gray-500' : 'text-gray-400'}`}>/mês</span>
+                          <span className={`text-xs ${plan.enterprise ? 'text-gray-500' : 'text-gray-400'}`}>{t('perMonth')}</span>
                         </div>
                       )}
 
                       {annual && plan.monthlyPrice && plan.monthlyPrice > 0 && (
                         <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">
-                          cobrado R${(price * 12).toFixed(2).replace('.', ',')}/ano
+                          {t('billedAnnually', { price: (price * 12).toFixed(2).replace('.', ',') })}
                         </p>
                       )}
 
                       {plan.trialBadge && !isCurrent && (
                         <div className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full mt-2">
                           <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                          7 dias grátis
+                          {t('trialBadge')}
                         </div>
                       )}
 
                       <p className={`text-xs mt-2 ${plan.enterprise ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {plan.desc}
+                        {t(`plans.${plan.key}.desc`, { defaultValue: plan.desc })}
                       </p>
                     </div>
 
@@ -347,7 +349,7 @@ function PlanosContent() {
                     {/* CTA */}
                     {isCurrent ? (
                       <div className="text-center py-2.5 text-xs text-gray-400 font-semibold border border-gray-200 rounded-full">
-                        Plano atual ✓
+                        {t('planCurrentCta')}
                       </div>
                     ) : plan.key === 'free' ? (
                       <div className="text-center py-2.5 text-xs text-gray-300">—</div>
@@ -356,7 +358,7 @@ function PlanosContent() {
                         href="mailto:comercial@jarbis.cc?subject=Interesse no plano Enterprise"
                         className="block text-center py-2.5 rounded-full font-bold text-xs bg-amber-500 text-white hover:bg-amber-400 transition-colors"
                       >
-                        Falar com comercial →
+                        {t('contactSales')}
                       </a>
                     ) : (
                       <button
@@ -369,8 +371,8 @@ function PlanosContent() {
                         }`}
                       >
                         {upgrading === plan.key
-                          ? 'Redirecionando...'
-                          : isUpgrade ? 'Fazer upgrade →' : 'Mudar para este plano'}
+                          ? t('redirecting')
+                          : isUpgrade ? t('doUpgrade') : t('changePlan')}
                       </button>
                     )}
                   </div>
@@ -379,9 +381,7 @@ function PlanosContent() {
             </div>
 
             <p className="text-center text-xs text-gray-400 mb-8">
-              {annual
-                ? 'Cobrado anualmente · Economize 20% em relação ao plano mensal · Cancele quando quiser'
-                : 'Planos pagos cobrados mensalmente · Cancele quando quiser · Sem taxas escondidas'}
+              {annual ? t('annualNote') : t('monthlyNote')}
             </p>
 
             {/* Card de add-on — visível apenas em planos pagos */}
@@ -391,19 +391,19 @@ function PlanosContent() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">📦</span>
-                      <h3 className="font-black text-gray-900">Pack de Expansão</h3>
+                      <h3 className="font-black text-gray-900">{t('addon.title')}</h3>
                       <span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        R$49,90/mês por pack
+                        {t('addon.price')}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">
-                      Expanda os limites do seu plano sem fazer upgrade.
+                      {t('addon.desc')}
                     </p>
                     <div className="flex flex-wrap gap-3">
                       {[
-                        { icon: '👤', label: '+1 usuário por pack' },
-                        { icon: '📊', label: '+5 dashboards por pack' },
-                        { icon: '🗄️', label: '+3 fontes de dados por pack' },
+                        { icon: '👤', label: t('addon.users') },
+                        { icon: '📊', label: t('addon.dashboards') },
+                        { icon: '🗄️', label: t('addon.datasets') },
                       ].map(item => (
                         <div key={item.label} className="flex items-center gap-1.5 text-xs text-gray-700 bg-white border border-violet-100 rounded-lg px-2.5 py-1.5">
                           <span>{item.icon}</span>
@@ -425,7 +425,7 @@ function PlanosContent() {
                     disabled={addonLoading}
                     className="sm:flex-shrink-0 px-5 py-2.5 bg-violet-600 text-white font-bold text-sm rounded-full hover:bg-violet-700 transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
-                    {addonLoading ? 'Redirecionando...' : 'Adicionar pack →'}
+                    {addonLoading ? t('addon.adding') : t('addon.addPack')}
                   </button>
                 </div>
               </div>

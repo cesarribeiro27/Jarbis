@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { api } from '@/lib/api'
 import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/ReportBuilder'
@@ -63,16 +64,21 @@ const CardShell = ({ x, y, w, h, title, children }) => (
   </g>
 )
 
-// Ilustrações SVG temáticas por template
-const TPL_PREVIEWS = {
-  blank: (
+// Ilustrações SVG temáticas por template — blank usa componente separado para poder usar hook
+function BlankPreview() {
+  const t = useTranslations('dashboardNovo')
+  return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-50">
       <div className="w-10 h-10 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </div>
-      <span className="text-[10px] text-gray-400 font-medium">Canvas em branco</span>
+      <span className="text-[10px] text-gray-400 font-medium">{t('gallery.blankCanvas')}</span>
     </div>
-  ),
+  )
+}
+
+const TPL_PREVIEWS = {
+  blank: <BlankPreview />,
   sales_trends: (
     <svg viewBox="0 0 200 112" className="w-full h-full">
       <defs><linearGradient id="bg_st" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f5f3ff"/><stop offset="100%" stopColor="#ede9fe"/></linearGradient><linearGradient id="area_st" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7c3aed" stopOpacity="0.18"/><stop offset="100%" stopColor="#7c3aed" stopOpacity="0"/></linearGradient></defs>
@@ -517,6 +523,7 @@ const TPL_COLORS = {
 }
 
 function TemplateGallery({ onSelect }) {
+  const t = useTranslations('dashboardNovo')
   const [search, setSearch] = useState('')
   const filtered = TEMPLATES.filter(t =>
     !search || t.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -534,19 +541,19 @@ function TemplateGallery({ onSelect }) {
         </div>
         <span className="text-gray-900 font-black text-[15px] tracking-tight">Jarbis</span>
         <span className="text-gray-300 text-sm">·</span>
-        <span className="text-gray-500 text-sm">Novo Dashboard</span>
+        <span className="text-gray-500 text-sm">{t('gallery.nav')}</span>
       </div>
 
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto px-8 py-10">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-black text-gray-900 mb-2">Escolha um template</h1>
-            <p className="text-sm text-gray-500 mb-5">Comece do zero ou use um template pronto — basta conectar seus dados.</p>
+            <h1 className="text-2xl font-black text-gray-900 mb-2">{t('gallery.title')}</h1>
+            <p className="text-sm text-gray-500 mb-5">{t('gallery.subtitle')}</p>
             <div className="relative max-w-xs mx-auto">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               <input
                 type="text"
-                placeholder="Buscar template..."
+                placeholder={t('gallery.searchPlaceholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent"
@@ -590,7 +597,7 @@ function TemplateGallery({ onSelect }) {
                         ))}
                       </div>
                       {tpl.blocks?.length > 0 && (
-                        <span className="text-[10px] text-gray-300 font-medium">{tpl.blocks.length} blocos</span>
+                        <span className="text-[10px] text-gray-300 font-medium">{t('gallery.blocksCount', { n: tpl.blocks.length })}</span>
                       )}
                     </div>
                   </div>
@@ -605,6 +612,8 @@ function TemplateGallery({ onSelect }) {
 }
 
 export default function NovoDashboardPage() {
+  const t = useTranslations('dashboardNovo')
+  const tEditor = useTranslations('dashboardEditor')
   const router = useRouter()
   const [templateSelected, setTemplateSelected] = useState(false)
   const [title, setTitle] = useState('')
@@ -670,7 +679,7 @@ export default function NovoDashboardPage() {
   }
 
   async function handleSave() {
-    if (!title.trim()) { setError('Informe o título'); return }
+    if (!title.trim()) { setError(t('editor.titleRequired')); return }
     setSaving(true); setError('')
     try {
       const report = await api.reports.create({ title, description: description || null, blocks: sanitizeBlocks(blocks) })
@@ -688,26 +697,26 @@ export default function NovoDashboardPage() {
       <div className="bg-white border-b border-gray-100 px-4 h-[52px] flex items-center gap-2 shrink-0">
         <button onClick={() => router.push('/dashboards')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-50">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 5l-7 7 7 7" /></svg>
-          Voltar
+          {t('editor.back')}
         </button>
         <div className="w-px h-5 bg-gray-200" />
         <button onClick={() => setTemplateSelected(false)} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" /></svg>
-          Templates
+          {t('editor.templates')}
         </button>
 
         <div className="relative" ref={addMenuRef}>
           <button onClick={() => setShowAddMenu(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16M4 12h16" /></svg>
-            Adicionar item
+            {t('editor.addItem')}
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9l6 6 6-6" /></svg>
           </button>
           {showAddMenu && (
             <div className="absolute top-full left-0 mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-1">
               {BLOCK_TYPES.map(bt => (
                 <button key={bt.type} onClick={() => { addBlock(bt.type); setShowAddMenu(false) }} className="flex flex-col items-start p-2 rounded-lg hover:bg-violet-50 transition-colors text-left">
-                  <p className="text-xs font-semibold text-gray-800">{bt.label}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{bt.desc}</p>
+                  <p className="text-xs font-semibold text-gray-800">{tEditor(`blockTypes.${bt.type}.label`)}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{tEditor(`blockTypes.${bt.type}.desc`)}</p>
                 </button>
               ))}
             </div>
@@ -716,17 +725,17 @@ export default function NovoDashboardPage() {
 
         <div className="flex-1" />
         {error && <span className="text-sm text-red-600">{error}</span>}
-        <button onClick={() => router.push('/dashboards')} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">Cancelar</button>
+        <button onClick={() => router.push('/dashboards')} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">{t('editor.cancel')}</button>
         <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
-          {saving ? 'Salvando...' : 'Salvar dashboard'}
+          {saving ? t('editor.saving') : t('editor.save')}
         </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-auto p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
           <div className="mb-6" onClick={e => e.stopPropagation()}>
-            <input className="text-2xl font-black text-gray-800 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-300 transition-colors py-1 w-full block" placeholder="Título do dashboard..." value={title} onChange={e => setTitle(e.target.value)} />
-            <input className="text-sm text-gray-500 bg-transparent outline-none mt-1 w-full block" placeholder="Descrição (opcional)" value={description} onChange={e => setDescription(e.target.value)} />
+            <input className="text-2xl font-black text-gray-800 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-300 transition-colors py-1 w-full block" placeholder={t('editor.titlePlaceholder')} value={title} onChange={e => setTitle(e.target.value)} />
+            <input className="text-sm text-gray-500 bg-transparent outline-none mt-1 w-full block" placeholder={t('editor.descPlaceholder')} value={description} onChange={e => setDescription(e.target.value)} />
           </div>
           <ReportBuilder key={layoutKey} blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor, dotColor: canvasConfig.dotColor }} />
         </div>
@@ -734,10 +743,10 @@ export default function NovoDashboardPage() {
         <aside className={`${sidebarOpen && sidePanel ? 'w-72' : 'w-0'} bg-white border-l border-gray-100 flex flex-col shrink-0 overflow-hidden transition-[width] duration-200`}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
             <span className="text-xs font-semibold text-gray-700 uppercase tracking-widest">
-              {sidePanel === 'dados' ? 'Dados' :
-               sidePanel === 'filtros' ? 'Filtros' :
-               sidePanel === 'comentarios' ? 'Comentários' :
-               activeBlock ? 'Configurar bloco' : 'Dashboard'}
+              {sidePanel === 'dados' ? t('sidebar.data') :
+               sidePanel === 'filtros' ? t('sidebar.filters') :
+               sidePanel === 'comentarios' ? t('sidebar.comments') :
+               activeBlock ? t('sidebar.configBlock') : t('sidebar.configDashboard')}
             </span>
             <button onClick={() => { setSidebarOpen(false); setSidePanel(null) }} className="text-gray-400 hover:text-gray-700 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -748,33 +757,33 @@ export default function NovoDashboardPage() {
             {sidePanel === 'config' && (activeBlock ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} /> : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />)}
             {sidePanel === 'filtros' && (
               <div className="space-y-3">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filtro de data global</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('filters.dateFilterTitle')}</p>
                 <div className={`rounded-xl border p-3 space-y-2.5 ${(globalDateFilter.dateFrom || globalDateFilter.dateTo) ? 'bg-violet-50 border-violet-200' : 'bg-gray-50 border-gray-100'}`}>
                   <div className="flex gap-2">
                     <input type="date" value={globalDateFilter.dateFrom || ''} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
-                    <span className="text-xs text-gray-400 self-center">até</span>
+                    <span className="text-xs text-gray-400 self-center">{t('filters.dateSeparator')}</span>
                     <input type="date" value={globalDateFilter.dateTo || ''} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
                   </div>
                   <div className="flex gap-1 flex-wrap">
                     {[
-                      { l: 'Hoje', fn: () => { const t = new Date().toISOString().slice(0,10); return { dateFrom: t, dateTo: t } } },
-                      { l: '7d', fn: () => { const t = new Date(); const f = new Date(t); f.setDate(f.getDate()-6); return { dateFrom: f.toISOString().slice(0,10), dateTo: t.toISOString().slice(0,10) } } },
-                      { l: '30d', fn: () => { const t = new Date(); const f = new Date(t); f.setDate(f.getDate()-29); return { dateFrom: f.toISOString().slice(0,10), dateTo: t.toISOString().slice(0,10) } } },
-                      { l: 'Mês', fn: () => { const t = new Date(); return { dateFrom: `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`, dateTo: t.toISOString().slice(0,10) } } },
-                      { l: 'Ano', fn: () => { const t = new Date(); return { dateFrom: `${t.getFullYear()}-01-01`, dateTo: t.toISOString().slice(0,10) } } },
+                      { l: t('filters.today'),   fn: () => { const d = new Date().toISOString().slice(0,10); return { dateFrom: d, dateTo: d } } },
+                      { l: t('filters.last7d'),  fn: () => { const d = new Date(); const f = new Date(d); f.setDate(f.getDate()-6); return { dateFrom: f.toISOString().slice(0,10), dateTo: d.toISOString().slice(0,10) } } },
+                      { l: t('filters.last30d'), fn: () => { const d = new Date(); const f = new Date(d); f.setDate(f.getDate()-29); return { dateFrom: f.toISOString().slice(0,10), dateTo: d.toISOString().slice(0,10) } } },
+                      { l: t('filters.thisMonth'), fn: () => { const d = new Date(); return { dateFrom: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`, dateTo: d.toISOString().slice(0,10) } } },
+                      { l: t('filters.thisYear'), fn: () => { const d = new Date(); return { dateFrom: `${d.getFullYear()}-01-01`, dateTo: d.toISOString().slice(0,10) } } },
                     ].map(p => (
                       <button key={p.l} onClick={() => setGlobalDateFilter(f => ({ ...f, ...p.fn() }))} className="px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-white hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">{p.l}</button>
                     ))}
                   </div>
                   {(globalDateFilter.dateFrom || globalDateFilter.dateTo) && (
-                    <button onClick={() => setGlobalDateFilter(f => ({ ...f, dateFrom: '', dateTo: '' }))} className="text-[10px] text-red-400 hover:text-red-600 font-medium">Limpar datas</button>
+                    <button onClick={() => setGlobalDateFilter(f => ({ ...f, dateFrom: '', dateTo: '' }))} className="text-[10px] text-red-400 hover:text-red-600 font-medium">{t('filters.clearDates')}</button>
                   )}
                 </div>
               </div>
             )}
             {sidePanel === 'comentarios' && (
               <div className="text-center py-8">
-                <p className="text-xs text-gray-400">Salve o dashboard para adicionar notas.</p>
+                <p className="text-xs text-gray-400">{t('comments.saveTip')}</p>
               </div>
             )}
           </div>

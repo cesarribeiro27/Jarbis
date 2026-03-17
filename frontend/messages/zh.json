@@ -28,7 +28,20 @@
       "organic": "自然",
       "paid": "付费"
     },
-    "months": ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]
+    "months": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ]
   },
   "problem": {
     "label": "问题",
@@ -112,13 +125,48 @@
     "subtitle": "专为成长型企业打造的嵌入式BI平台。",
     "colFeature": "功能",
     "rows": [
-      { "feature": "起始价格", "jarbis": "7天免费", "luzmo": "1,000美元/月", "powerbi": "10美元/用户" },
-      { "feature": "中文界面", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "中文支持", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "iframe嵌入", "jarbis": true, "luzmo": true, "powerbi": "复杂" },
-      { "feature": "自然语言AI", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "几分钟完成设置", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "试用无需信用卡", "jarbis": true, "luzmo": false, "powerbi": false }
+      {
+        "feature": "起始价格",
+        "jarbis": "7天免费",
+        "luzmo": "1,000美元/月",
+        "powerbi": "10美元/用户"
+      },
+      {
+        "feature": "中文界面",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "中文支持",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "iframe嵌入",
+        "jarbis": true,
+        "luzmo": true,
+        "powerbi": "复杂"
+      },
+      {
+        "feature": "自然语言AI",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "几分钟完成设置",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "试用无需信用卡",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -138,31 +186,62 @@
         "name": "免费版",
         "desc": "无需承诺，随时体验",
         "cta": "创建免费账户",
-        "features": ["2个仪表板", "2个数据源", "1个用户", "公开链接"]
+        "features": [
+          "2个仪表板",
+          "2个数据源",
+          "1个用户",
+          "公开链接"
+        ]
       },
       "solo": {
         "name": "Solo版",
         "desc": "适合自由职业者和个人创业者",
         "cta": "选择Solo版",
-        "features": ["8个仪表板", "8个数据源", "1个用户", "5条提醒", "嵌入网站"]
+        "features": [
+          "8个仪表板",
+          "8个数据源",
+          "1个用户",
+          "5条提醒",
+          "嵌入网站"
+        ]
       },
       "equipe": {
         "name": "专业版",
         "desc": "适合小型企业",
         "cta": "选择专业版",
-        "features": ["20个仪表板", "15个数据源", "1个用户", "15条告警", "AI助手", "嵌入网站"]
+        "features": [
+          "20个仪表板",
+          "15个数据源",
+          "1个用户",
+          "15条告警",
+          "AI助手",
+          "嵌入网站"
+        ]
       },
       "ilimitado": {
         "name": "无限版",
         "desc": "适合成长型企业",
         "cta": "选择无限版",
-        "features": ["50个仪表板", "30个数据源", "5个用户", "50条告警", "AI助手", "白标仪表板"]
+        "features": [
+          "50个仪表板",
+          "30个数据源",
+          "5个用户",
+          "50条告警",
+          "AI助手",
+          "白标仪表板"
+        ]
       },
       "enterprise": {
         "name": "企业版",
         "desc": "适合大型企业",
         "cta": "联系销售",
-        "features": ["一切无限", "无限用户", "保证SLA", "专属客户经理", "定制化入门培训"]
+        "features": [
+          "一切无限",
+          "无限用户",
+          "保证SLA",
+          "专属客户经理",
+          "定制化入门培训"
+        ]
       }
     }
   },
@@ -251,11 +330,26 @@
     "hasAccount": "已有账户？",
     "loginLink": "登录",
     "bullets": [
-      { "icon": "⚡", "text": "2分钟内完成设置" },
-      { "icon": "🌐", "text": "支持您的语言界面" },
-      { "icon": "🔒", "text": "云端安全数据" },
-      { "icon": "💳", "text": "无需信用卡" },
-      { "icon": "🤖", "text": "内置AI助手" }
+      {
+        "icon": "⚡",
+        "text": "2分钟内完成设置"
+      },
+      {
+        "icon": "🌐",
+        "text": "支持您的语言界面"
+      },
+      {
+        "icon": "🔒",
+        "text": "云端安全数据"
+      },
+      {
+        "icon": "💳",
+        "text": "无需信用卡"
+      },
+      {
+        "icon": "🤖",
+        "text": "内置AI助手"
+      }
     ]
   },
   "login": {
@@ -286,6 +380,546 @@
       "users": "用户",
       "settings": "设置",
       "logout": "退出"
+    },
+    "admin": "行政",
+    "trialExpired": "您的试用期已过。选择一个计划继续。",
+    "trialDays": "免费试用将于 {days} 天结束。",
+    "trialCta": "查看计划",
+    "openMenu": "打开菜单"
+  },
+  "dashboard": {
+    "stats": {
+      "shared": "共享",
+      "views": "意见"
+    },
+    "greeting": {
+      "morning": "早上好",
+      "afternoon": "下午好",
+      "evening": "晚安"
+    },
+    "subtitle": "欢迎使用您的控制面板",
+    "recent": "最近的",
+    "newBtn": "新仪表板",
+    "loading": "加载中...",
+    "blocks": "块",
+    "public": "民众",
+    "seeAll": "查看所有 {count} 仪表板",
+    "empty": {
+      "title": "还没有仪表板",
+      "desc": "开始使用现成的模板创建您的第一个仪表板",
+      "cta": "创建第一个仪表板"
+    }
+  },
+  "datasets": {
+    "title": "数据",
+    "subtitle": "{count} 连接的数据源",
+    "subtitleEmpty": "连接您的电子表格、文件和 API",
+    "connectBtn": "连接API",
+    "uploadBtn": "上传文件",
+    "uploading": "正在发送...",
+    "dropHint": "↑ 将 CSV/Excel 文件拖至此处进行导入",
+    "dropRelease": "发布导入",
+    "columns": "列",
+    "rowsM": "米线",
+    "rowsK": "K线",
+    "rows": "线",
+    "typeApi": "应用程序编程接口",
+    "typeFile": "文件",
+    "autoRefresh": "自动：{interval} 分钟",
+    "refreshBtn": "更新数据",
+    "deleteConfirm": "删除？",
+    "yes": "是的",
+    "no": "不",
+    "uploadBtn2": "上传",
+    "empty": {
+      "title": "还没有数据集",
+      "desc": "将文件拖至此处或单击上传",
+      "hint": "支持 CSV 和 Excel · 限制 50MB"
+    },
+    "modal": {
+      "title": "连接API",
+      "subtitle": "从任何 REST 端点导入数据",
+      "nameLabel": "数据集名称",
+      "namePlaceholder": "例如：每月销售额",
+      "urlLabel": "API网址",
+      "urlPlaceholder": "https://api.exemplo.com/dados",
+      "methodLabel": "方法",
+      "headersLabel": "标头（可选 JSON）",
+      "intervalLabel": "每（分钟）自动更新",
+      "intervalPlaceholder": "例如：60（留空不更新）",
+      "connectBtn": "连接并导入数据",
+      "connecting": "正在连接..."
+    },
+    "toast": {
+      "connected": "数据集连接成功！",
+      "loadError": "加载数据集时出错。",
+      "invalidFormat": "格式无效。使用 CSV 或 Excel (.xlsx/.xls)",
+      "fileTooLarge": "非常大的文件。限制：50MB",
+      "uploadSuccess": "{name} 导入成功！ {rows} 行。",
+      "uploadError": "上传错误。",
+      "syncSuccess": "数据集同步成功！",
+      "syncError": "同步时出错。",
+      "deleteSuccess": "数据集已删除。",
+      "deleteError": "删除时出错。",
+      "headersInvalid": "无效标头 — 使用 JSON 格式"
+    }
+  },
+  "alerts": {
+    "title": "警报",
+    "subtitle": "监控指标并在超过阈值时收到警告",
+    "checkAllBtn": "检查全部",
+    "newBtn": "+ 新警报",
+    "loading": "加载中...",
+    "deleteConfirm": "删除？",
+    "yes": "是的",
+    "no": "不",
+    "lastValue": "最后值：",
+    "empty": {
+      "title": "没有配置警报",
+      "desc": "创建警报以自动监控指标",
+      "cta": "创建第一个警报"
+    },
+    "noDataset": {
+      "title": "没有可用的数据集",
+      "desc": "创建警报之前上传数据集。"
+    },
+    "status": {
+      "pending": "未验证",
+      "triggered": "被解雇",
+      "ok": "好的"
+    },
+    "operators": {
+      "gt": "> 大于",
+      "gte": "≥ 大于或等于",
+      "lt": "< 小于",
+      "lte": "≤ 小于或等于",
+      "eq": "= 等于"
+    },
+    "aggregations": {
+      "sum": "和",
+      "count": "数数",
+      "avg": "平均的",
+      "max": "最大限度",
+      "min": "最低限度"
+    },
+    "modal": {
+      "title": "创建提醒",
+      "nameLabel": "警报名称",
+      "namePlaceholder": "例如：销售额低于目标",
+      "datasetLabel": "数据集",
+      "columnLabel": "数值栏",
+      "selectDefault": "选择...",
+      "aggLabel": "聚合",
+      "conditionLabel": "健康）状况",
+      "thresholdLabel": "极限值",
+      "thresholdPlaceholder": "例如：10000",
+      "createBtn": "创建提醒",
+      "creating": "创造..."
+    },
+    "toast": {
+      "loadError": "加载警报时出错。",
+      "triggered": "警报触发！",
+      "ok": "警报已验证 - 一切正常。",
+      "enabled": "警报已激活。",
+      "paused": "警报暂停。",
+      "deleted": "警报已删除。"
+    }
+  },
+  "dashboards": {
+    "title": "仪表板",
+    "subtitleOne": "1 个仪表板",
+    "subtitleMany": "{count} 仪表板",
+    "subtitleEmpty": "与您的数据相关的交互式报告",
+    "newBtn": "新仪表板",
+    "searchPlaceholder": "搜索仪表板...",
+    "noResults": "没有“{query}”的结果",
+    "clearSearch": "清除搜索",
+    "public": "民众",
+    "blocks": "块",
+    "block": "堵塞",
+    "addCoverBtn": "添加封面",
+    "empty": {
+      "title": "未创建仪表板",
+      "desc": "创建包含与您的数据相关的图表、KPI 和表格的仪表板",
+      "cta": "创建第一个仪表板"
+    },
+    "menu": {
+      "edit": "编辑",
+      "addCover": "添加封面",
+      "changeCover": "更换封面",
+      "removeCover": "拆下盖子",
+      "copyLink": "复制公共链接",
+      "clone": "克隆",
+      "delete": "删除",
+      "confirmDelete": "确认删除？",
+      "cancel": "取消"
+    },
+    "cropper": {
+      "title": "封面图片",
+      "clickToChoose": "单击以选择图像",
+      "dragToAdjust": "拖动图像以调整取景框",
+      "swap": "更改图像",
+      "save": "保存封面"
+    },
+    "toast": {
+      "loadError": "加载仪表板时出错。",
+      "deleted": "仪表板已删除。",
+      "deleteError": "删除时出错。",
+      "copied": "链接已复制到剪贴板！",
+      "shareError": "分享时出错。",
+      "cloned": "仪表板克隆成功！",
+      "cloneError": "克隆时出错。",
+      "coverSaved": "封面更新了！",
+      "coverError": "保存封面时出错。",
+      "coverRemoved": "盖子被移除。",
+      "coverRemoveError": "移除盖子时出错。"
+    }
+  },
+  "dashboardEditor": {
+    "loading": "加载中...",
+    "notFound": "找不到仪表板",
+    "back": "仪表板",
+    "edit": "编辑",
+    "ask": "去问",
+    "share": "分享",
+    "sharing": "生成...",
+    "delete": "删除",
+    "confirm": "确认？",
+    "yes": "是的",
+    "no": "不",
+    "shareLinkLang": "链接语言：",
+    "copied": "复制了！",
+    "copyLink": "复制链接",
+    "dateFilter": "日期过滤器",
+    "dateFilterActive": "活动日期过滤器：",
+    "dateTo": "直到",
+    "clear": "清洁",
+    "addItem": "添加项目",
+    "templates": "模板",
+    "backEdit": "要回去",
+    "cancel": "取消",
+    "saving": "保存...",
+    "save": "保存仪表板",
+    "pageName": "页{n}",
+    "sidePanel": {
+      "dados": "数据",
+      "filtros": "过滤器",
+      "comentarios": "评论",
+      "config": "配置块",
+      "settings": "设置"
+    },
+    "filters": {
+      "title": "仪表板过滤器",
+      "active": "资产",
+      "clearAll": "全部清除",
+      "dateFilterLabel": "日期过滤器",
+      "clearDate": "清洁",
+      "dateColPlaceholder": "日期栏...",
+      "presets": {
+        "today": "今天",
+        "7d": "7天",
+        "30d": "30天",
+        "month": "月",
+        "year": "年"
+      },
+      "comparePrevious": "与上期比较",
+      "filterBlocks": "过滤器块 ({count})",
+      "noFilterBlocks": "将“过滤器”或“滑块”块添加到仪表板"
+    },
+    "ai": {
+      "title": "AI——数据探索",
+      "clearHistory": "清洁",
+      "noDataset": "没有可用的数据集。先添加数据。",
+      "datasetLabel": "数据集",
+      "suggestions": "建议",
+      "history": "历史",
+      "analyzing": "正在分析...",
+      "askPlaceholder": "请教一个关于数据的问题...",
+      "send": "发送"
+    },
+    "comments": {
+      "title": "评论和注释",
+      "selectBlock": "选择一个块...",
+      "placeholder": "写评论...（Ctrl+Enter 发送）",
+      "addBtn": "添加备注",
+      "empty": "还没有笔记。向块添加注释。"
+    },
+    "blockTypes": {
+      "kpi": {
+        "label": "关键绩效指标",
+        "desc": "突出显示的数字"
+      },
+      "bar": {
+        "label": "酒吧",
+        "desc": "比较类别"
+      },
+      "bar_h": {
+        "label": "H 棒",
+        "desc": "单杠"
+      },
+      "area": {
+        "label": "区域",
+        "desc": "累积进化"
+      },
+      "line": {
+        "label": "线路",
+        "desc": "随着时间的推移演变"
+      },
+      "pie": {
+        "label": "比萨",
+        "desc": "分配 ％"
+      },
+      "combo": {
+        "label": "组合",
+        "desc": "斜线+线"
+      },
+      "gauge": {
+        "label": "测量",
+        "desc": "圆形指示器"
+      },
+      "speedometer": {
+        "label": "车速表",
+        "desc": "半圆形指示器"
+      },
+      "treemap": {
+        "label": "树形图",
+        "desc": "按区域划分的层次结构"
+      },
+      "bubble": {
+        "label": "气泡",
+        "desc": "体积分散"
+      },
+      "scatter": {
+        "label": "分散",
+        "desc": "XY 相关性"
+      },
+      "table": {
+        "label": "桌子",
+        "desc": "行中的数据"
+      },
+      "text": {
+        "label": "文本",
+        "desc": "评论"
+      },
+      "filter": {
+        "label": "筛选",
+        "desc": "过滤数据"
+      },
+      "slider": {
+        "label": "滑块",
+        "desc": "按范围过滤"
+      },
+      "image": {
+        "label": "图像",
+        "desc": "照片或标志"
+      }
+    }
+  },
+  "configuracoes": {
+    "title": "设置",
+    "subtitle": "管理您的个人资料和帐户",
+    "profile": {
+      "title": "轮廓",
+      "fullNameLabel": "姓名",
+      "placeholder": "你的名字",
+      "saving": "保存...",
+      "save": "节省"
+    },
+    "password": {
+      "title": "更改密码",
+      "currentLabel": "当前密码",
+      "newLabel": "新密码",
+      "confirmLabel": "确认新密码",
+      "newPlaceholder": "最少 6 个字符",
+      "confirmPlaceholder": "重复新密码",
+      "changing": "改变...",
+      "change": "更改密码"
+    },
+    "plan": {
+      "title": "规划及使用",
+      "viewAll": "查看所有计划 →",
+      "upgrade": "升级",
+      "manage": "管理计划",
+      "trialRemaining": "{days} 剩余试用天数",
+      "statusActive": "积极的",
+      "statusPastDue": "待付款",
+      "statusTrial": "审判",
+      "unlimited": "无限"
+    },
+    "roles": {
+      "owner": "所有者",
+      "admin": "行政",
+      "member": "成员",
+      "viewer": "观众"
+    },
+    "usage": {
+      "dashboards": "仪表板",
+      "datasets": "数据集",
+      "users": "用户",
+      "alerts": "警报"
+    },
+    "toast": {
+      "nameSaved": "名称更新成功！",
+      "nameError": "更新名称时出错。",
+      "passwordMismatch": "密码不匹配。",
+      "passwordTooShort": "新密码的长度必须至少为 6 个字符。",
+      "passwordSaved": "密码修改成功！",
+      "passwordError": "更改密码时出错。"
+    }
+  },
+  "planos": {
+    "title": "计划",
+    "currentPlan": "目前计划：",
+    "trialRemaining": "· {days} 剩余考试天数",
+    "monthly": "每月",
+    "annual": "年度的",
+    "manageSubscription": "管理订阅 →",
+    "opening": "开幕...",
+    "planCurrentBadge": "目前计划",
+    "planPopularBadge": "最受欢迎",
+    "planEnterpriseBadge": "企业",
+    "priceOnRequest": "根据要求",
+    "priceFree": "自由的",
+    "perMonth": "/月",
+    "billedAnnually": "收取 R${price}/年",
+    "trialBadge": "7天免费",
+    "planCurrentCta": "当前计划 ✓",
+    "contactSales": "与销售人员交谈 →",
+    "redirecting": "正在重定向...",
+    "doUpgrade": "升级 →",
+    "changePlan": "切换到此计划",
+    "annualNote": "按年计费 · 比每月计划节省 20% · 随时取消",
+    "monthlyNote": "付费计划按月计费 · 随时取消 · 无隐藏费用",
+    "unlimited": "无限",
+    "usage": {
+      "dashboards": "仪表板",
+      "datasets": "数据来源",
+      "users": "用户",
+      "alerts": "警报"
+    },
+    "addon": {
+      "title": "扩展包",
+      "price": "每包 49.90 雷亚尔/月",
+      "desc": "无需升级即可扩大您的计划限制。",
+      "users": "每包 +1 位用户",
+      "dashboards": "每包 +5 个仪表板",
+      "datasets": "每包 +3 个数据源",
+      "addPack": "添加包 →",
+      "adding": "正在重定向..."
+    },
+    "toast": {
+      "success": "订阅激活成功！您的计划已更新。",
+      "addon": "扩展包已成功激活！",
+      "canceled": "结帐已取消。没有提出任何指控。",
+      "noPayment": "设置中付款。请通过 comercial@jarbis.cc 联系。",
+      "checkoutError": "开始结账时出错。",
+      "addonError": "配置中的扩展包。请通过 comercial@jarbis.cc 联系。",
+      "portalError": "打开门户时出错。"
+    },
+    "plans": {
+      "free": {
+        "name": "自由的",
+        "desc": "尝试一下"
+      },
+      "solo": {
+        "name": "土壤",
+        "desc": "对于自营职业者和 MEI"
+      },
+      "equipe": {
+        "name": "专业的",
+        "desc": "对于小型企业"
+      },
+      "ilimitado": {
+        "name": "无限",
+        "desc": "对于成长型企业"
+      },
+      "enterprise": {
+        "name": "企业",
+        "desc": "对于大型运营"
+      }
+    }
+  },
+  "usuarios": {
+    "title": "用户",
+    "manageTeam": "管理您的团队成员",
+    "activeCount": "{total} 总计 {active, plural, one {{active} 资产} 其他 {total} 资产 {{active} 总计}}",
+    "inviteBtn": "邀请",
+    "noUsers": "没有用户",
+    "statusActive": "积极的",
+    "statusInactive": "不活跃",
+    "you": "你",
+    "footerHint": "单击个人资料徽章进行更改 · 右侧激活/停用图标",
+    "roles": {
+      "owner": "所有者",
+      "admin": "行政",
+      "member": "成员",
+      "viewer": "观众"
+    },
+    "roleDescs": {
+      "admin": "完全访问权限（删除所有者除外）",
+      "member": "创建和编辑仪表板",
+      "viewer": "只需查看"
+    },
+    "toast": {
+      "loadError": "加载用户时出错。",
+      "activated": "{name} 已激活。",
+      "deactivated": "{name} 已禁用。",
+      "toggleError": "更新用户时出错。",
+      "roleChanged": "个人资料从 {name} 更改为 {role}。",
+      "roleError": "更改配置文件时出错。"
+    },
+    "modal": {
+      "title": "邀请用户",
+      "subtitle": "添加一名成员到您的团队",
+      "nameLabel": "姓名",
+      "emailLabel": "电子邮件",
+      "passwordLabel": "初始密码",
+      "passwordPlaceholder": "最少 6 个字符",
+      "roleLabel": "访问资料",
+      "creating": "创造...",
+      "createBtn": "创建用户",
+      "successToast": "{name} 添加成功！"
+    }
+  },
+  "dashboardNovo": {
+    "gallery": {
+      "nav": "新仪表板",
+      "title": "选择模板",
+      "subtitle": "从头开始或使用现成的模板 - 只需插入您的数据即可。",
+      "searchPlaceholder": "搜索模板...",
+      "blocksCount": "{n} 块",
+      "blankCanvas": "空白画布"
+    },
+    "editor": {
+      "back": "要回去",
+      "templates": "模板",
+      "addItem": "添加项目",
+      "cancel": "取消",
+      "save": "保存仪表板",
+      "saving": "保存...",
+      "titlePlaceholder": "仪表板标题...",
+      "descPlaceholder": "说明（可选）",
+      "titleRequired": "输入标题"
+    },
+    "sidebar": {
+      "data": "数据",
+      "filters": "过滤器",
+      "comments": "评论",
+      "configBlock": "配置块",
+      "configDashboard": "仪表板"
+    },
+    "filters": {
+      "dateFilterTitle": "全局日期过滤器",
+      "dateSeparator": "直到",
+      "today": "今天",
+      "last7d": "7天",
+      "last30d": "30天",
+      "thisMonth": "月",
+      "thisYear": "年",
+      "clearDates": "明确日期"
+    },
+    "comments": {
+      "saveTip": "保存仪表板以添加注释。"
     }
   }
 }

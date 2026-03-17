@@ -28,7 +28,20 @@
       "organic": "Organisch",
       "paid": "Bezahlt"
     },
-    "months": ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]
+    "months": [
+      "Jan",
+      "Feb",
+      "Mär",
+      "Apr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Dez"
+    ]
   },
   "problem": {
     "label": "Das Problem",
@@ -112,13 +125,48 @@
     "subtitle": "Die eingebettete BI-Plattform für wachsende Unternehmen.",
     "colFeature": "Funktion",
     "rows": [
-      { "feature": "Startpreis", "jarbis": "7 Tage kostenlos", "luzmo": "1.000 $/Monat", "powerbi": "10 $/Nutzer" },
-      { "feature": "Deutsche Oberfläche", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Deutschsprachiger Support", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Einbetten via iframe", "jarbis": true, "luzmo": true, "powerbi": "Komplex" },
-      { "feature": "KI in natürlicher Sprache", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Einrichtung in Minuten", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Kein Karte für Test", "jarbis": true, "luzmo": false, "powerbi": false }
+      {
+        "feature": "Startpreis",
+        "jarbis": "7 Tage kostenlos",
+        "luzmo": "1.000 $/Monat",
+        "powerbi": "10 $/Nutzer"
+      },
+      {
+        "feature": "Deutsche Oberfläche",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Deutschsprachiger Support",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Einbetten via iframe",
+        "jarbis": true,
+        "luzmo": true,
+        "powerbi": "Komplex"
+      },
+      {
+        "feature": "KI in natürlicher Sprache",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Einrichtung in Minuten",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Kein Karte für Test",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -138,31 +186,62 @@
         "name": "Kostenlos",
         "desc": "Zum unverbindlichen Ausprobieren",
         "cta": "Kostenloses Konto erstellen",
-        "features": ["2 Dashboards", "2 Datenquellen", "1 Nutzer", "Öffentlicher Link"]
+        "features": [
+          "2 Dashboards",
+          "2 Datenquellen",
+          "1 Nutzer",
+          "Öffentlicher Link"
+        ]
       },
       "solo": {
         "name": "Solo",
         "desc": "Für Freelancer und Selbstständige",
         "cta": "Solo wählen",
-        "features": ["8 Dashboards", "8 Datenquellen", "1 Nutzer", "5 Benachrichtigungen", "In Website einbetten"]
+        "features": [
+          "8 Dashboards",
+          "8 Datenquellen",
+          "1 Nutzer",
+          "5 Benachrichtigungen",
+          "In Website einbetten"
+        ]
       },
       "equipe": {
         "name": "Professional",
         "desc": "Für kleine Unternehmen",
         "cta": "Professional wählen",
-        "features": ["20 Dashboards", "15 Datenquellen", "1 Nutzer", "15 Benachrichtigungen", "KI-Assistent", "In Website einbetten"]
+        "features": [
+          "20 Dashboards",
+          "15 Datenquellen",
+          "1 Nutzer",
+          "15 Benachrichtigungen",
+          "KI-Assistent",
+          "In Website einbetten"
+        ]
       },
       "ilimitado": {
         "name": "Unbegrenzt",
         "desc": "Für wachsende Unternehmen",
         "cta": "Unbegrenzt wählen",
-        "features": ["50 Dashboards", "30 Datenquellen", "5 Nutzer", "50 Benachrichtigungen", "KI-Assistent", "White-Label-Dashboards"]
+        "features": [
+          "50 Dashboards",
+          "30 Datenquellen",
+          "5 Nutzer",
+          "50 Benachrichtigungen",
+          "KI-Assistent",
+          "White-Label-Dashboards"
+        ]
       },
       "enterprise": {
         "name": "Enterprise",
         "desc": "Für große Unternehmen",
         "cta": "Vertrieb kontaktieren",
-        "features": ["Alles unbegrenzt", "Unbegrenzte Nutzer", "Garantiertes SLA", "Dedizierter Kundenbetreuer", "Personalisiertes Onboarding"]
+        "features": [
+          "Alles unbegrenzt",
+          "Unbegrenzte Nutzer",
+          "Garantiertes SLA",
+          "Dedizierter Kundenbetreuer",
+          "Personalisiertes Onboarding"
+        ]
       }
     }
   },
@@ -251,11 +330,26 @@
     "hasAccount": "Bereits ein Konto?",
     "loginLink": "Anmelden",
     "bullets": [
-      { "icon": "⚡", "text": "Einrichtung in 2 Minuten" },
-      { "icon": "🌐", "text": "Oberfläche in Ihrer Sprache" },
-      { "icon": "🔒", "text": "Sichere Daten in der Cloud" },
-      { "icon": "💳", "text": "Keine Kreditkarte erforderlich" },
-      { "icon": "🤖", "text": "Integrierter KI-Assistent" }
+      {
+        "icon": "⚡",
+        "text": "Einrichtung in 2 Minuten"
+      },
+      {
+        "icon": "🌐",
+        "text": "Oberfläche in Ihrer Sprache"
+      },
+      {
+        "icon": "🔒",
+        "text": "Sichere Daten in der Cloud"
+      },
+      {
+        "icon": "💳",
+        "text": "Keine Kreditkarte erforderlich"
+      },
+      {
+        "icon": "🤖",
+        "text": "Integrierter KI-Assistent"
+      }
     ]
   },
   "login": {
@@ -286,6 +380,546 @@
       "users": "Benutzer",
       "settings": "Einstellungen",
       "logout": "Abmelden"
+    },
+    "admin": "Admin",
+    "trialExpired": "Ihr Testzeitraum ist abgelaufen. Wählen Sie einen Plan, um fortzufahren.",
+    "trialDays": "Die kostenlose Testversion endet am {days} Tag(e).",
+    "trialCta": "Pläne ansehen",
+    "openMenu": "Menü öffnen"
+  },
+  "dashboard": {
+    "stats": {
+      "shared": "Geteilt",
+      "views": "Ansichten"
+    },
+    "greeting": {
+      "morning": "Guten Morgen",
+      "afternoon": "Guten Tag",
+      "evening": "Gute Nacht"
+    },
+    "subtitle": "Willkommen in Ihrem Control Panel",
+    "recent": "Jüngste",
+    "newBtn": "Neues Dashboard",
+    "loading": "Laden...",
+    "blocks": "Blöcke",
+    "public": "Öffentlich",
+    "seeAll": "Alle {count}-Dashboards anzeigen",
+    "empty": {
+      "title": "Noch kein Dashboard",
+      "desc": "Beginnen Sie mit der Erstellung Ihres ersten Dashboards mit vorgefertigten Vorlagen",
+      "cta": "Erstellen Sie das erste Dashboard"
+    }
+  },
+  "datasets": {
+    "title": "Daten",
+    "subtitle": "{count} verbundene Datenquelle(n)",
+    "subtitleEmpty": "Verbinden Sie Ihre Tabellenkalkulationen, Dateien und APIs",
+    "connectBtn": "API verbinden",
+    "uploadBtn": "Datei hochladen",
+    "uploading": "Senden...",
+    "dropHint": "↑ Ziehen Sie eine CSV-/Excel-Datei hierher, um sie zu importieren",
+    "dropRelease": "Zum Importieren freigeben",
+    "columns": "Spalten",
+    "rowsM": "M-Linien",
+    "rowsK": "K-Linien",
+    "rows": "Linien",
+    "typeApi": "API",
+    "typeFile": "Datei",
+    "autoRefresh": "Automatisch: {interval}min",
+    "refreshBtn": "Daten aktualisieren",
+    "deleteConfirm": "Löschen?",
+    "yes": "Ja",
+    "no": "NEIN",
+    "uploadBtn2": "Hochladen",
+    "empty": {
+      "title": "Noch kein Datensatz",
+      "desc": "Ziehen Sie eine Datei hierher oder klicken Sie zum Hochladen",
+      "hint": "Unterstützt CSV und Excel · Begrenzt 50 MB"
+    },
+    "modal": {
+      "title": "API verbinden",
+      "subtitle": "Importieren Sie Daten von jedem REST-Endpunkt",
+      "nameLabel": "Datensatzname",
+      "namePlaceholder": "Beispiel: Umsatz pro Monat",
+      "urlLabel": "API-URL",
+      "urlPlaceholder": "https://api.exemplo.com/dados",
+      "methodLabel": "Verfahren",
+      "headersLabel": "Header (optional JSON)",
+      "intervalLabel": "Alle (Minuten) automatisch aktualisieren",
+      "intervalPlaceholder": "Beispiel: 60 (leer lassen, um nicht zu aktualisieren)",
+      "connectBtn": "Daten verbinden und importieren",
+      "connecting": "Verbinden..."
+    },
+    "toast": {
+      "connected": "Datensatz erfolgreich verbunden!",
+      "loadError": "Fehler beim Laden der Datensätze.",
+      "invalidFormat": "Ungültiges Format. Verwenden Sie CSV oder Excel (.xlsx/.xls)",
+      "fileTooLarge": "Sehr große Datei. Limit: 50 MB",
+      "uploadSuccess": "{name} erfolgreich importiert! {rows} Zeilen.",
+      "uploadError": "Fehler beim Hochladen.",
+      "syncSuccess": "Datensatz erfolgreich synchronisiert!",
+      "syncError": "Fehler beim Synchronisieren.",
+      "deleteSuccess": "Datensatz gelöscht.",
+      "deleteError": "Fehler beim Löschen.",
+      "headersInvalid": "Ungültige Header – verwenden Sie das JSON-Format"
+    }
+  },
+  "alerts": {
+    "title": "Warnungen",
+    "subtitle": "Überwachen Sie Metriken und erhalten Sie Warnungen, wenn ein Schwellenwert überschritten wird",
+    "checkAllBtn": "Überprüfen Sie alles",
+    "newBtn": "+ Neue Warnung",
+    "loading": "Laden...",
+    "deleteConfirm": "Löschen?",
+    "yes": "Ja",
+    "no": "NEIN",
+    "lastValue": "Letzter Wert:",
+    "empty": {
+      "title": "Keine Warnungen konfiguriert",
+      "desc": "Erstellen Sie Benachrichtigungen, um Metriken automatisch zu überwachen",
+      "cta": "Erstellen Sie die erste Benachrichtigung"
+    },
+    "noDataset": {
+      "title": "Kein Datensatz verfügbar",
+      "desc": "Laden Sie einen Datensatz hoch, bevor Sie Warnungen erstellen."
+    },
+    "status": {
+      "pending": "Nicht verifiziert",
+      "triggered": "Gefeuert",
+      "ok": "OK"
+    },
+    "operators": {
+      "gt": "> größer als",
+      "gte": "≥ größer oder gleich",
+      "lt": "< weniger als",
+      "lte": "≤ kleiner oder gleich",
+      "eq": "= gleich"
+    },
+    "aggregations": {
+      "sum": "Summe",
+      "count": "Zählen",
+      "avg": "Durchschnitt",
+      "max": "Maximal",
+      "min": "Minimum"
+    },
+    "modal": {
+      "title": "Alarm erstellen",
+      "nameLabel": "Alarmname",
+      "namePlaceholder": "Beispiel: Umsatz unter Ziel",
+      "datasetLabel": "Datensatz",
+      "columnLabel": "Wertspalte",
+      "selectDefault": "Wählen...",
+      "aggLabel": "Aggregation",
+      "conditionLabel": "Zustand",
+      "thresholdLabel": "Grenzwert",
+      "thresholdPlaceholder": "Beispiel: 10000",
+      "createBtn": "Alarm erstellen",
+      "creating": "Erstellen..."
+    },
+    "toast": {
+      "loadError": "Fehler beim Laden der Benachrichtigungen.",
+      "triggered": "Alarm ausgelöst!",
+      "ok": "Warnung bestätigt – alles in Ordnung.",
+      "enabled": "Alarm aktiviert.",
+      "paused": "Warnung pausiert.",
+      "deleted": "Warnung gelöscht."
+    }
+  },
+  "dashboards": {
+    "title": "Dashboards",
+    "subtitleOne": "1 Armaturenbrett",
+    "subtitleMany": "{count} Dashboards",
+    "subtitleEmpty": "Interaktive Berichte, die mit Ihren Daten verknüpft sind",
+    "newBtn": "Neues Dashboard",
+    "searchPlaceholder": "Dashboards durchsuchen...",
+    "noResults": "Keine Ergebnisse für „{query}“",
+    "clearSearch": "Suche löschen",
+    "public": "Öffentlich",
+    "blocks": "Blöcke",
+    "block": "Block",
+    "addCoverBtn": "Abdeckung hinzufügen",
+    "empty": {
+      "title": "Kein Dashboard erstellt",
+      "desc": "Erstellen Sie Dashboards mit Grafiken, KPIs und Tabellen, die mit Ihren Daten verknüpft sind",
+      "cta": "Erstellen Sie das erste Dashboard"
+    },
+    "menu": {
+      "edit": "Bearbeiten",
+      "addCover": "Abdeckung hinzufügen",
+      "changeCover": "Deckung wechseln",
+      "removeCover": "Abdeckung entfernen",
+      "copyLink": "Öffentlichen Link kopieren",
+      "clone": "Klon",
+      "delete": "Löschen",
+      "confirmDelete": "Löschen bestätigen?",
+      "cancel": "Stornieren"
+    },
+    "cropper": {
+      "title": "Titelbild",
+      "clickToChoose": "Klicken Sie, um ein Bild auszuwählen",
+      "dragToAdjust": "Ziehen Sie das Bild, um den Rahmen anzupassen",
+      "swap": "Bild ändern",
+      "save": "Deckung sparen"
+    },
+    "toast": {
+      "loadError": "Fehler beim Laden der Dashboards.",
+      "deleted": "Dashboard gelöscht.",
+      "deleteError": "Fehler beim Löschen.",
+      "copied": "Link in die Zwischenablage kopiert!",
+      "shareError": "Fehler beim Teilen.",
+      "cloned": "Dashboard erfolgreich geklont!",
+      "cloneError": "Fehler beim Klonen.",
+      "coverSaved": "Aktualisiertes Cover!",
+      "coverError": "Fehler beim Speichern des Covers.",
+      "coverRemoved": "Abdeckung entfernt.",
+      "coverRemoveError": "Fehler beim Entfernen der Abdeckung."
+    }
+  },
+  "dashboardEditor": {
+    "loading": "Laden...",
+    "notFound": "Dashboard nicht gefunden",
+    "back": "Dashboards",
+    "edit": "Bearbeiten",
+    "ask": "Zu fragen",
+    "share": "Zum Teilen",
+    "sharing": "Generieren...",
+    "delete": "Löschen",
+    "confirm": "Bestätigen?",
+    "yes": "Ja",
+    "no": "NEIN",
+    "shareLinkLang": "Linksprache:",
+    "copied": "Kopiert!",
+    "copyLink": "Link kopieren",
+    "dateFilter": "Datumsfilter",
+    "dateFilterActive": "Aktiver Datumsfilter:",
+    "dateTo": "bis",
+    "clear": "Zum Reinigen",
+    "addItem": "Artikel hinzufügen",
+    "templates": "Vorlagen",
+    "backEdit": "Zurückgehen",
+    "cancel": "Stornieren",
+    "saving": "Sparen...",
+    "save": "Dashboard speichern",
+    "pageName": "Seite {n}",
+    "sidePanel": {
+      "dados": "Daten",
+      "filtros": "Filter",
+      "comentarios": "Kommentare",
+      "config": "Block konfigurieren",
+      "settings": "Einstellungen"
+    },
+    "filters": {
+      "title": "Dashboard-Filter",
+      "active": "Vermögenswerte",
+      "clearAll": "Alles löschen",
+      "dateFilterLabel": "Datumsfilter",
+      "clearDate": "Zum Reinigen",
+      "dateColPlaceholder": "Datumsspalte...",
+      "presets": {
+        "today": "Heute",
+        "7d": "7d",
+        "30d": "30 Tage",
+        "month": "Monat",
+        "year": "Jahr"
+      },
+      "comparePrevious": "Vergleichen Sie mit der vorherigen Periode",
+      "filterBlocks": "Filterblöcke ({count})",
+      "noFilterBlocks": "Fügen Sie dem Dashboard „Filter“- oder „Slider“-Blöcke hinzu"
+    },
+    "ai": {
+      "title": "KI – Datenexploration",
+      "clearHistory": "Zum Reinigen",
+      "noDataset": "Kein Datensatz verfügbar. Fügen Sie zuerst Daten hinzu.",
+      "datasetLabel": "Datensatz",
+      "suggestions": "Vorschläge",
+      "history": "Geschichte",
+      "analyzing": "Analysieren...",
+      "askPlaceholder": "Stellen Sie eine Frage zu den Daten...",
+      "send": "Zum Versenden"
+    },
+    "comments": {
+      "title": "Kommentare und Notizen",
+      "selectBlock": "Wählen Sie einen Block aus...",
+      "placeholder": "Einen Kommentar schreiben... (Strg+Enter zum Senden)",
+      "addBtn": "Notiz hinzufügen",
+      "empty": "Noch keine Notizen. Fügen Sie Kommentare zu Blöcken hinzu."
+    },
+    "blockTypes": {
+      "kpi": {
+        "label": "KPI",
+        "desc": "Hervorgehobene Nummer"
+      },
+      "bar": {
+        "label": "Barren",
+        "desc": "Kategorien vergleichen"
+      },
+      "bar_h": {
+        "label": "H-Bars",
+        "desc": "Horizontale Balken"
+      },
+      "area": {
+        "label": "Bereich",
+        "desc": "Akkumulierte Evolution"
+      },
+      "line": {
+        "label": "Linien",
+        "desc": "Entwicklung im Laufe der Zeit"
+      },
+      "pie": {
+        "label": "Pizza",
+        "desc": "Verteilung %"
+      },
+      "combo": {
+        "label": "Combo",
+        "desc": "Schrägstrich + Linie"
+      },
+      "gauge": {
+        "label": "Messgerät",
+        "desc": "Runder Indikator"
+      },
+      "speedometer": {
+        "label": "Tachometer",
+        "desc": "halbrunder Indikator"
+      },
+      "treemap": {
+        "label": "Baumkarte",
+        "desc": "Hierarchie nach Bereich"
+      },
+      "bubble": {
+        "label": "Blasen",
+        "desc": "Volumendispersion"
+      },
+      "scatter": {
+        "label": "Zerstreuung",
+        "desc": "XY-Korrelation"
+      },
+      "table": {
+        "label": "Tisch",
+        "desc": "Daten in Zeilen"
+      },
+      "text": {
+        "label": "Text",
+        "desc": "Kommentare"
+      },
+      "filter": {
+        "label": "Filter",
+        "desc": "Daten filtern"
+      },
+      "slider": {
+        "label": "Schieberegler",
+        "desc": "Nach Bereich filtern"
+      },
+      "image": {
+        "label": "Bild",
+        "desc": "Foto oder Logo"
+      }
+    }
+  },
+  "configuracoes": {
+    "title": "Einstellungen",
+    "subtitle": "Verwalten Sie Ihr Profil und Konto",
+    "profile": {
+      "title": "Profil",
+      "fullNameLabel": "Vollständiger Name",
+      "placeholder": "Ihr Name",
+      "saving": "Sparen...",
+      "save": "Speichern"
+    },
+    "password": {
+      "title": "Kennwort ändern",
+      "currentLabel": "Aktuelles Passwort",
+      "newLabel": "Neues Passwort",
+      "confirmLabel": "Bestätigen Sie das neue Passwort",
+      "newPlaceholder": "Mindestens 6 Zeichen",
+      "confirmPlaceholder": "Wiederholen Sie das neue Passwort",
+      "changing": "Ändern...",
+      "change": "Kennwort ändern"
+    },
+    "plan": {
+      "title": "Plan und Nutzung",
+      "viewAll": "Alle Pläne ansehen →",
+      "upgrade": "Upgrade",
+      "manage": "Plan verwalten",
+      "trialRemaining": "Es verbleiben noch {days} Testtage",
+      "statusActive": "Aktiv",
+      "statusPastDue": "Ausstehende Zahlung",
+      "statusTrial": "Versuch",
+      "unlimited": "Unbegrenzt"
+    },
+    "roles": {
+      "owner": "Eigentümer",
+      "admin": "Admin",
+      "member": "Mitglied",
+      "viewer": "Zuschauer"
+    },
+    "usage": {
+      "dashboards": "Dashboards",
+      "datasets": "Datensätze",
+      "users": "Benutzer",
+      "alerts": "Warnungen"
+    },
+    "toast": {
+      "nameSaved": "Name erfolgreich aktualisiert!",
+      "nameError": "Fehler beim Aktualisieren des Namens.",
+      "passwordMismatch": "Passwörter stimmen nicht überein.",
+      "passwordTooShort": "Das neue Passwort muss mindestens 6 Zeichen lang sein.",
+      "passwordSaved": "Passwort erfolgreich geändert!",
+      "passwordError": "Fehler beim Ändern des Passworts."
+    }
+  },
+  "planos": {
+    "title": "Pläne",
+    "currentPlan": "Aktueller Plan:",
+    "trialRemaining": "· {days} verbleibende Testtage",
+    "monthly": "Monatlich",
+    "annual": "Jährlich",
+    "manageSubscription": "Abonnement verwalten →",
+    "opening": "Öffnung...",
+    "planCurrentBadge": "Aktueller Plan",
+    "planPopularBadge": "Am beliebtesten",
+    "planEnterpriseBadge": "Unternehmen",
+    "priceOnRequest": "Auf Anfrage",
+    "priceFree": "Frei",
+    "perMonth": "/Monat",
+    "billedAnnually": "berechnet R${price}/Jahr",
+    "trialBadge": "7 Tage kostenlos",
+    "planCurrentCta": "Aktueller Plan ✓",
+    "contactSales": "Sprechen Sie mit dem Verkäufer →",
+    "redirecting": "Weiterleitung...",
+    "doUpgrade": "Upgrade →",
+    "changePlan": "Wechseln Sie zu diesem Plan",
+    "annualNote": "Wird jährlich in Rechnung gestellt. · Sparen Sie 20 % gegenüber dem Monatsplan. · Kündigen Sie, wann immer Sie möchten",
+    "monthlyNote": "Bezahlte Pläne mit monatlicher Abrechnung · Sie können jederzeit kündigen · Keine versteckten Gebühren",
+    "unlimited": "Unbegrenzt",
+    "usage": {
+      "dashboards": "Dashboards",
+      "datasets": "Datenquellen",
+      "users": "Benutzer",
+      "alerts": "Warnungen"
+    },
+    "addon": {
+      "title": "Erweiterungspaket",
+      "price": "49,90 R$/Monat pro Packung",
+      "desc": "Erweitern Sie die Grenzen Ihres Plans ohne Upgrade.",
+      "users": "+1 Benutzer pro Paket",
+      "dashboards": "+5 Dashboards pro Packung",
+      "datasets": "+3 Datenquellen pro Paket",
+      "addPack": "Paket hinzufügen →",
+      "adding": "Weiterleitung..."
+    },
+    "toast": {
+      "success": "Abonnement erfolgreich aktiviert! Ihr Plan wurde aktualisiert.",
+      "addon": "Erweiterungspaket erfolgreich aktiviert!",
+      "canceled": "Kasse abgebrochen. Es wurden keine Anklagen erhoben.",
+      "noPayment": "Zahlungen im Setup. Kontaktieren Sie uns unter comercial@jarbis.cc.",
+      "checkoutError": "Fehler beim Starten des Bezahlvorgangs.",
+      "addonError": "Erweiterungspaket in der Konfiguration. Kontaktieren Sie uns unter comercial@jarbis.cc.",
+      "portalError": "Fehler beim Öffnen des Portals."
+    },
+    "plans": {
+      "free": {
+        "name": "Frei",
+        "desc": "Um es zu versuchen"
+      },
+      "solo": {
+        "name": "Boden",
+        "desc": "Für Selbstständige und MEIs"
+      },
+      "equipe": {
+        "name": "Professional",
+        "desc": "Für kleine Unternehmen"
+      },
+      "ilimitado": {
+        "name": "Unbegrenzt",
+        "desc": "Für wachsende Unternehmen"
+      },
+      "enterprise": {
+        "name": "Unternehmen",
+        "desc": "Für große Einsätze"
+      }
+    }
+  },
+  "usuarios": {
+    "title": "Benutzer",
+    "manageTeam": "Verwalten Sie Ihre Teammitglieder",
+    "activeCount": "{active, plural, one {{active} Vermögenswerte von {total} insgesamt} andere {{active} Vermögenswerte von {total} insgesamt}}",
+    "inviteBtn": "Einladen",
+    "noUsers": "Keine Benutzer",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
+    "you": "Du",
+    "footerHint": "Klicken Sie auf das Profil-Badge, um es zu ändern. · Aktivieren/Deaktivieren-Symbol auf der rechten Seite",
+    "roles": {
+      "owner": "Eigentümer",
+      "admin": "Admin",
+      "member": "Mitglied",
+      "viewer": "Zuschauer"
+    },
+    "roleDescs": {
+      "admin": "Voller Zugriff, außer Besitzer löschen",
+      "member": "Erstellen und bearbeiten Sie Dashboards",
+      "viewer": "Einfach ansehen"
+    },
+    "toast": {
+      "loadError": "Fehler beim Laden der Benutzer.",
+      "activated": "{name} aktiviert.",
+      "deactivated": "{name} deaktiviert.",
+      "toggleError": "Fehler beim Aktualisieren des Benutzers.",
+      "roleChanged": "Profil von {name} in {role} geändert.",
+      "roleError": "Fehler beim Profilwechsel."
+    },
+    "modal": {
+      "title": "Benutzer einladen",
+      "subtitle": "Fügen Sie Ihrem Team ein Mitglied hinzu",
+      "nameLabel": "Name",
+      "emailLabel": "E-Mail",
+      "passwordLabel": "Initiales Passwort",
+      "passwordPlaceholder": "Mindestens 6 Zeichen",
+      "roleLabel": "Zugangsprofil",
+      "creating": "Erstellen...",
+      "createBtn": "Benutzer anlegen",
+      "successToast": "{name} erfolgreich hinzugefügt!"
+    }
+  },
+  "dashboardNovo": {
+    "gallery": {
+      "nav": "Neues Dashboard",
+      "title": "Wählen Sie eine Vorlage",
+      "subtitle": "Beginnen Sie ganz von vorne oder verwenden Sie eine vorgefertigte Vorlage – geben Sie einfach Ihre Daten ein.",
+      "searchPlaceholder": "Suchvorlage...",
+      "blocksCount": "{n} Blöcke",
+      "blankCanvas": "Leere Leinwand"
+    },
+    "editor": {
+      "back": "Zurückgehen",
+      "templates": "Vorlagen",
+      "addItem": "Artikel hinzufügen",
+      "cancel": "Stornieren",
+      "save": "Dashboard speichern",
+      "saving": "Sparen...",
+      "titlePlaceholder": "Dashboard-Titel...",
+      "descPlaceholder": "Beschreibung (optional)",
+      "titleRequired": "Geben Sie den Titel ein"
+    },
+    "sidebar": {
+      "data": "Daten",
+      "filters": "Filter",
+      "comments": "Kommentare",
+      "configBlock": "Block konfigurieren",
+      "configDashboard": "Armaturenbrett"
+    },
+    "filters": {
+      "dateFilterTitle": "Globaler Datumsfilter",
+      "dateSeparator": "bis",
+      "today": "Heute",
+      "last7d": "7d",
+      "last30d": "30 Tage",
+      "thisMonth": "Monat",
+      "thisYear": "Jahr",
+      "clearDates": "Klare Termine"
+    },
+    "comments": {
+      "saveTip": "Speichern Sie das Dashboard, um Notizen hinzuzufügen."
     }
   }
 }

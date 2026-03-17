@@ -4,14 +4,8 @@ import { useState, useEffect } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
+import { useTranslations } from 'next-intl'
 
-const ROLES = [
-  { value: 'admin',  label: 'Admin',  desc: 'Acesso total exceto excluir owner' },
-  { value: 'member', label: 'Membro', desc: 'Cria e edita dashboards' },
-  { value: 'viewer', label: 'Viewer', desc: 'Apenas visualiza' },
-]
-
-const ROLE_LABELS = { owner: 'Owner', admin: 'Admin', member: 'Membro', viewer: 'Viewer' }
 const ROLE_COLORS = {
   owner:  'bg-violet-100 text-violet-700',
   admin:  'bg-blue-100 text-blue-700',
@@ -20,10 +14,17 @@ const ROLE_COLORS = {
 }
 
 function InviteModal({ onClose, onCreated }) {
+  const t = useTranslations('usuarios')
   const toast = useToast()
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'member' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  const ROLES = [
+    { value: 'admin',  label: t('roles.admin'),  desc: t('roleDescs.admin') },
+    { value: 'member', label: t('roles.member'), desc: t('roleDescs.member') },
+    { value: 'viewer', label: t('roles.viewer'), desc: t('roleDescs.viewer') },
+  ]
 
   async function submit(e) {
     e.preventDefault()
@@ -32,7 +33,7 @@ function InviteModal({ onClose, onCreated }) {
       const user = await api.users.invite(form)
       onCreated(user)
       onClose()
-      toast(`${user.full_name} adicionado com sucesso!`, 'success')
+      toast(t('modal.successToast', { name: user.full_name }), 'success')
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
@@ -42,8 +43,8 @@ function InviteModal({ onClose, onCreated }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h2 className="font-bold text-gray-800">Convidar usuário</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Adicione um membro à sua equipe</p>
+            <h2 className="font-bold text-gray-800">{t('modal.title')}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{t('modal.subtitle')}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -52,20 +53,20 @@ function InviteModal({ onClose, onCreated }) {
         <form onSubmit={submit} className="p-6 flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.nameLabel')}</label>
               <input required value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">E-mail</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.emailLabel')}</label>
               <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Senha inicial</label>
-            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder="Mínimo 6 caracteres" />
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.passwordLabel')}</label>
+            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={t('modal.passwordPlaceholder')} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Perfil de acesso</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.roleLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               {ROLES.map(r => (
                 <label key={r.value} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-colors ${form.role === r.value ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -78,7 +79,7 @@ function InviteModal({ onClose, onCreated }) {
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-sm text-red-600">{error}</div>}
           <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors">
-            {loading ? 'Criando...' : 'Criar usuário'}
+            {loading ? t('modal.creating') : t('modal.createBtn')}
           </button>
         </form>
       </div>
@@ -87,6 +88,7 @@ function InviteModal({ onClose, onCreated }) {
 }
 
 export default function UsuariosPage() {
+  const t = useTranslations('usuarios')
   const toast = useToast()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -100,7 +102,7 @@ export default function UsuariosPage() {
     if (u) setCurrentUser(JSON.parse(u))
     api.users.list()
       .then(data => setUsers(data || []))
-      .catch(() => toast('Erro ao carregar usuários.', 'error'))
+      .catch(() => toast(t('toast.loadError'), 'error'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -112,9 +114,9 @@ export default function UsuariosPage() {
     try {
       const updated = await api.users.update(u.id, { is_active: !u.is_active })
       setUsers(prev => prev.map(x => x.id === updated.id ? updated : x))
-      toast(`${updated.full_name} ${updated.is_active ? 'ativado' : 'desativado'}.`, 'success')
+      toast(t(updated.is_active ? 'toast.activated' : 'toast.deactivated', { name: updated.full_name }), 'success')
     } catch (err) {
-      toast(err.message || 'Erro ao atualizar usuário.', 'error')
+      toast(err.message || t('toast.toggleError'), 'error')
     } finally { setUpdatingId(null) }
   }
 
@@ -124,9 +126,9 @@ export default function UsuariosPage() {
     try {
       const updated = await api.users.update(u.id, { role })
       setUsers(prev => prev.map(x => x.id === updated.id ? updated : x))
-      toast(`Perfil de ${updated.full_name} alterado para ${ROLE_LABELS[role]}.`, 'success')
+      toast(t('toast.roleChanged', { name: updated.full_name, role: t(`roles.${role}`) }), 'success')
     } catch (err) {
-      toast(err.message || 'Erro ao alterar perfil.', 'error')
+      toast(err.message || t('toast.roleError'), 'error')
     } finally { setUpdatingId(null) }
   }
 
@@ -141,15 +143,17 @@ export default function UsuariosPage() {
       <div className="p-6 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Usuários</h1>
+            <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              {users.length > 0 ? `${users.filter(u => u.is_active).length} ativo${users.filter(u => u.is_active).length !== 1 ? 's' : ''} de ${users.length} total` : 'Gerencie os membros da sua equipe'}
+              {users.length > 0
+                ? t('activeCount', { active: users.filter(u => u.is_active).length, total: users.length })
+                : t('manageTeam')}
             </p>
           </div>
           {isAdmin && (
             <button onClick={() => setShowInvite(true)} className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-              Convidar
+              {t('inviteBtn')}
             </button>
           )}
         </div>
@@ -160,7 +164,7 @@ export default function UsuariosPage() {
           </div>
         ) : users.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <p className="font-semibold text-gray-700 mb-1">Nenhum usuário</p>
+            <p className="font-semibold text-gray-700 mb-1">{t('noUsers')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
@@ -182,7 +186,7 @@ export default function UsuariosPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold text-gray-900 truncate">{u.full_name}</p>
-                      {isSelf && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">Você</span>}
+                      {isSelf && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">{t('you')}</span>}
                     </div>
                     <p className="text-xs text-gray-400 truncate">{u.email}</p>
                   </div>
@@ -196,7 +200,7 @@ export default function UsuariosPage() {
                           className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-all hover:ring-2 hover:ring-violet-300 hover:ring-offset-1 ${ROLE_COLORS[u.role] || 'bg-gray-100 text-gray-600'}`}
                           title="Clique para alterar perfil"
                         >
-                          {ROLE_LABELS[u.role] || u.role} ▾
+                          {t(`roles.${u.role}`, { defaultValue: u.role })} ▾
                         </button>
                         {editRoleId === u.id && (
                           <div className="absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-40">
@@ -215,7 +219,7 @@ export default function UsuariosPage() {
                       </>
                     ) : (
                       <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${ROLE_COLORS[u.role] || 'bg-gray-100 text-gray-600'}`}>
-                        {ROLE_LABELS[u.role] || u.role}
+                        {t(`roles.${u.role}`, { defaultValue: u.role })}
                       </span>
                     )}
                   </div>
@@ -223,7 +227,7 @@ export default function UsuariosPage() {
                   {/* Status */}
                   <div className="shrink-0 flex items-center gap-1.5">
                     <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                    <span className="text-xs text-gray-400">{u.is_active ? 'Ativo' : 'Inativo'}</span>
+                    <span className="text-xs text-gray-400">{u.is_active ? t('statusActive') : t('statusInactive')}</span>
                   </div>
 
                   {/* Ações */}
@@ -231,7 +235,7 @@ export default function UsuariosPage() {
                     <button
                       onClick={() => handleToggleActive(u)}
                       disabled={isUpdating}
-                      title={u.is_active ? 'Desativar usuário' : 'Ativar usuário'}
+                      title={u.is_active ? t('statusInactive') : t('statusActive')}
                       className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 ${
                         u.is_active
                           ? 'text-gray-300 hover:text-red-400 hover:bg-red-50'
@@ -254,7 +258,7 @@ export default function UsuariosPage() {
         )}
 
         <p className="text-xs text-gray-400 text-center mt-4">
-          Clique no badge de perfil para alterar · Ícone de ativar/desativar à direita
+          {t('footerHint')}
         </p>
       </div>
 

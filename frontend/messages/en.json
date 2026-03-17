@@ -28,7 +28,20 @@
       "organic": "Organic",
       "paid": "Paid"
     },
-    "months": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ]
   },
   "problem": {
     "label": "The problem",
@@ -112,13 +125,48 @@
     "subtitle": "The embedded BI platform built for growing businesses.",
     "colFeature": "Feature",
     "rows": [
-      { "feature": "Starting price", "jarbis": "Free for 7 days", "luzmo": "$1,000+/mo", "powerbi": "$10/user" },
-      { "feature": "English interface", "jarbis": true, "luzmo": true, "powerbi": true },
-      { "feature": "English support", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Embed via iframe", "jarbis": true, "luzmo": true, "powerbi": "Complex" },
-      { "feature": "AI in plain language", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Setup in minutes", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "No card for trial", "jarbis": true, "luzmo": false, "powerbi": false }
+      {
+        "feature": "Starting price",
+        "jarbis": "Free for 7 days",
+        "luzmo": "$1,000+/mo",
+        "powerbi": "$10/user"
+      },
+      {
+        "feature": "English interface",
+        "jarbis": true,
+        "luzmo": true,
+        "powerbi": true
+      },
+      {
+        "feature": "English support",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Embed via iframe",
+        "jarbis": true,
+        "luzmo": true,
+        "powerbi": "Complex"
+      },
+      {
+        "feature": "AI in plain language",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Setup in minutes",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      },
+      {
+        "feature": "No card for trial",
+        "jarbis": true,
+        "luzmo": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -138,31 +186,62 @@
         "name": "Free",
         "desc": "Try it with no commitment",
         "cta": "Create free account",
-        "features": ["2 dashboards", "2 data sources", "1 user", "Public link"]
+        "features": [
+          "2 dashboards",
+          "2 data sources",
+          "1 user",
+          "Public link"
+        ]
       },
       "solo": {
         "name": "Solo",
         "desc": "For freelancers and solopreneurs",
         "cta": "Get Solo",
-        "features": ["8 dashboards", "8 data sources", "1 user", "5 alerts", "Embed on website"]
+        "features": [
+          "8 dashboards",
+          "8 data sources",
+          "1 user",
+          "5 alerts",
+          "Embed on website"
+        ]
       },
       "equipe": {
         "name": "Professional",
         "desc": "For independent professionals",
         "cta": "Get Professional",
-        "features": ["20 dashboards", "15 data sources", "1 user", "15 alerts", "AI assistant", "Embed on website"]
+        "features": [
+          "20 dashboards",
+          "15 data sources",
+          "1 user",
+          "15 alerts",
+          "AI assistant",
+          "Embed on website"
+        ]
       },
       "ilimitado": {
         "name": "Unlimited",
         "desc": "For growing companies",
         "cta": "Get Unlimited",
-        "features": ["50 dashboards", "30 data sources", "5 users", "50 alerts", "AI assistant", "White-label dashboards"]
+        "features": [
+          "50 dashboards",
+          "30 data sources",
+          "5 users",
+          "50 alerts",
+          "AI assistant",
+          "White-label dashboards"
+        ]
       },
       "enterprise": {
         "name": "Enterprise",
         "desc": "For large operations",
         "cta": "Talk to sales",
-        "features": ["Everything unlimited", "Unlimited users", "Guaranteed SLA", "Dedicated account manager", "Custom onboarding"]
+        "features": [
+          "Everything unlimited",
+          "Unlimited users",
+          "Guaranteed SLA",
+          "Dedicated account manager",
+          "Custom onboarding"
+        ]
       }
     }
   },
@@ -251,11 +330,26 @@
     "hasAccount": "Already have an account?",
     "loginLink": "Log in",
     "bullets": [
-      { "icon": "⚡", "text": "Set up in 2 minutes" },
-      { "icon": "🌐", "text": "Interface in your language" },
-      { "icon": "🔒", "text": "Secure data in the cloud" },
-      { "icon": "💳", "text": "No credit card required" },
-      { "icon": "🤖", "text": "Built-in AI assistant" }
+      {
+        "icon": "⚡",
+        "text": "Set up in 2 minutes"
+      },
+      {
+        "icon": "🌐",
+        "text": "Interface in your language"
+      },
+      {
+        "icon": "🔒",
+        "text": "Secure data in the cloud"
+      },
+      {
+        "icon": "💳",
+        "text": "No credit card required"
+      },
+      {
+        "icon": "🤖",
+        "text": "Built-in AI assistant"
+      }
     ]
   },
   "login": {
@@ -286,6 +380,546 @@
       "users": "Users",
       "settings": "Settings",
       "logout": "Log out"
+    },
+    "admin": "Admin",
+    "trialExpired": "Your trial period has expired. Choose a plan to continue.",
+    "trialDays": "Free trial ends on {days} day(s).",
+    "trialCta": "View plans",
+    "openMenu": "Open menu"
+  },
+  "dashboard": {
+    "stats": {
+      "shared": "Shared",
+      "views": "Views"
+    },
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Goodnight"
+    },
+    "subtitle": "Welcome to your control panel",
+    "recent": "Recent",
+    "newBtn": "New dashboard",
+    "loading": "Loading...",
+    "blocks": "blocks",
+    "public": "Public",
+    "seeAll": "See all {count} dashboards",
+    "empty": {
+      "title": "No dashboard yet",
+      "desc": "Start creating your first dashboard with ready-made templates",
+      "cta": "Create first dashboard"
+    }
+  },
+  "datasets": {
+    "title": "Data",
+    "subtitle": "{count} connected data source(s)",
+    "subtitleEmpty": "Connect your spreadsheets, files and APIs",
+    "connectBtn": "Connect API",
+    "uploadBtn": "Upload file",
+    "uploading": "Sending...",
+    "dropHint": "↑ Drag a CSV/Excel file here to import",
+    "dropRelease": "Release to import",
+    "columns": "columns",
+    "rowsM": "M lines",
+    "rowsK": "K lines",
+    "rows": "lines",
+    "typeApi": "API",
+    "typeFile": "File",
+    "autoRefresh": "Auto: {interval}min",
+    "refreshBtn": "Update data",
+    "deleteConfirm": "Delete?",
+    "yes": "Yes",
+    "no": "No",
+    "uploadBtn2": "Upload",
+    "empty": {
+      "title": "No dataset yet",
+      "desc": "Drag a file here or click to upload",
+      "hint": "Supports CSV and Excel · Limit 50MB"
+    },
+    "modal": {
+      "title": "Connect API",
+      "subtitle": "Import data from any REST endpoint",
+      "nameLabel": "Dataset name",
+      "namePlaceholder": "Ex: Sales per month",
+      "urlLabel": "API URL",
+      "urlPlaceholder": "https://api.exemplo.com/dados",
+      "methodLabel": "Method",
+      "headersLabel": "Headers (optional JSON)",
+      "intervalLabel": "Automatically update every (minutes)",
+      "intervalPlaceholder": "Ex: 60 (leave empty to not update)",
+      "connectBtn": "Connect and import data",
+      "connecting": "Connecting..."
+    },
+    "toast": {
+      "connected": "Dataset connected successfully!",
+      "loadError": "Error loading datasets.",
+      "invalidFormat": "Invalid format. Use CSV or Excel (.xlsx/.xls)",
+      "fileTooLarge": "Very large file. Limit: 50MB",
+      "uploadSuccess": "{name} imported successfully! {rows} lines.",
+      "uploadError": "Error uploading.",
+      "syncSuccess": "Dataset synchronized successfully!",
+      "syncError": "Error synchronizing.",
+      "deleteSuccess": "Dataset deleted.",
+      "deleteError": "Error deleting.",
+      "headersInvalid": "Invalid headers — use JSON format"
+    }
+  },
+  "alerts": {
+    "title": "Alerts",
+    "subtitle": "Monitor metrics and receive warnings when a threshold is exceeded",
+    "checkAllBtn": "Check all",
+    "newBtn": "+ New alert",
+    "loading": "Loading...",
+    "deleteConfirm": "Delete?",
+    "yes": "Yes",
+    "no": "No",
+    "lastValue": "Last value:",
+    "empty": {
+      "title": "No alerts configured",
+      "desc": "Create alerts to automatically monitor metrics",
+      "cta": "Create first alert"
+    },
+    "noDataset": {
+      "title": "No dataset available",
+      "desc": "Upload a dataset before creating alerts."
+    },
+    "status": {
+      "pending": "Not verified",
+      "triggered": "Fired",
+      "ok": "OK"
+    },
+    "operators": {
+      "gt": "> greater than",
+      "gte": "≥ greater than or equal",
+      "lt": "< less than",
+      "lte": "≤ less than or equal",
+      "eq": "= equal to"
+    },
+    "aggregations": {
+      "sum": "Sum",
+      "count": "Count",
+      "avg": "Average",
+      "max": "Maximum",
+      "min": "Minimum"
+    },
+    "modal": {
+      "title": "Create alert",
+      "nameLabel": "Alert name",
+      "namePlaceholder": "Ex: Sales below target",
+      "datasetLabel": "Dataset",
+      "columnLabel": "Value column",
+      "selectDefault": "Select...",
+      "aggLabel": "Aggregation",
+      "conditionLabel": "Condition",
+      "thresholdLabel": "Limit value",
+      "thresholdPlaceholder": "Ex: 10000",
+      "createBtn": "Create alert",
+      "creating": "Creating..."
+    },
+    "toast": {
+      "loadError": "Error loading alerts.",
+      "triggered": "Alert triggered!",
+      "ok": "Alert verified — all OK.",
+      "enabled": "Alert activated.",
+      "paused": "Alert paused.",
+      "deleted": "Alert deleted."
+    }
+  },
+  "dashboards": {
+    "title": "Dashboards",
+    "subtitleOne": "1 dashboard",
+    "subtitleMany": "{count} dashboards",
+    "subtitleEmpty": "Interactive reports connected to your data",
+    "newBtn": "New dashboard",
+    "searchPlaceholder": "Search dashboards...",
+    "noResults": "No results for \"{query}\"",
+    "clearSearch": "Clear search",
+    "public": "Public",
+    "blocks": "blocks",
+    "block": "block",
+    "addCoverBtn": "Add cover",
+    "empty": {
+      "title": "No dashboard created",
+      "desc": "Create dashboards with graphs, KPIs and tables connected to your data",
+      "cta": "Create first dashboard"
+    },
+    "menu": {
+      "edit": "Edit",
+      "addCover": "Add cover",
+      "changeCover": "Change cover",
+      "removeCover": "Remove cover",
+      "copyLink": "Copy public link",
+      "clone": "Clone",
+      "delete": "Delete",
+      "confirmDelete": "Confirm deletion?",
+      "cancel": "Cancel"
+    },
+    "cropper": {
+      "title": "Cover image",
+      "clickToChoose": "Click to choose an image",
+      "dragToAdjust": "Drag the image to adjust the framing",
+      "swap": "Change image",
+      "save": "Save cover"
+    },
+    "toast": {
+      "loadError": "Error loading dashboards.",
+      "deleted": "Dashboard deleted.",
+      "deleteError": "Error deleting.",
+      "copied": "Link copied to clipboard!",
+      "shareError": "Error sharing.",
+      "cloned": "Dashboard cloned successfully!",
+      "cloneError": "Error when cloning.",
+      "coverSaved": "Updated cover!",
+      "coverError": "Error saving cover.",
+      "coverRemoved": "Cover removed.",
+      "coverRemoveError": "Error removing cover."
+    }
+  },
+  "dashboardEditor": {
+    "loading": "Loading...",
+    "notFound": "Dashboard not found",
+    "back": "Dashboards",
+    "edit": "Edit",
+    "ask": "To ask",
+    "share": "To share",
+    "sharing": "Generating...",
+    "delete": "Delete",
+    "confirm": "Confirm?",
+    "yes": "Yes",
+    "no": "No",
+    "shareLinkLang": "Link language:",
+    "copied": "Copied!",
+    "copyLink": "Copy link",
+    "dateFilter": "Date filter",
+    "dateFilterActive": "Active date filter:",
+    "dateTo": "until",
+    "clear": "To clean",
+    "addItem": "Add item",
+    "templates": "Templates",
+    "backEdit": "To go back",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save dashboard",
+    "pageName": "Page {n}",
+    "sidePanel": {
+      "dados": "Data",
+      "filtros": "Filters",
+      "comentarios": "Comments",
+      "config": "Configure block",
+      "settings": "Settings"
+    },
+    "filters": {
+      "title": "Dashboard filters",
+      "active": "Assets",
+      "clearAll": "Clear all",
+      "dateFilterLabel": "Date filter",
+      "clearDate": "To clean",
+      "dateColPlaceholder": "Date column...",
+      "presets": {
+        "today": "Today",
+        "7d": "7d",
+        "30d": "30d",
+        "month": "Month",
+        "year": "Year"
+      },
+      "comparePrevious": "Compare with previous period",
+      "filterBlocks": "Filter Blocks ({count})",
+      "noFilterBlocks": "Add \"Filter\" or \"Slider\" blocks to the dashboard"
+    },
+    "ai": {
+      "title": "AI — Data Exploration",
+      "clearHistory": "To clean",
+      "noDataset": "No dataset available. Add data first.",
+      "datasetLabel": "Dataset",
+      "suggestions": "Suggestions",
+      "history": "History",
+      "analyzing": "Analyzing...",
+      "askPlaceholder": "Ask a question about the data...",
+      "send": "To send"
+    },
+    "comments": {
+      "title": "Comments and notes",
+      "selectBlock": "Select a block...",
+      "placeholder": "Write a comment... (Ctrl+Enter to send)",
+      "addBtn": "Add note",
+      "empty": "No notes yet. Add comments to blocks."
+    },
+    "blockTypes": {
+      "kpi": {
+        "label": "KPI",
+        "desc": "Highlighted number"
+      },
+      "bar": {
+        "label": "Bars",
+        "desc": "Compare categories"
+      },
+      "bar_h": {
+        "label": "H Bars",
+        "desc": "Horizontal bars"
+      },
+      "area": {
+        "label": "Area",
+        "desc": "Accumulated evolution"
+      },
+      "line": {
+        "label": "Lines",
+        "desc": "Evolution over time"
+      },
+      "pie": {
+        "label": "Pizza",
+        "desc": "Distribution %"
+      },
+      "combo": {
+        "label": "Combo",
+        "desc": "Slash + line"
+      },
+      "gauge": {
+        "label": "gauge",
+        "desc": "Circular indicator"
+      },
+      "speedometer": {
+        "label": "Speedometer",
+        "desc": "semicircular indicator"
+      },
+      "treemap": {
+        "label": "Treemap",
+        "desc": "Hierarchy by area"
+      },
+      "bubble": {
+        "label": "Bubbles",
+        "desc": "Volume dispersion"
+      },
+      "scatter": {
+        "label": "Dispersal",
+        "desc": "XY Correlation"
+      },
+      "table": {
+        "label": "Table",
+        "desc": "Data in rows"
+      },
+      "text": {
+        "label": "Text",
+        "desc": "Comments"
+      },
+      "filter": {
+        "label": "Filter",
+        "desc": "Filter data"
+      },
+      "slider": {
+        "label": "Slider",
+        "desc": "Filter by range"
+      },
+      "image": {
+        "label": "Image",
+        "desc": "Photo or logo"
+      }
+    }
+  },
+  "configuracoes": {
+    "title": "Settings",
+    "subtitle": "Manage your profile and account",
+    "profile": {
+      "title": "Profile",
+      "fullNameLabel": "Full name",
+      "placeholder": "Your name",
+      "saving": "Saving...",
+      "save": "Save"
+    },
+    "password": {
+      "title": "Change password",
+      "currentLabel": "Current password",
+      "newLabel": "New Password",
+      "confirmLabel": "Confirm new password",
+      "newPlaceholder": "Min 6 characters",
+      "confirmPlaceholder": "Repeat the new password",
+      "changing": "Changing...",
+      "change": "Change password"
+    },
+    "plan": {
+      "title": "Plan and usage",
+      "viewAll": "See all plans →",
+      "upgrade": "Upgrade",
+      "manage": "Manage plan",
+      "trialRemaining": "{days} trial days remaining",
+      "statusActive": "Active",
+      "statusPastDue": "Pending payment",
+      "statusTrial": "Trial",
+      "unlimited": "Unlimited"
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member",
+      "viewer": "Viewer"
+    },
+    "usage": {
+      "dashboards": "Dashboards",
+      "datasets": "Datasets",
+      "users": "Users",
+      "alerts": "Alerts"
+    },
+    "toast": {
+      "nameSaved": "Name updated successfully!",
+      "nameError": "Error updating name.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordTooShort": "The new password must be at least 6 characters long.",
+      "passwordSaved": "Password changed successfully!",
+      "passwordError": "Error changing password."
+    }
+  },
+  "planos": {
+    "title": "Plans",
+    "currentPlan": "Current plan:",
+    "trialRemaining": "· {days} test days remaining",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "manageSubscription": "Manage subscription →",
+    "opening": "Opening...",
+    "planCurrentBadge": "Current plan",
+    "planPopularBadge": "Most popular",
+    "planEnterpriseBadge": "Enterprise",
+    "priceOnRequest": "Upon request",
+    "priceFree": "Free",
+    "perMonth": "/month",
+    "billedAnnually": "charged R${price}/year",
+    "trialBadge": "7 days free",
+    "planCurrentCta": "Current plan ✓",
+    "contactSales": "Talk to salesperson →",
+    "redirecting": "Redirecting...",
+    "doUpgrade": "Upgrade →",
+    "changePlan": "Switch to this plan",
+    "annualNote": "Billed annually · Save 20% over the monthly plan · Cancel whenever you want",
+    "monthlyNote": "Paid plans billed monthly · Cancel whenever you want · No hidden fees",
+    "unlimited": "Unlimited",
+    "usage": {
+      "dashboards": "Dashboards",
+      "datasets": "Data Sources",
+      "users": "Users",
+      "alerts": "Alerts"
+    },
+    "addon": {
+      "title": "Expansion Pack",
+      "price": "R$49.90/month per pack",
+      "desc": "Expand your plan limits without upgrading.",
+      "users": "+1 user per pack",
+      "dashboards": "+5 dashboards per pack",
+      "datasets": "+3 data sources per pack",
+      "addPack": "Add pack →",
+      "adding": "Redirecting..."
+    },
+    "toast": {
+      "success": "Subscription activated successfully! Your plan has been updated.",
+      "addon": "Expansion pack successfully activated!",
+      "canceled": "Checkout cancelled. No charges were made.",
+      "noPayment": "Payments in setup. Get in touch at comercial@jarbis.cc.",
+      "checkoutError": "Error starting checkout.",
+      "addonError": "Expansion pack in configuration. Get in touch at comercial@jarbis.cc.",
+      "portalError": "Error opening portal."
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "desc": "To try"
+      },
+      "solo": {
+        "name": "Solo",
+        "desc": "For self-employed people and MEIs"
+      },
+      "equipe": {
+        "name": "Professional",
+        "desc": "For small businesses"
+      },
+      "ilimitado": {
+        "name": "Unlimited",
+        "desc": "For growing companies"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "For large operations"
+      }
+    }
+  },
+  "usuarios": {
+    "title": "Users",
+    "manageTeam": "Manage your team members",
+    "activeCount": "{active, plural, one {{active} assets of {total} total} other {{active} assets of {total} total}}",
+    "inviteBtn": "To invite",
+    "noUsers": "No users",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "you": "You",
+    "footerHint": "Click on the profile badge to change · Activate/deactivate icon on the right",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member",
+      "viewer": "Viewer"
+    },
+    "roleDescs": {
+      "admin": "Full access except delete owner",
+      "member": "Create and edit dashboards",
+      "viewer": "Just view"
+    },
+    "toast": {
+      "loadError": "Error loading users.",
+      "activated": "{name} activated.",
+      "deactivated": "{name} disabled.",
+      "toggleError": "Error updating user.",
+      "roleChanged": "Profile from {name} changed to {role}.",
+      "roleError": "Error changing profile."
+    },
+    "modal": {
+      "title": "Invite user",
+      "subtitle": "Add a member to your team",
+      "nameLabel": "Name",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Initial password",
+      "passwordPlaceholder": "Minimum 6 characters",
+      "roleLabel": "Access profile",
+      "creating": "Creating...",
+      "createBtn": "Create user",
+      "successToast": "{name} added successfully!"
+    }
+  },
+  "dashboardNovo": {
+    "gallery": {
+      "nav": "New Dashboard",
+      "title": "Choose a template",
+      "subtitle": "Start from scratch or use a ready-made template — just plug in your data.",
+      "searchPlaceholder": "Search template...",
+      "blocksCount": "{n} blocks",
+      "blankCanvas": "Blank Canvas"
+    },
+    "editor": {
+      "back": "To go back",
+      "templates": "Templates",
+      "addItem": "Add item",
+      "cancel": "Cancel",
+      "save": "Save dashboard",
+      "saving": "Saving...",
+      "titlePlaceholder": "Dashboard title...",
+      "descPlaceholder": "Description (optional)",
+      "titleRequired": "Enter the title"
+    },
+    "sidebar": {
+      "data": "Data",
+      "filters": "Filters",
+      "comments": "Comments",
+      "configBlock": "Configure block",
+      "configDashboard": "Dashboard"
+    },
+    "filters": {
+      "dateFilterTitle": "Global date filter",
+      "dateSeparator": "until",
+      "today": "Today",
+      "last7d": "7d",
+      "last30d": "30d",
+      "thisMonth": "Month",
+      "thisYear": "Year",
+      "clearDates": "Clear dates"
+    },
+    "comments": {
+      "saveTip": "Save the dashboard to add notes."
     }
   }
 }

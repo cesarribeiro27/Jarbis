@@ -5,13 +5,7 @@ import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
-
-const ROLE_LABELS = {
-  owner: 'Owner',
-  admin: 'Admin',
-  member: 'Membro',
-  viewer: 'Viewer',
-}
+import { useTranslations } from 'next-intl'
 
 const ROLE_COLORS = {
   owner:  'bg-violet-100 text-violet-700',
@@ -21,6 +15,7 @@ const ROLE_COLORS = {
 }
 
 export default function ConfiguracoesPage() {
+  const t = useTranslations('configuracoes')
   const toast = useToast()
   const [user, setUser] = useState(null)
   const [billing, setBilling] = useState(null)
@@ -57,9 +52,9 @@ export default function ConfiguracoesPage() {
       })
       setUser(updated)
       localStorage.setItem('jarbis_user', JSON.stringify(updated))
-      toast('Nome atualizado com sucesso!', 'success')
+      toast(t('toast.nameSaved'), 'success')
     } catch (err) {
-      toast(err.message || 'Erro ao atualizar nome.', 'error')
+      toast(err.message || t('toast.nameError'), 'error')
     } finally {
       setSavingName(false)
     }
@@ -68,11 +63,11 @@ export default function ConfiguracoesPage() {
   async function handleSavePassword(e) {
     e.preventDefault()
     if (pwForm.new !== pwForm.confirm) {
-      toast('As senhas não coincidem.', 'error')
+      toast(t('toast.passwordMismatch'), 'error')
       return
     }
     if (pwForm.new.length < 6) {
-      toast('A nova senha deve ter pelo menos 6 caracteres.', 'error')
+      toast(t('toast.passwordTooShort'), 'error')
       return
     }
     setSavingPw(true)
@@ -82,9 +77,9 @@ export default function ConfiguracoesPage() {
         body: JSON.stringify({ current_password: pwForm.current, new_password: pwForm.new }),
       })
       setPwForm({ current: '', new: '', confirm: '' })
-      toast('Senha alterada com sucesso!', 'success')
+      toast(t('toast.passwordSaved'), 'success')
     } catch (err) {
-      toast(err.message || 'Erro ao alterar senha.', 'error')
+      toast(err.message || t('toast.passwordError'), 'error')
     } finally {
       setSavingPw(false)
     }
@@ -98,13 +93,13 @@ export default function ConfiguracoesPage() {
     <AppLayout>
       <div className="p-6 max-w-2xl mx-auto space-y-4">
         <div className="mb-2">
-          <h1 className="text-2xl font-black text-gray-900">Configurações</h1>
-          <p className="text-sm text-gray-400 mt-1">Gerencie seu perfil e conta</p>
+          <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
+          <p className="text-sm text-gray-400 mt-1">{t('subtitle')}</p>
         </div>
 
         {/* Card — perfil */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-bold text-gray-800 mb-5">Perfil</h2>
+          <h2 className="font-bold text-gray-800 mb-5">{t('profile.title')}</h2>
 
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-md shadow-violet-200">
@@ -114,19 +109,19 @@ export default function ConfiguracoesPage() {
               <p className="font-bold text-gray-900 text-lg">{user?.full_name}</p>
               <p className="text-sm text-gray-500">{user?.email}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold mt-1 inline-block ${ROLE_COLORS[user?.role] || 'bg-gray-100 text-gray-600'}`}>
-                {ROLE_LABELS[user?.role] || user?.role}
+                {user?.role ? t(`roles.${user.role}`) : user?.role}
               </span>
             </div>
           </div>
 
           <form onSubmit={handleSaveName} className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome completo</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('profile.fullNameLabel')}</label>
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 transition-all"
-                placeholder="Seu nome"
+                placeholder={t('profile.placeholder')}
               />
             </div>
             <div className="flex items-end">
@@ -135,7 +130,7 @@ export default function ConfiguracoesPage() {
                 disabled={savingName || !editName.trim() || editName === user?.full_name}
                 className="px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 disabled:opacity-40 transition-colors"
               >
-                {savingName ? 'Salvando...' : 'Salvar'}
+                {savingName ? t('profile.saving') : t('profile.save')}
               </button>
             </div>
           </form>
@@ -143,11 +138,11 @@ export default function ConfiguracoesPage() {
 
         {/* Card — alterar senha */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-bold text-gray-800 mb-5">Alterar senha</h2>
+          <h2 className="font-bold text-gray-800 mb-5">{t('password.title')}</h2>
 
           <form onSubmit={handleSavePassword} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Senha atual</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('password.currentLabel')}</label>
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -169,24 +164,24 @@ export default function ConfiguracoesPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Nova senha</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('password.newLabel')}</label>
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={pwForm.new}
                   onChange={e => setPwForm(f => ({ ...f, new: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-                  placeholder="Mín. 6 caracteres"
+                  placeholder={t('password.newPlaceholder')}
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Confirmar nova senha</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('password.confirmLabel')}</label>
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={pwForm.confirm}
                   onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
                   className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 ${pwForm.confirm && pwForm.new !== pwForm.confirm ? 'border-red-300' : 'border-gray-200'}`}
-                  placeholder="Repita a nova senha"
+                  placeholder={t('password.confirmPlaceholder')}
                   required
                 />
               </div>
@@ -196,7 +191,7 @@ export default function ConfiguracoesPage() {
               disabled={savingPw || !pwForm.current || !pwForm.new || !pwForm.confirm}
               className="w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 disabled:opacity-40 transition-colors"
             >
-              {savingPw ? 'Alterando...' : 'Alterar senha'}
+              {savingPw ? t('password.changing') : t('password.change')}
             </button>
           </form>
         </div>
@@ -204,9 +199,9 @@ export default function ConfiguracoesPage() {
         {/* Card — plano */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-gray-800">Plano e uso</h2>
+            <h2 className="font-bold text-gray-800">{t('plan.title')}</h2>
             <Link href="/configuracoes/planos" className="text-xs text-violet-600 font-semibold hover:underline">
-              Ver todos os planos →
+              {t('plan.viewAll')}
             </Link>
           </div>
 
@@ -221,34 +216,34 @@ export default function ConfiguracoesPage() {
                       billing.subscription_status === 'past_due' ? 'bg-red-100 text-red-700' :
                       'bg-gray-100 text-gray-500'
                     }`}>
-                      {billing.subscription_status === 'active' ? 'Ativo' :
-                       billing.subscription_status === 'past_due' ? 'Pagamento pendente' :
-                       billing.plan === 'free' ? 'Trial' : billing.subscription_status}
+                      {billing.subscription_status === 'active' ? t('plan.statusActive') :
+                       billing.subscription_status === 'past_due' ? t('plan.statusPastDue') :
+                       billing.plan === 'free' ? t('plan.statusTrial') : billing.subscription_status}
                     </span>
                   </div>
                   {billing.trial_days_remaining > 0 && (
                     <p className="text-xs text-amber-600 font-medium mt-1">
-                      {billing.trial_days_remaining} dias de trial restantes
+                      {t('plan.trialRemaining', { days: billing.trial_days_remaining })}
                     </p>
                   )}
                 </div>
                 {billing.plan === 'free' ? (
                   <Link href="/configuracoes/planos" className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
-                    Fazer upgrade
+                    {t('plan.upgrade')}
                   </Link>
                 ) : (
                   <Link href="/configuracoes/planos" className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
-                    Gerenciar plano
+                    {t('plan.manage')}
                   </Link>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Dashboards', used: billing.usage.dashboards, max: billing.limits.dashboards, color: 'bg-violet-500' },
-                  { label: 'Datasets',   used: billing.usage.datasets,   max: billing.limits.datasets,   color: 'bg-blue-500' },
-                  { label: 'Usuários',   used: billing.usage.users,      max: billing.limits.users,      color: 'bg-emerald-500' },
-                  { label: 'Alertas',    used: billing.usage.alerts,     max: billing.limits.alerts,     color: 'bg-amber-500' },
+                  { label: t('usage.dashboards'), used: billing.usage.dashboards, max: billing.limits.dashboards, color: 'bg-violet-500' },
+                  { label: t('usage.datasets'),   used: billing.usage.datasets,   max: billing.limits.datasets,   color: 'bg-blue-500' },
+                  { label: t('usage.users'),      used: billing.usage.users,      max: billing.limits.users,      color: 'bg-emerald-500' },
+                  { label: t('usage.alerts'),     used: billing.usage.alerts,     max: billing.limits.alerts,     color: 'bg-amber-500' },
                 ].map(item => {
                   const unlimited = item.max === -1
                   const pct = unlimited ? 0 : Math.min(100, (item.used / item.max) * 100)
@@ -262,7 +257,7 @@ export default function ConfiguracoesPage() {
                         </span>
                       </div>
                       {unlimited ? (
-                        <p className="text-xs text-emerald-600 font-semibold">Ilimitado</p>
+                        <p className="text-xs text-emerald-600 font-semibold">{t('plan.unlimited')}</p>
                       ) : (
                         <div className="h-1.5 bg-gray-200 rounded-full">
                           <div className={`h-1.5 rounded-full transition-all ${atLimit ? 'bg-red-400' : item.color}`} style={{ width: `${pct}%` }} />
