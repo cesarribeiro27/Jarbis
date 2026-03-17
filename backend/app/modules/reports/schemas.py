@@ -27,6 +27,7 @@ class ReportUpdate(BaseModel):
     blocks: list[dict[str, Any]] | None = None
     pages: list[dict[str, Any]] | None = None
     cover_image: str | None = None
+    language: str | None = None
 
 
 class ReportResponse(BaseModel):
@@ -39,6 +40,7 @@ class ReportResponse(BaseModel):
     is_shared: bool
     share_token: str | None
     share_view_count: int
+    language: str = "pt-BR"
     created_at: datetime
     updated_at: datetime
 
@@ -52,6 +54,7 @@ class ReportSummary(BaseModel):
     cover_image: str | None
     is_shared: bool
     block_count: int
+    language: str = "pt-BR"
     created_at: datetime
     updated_at: datetime
 

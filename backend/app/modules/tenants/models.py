@@ -41,6 +41,7 @@ class Tenant(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     subscription_status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    addon_packs: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Número de packs de expansão ativos (+1 user +5 dash +3 datasets por pack)")
     plan_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(

@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { api } from '@/lib/api'
 import { LogoA } from '@/components/logos/JarbisLogo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import SupportChat from '@/components/SupportChat'
 
 const Icons = {
   Dashboard: () => (
@@ -86,16 +89,16 @@ const Icons = {
   ),
 }
 
-const NAV = [
-  { href: '/dashboard',  label: 'Painel',     Icon: Icons.Dashboard },
-  { href: '/dashboards', label: 'Dashboards', Icon: Icons.Charts },
-  { href: '/datasets',   label: 'Dados',      Icon: Icons.Database },
-  { href: '/alertas',    label: 'Alertas',    Icon: Icons.Bell },
+const NAV_KEYS = [
+  { href: '/dashboard',  key: 'dashboard',  Icon: Icons.Dashboard },
+  { href: '/dashboards', key: 'dashboards', Icon: Icons.Charts },
+  { href: '/datasets',   key: 'data',       Icon: Icons.Database },
+  { href: '/alertas',    key: 'alerts',     Icon: Icons.Bell },
 ]
 
-const NAV_ADMIN = [
-  { href: '/configuracoes/usuarios', label: 'Usuários',      Icon: Icons.Users },
-  { href: '/configuracoes',          label: 'Configurações', Icon: Icons.Settings },
+const NAV_ADMIN_KEYS = [
+  { href: '/configuracoes/usuarios', key: 'users',    Icon: Icons.Users },
+  { href: '/configuracoes',          key: 'settings', Icon: Icons.Settings },
 ]
 
 const PLAN_BADGES = {
@@ -109,6 +112,9 @@ const PLAN_BADGES = {
 }
 
 function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initials, isAdmin, pathname, logout, onClose }) {
+  const t = useTranslations('app')
+  const NAV = NAV_KEYS.map(n => ({ ...n, label: t(`nav.${n.key}`) }))
+  const NAV_ADMIN = NAV_ADMIN_KEYS.map(n => ({ ...n, label: t(`nav.${n.key}`) }))
   return (
     <>
       {/* Logo */}
@@ -206,13 +212,18 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
             </div>
           </Link>
         )}
+        {!collapsed && (
+          <div className="px-2.5 py-1">
+            <LanguageSwitcher dropUp />
+          </div>
+        )}
         <button
           onClick={logout}
-          title={collapsed ? 'Sair' : undefined}
+          title={collapsed ? t('nav.logout') : undefined}
           className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 w-full transition-all duration-150"
         >
           <span className="flex-shrink-0"><Icons.Logout /></span>
-          {!collapsed && 'Sair'}
+          {!collapsed && t('nav.logout')}
         </button>
       </div>
     </>
@@ -222,6 +233,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
 export default function AppLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
+  const t = useTranslations('app')
   const [user, setUser] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -317,13 +329,16 @@ export default function AppLayout({ children }) {
             <LogoA size={28} />
             <span className="font-black text-gray-900 text-sm tracking-tight">jarbis</span>
           </div>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
-            aria-label="Abrir menu"
-          >
-            <Icons.Hamburger />
-          </button>
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher />
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+              aria-label="Abrir menu"
+            >
+              <Icons.Hamburger />
+            </button>
+          </div>
         </div>
 
         {/* Banner de trial */}
@@ -348,11 +363,14 @@ export default function AppLayout({ children }) {
         </div>
       </main>
 
+      <SupportChat />
+
       {/* ── Bottom navigation mobile (< md) ── */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-30 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16">
-          {NAV.map(({ href, label, Icon }) => {
+          {NAV_KEYS.map(({ href, key, Icon }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
+            const label = t(`nav.${key}`)
             return (
               <Link
                 key={href}

@@ -1,0 +1,291 @@
+{
+  "nav": {
+    "howItWorks": "Comment ça marche",
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "login": "Se connecter",
+    "trialCta": "Essai gratuit — 7 jours"
+  },
+  "hero": {
+    "badge": "Fait pour les entreprises mondiales — dans votre langue",
+    "title1": "Vous avez les données.",
+    "title2": "Nous vous aidons à les comprendre.",
+    "subtitle": "Créez des graphiques et des tableaux de bord en minutes, sans connaissances techniques. Connectez votre feuille de calcul, faites glisser les blocs, c'est prêt.",
+    "ctaPrimary": "Commencer gratuitement",
+    "ctaSecondary": "Voir comment ça marche",
+    "freeBadge": "7 jours gratuits · Sans carte · Annulez quand vous voulez",
+    "mockupUrl": "app.jarbis.cc/dashboards",
+    "kpi": {
+      "totalSales": "Ventes Totales",
+      "newClients": "Nouveaux Clients",
+      "conversion": "Conversion",
+      "mrr": "MRR"
+    },
+    "chart": {
+      "revenue": "Revenus mensuels",
+      "byChannel": "Par canal",
+      "direct": "Direct",
+      "organic": "Organique",
+      "paid": "Payant"
+    },
+    "months": ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"]
+  },
+  "problem": {
+    "label": "Le problème",
+    "title": "Vous reconnaissez cette situation ?",
+    "beforeBadge": "Avant Jarbis",
+    "afterBadge": "Avec Jarbis",
+    "beforeItems": [
+      "Feuilles de calcul éparpillées que personne ne comprend",
+      "Données dans des chats qui disparaissent après quelques jours",
+      "Vous devez demander à quelqu'un de créer un rapport",
+      "Vous ne savez pas ce qui se vend le mieux cette semaine",
+      "Un client demande un rapport et vous passez des heures sur Excel"
+    ],
+    "afterItems": [
+      "Tous vos chiffres en un seul endroit, toujours à jour",
+      "Tableau de bord sur votre téléphone à consulter à tout moment",
+      "Vous créez les graphiques vous-même en minutes",
+      "Vous savez exactement ce qui se vend et ce qui stagne",
+      "Envoyez le lien du rapport à votre client en 30 secondes"
+    ]
+  },
+  "howItWorks": {
+    "label": "Comment ça marche",
+    "title": "3 étapes simples",
+    "subtitle": "Sans configuration complexe, sans appeler l'informatique.",
+    "steps": [
+      {
+        "step": "01",
+        "emoji": "📂",
+        "title": "Déposez vos données ici",
+        "desc": "Importez un fichier Excel, CSV ou collez le lien de votre Google Sheets. Prêt en moins d'1 minute."
+      },
+      {
+        "step": "02",
+        "emoji": "🎨",
+        "title": "Construisez votre tableau de bord",
+        "desc": "Faites glisser des graphiques, tableaux et KPIs sur le canvas. L'IA peut le construire automatiquement."
+      },
+      {
+        "step": "03",
+        "emoji": "🔗",
+        "title": "Partagez avec qui vous voulez",
+        "desc": "Copiez le lien et envoyez-le par e-mail ou intégrez-le sur votre site. Données en direct pour tous."
+      }
+    ]
+  },
+  "features": {
+    "label": "Fonctionnalités",
+    "title": "Tout ce dont vous avez besoin,\nrien de plus",
+    "subtitle": "Conçu pour les entreprises qui ont besoin d'analyses professionnelles sans la complexité et le prix des outils enterprise.",
+    "items": [
+      {
+        "title": "Construisez sans coder",
+        "desc": "Faites glisser des graphiques, tableaux et KPIs sur le canvas. Configurez tout en cliquant."
+      },
+      {
+        "title": "Connectez vos feuilles de calcul",
+        "desc": "Importez Excel, CSV ou connectez Google Sheets. Vos données sont prêtes en secondes."
+      },
+      {
+        "title": "IA qui parle votre langue",
+        "desc": "Demandez \"quel est mon produit le plus vendu ?\" et obtenez la réponse instantanément."
+      },
+      {
+        "title": "Partagez avec un lien",
+        "desc": "Générez un lien public et partagez-le. Votre client voit le tableau de bord sans créer de compte."
+      },
+      {
+        "title": "Alertes automatiques",
+        "desc": "Configurez des alertes et soyez notifié quand les ventes baissent ou les stocks sont bas."
+      },
+      {
+        "title": "Intégrez dans votre système",
+        "desc": "Collez le code dans n'importe quel site ou app et le tableau de bord apparaît avec votre marque."
+      }
+    ]
+  },
+  "comparison": {
+    "label": "Comparatif",
+    "title": "Pourquoi Jarbis ?",
+    "subtitle": "La plateforme BI embarquée conçue pour les entreprises en croissance.",
+    "colFeature": "Fonctionnalité",
+    "rows": [
+      { "feature": "Prix de départ", "jarbis": "Gratuit 7 jours", "luzmo": "1 000 $/mois", "powerbi": "10 $/utilisateur" },
+      { "feature": "Interface en français", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "Support en français", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "Intégrer via iframe", "jarbis": true, "luzmo": true, "powerbi": "Complexe" },
+      { "feature": "IA en langage naturel", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "Configuration en minutes", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "Sans carte pour l'essai", "jarbis": true, "luzmo": false, "powerbi": false }
+    ]
+  },
+  "pricing": {
+    "label": "Tarifs",
+    "title": "Prix juste, sans surprises",
+    "subtitle": "Pas de surprises en dollars. Annulez quand vous voulez.",
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "perMonth": "/mois",
+    "free": "Gratuit",
+    "onRequest": "Nous contacter",
+    "footerMonthly": "Plan gratuit sans expiration · Plans payants facturés mensuellement · Annulez quand vous voulez",
+    "footerAnnual": "Facturé annuellement · Économisez 20% vs mensuel",
+    "mostPopular": "Le plus populaire",
+    "plans": {
+      "free": {
+        "name": "Gratuit",
+        "desc": "Pour essayer sans engagement",
+        "cta": "Créer un compte gratuit",
+        "features": ["2 tableaux de bord", "2 sources de données", "1 utilisateur", "Lien public"]
+      },
+      "solo": {
+        "name": "Solo",
+        "desc": "Pour les freelances et indépendants",
+        "cta": "Choisir Solo",
+        "features": ["8 tableaux de bord", "8 sources de données", "1 utilisateur", "5 alertes", "Intégrer sur site"]
+      },
+      "equipe": {
+        "name": "Professionnel",
+        "desc": "Pour les petites entreprises",
+        "cta": "Choisir Professionnel",
+        "features": ["20 tableaux de bord", "15 sources de données", "1 utilisateur", "15 alertes", "IA intégrée", "Intégrer sur site"]
+      },
+      "ilimitado": {
+        "name": "Illimité",
+        "desc": "Pour les entreprises en croissance",
+        "cta": "Choisir Illimité",
+        "features": ["50 tableaux de bord", "30 sources de données", "5 utilisateurs", "50 alertes", "IA intégrée", "Marque personnalisée"]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "Pour les grandes opérations",
+        "cta": "Contacter les ventes",
+        "features": ["Tout illimité", "Utilisateurs illimités", "SLA garanti", "Gestionnaire de compte dédié", "Onboarding personnalisé"]
+      }
+    }
+  },
+  "faq": {
+    "label": "FAQ",
+    "title": "Questions et réponses",
+    "items": [
+      {
+        "q": "Faut-il savoir programmer ?",
+        "a": "Non. Jarbis a été conçu pour les chefs d'entreprise, pas pour les développeurs. Si vous savez utiliser Excel, vous pouvez utiliser Jarbis."
+      },
+      {
+        "q": "Fonctionne-t-il avec Google Sheets ou Excel ?",
+        "a": "Oui ! Vous pouvez importer des fichiers Excel et CSV directement, ou connecter une feuille Google Sheets via un lien. Les données se mettent à jour automatiquement."
+      },
+      {
+        "q": "Mes données sont-elles sécurisées ?",
+        "a": "Oui. Toutes les données sont chiffrées et stockées sur des serveurs sécurisés. Aucune donnée n'est partagée avec des tiers."
+      },
+      {
+        "q": "Puis-je annuler à tout moment ?",
+        "a": "Oui, sans tracas ni pénalité. Annulez directement depuis votre tableau de bord à tout moment."
+      },
+      {
+        "q": "Qu'est-ce que le plan gratuit ?",
+        "a": "Le plan gratuit vous permet de créer jusqu'à 2 tableaux de bord avec 2 sources de données, sans expiration. Gratuit pour toujours, sans carte."
+      },
+      {
+        "q": "Puis-je montrer les graphiques à mes clients ?",
+        "a": "Oui. Générez un lien public et envoyez-le par e-mail. Votre client voit les données en temps réel sans créer de compte."
+      }
+    ]
+  },
+  "finalCta": {
+    "title1": "Commencez aujourd'hui.",
+    "title2": "Vos données méritent d'être comprises.",
+    "subtitle": "Accès gratuit pendant 7 jours. Votre premier tableau de bord en 2 minutes.",
+    "badge": "7 jours gratuits · Sans carte · Annulez quand vous voulez",
+    "cta": "Créer un compte et essayer gratuitement"
+  },
+  "footer": {
+    "madeBy": "Développé par",
+    "company": "Mazzel Tech",
+    "terms": "Conditions",
+    "privacy": "Confidentialité",
+    "login": "Se connecter",
+    "copyright": "© 2026 Mazzel Tech. Tous droits réservés."
+  },
+  "language": {
+    "label": "Langue",
+    "pt-BR": "Português",
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano",
+    "zh": "中文",
+    "ja": "日本語"
+  },
+  "signup": {
+    "title": "Créer un compte gratuit",
+    "subtitle": "7 jours gratuits, sans carte de crédit",
+    "nameLabel": "Nom",
+    "namePlaceholder": "Votre nom",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vous@email.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Minimum 8 caractères",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "confirmPasswordPlaceholder": "Répétez votre mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordMatch": "Les mots de passe correspondent",
+    "passwordStrong": "Fort",
+    "passwordMedium": "Moyen",
+    "passwordWeak": "Faible",
+    "submit": "Créer un compte gratuit →",
+    "submitLoading": "Création du compte...",
+    "orContinueWith": "ou continuez avec",
+    "googleButton": "Continuer avec Google",
+    "microsoftButton": "Continuer avec Microsoft",
+    "githubButton": "Continuer avec GitHub",
+    "termsText": "En créant un compte, vous acceptez nos",
+    "termsLink": "Conditions",
+    "andText": "et notre",
+    "privacyLink": "Confidentialité",
+    "hasAccount": "Vous avez déjà un compte ?",
+    "loginLink": "Se connecter",
+    "bullets": [
+      { "icon": "⚡", "text": "Configuration en 2 minutes" },
+      { "icon": "🌐", "text": "Interface dans votre langue" },
+      { "icon": "🔒", "text": "Données sécurisées dans le cloud" },
+      { "icon": "💳", "text": "Sans carte de crédit" },
+      { "icon": "🤖", "text": "IA intégrée native" }
+    ]
+  },
+  "login": {
+    "title": "Bon retour",
+    "subtitle": "Connectez-vous pour continuer",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vous@email.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Se connecter",
+    "submitLoading": "Connexion en cours...",
+    "orContinueWith": "ou continuez avec",
+    "googleButton": "Continuer avec Google",
+    "microsoftButton": "Continuer avec Microsoft",
+    "githubButton": "Continuer avec GitHub",
+    "noAccount": "Pas encore de compte ?",
+    "signupLink": "Créer un compte gratuit",
+    "errorDefault": "Identifiants invalides",
+    "rightTitle": "Des données qui\ngénèrent des décisions",
+    "rightSubtitle": "BI embarqué dans votre langue, comme vous en avez besoin."
+  },
+  "app": {
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "dashboards": "Dashboards",
+      "data": "Données",
+      "alerts": "Alertes",
+      "users": "Utilisateurs",
+      "settings": "Paramètres",
+      "logout": "Déconnexion"
+    }
+  }
+}

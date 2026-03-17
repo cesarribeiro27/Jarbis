@@ -213,12 +213,26 @@ export default function DashboardsPage() {
   async function handleShare(id) {
     try {
       const res = await api.reports.share(id)
-      await navigator.clipboard.writeText(`${window.location.origin}/r/${res.token}`)
+      const report = reports.find(r => r.id === id)
+      const lang = report?.language || 'pt-BR'
+      const shareUrl = `${window.location.origin}/r/${res.token}?lang=${lang}`
+      await navigator.clipboard.writeText(shareUrl)
       toast('Link copiado para a área de transferência!', 'success')
       setMenuOpen(null)
       setReports(prev => prev.map(r => r.id === id ? { ...r, is_shared: true, share_token: res.token } : r))
     } catch (err) {
       toast(err.message || 'Erro ao compartilhar.', 'error')
+    }
+  }
+
+  async function handleClone(id) {
+    try {
+      const cloned = await api.reports.clone(id)
+      setMenuOpen(null)
+      toast('Dashboard clonado com sucesso!', 'success')
+      router.push(`/dashboards/${cloned.id}`)
+    } catch (err) {
+      toast(err.message || 'Erro ao clonar.', 'error')
     }
   }
 
@@ -381,6 +395,10 @@ export default function DashboardsPage() {
                           <button onClick={() => handleShare(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                             Copiar link público
+                          </button>
+                          <button onClick={() => handleClone(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            Clonar
                           </button>
                           <div className="h-px bg-gray-100 my-1" />
                           {deleteConfirm === r.id ? (

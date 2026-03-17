@@ -30,6 +30,17 @@ const BLOCK_TYPES = [
   { type: 'image',       label: 'Imagem',        desc: 'Foto ou logo' },
 ]
 
+const SHARE_LANGS = [
+  { code: 'pt-BR', flag: '🇧🇷', label: 'Português' },
+  { code: 'en',    flag: '🇺🇸', label: 'English' },
+  { code: 'es',    flag: '🇪🇸', label: 'Español' },
+  { code: 'fr',    flag: '🇫🇷', label: 'Français' },
+  { code: 'de',    flag: '🇩🇪', label: 'Deutsch' },
+  { code: 'it',    flag: '🇮🇹', label: 'Italiano' },
+  { code: 'zh',    flag: '🇨🇳', label: '中文' },
+  { code: 'ja',    flag: '🇯🇵', label: '日本語' },
+]
+
 let counter = 0
 function newBlock(type) {
   const isFilter = type === 'filter' || type === 'slider'
@@ -423,6 +434,7 @@ export default function DashboardDetailPage() {
   const [shareData, setShareData] = useState(null)
   const [sharingLoading, setSharingLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [shareLanguage, setShareLanguage] = useState('pt-BR')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidePanel, setSidePanel] = useState(null)
   const [datasets, setDatasets] = useState([])
@@ -439,6 +451,7 @@ export default function DashboardDetailPage() {
         setReport(r); setDatasets(ds)
         const ps = (r.pages && r.pages.length > 0) ? r.pages : [{ id: 'page_1', title: 'Página 1', blocks: r.blocks || [] }]
         setPages(ps); setActivePageId(ps[0].id)
+        if (r.language) setCanvasConfig(prev => ({ ...prev, language: r.language }))
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -500,7 +513,7 @@ export default function DashboardDetailPage() {
     setSaving(true)
     try {
       const cleanPages = pages.map(p => ({ ...p, blocks: sanitizeBlocks(p.blocks || []) }))
-      const updated = await api.reports.update(id, { title: editTitle, description: editDescription || null, blocks: cleanPages[0]?.blocks || [], pages: cleanPages })
+      const updated = await api.reports.update(id, { title: editTitle, description: editDescription || null, blocks: cleanPages[0]?.blocks || [], pages: cleanPages, language: canvasConfig.language || 'pt-BR' })
       setReport(updated); setMode('view')
     } catch (err) { console.error(err) }
     finally { setSaving(false) }
@@ -517,6 +530,7 @@ export default function DashboardDetailPage() {
       const data = await api.reports.share(id)
       const url = `${window.location.origin}/r/${data.token}`
       setShareData({ ...data, share_url: url })
+      setShareLanguage(canvasConfig.language || 'pt-BR')
     } catch (err) { console.error(err) }
     finally { setSharingLoading(false) }
   }
@@ -730,11 +744,29 @@ export default function DashboardDetailPage() {
         </div>
 
         {shareData && (
-          <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 flex items-center gap-3">
-            <input readOnly value={shareData.share_url} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none" />
-            <button onClick={async () => { await navigator.clipboard.writeText(shareData.share_url); setCopied(true); setTimeout(() => setCopied(false), 2000) }} className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-lg hover:bg-violet-700 transition-colors shrink-0">
-              {copied ? 'Copiado!' : 'Copiar link'}
-            </button>
+          <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500 font-medium shrink-0">Idioma do link:</span>
+              {SHARE_LANGS.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => setShareLanguage(l.code)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${shareLanguage === l.code ? 'bg-violet-100 text-violet-700 font-semibold' : 'text-gray-500 hover:bg-gray-100'}`}
+                >
+                  <span>{l.flag}</span>
+                  <span className="hidden sm:inline">{l.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <input readOnly value={`${shareData.share_url}?lang=${shareLanguage}`} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none font-mono text-gray-600" />
+              <button
+                onClick={async () => { await navigator.clipboard.writeText(`${shareData.share_url}?lang=${shareLanguage}`); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-lg hover:bg-violet-700 transition-colors shrink-0"
+              >
+                {copied ? 'Copiado!' : 'Copiar link'}
+              </button>
+            </div>
           </div>
         )}
 

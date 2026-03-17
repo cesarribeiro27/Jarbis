@@ -103,7 +103,7 @@ async def create_report(
     current_user: User = Depends(get_current_active_user),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
+    await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     service = ReportService(db)
     report = await service.create(current_user.tenant_id, data)
     return report
@@ -258,7 +258,7 @@ async def upload_dataset(
     current_user: User = Depends(get_current_active_user),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
+    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     filename = file.filename or "dataset"
     content = await file.read()
     if len(content) > 20 * 1024 * 1024:
@@ -284,7 +284,7 @@ async def create_api_dataset(
     current_user: User = Depends(get_current_active_user),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
+    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     service = DatasetService(db)
     try:
         ds = await service.create_from_api(
@@ -648,7 +648,7 @@ async def create_alert(
     current_user: User = Depends(get_current_active_user),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    await check_alert_limit(db, current_user.tenant_id, tenant.plan if tenant else "free")
+    await check_alert_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     valid_ops = {"gt", "lt", "gte", "lte", "eq"}
     if data.operator not in valid_ops:
         raise HTTPException(status_code=422, detail=f"Operador inválido. Use: {', '.join(valid_ops)}")
@@ -764,6 +764,28 @@ async def delete_alert(
         raise HTTPException(status_code=404, detail="Alerta não encontrado")
     await db.delete(alert)
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Clone — deve ficar ANTES de /{report_id} para não ser capturado
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/{report_id}/clone",
+    response_model=ReportResponse,
+    status_code=201,
+    summary="Clona um relatório existente",
+)
+async def clone_report(
+    report_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
+    service = ReportService(db)
+    return await service.clone(report_id, current_user.tenant_id)
 
 
 # ---------------------------------------------------------------------------

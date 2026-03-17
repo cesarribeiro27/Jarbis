@@ -17,6 +17,17 @@ import { api } from '@/lib/api'
 const COLORS = ['#6366f1', '#10b981', '#0ea5e9', '#f43f5e', '#f59e0b', '#8b5cf6']
 const COLORS_SOFT = ['#e0e7ff', '#d1fae5', '#e0f2fe', '#ffe4e6', '#fef3c7', '#ede9fe']
 
+const VIEWER_STRINGS = {
+  'pt-BR': { vsMonth: 'vs. mês ant.', all: 'Todos', noData: 'Sem dados', loading: 'Carregando...', noResults: 'Nenhum resultado', value: 'Valor' },
+  'en':    { vsMonth: 'vs. prev. month', all: 'All', noData: 'No data', loading: 'Loading...', noResults: 'No results', value: 'Value' },
+  'es':    { vsMonth: 'vs. mes ant.', all: 'Todos', noData: 'Sin datos', loading: 'Cargando...', noResults: 'Sin resultados', value: 'Valor' },
+  'fr':    { vsMonth: 'vs. mois préc.', all: 'Tout', noData: 'Aucune donnée', loading: 'Chargement...', noResults: 'Aucun résultat', value: 'Valeur' },
+  'de':    { vsMonth: 'vs. Vormonat', all: 'Alle', noData: 'Keine Daten', loading: 'Laden...', noResults: 'Keine Ergebnisse', value: 'Wert' },
+  'it':    { vsMonth: 'vs. mese prec.', all: 'Tutti', noData: 'Nessun dato', loading: 'Caricamento...', noResults: 'Nessun risultato', value: 'Valore' },
+  'zh':    { vsMonth: '对比上月', all: '全部', noData: '暂无数据', loading: '加载中...', noResults: '无结果', value: '数值' },
+  'ja':    { vsMonth: '前月比', all: 'すべて', noData: 'データなし', loading: '読み込み中...', noResults: '結果なし', value: '値' },
+}
+
 const BLOCK_TYPES = [
   { type: 'kpi',     label: 'KPI',      desc: 'Número em destaque' },
   { type: 'bar',     label: 'Barras',   desc: 'Comparar categorias' },
@@ -182,7 +193,8 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
   return { data, loading, error }
 }
 
-function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken }) {
+function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, locale = 'pt-BR' }) {
+  const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -251,7 +263,7 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken }
             onClick={() => onFilterChange(dsId, col, '')}
             className="px-2 py-1.5 text-[10px] text-gray-400 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
           >
-            Todos
+            {vs.all}
           </button>
         )}
       </div>
@@ -263,7 +275,7 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken }
             <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-xs text-gray-300 text-center py-3">Nenhum resultado</p>
+          <p className="text-xs text-gray-300 text-center py-3">{vs.noResults}</p>
         ) : filtered.map(row => {
           const isSelected = selectedVals.includes(String(row.label))
           const pct = Math.round((row.value / maxVal) * 100)
@@ -356,7 +368,7 @@ function downloadCSV(data, title) {
   URL.revokeObjectURL(url)
 }
 
-function TableBlock({ block, data, config, format, getOpacity, handleClick }) {
+function TableBlock({ block, data, config, format, getOpacity, handleClick, vs }) {
   const [sortDir, setSortDir] = useState('desc')
   const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
   const tableMode = config.table_mode || 'bar'
@@ -375,7 +387,7 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick }) {
               onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
             >
               <span className="flex items-center justify-end gap-1">
-                {block.value_col || 'Valor'}
+                {block.value_col || vs.value}
                 <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortDir === 'desc' ? 'M19 9l-7 7-7-7' : 'M5 15l7-7 7 7'} />
                 </svg>
@@ -432,7 +444,8 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick }) {
   )
 }
 
-function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange }) {
+function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
+  const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active
   const { data, loading, error } = useBlockData(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, shareToken)
   const activeCrossVal = drilldown ? null : crossFilters[block.dataset_id]?.val
@@ -444,7 +457,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'filter') {
-    return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} shareToken={shareToken} />
+    return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} shareToken={shareToken} locale={locale} />
   }
 
   if (block.type === 'slider') {
@@ -474,7 +487,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return <div className="flex items-center justify-center h-full text-center px-3"><p className="text-xs text-gray-300">Configure a fonte de dados<br/>no painel lateral</p></div>
   }
 
-  if (loading) return <div className="flex items-center justify-center h-full text-xs text-gray-400">Carregando...</div>
+  if (loading) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.loading}</div>
   if (error) return <div className="flex items-center justify-center h-full text-xs text-red-400 px-2 text-center">{error}</div>
   if (!data || data.length === 0) return (
     <div className="flex flex-col items-center justify-center h-full gap-2">
@@ -483,7 +496,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
           ← {drilldown.val}
         </button>
       )}
-      <span className="text-xs text-gray-300">Sem dados</span>
+      <span className="text-xs text-gray-300">{vs.noData}</span>
     </div>
   )
 
@@ -529,7 +542,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const delta = config.delta != null && config.delta !== '' ? String(config.delta) : null
     const deltaNum = delta ? parseFloat(delta) : null
     const deltaPositive = deltaNum != null ? deltaNum >= 0 : null
-    const deltaLabel = config.delta_label || 'vs. mês ant.'
+    const deltaLabel = config.delta_label || vs.vsMonth
     return (
       <div className="flex flex-col gap-0 pt-0.5">
         <p className="font-black leading-none tracking-tight tabular-nums" style={{ color: valueColor, fontSize: valueFontSize }}>
@@ -572,7 +585,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
-            <Bar dataKey="value" name={block.title || 'Valor'} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+            <Bar dataKey="value" name={block.title || vs.value} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
               {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
               {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
@@ -596,7 +609,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
-            <Bar dataKey="value" name={block.title || 'Valor'} radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+            <Bar dataKey="value" name={block.title || vs.value} radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
               {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
               {config.show_data_labels && <LabelList dataKey="value" position="right" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
@@ -628,7 +641,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <Area
               type="monotone"
               dataKey="value"
-              name={block.title || 'Valor'}
+              name={block.title || vs.value}
               stroke={color}
               strokeWidth={2.5}
               fill={`url(#grad_${block.id})`}
@@ -660,7 +673,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <Line
               type="monotone"
               dataKey="value"
-              name={block.title || 'Valor'}
+              name={block.title || vs.value}
               stroke={color}
               strokeWidth={2.5}
               dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
@@ -749,7 +762,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
             <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
             <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-            <Bar dataKey="value" name={block.value_col || 'Valor'} fill={palette[0]} radius={[4, 4, 0, 0]} opacity={0.85} />
+            <Bar dataKey="value" name={block.value_col || vs.value} fill={palette[0]} radius={[4, 4, 0, 0]} opacity={0.85} />
             <Line type="monotone" dataKey="value" name="" stroke={palette[1] || '#ef4444'} strokeWidth={2} dot={{ r: 2 }} legendType="none" />
           </ComposedChart>
         </ResponsiveContainer>
@@ -807,7 +820,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const maxVal = parseFloat(config.gauge_max) || 100
     const minVal = parseFloat(config.gauge_min) || 0
     const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1) * 100
-    const gaugeData = [{ name: block.title || 'Valor', value: pct }]
+    const gaugeData = [{ name: block.title || vs.value, value: pct }]
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <ResponsiveContainer width="100%" height={150}>
@@ -848,7 +861,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'table') {
-    return <TableBlock block={block} data={data} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} />
+    return <TableBlock block={block} data={data} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} vs={vs} />
   }
 
   return null
@@ -1790,6 +1803,22 @@ export function CanvasConfigPanel({ config, onChange }) {
         </label>
         <p className="text-[10px] text-gray-400 mt-1">Por padrão a grade aparece apenas ao arrastar blocos.</p>
       </div>
+
+      {/* Idioma do link público */}
+      <div className="border-t border-gray-100 pt-4">
+        <label className="block text-xs font-medium text-gray-700 mb-2">Idioma do link público</label>
+        <select value={config.language || 'pt-BR'} onChange={e => upd('language', e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+          <option value="pt-BR">🇧🇷 Português</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="zh">🇨🇳 中文</option>
+          <option value="ja">🇯🇵 日本語</option>
+        </select>
+        <p className="text-[10px] text-gray-400 mt-1">Quem abrir o link público verá o dashboard neste idioma.</p>
+      </div>
     </div>
   )
 }
@@ -1963,7 +1992,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
   )
 }
 
-export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null }) {
+export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR' }) {
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
   const [rangeFilters, setRangeFilters] = useState({})
@@ -2174,6 +2203,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 shareToken={shareToken}
                 rangeFilters={rangeFilters}
                 onRangeChange={handleRangeChange}
+                locale={locale}
               />
             </div>
 

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 // ─── Dados dos planos ─────────────────────────────────────────────────────────
 
@@ -14,7 +15,7 @@ const PLANS = [
     name: 'Gratuito',
     monthlyPrice: 0,
     desc: 'Para experimentar',
-    features: ['2 dashboards', '1 fonte de dados', '1 usuário', 'Link público'],
+    features: ['2 dashboards', '2 fontes de dados', '1 usuário', 'Link público'],
     color: 'border-gray-200',
     accentColor: 'text-gray-500',
     highlight: false,
@@ -26,25 +27,25 @@ const PLANS = [
     name: 'Solo',
     monthlyPrice: 79.90,
     desc: 'Para autônomos e MEIs',
-    features: ['8 dashboards', '5 fontes de dados', '1 usuário', '5 alertas', 'Incorporar no site'],
+    features: ['8 dashboards', '8 fontes de dados', '1 usuário', '5 alertas', 'Incorporar no site'],
     color: 'border-blue-200',
     accentColor: 'text-blue-600',
     highlight: false,
     enterprise: false,
-    trialBadge: true,
+    trialBadge: false,
     stripePriceKey: 'NEXT_PUBLIC_STRIPE_PRICE_SOLO',
   },
   {
     key: 'equipe',
-    name: 'Equipe',
+    name: 'Profissional',
     monthlyPrice: 189.90,
     desc: 'Para pequenas empresas',
-    features: ['30 dashboards', '15 fontes de dados', '5 usuários', '15 alertas', 'IA em português', 'Incorporar no site'],
+    features: ['20 dashboards', '15 fontes de dados', '1 usuário', '15 alertas', 'IA em português', 'Incorporar no site'],
     color: 'border-violet-600',
     accentColor: 'text-violet-600',
     highlight: true,
     enterprise: false,
-    trialBadge: true,
+    trialBadge: false,
     stripePriceKey: 'NEXT_PUBLIC_STRIPE_PRICE_EQUIPE',
   },
   {
@@ -52,12 +53,12 @@ const PLANS = [
     name: 'Ilimitado',
     monthlyPrice: 599.90,
     desc: 'Para empresas em crescimento',
-    features: ['Dashboards ilimitados', 'Dados ilimitados', '20 usuários', 'Alertas ilimitados', 'IA em português', 'Marca própria', 'Incorporar no site'],
+    features: ['50 dashboards', '30 fontes de dados', '5 usuários', '50 alertas', 'IA em português', 'Marca própria', 'Incorporar no site'],
     color: 'border-amber-400',
     accentColor: 'text-amber-600',
     highlight: false,
     enterprise: false,
-    trialBadge: true,
+    trialBadge: false,
     stripePriceKey: 'NEXT_PUBLIC_STRIPE_PRICE_ILIMITADO',
   },
   {
@@ -101,10 +102,13 @@ function PlanosContent() {
   const [upgrading, setUpgrading]       = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [annual, setAnnual]             = useState(false)
+  const [addonLoading, setAddonLoading] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('success') === '1') {
       toast('Assinatura ativada com sucesso! Seu plano foi atualizado.', 'success', 6000)
+    } else if (searchParams.get('addon') === '1') {
+      toast('Pack de expansão ativado com sucesso!', 'success', 6000)
     } else if (searchParams.get('canceled') === '1') {
       toast('Checkout cancelado. Nenhuma cobrança foi realizada.', 'info')
     }
@@ -127,6 +131,17 @@ function PlanosContent() {
     } catch (err) {
       toast(err.message || 'Erro ao iniciar checkout.', 'error')
       setUpgrading(null)
+    }
+  }
+
+  async function handleAddon() {
+    setAddonLoading(true)
+    try {
+      const data = await api.billing.addonCheckout()
+      window.location.href = data.checkout_url
+    } catch (err) {
+      toast(err.message || 'Pack de expansão em configuração. Entre em contato pelo comercial@jarbis.cc.', 'warn')
+      setAddonLoading(false)
     }
   }
 
@@ -168,6 +183,7 @@ function PlanosContent() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             {/* Toggle anual/mensal */}
             <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1">
               <button
@@ -362,11 +378,59 @@ function PlanosContent() {
               })}
             </div>
 
-            <p className="text-center text-xs text-gray-400">
+            <p className="text-center text-xs text-gray-400 mb-8">
               {annual
                 ? 'Cobrado anualmente · Economize 20% em relação ao plano mensal · Cancele quando quiser'
-                : 'Planos pagos incluem 7 dias de teste gratuito · Cancele quando quiser · Sem taxas escondidas'}
+                : 'Planos pagos cobrados mensalmente · Cancele quando quiser · Sem taxas escondidas'}
             </p>
+
+            {/* Card de add-on — visível apenas em planos pagos */}
+            {isPaid && (
+              <div className="bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-200 rounded-2xl p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">📦</span>
+                      <h3 className="font-black text-gray-900">Pack de Expansão</h3>
+                      <span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        R$49,90/mês por pack
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Expanda os limites do seu plano sem fazer upgrade.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { icon: '👤', label: '+1 usuário por pack' },
+                        { icon: '📊', label: '+5 dashboards por pack' },
+                        { icon: '🗄️', label: '+3 fontes de dados por pack' },
+                      ].map(item => (
+                        <div key={item.label} className="flex items-center gap-1.5 text-xs text-gray-700 bg-white border border-violet-100 rounded-lg px-2.5 py-1.5">
+                          <span>{item.icon}</span>
+                          <span>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {status?.addon_packs > 0 && (
+                      <p className="text-xs text-violet-700 font-semibold mt-3">
+                        ✓ Você tem {status.addon_packs} pack{status.addon_packs > 1 ? 's' : ''} ativo{status.addon_packs > 1 ? 's' : ''}{' '}
+                        (+{status.addon_packs} usuário{status.addon_packs > 1 ? 's' : ''},{' '}
+                        +{status.addon_packs * 5} dashboards,{' '}
+                        +{status.addon_packs * 3} fontes de dados)
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleAddon}
+                    disabled={addonLoading}
+                    className="sm:flex-shrink-0 px-5 py-2.5 bg-violet-600 text-white font-bold text-sm rounded-full hover:bg-violet-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {addonLoading ? 'Redirecionando...' : 'Adicionar pack →'}
+                  </button>
+                </div>
+              </div>
+            )}
+
           </>
         )}
       </div>

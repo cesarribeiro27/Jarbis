@@ -41,6 +41,17 @@ class Settings(BaseSettings):
     # --- CORS ---
     backend_cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
+    # --- Anthropic ---
+    anthropic_api_key: str = ""
+
+    # --- OAuth providers ---
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+    github_client_id: str = ""
+    github_client_secret: str = ""
+
     # --- Stripe ---
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
@@ -49,6 +60,8 @@ class Settings(BaseSettings):
     stripe_price_equipe: str = ""
     stripe_price_ilimitado: str = ""
     # Enterprise: negociação manual — sem price_id automático
+    # Add-on packs de expansão
+    stripe_price_addon: str = ""
     # Planos legados (mantidos para webhooks de subscriptions antigas)
     stripe_price_starter: str = ""
     stripe_price_pro: str = ""

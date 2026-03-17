@@ -2,149 +2,23 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations, useLocale } from 'next-intl'
 import { LogoA } from '@/components/logos/JarbisLogo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { getPricing } from '@/i18n/config'
 
-// ─── Dados ───────────────────────────────────────────────────────────────────
-
-const FEATURES = [
-  {
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>,
-    title: 'Monte sem saber programar',
-    desc: 'Arraste gráficos, tabelas e KPIs para o canvas. Configure tudo com cliques, sem precisar de tecnologia.',
-    color: 'bg-violet-100 text-violet-600',
-  },
-  {
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 2.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>,
-    title: 'Conecte suas planilhas',
-    desc: 'Importe Excel, CSV ou conecte o Google Sheets. Seus dados ficam prontos em segundos, sem mexer em código.',
-    color: 'bg-emerald-100 text-emerald-600',
-  },
-  {
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>,
-    title: 'IA que fala português',
-    desc: 'Pergunte "qual meu produto mais vendido?" e receba a resposta na hora, em português, sem fórmulas.',
-    color: 'bg-amber-100 text-amber-600',
-  },
-  {
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>,
-    title: 'Compartilhe com um link',
-    desc: 'Gere um link público e envie pelo WhatsApp. Seu cliente vê o dashboard sem precisar criar conta.',
-    color: 'bg-blue-100 text-blue-600',
-  },
-  {
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>,
-    title: 'Alertas automáticos',
-    desc: 'Configure alertas e receba notificação quando as vendas caírem ou o estoque estiver baixo.',
-    color: 'bg-red-100 text-red-500',
-  },
-  {
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>,
-    title: 'Incorpore no seu sistema',
-    desc: 'Cole o código em qualquer site ou app e o dashboard aparece com a sua cara, sem o nome do Jarbis.',
-    color: 'bg-purple-100 text-purple-600',
-  },
+// ─── Ícones das features (mantidos inline — não traduzíveis) ─────────────────
+const FEATURE_ICONS = [
+  { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>, color: 'bg-violet-100 text-violet-600' },
+  { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 2.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>, color: 'bg-emerald-100 text-emerald-600' },
+  { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>, color: 'bg-amber-100 text-amber-600' },
+  { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>, color: 'bg-blue-100 text-blue-600' },
+  { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>, color: 'bg-red-100 text-red-500' },
+  { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>, color: 'bg-purple-100 text-purple-600' },
 ]
 
-const PLANS_DATA = [
-  {
-    key: 'free',
-    name: 'Gratuito',
-    price: 0,
-    desc: 'Para experimentar sem compromisso',
-    features: ['2 dashboards', '1 fonte de dados', '1 usuário', 'Link público'],
-    cta: 'Criar conta grátis',
-    href: '/signup',
-    highlight: false,
-    enterprise: false,
-    trialBadge: false,
-  },
-  {
-    key: 'solo',
-    name: 'Solo',
-    price: 79.90,
-    desc: 'Para autônomos e MEIs',
-    features: ['8 dashboards', '5 fontes de dados', '1 usuário', '5 alertas', 'Incorporar no site'],
-    cta: 'Começar 7 dias grátis',
-    href: '/signup',
-    highlight: false,
-    enterprise: false,
-    trialBadge: true,
-  },
-  {
-    key: 'equipe',
-    name: 'Equipe',
-    price: 189.90,
-    desc: 'Para pequenas empresas',
-    features: ['30 dashboards', '15 fontes de dados', '5 usuários', 'IA em português', 'Incorporar no site'],
-    cta: 'Começar 7 dias grátis',
-    href: '/signup',
-    highlight: true,
-    tag: 'Mais popular',
-    enterprise: false,
-    trialBadge: true,
-  },
-  {
-    key: 'ilimitado',
-    name: 'Ilimitado',
-    price: 599.90,
-    desc: 'Para empresas em crescimento',
-    features: ['Tudo ilimitado', '20 usuários', 'IA em português', 'Marca própria no dashboard'],
-    cta: 'Começar 7 dias grátis',
-    href: '/signup',
-    highlight: false,
-    enterprise: false,
-    trialBadge: true,
-  },
-  {
-    key: 'enterprise',
-    name: 'Enterprise',
-    price: null,
-    desc: 'Para grandes operações',
-    features: ['Tudo ilimitado', 'Usuários ilimitados', 'SLA garantido em contrato', 'Gerente de conta dedicado', 'Onboarding personalizado'],
-    cta: 'Falar com comercial',
-    href: 'mailto:comercial@jarbis.cc?subject=Interesse no plano Enterprise',
-    highlight: false,
-    enterprise: true,
-    trialBadge: false,
-  },
-]
-
-const COMPARISON = [
-  { feature: 'Preço inicial', jarbis: 'Grátis por 7 dias', luzmo: '$1.000+/mês', powerbi: 'R$60/usuário' },
-  { feature: 'Interface em português', jarbis: true, luzmo: false, powerbi: false },
-  { feature: 'Suporte em português', jarbis: true, luzmo: false, powerbi: false },
-  { feature: 'Incorporar via iframe', jarbis: true, luzmo: true, powerbi: 'Complexo' },
-  { feature: 'IA em português', jarbis: true, luzmo: false, powerbi: false },
-  { feature: 'Setup em minutos', jarbis: true, luzmo: false, powerbi: false },
-  { feature: 'Sem cartão no teste', jarbis: true, luzmo: false, powerbi: false },
-]
-
-const FAQ = [
-  {
-    q: 'Preciso saber programar ou mexer em tecnologia?',
-    a: 'Não. O Jarbis foi feito para donos de negócio, não para programadores. Se você sabe usar Excel, consegue usar o Jarbis.',
-  },
-  {
-    q: 'Funciona com Google Sheets ou Excel?',
-    a: 'Sim! Você pode importar arquivos Excel e CSV diretamente, ou conectar uma planilha do Google Sheets via link. Os dados atualizam sozinhos.',
-  },
-  {
-    q: 'Meus dados ficam seguros?',
-    a: 'Sim. Todos os dados são armazenados com criptografia e em servidores no Brasil. Nenhum dado é compartilhado com terceiros.',
-  },
-  {
-    q: 'Posso cancelar quando quiser?',
-    a: 'Sim, sem burocracia e sem multa. Cancele diretamente pelo painel, a qualquer momento.',
-  },
-  {
-    q: 'O que é o plano gratuito?',
-    a: 'O plano gratuito permite criar até 2 dashboards com 1 fonte de dados, sem prazo para expirar. Os planos pagos têm 7 dias de teste sem precisar de cartão.',
-  },
-  {
-    q: 'Posso mostrar os gráficos para meus clientes?',
-    a: 'Sim. Você gera um link público e envia pelo WhatsApp ou e-mail. Seu cliente vê os dados em tempo real, sem precisar criar conta. No plano Ilimitado, os dashboards aparecem com a sua marca.',
-  },
-]
+// Chaves dos planos na ordem do grid
+const PLAN_KEYS = ['free', 'solo', 'equipe', 'ilimitado', 'enterprise']
 
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
 
@@ -207,8 +81,21 @@ function FaqItem({ q, a }) {
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const t = useTranslations()
+  const locale = useLocale()
   const [menuOpen, setMenuOpen] = useState(false)
   const [annual, setAnnual] = useState(false)
+
+  const pricing = getPricing(locale)
+
+  // Preços base por plano no locale atual
+  const basePrices = {
+    free: 0,
+    solo: pricing.solo,
+    equipe: pricing.equipe,
+    ilimitado: pricing.ilimitado,
+    enterprise: null,
+  }
 
   function calcPrice(monthly) {
     if (monthly === null || monthly === 0) return monthly
@@ -216,7 +103,27 @@ export default function LandingPage() {
   }
 
   function fmtPrice(p) {
-    return p === null ? 'Sob consulta' : p === 0 ? 'Grátis' : `R$${p.toFixed(2).replace('.', ',')}`
+    if (p === null) return t('pricing.onRequest')
+    if (p === 0) return t('pricing.free')
+    return `${pricing.symbol}${p.toFixed(2).replace('.', ',')}`
+  }
+
+  // Arrays vindos das mensagens
+  const faqItems = t.raw('faq.items')
+  const comparisonRows = t.raw('comparison.rows')
+  const featureItems = t.raw('features.items')
+  const howItWorksSteps = t.raw('howItWorks.steps')
+  const problemBefore = t.raw('problem.beforeItems')
+  const problemAfter = t.raw('problem.afterItems')
+  const heroMonths = t.raw('hero.months')
+
+  // Planos com highlight/enterprise config (não traduzíveis)
+  const PLAN_CONFIG = {
+    free:       { highlight: false, enterprise: false },
+    solo:       { highlight: false, enterprise: false },
+    equipe:     { highlight: true,  enterprise: false, tag: t('pricing.mostPopular') },
+    ilimitado:  { highlight: false, enterprise: false },
+    enterprise: { highlight: false, enterprise: true  },
   }
 
   return (
@@ -226,13 +133,14 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <NavLogo />
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#como-funciona" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">Como funciona</a>
-            <a href="#funcionalidades" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">Funcionalidades</a>
-            <a href="#precos" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">Preços</a>
-            <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">Entrar</Link>
+          <div className="hidden md:flex items-center gap-6">
+            <a href="#como-funciona" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">{t('nav.howItWorks')}</a>
+            <a href="#funcionalidades" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">{t('nav.features')}</a>
+            <a href="#precos" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">{t('nav.pricing')}</a>
+            <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">{t('nav.login')}</Link>
+            <LanguageSwitcher />
             <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
-              Testar grátis — 7 dias
+              {t('nav.trialCta')}
             </Link>
           </div>
           <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setMenuOpen(!menuOpen)}>
@@ -244,11 +152,14 @@ export default function LandingPage() {
         </div>
         {menuOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xl px-6 py-5 flex flex-col gap-4">
-            <a href="#como-funciona" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Como funciona</a>
-            <a href="#funcionalidades" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Funcionalidades</a>
-            <a href="#precos" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Preços</a>
-            <Link href="/login" className="text-sm text-gray-600 font-medium">Entrar</Link>
-            <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-3 rounded-full text-center">Testar grátis — 7 dias</Link>
+            <a href="#como-funciona" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>{t('nav.howItWorks')}</a>
+            <a href="#funcionalidades" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>{t('nav.features')}</a>
+            <a href="#precos" className="text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>{t('nav.pricing')}</a>
+            <Link href="/login" className="text-sm text-gray-600 font-medium">{t('nav.login')}</Link>
+            <div className="flex items-center justify-between">
+              <LanguageSwitcher />
+            </div>
+            <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-3 rounded-full text-center">{t('nav.trialCta')}</Link>
           </div>
         )}
       </nav>
@@ -263,32 +174,32 @@ export default function LandingPage() {
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-8">
             <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
-            Feito para o Brasil — em português, em real
+            {t('hero.badge')}
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tight leading-[1.05] mb-6">
-            Você tem os dados.<br />
+            {t('hero.title1')}<br />
             <span style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #67e8f9 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              A gente ajuda a entender.
+              {t('hero.title2')}
             </span>
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Crie gráficos e dashboards em minutos, sem precisar saber nada de tecnologia. Conecte sua planilha, arraste os blocos e pronto.
+            {t('hero.subtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
             <Link href="/signup"
               className="inline-flex items-center justify-center gap-2 bg-violet-600 text-white font-bold px-8 py-4 rounded-full hover:bg-violet-500 transition-all text-base shadow-lg shadow-violet-900/50">
-              Comece grátis agora
+              {t('hero.ctaPrimary')}
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
             </Link>
             <a href="#como-funciona"
               className="inline-flex items-center justify-center border border-white/10 text-gray-300 font-semibold px-8 py-4 rounded-full hover:bg-white/5 transition-all text-base">
-              Ver como funciona
+              {t('hero.ctaSecondary')}
             </a>
           </div>
-          <p className="text-xs text-gray-600">7 dias grátis · Sem cartão · Cancele quando quiser</p>
+          <p className="text-xs text-gray-600">{t('hero.freeBadge')}</p>
         </div>
 
         {/* Dashboard mockup — desktop */}
@@ -301,46 +212,46 @@ export default function LandingPage() {
               <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
               <div className="w-3 h-3 rounded-full bg-green-500/70" />
               <div className="flex-1 mx-4 rounded-md h-6 flex items-center px-3 border border-white/5" style={{ background: '#0B0A1A' }}>
-                <span className="text-xs text-gray-500">app.jarbis.cc/dashboards</span>
+                <span className="text-xs text-gray-500">{t('hero.mockupUrl')}</span>
               </div>
             </div>
             <div className="p-5 grid grid-cols-12 gap-3">
               {[
-                { label: 'Total de Vendas', value: 'R$847K', change: '+23%', up: true },
-                { label: 'Novos Clientes', value: '1.284', change: '+12%', up: true },
-                { label: 'Conversão', value: '4,7%', change: '-0,3%', up: false },
-                { label: 'MRR', value: 'R$124K', change: '+8%', up: true },
+                { labelKey: 'hero.kpi.totalSales', value: pricing.symbol === 'R$' ? 'R$847K' : '$247K', change: '+23%', up: true },
+                { labelKey: 'hero.kpi.newClients',  value: '1.284', change: '+12%', up: true },
+                { labelKey: 'hero.kpi.conversion',  value: '4,7%', change: '-0,3%', up: false },
+                { labelKey: 'hero.kpi.mrr',          value: pricing.symbol === 'R$' ? 'R$124K' : '$36K', change: '+8%', up: true },
               ].map((kpi) => (
-                <div key={kpi.label} className="col-span-3 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
-                  <div className="text-xs text-gray-500 mb-1.5">{kpi.label}</div>
+                <div key={kpi.labelKey} className="col-span-3 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
+                  <div className="text-xs text-gray-500 mb-1.5">{t(kpi.labelKey)}</div>
                   <div className="text-xl font-black text-white mb-1">{kpi.value}</div>
                   <div className={`text-xs font-semibold ${kpi.up ? 'text-emerald-400' : 'text-red-400'}`}>{kpi.change}</div>
                 </div>
               ))}
               <div className="col-span-8 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
-                <div className="text-xs text-gray-500 mb-4">Receita por mês</div>
+                <div className="text-xs text-gray-500 mb-4">{t('hero.chart.revenue')}</div>
                 <div className="flex items-end gap-1.5 h-28">
                   {[40,55,45,70,60,85,75,92,80,68,88,96].map((h, i) => (
                     <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 11 ? 'linear-gradient(to top, #7c3aed, #a78bfa)' : 'rgba(124,58,237,0.25)' }} />
                   ))}
                 </div>
                 <div className="flex justify-between mt-2">
-                  {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map(m => (
+                  {heroMonths.map(m => (
                     <div key={m} className="text-[9px] text-gray-600">{m}</div>
                   ))}
                 </div>
               </div>
               <div className="col-span-4 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
-                <div className="text-xs text-gray-500 mb-4">Por canal</div>
+                <div className="text-xs text-gray-500 mb-4">{t('hero.chart.byChannel')}</div>
                 <div className="space-y-3">
                   {[
-                    { label: 'Direto', pct: 45, color: '#7c3aed' },
-                    { label: 'Orgânico', pct: 30, color: '#06b6d4' },
-                    { label: 'Pago', pct: 25, color: '#10b981' },
+                    { labelKey: 'hero.chart.direct',  pct: 45, color: '#7c3aed' },
+                    { labelKey: 'hero.chart.organic', pct: 30, color: '#06b6d4' },
+                    { labelKey: 'hero.chart.paid',    pct: 25, color: '#10b981' },
                   ].map((item) => (
-                    <div key={item.label}>
+                    <div key={item.labelKey}>
                       <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-gray-400">{item.label}</span>
+                        <span className="text-gray-400">{t(item.labelKey)}</span>
                         <span className="text-white font-semibold">{item.pct}%</span>
                       </div>
                       <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -358,16 +269,19 @@ export default function LandingPage() {
         <div className="md:hidden relative max-w-sm mx-auto mt-10">
           <div className="rounded-2xl overflow-hidden border border-white/10 p-4" style={{ background: '#13111F' }}>
             <div className="grid grid-cols-2 gap-2 mb-3">
-              {[{ label: 'Vendas', value: 'R$847K' }, { label: 'Clientes', value: '1.284' }].map((kpi) => (
-                <div key={kpi.label} className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
-                  <div className="text-[10px] text-gray-500 mb-1">{kpi.label}</div>
+              {[
+                { labelKey: 'hero.kpi.totalSales', value: pricing.symbol === 'R$' ? 'R$847K' : '$247K' },
+                { labelKey: 'hero.kpi.newClients',  value: '1.284' },
+              ].map((kpi) => (
+                <div key={kpi.labelKey} className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
+                  <div className="text-[10px] text-gray-500 mb-1">{t(kpi.labelKey)}</div>
                   <div className="text-base font-black text-white">{kpi.value}</div>
                   <div className="text-[10px] font-semibold text-emerald-400">+23%</div>
                 </div>
               ))}
             </div>
             <div className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
-              <div className="text-[10px] text-gray-500 mb-2">Receita por mês</div>
+              <div className="text-[10px] text-gray-500 mb-2">{t('hero.chart.revenue')}</div>
               <div className="flex items-end gap-1 h-16">
                 {[40,55,45,70,60,85,75,92,80,68,88,96].map((h, i) => (
                   <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 11 ? 'linear-gradient(to top, #7c3aed, #a78bfa)' : 'rgba(124,58,237,0.25)' }} />
@@ -382,56 +296,42 @@ export default function LandingPage() {
       <section className="py-20 sm:py-28 px-6 bg-white">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">O problema</p>
+            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('problem.label')}</p>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight">
-              Reconhece essa situação?
+              {t('problem.title')}
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-6">
-            {/* Antes */}
             <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 border border-gray-100">
               <div className="inline-flex items-center gap-2 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                Antes do Jarbis
+                {t('problem.beforeBadge')}
               </div>
               <ul className="space-y-4">
-                {[
-                  'Planilhas espalhadas no computador que ninguém entende',
-                  'Dados no WhatsApp que somem depois de 7 dias',
-                  'Precisa pedir para o sobrinho montar um relatório',
-                  'Não sabe o que está vendendo mais esta semana',
-                  'Cliente pede relatório e você passa horas no Excel',
-                ].map(t => (
-                  <li key={t} className="flex items-start gap-3 text-sm text-gray-600">
+                {problemBefore.map(text => (
+                  <li key={text} className="flex items-start gap-3 text-sm text-gray-600">
                     <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </div>
-                    {t}
+                    {text}
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Depois */}
             <div className="bg-violet-50 rounded-2xl p-6 sm:p-8 border border-violet-100">
               <div className="inline-flex items-center gap-2 bg-violet-600 text-white text-xs font-bold px-3 py-1.5 rounded-full mb-6">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                Com o Jarbis
+                {t('problem.afterBadge')}
               </div>
               <ul className="space-y-4">
-                {[
-                  'Todos os seus números em um único lugar, atualizado',
-                  'Dashboard no celular para ver a qualquer hora',
-                  'Você mesmo monta os gráficos em minutos, sem ajuda',
-                  'Sabe exatamente o que está vendendo e o que está parado',
-                  'Envia o link do relatório pro cliente em 30 segundos',
-                ].map(t => (
-                  <li key={t} className="flex items-start gap-3 text-sm text-gray-700">
+                {problemAfter.map(text => (
+                  <li key={text} className="flex items-start gap-3 text-sm text-gray-700">
                     <div className="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                     </div>
-                    {t}
+                    {text}
                   </li>
                 ))}
               </ul>
@@ -444,18 +344,14 @@ export default function LandingPage() {
       <section id="como-funciona" className="py-20 sm:py-28 px-6" style={{ background: '#FAFAF8' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">Como funciona</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">3 passos simples</h2>
-            <p className="text-lg text-gray-500">Sem configuração complexa, sem precisar chamar o TI.</p>
+            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('howItWorks.label')}</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">{t('howItWorks.title')}</h2>
+            <p className="text-lg text-gray-500">{t('howItWorks.subtitle')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 relative">
             <div className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-violet-200 via-violet-400 to-violet-200" />
-            {[
-              { step: '01', emoji: '📂', title: 'Jogue seus dados aqui', desc: 'Importe um arquivo Excel, CSV, ou cole o link da sua planilha do Google Sheets. Pronto em menos de 1 minuto.' },
-              { step: '02', emoji: '🎨', title: 'Monte seu painel', desc: 'Arraste gráficos, tabelas e indicadores para a tela. A IA pode montar automaticamente — você só ajusta.' },
-              { step: '03', emoji: '🔗', title: 'Compartilhe com quem quiser', desc: 'Copie o link e envie pelo WhatsApp, e-mail ou incorpore no seu site. Seus dados ao vivo para todos verem.' },
-            ].map((item, i) => (
+            {howItWorksSteps.map((item, i) => (
               <div key={item.step} className="text-center relative">
                 <div className="w-20 h-20 mx-auto mb-5 rounded-2xl flex flex-col items-center justify-center"
                   style={{ background: i === 1 ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : '#F5F3FF' }}>
@@ -474,19 +370,19 @@ export default function LandingPage() {
       <section id="funcionalidades" className="py-20 sm:py-28 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">Funcionalidades</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">
-              Tudo que você precisa,<br className="hidden sm:block" /> nada do que não precisa
+            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('features.label')}</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5 whitespace-pre-line">
+              {t('features.title')}
             </h2>
             <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-              Desenvolvido para PMEs brasileiras que precisam de analytics profissional sem a complexidade e o preço das ferramentas gringas.
+              {t('features.subtitle')}
             </p>
           </div>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
-            {FEATURES.map((f) => (
+            {featureItems.map((f, i) => (
               <div key={f.title} className="bg-white rounded-2xl p-7 border border-gray-100 hover:border-violet-200 hover:shadow-lg hover:shadow-violet-50 transition-all group">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${f.color}`}>
-                  {f.icon}
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${FEATURE_ICONS[i].color}`}>
+                  {FEATURE_ICONS[i].icon}
                 </div>
                 <h3 className="font-bold text-gray-900 text-lg mb-2 group-hover:text-violet-700 transition-colors">{f.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
@@ -500,16 +396,16 @@ export default function LandingPage() {
       <section id="compare" className="py-20 sm:py-28 px-6" style={{ background: '#FAFAF8' }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">Comparativo</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">Por que Jarbis?</h2>
-            <p className="text-lg text-gray-500">A única plataforma de BI embarcado pensada para o mercado brasileiro.</p>
+            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('comparison.label')}</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">{t('comparison.title')}</h2>
+            <p className="text-lg text-gray-500">{t('comparison.subtitle')}</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-[560px] w-full">
                 <thead>
                   <tr style={{ background: '#FAFAF8' }} className="border-b border-gray-100">
-                    <th className="text-left px-4 sm:px-6 py-4 text-sm font-semibold text-gray-400">Funcionalidade</th>
+                    <th className="text-left px-4 sm:px-6 py-4 text-sm font-semibold text-gray-400">{t('comparison.colFeature')}</th>
                     <th className="px-4 sm:px-6 py-4 text-center">
                       <div className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 font-bold text-sm px-3 py-1 rounded-full">
                         <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />Jarbis
@@ -520,7 +416,7 @@ export default function LandingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {COMPARISON.map((row, i) => (
+                  {comparisonRows.map((row, i) => (
                     <tr key={row.feature} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-gray-600 font-medium whitespace-nowrap">{row.feature}</td>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.jarbis} /></td>
@@ -539,102 +435,97 @@ export default function LandingPage() {
       <section id="precos" className="py-20 sm:py-28 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">Preços</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">Preço justo, em real</h2>
-            <p className="text-lg text-gray-500 mb-8">Sem surpresas em dólar. Cancele quando quiser.</p>
+            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('pricing.label')}</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">{t('pricing.title')}</h2>
+            <p className="text-lg text-gray-500 mb-8">{t('pricing.subtitle')}</p>
 
-            {/* Toggle anual/mensal */}
             <div className="inline-flex items-center gap-3 bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => setAnnual(false)}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${!annual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
               >
-                Mensal
+                {t('pricing.monthly')}
               </button>
               <button
                 onClick={() => setAnnual(true)}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${annual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
               >
-                Anual
+                {t('pricing.annual')}
                 <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">-20%</span>
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {PLANS_DATA.map((plan) => {
-              const price = calcPrice(plan.price)
+            {PLAN_KEYS.map((key) => {
+              const cfg = PLAN_CONFIG[key]
+              const price = calcPrice(basePrices[key])
+              const plan = t.raw(`pricing.plans.${key}`)
+              const planFeatures = plan.features
+
               return (
                 <div
-                  key={plan.key}
+                  key={key}
                   className={`relative rounded-2xl p-5 flex flex-col transition-all ${
-                    plan.highlight
+                    cfg.highlight
                       ? 'text-white shadow-xl shadow-violet-200 ring-2 ring-violet-600'
-                      : plan.enterprise
+                      : cfg.enterprise
                       ? 'bg-gray-900 text-white border border-gray-800'
                       : 'bg-white border border-gray-100 shadow-sm'
                   }`}
-                  style={plan.highlight ? { background: 'linear-gradient(145deg, #6d28d9, #7c3aed)' } : {}}
+                  style={cfg.highlight ? { background: 'linear-gradient(145deg, #6d28d9, #7c3aed)' } : {}}
                 >
-                  {plan.tag && (
+                  {cfg.tag && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-[10px] font-black px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
-                      {plan.tag}
+                      {cfg.tag}
                     </div>
                   )}
 
-                  <div className={`text-xs font-bold mb-2 ${plan.highlight ? 'text-violet-200' : plan.enterprise ? 'text-gray-400' : 'text-gray-400'}`}>
+                  <div className={`text-xs font-bold mb-2 ${cfg.highlight ? 'text-violet-200' : cfg.enterprise ? 'text-gray-400' : 'text-gray-400'}`}>
                     {plan.name}
                   </div>
 
                   <div className="mb-1">
                     {price === null ? (
-                      <span className={`font-black text-lg ${plan.enterprise ? 'text-white' : 'text-gray-900'}`}>Sob consulta</span>
+                      <span className={`font-black text-lg ${cfg.enterprise ? 'text-white' : 'text-gray-900'}`}>{t('pricing.onRequest')}</span>
                     ) : price === 0 ? (
-                      <span className={`font-black text-3xl ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>Grátis</span>
+                      <span className={`font-black text-3xl ${cfg.highlight ? 'text-white' : 'text-gray-900'}`}>{t('pricing.free')}</span>
                     ) : (
                       <div className="flex items-baseline gap-1">
-                        <span className={`font-black text-2xl ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                          R${price.toFixed(2).replace('.', ',')}
+                        <span className={`font-black text-2xl ${cfg.highlight ? 'text-white' : 'text-gray-900'}`}>
+                          {pricing.symbol}{price.toFixed(2).replace('.', ',')}
                         </span>
-                        <span className={`text-xs ${plan.highlight ? 'text-violet-300' : plan.enterprise ? 'text-gray-500' : 'text-gray-400'}`}>/mês</span>
+                        <span className={`text-xs ${cfg.highlight ? 'text-violet-300' : cfg.enterprise ? 'text-gray-500' : 'text-gray-400'}`}>{t('pricing.perMonth')}</span>
                       </div>
                     )}
                   </div>
 
-                  {plan.trialBadge && (
-                    <div className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 w-fit">
-                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      7 dias grátis
-                    </div>
-                  )}
-                  {plan.key === 'free' && !plan.trialBadge && (
-                    <div className="h-5 mb-2" />
-                  )}
+                  <div className="h-5 mb-2" />
 
-                  <p className={`text-xs mb-4 ${plan.highlight ? 'text-violet-200' : plan.enterprise ? 'text-gray-400' : 'text-gray-400'}`}>
+                  <p className={`text-xs mb-4 ${cfg.highlight ? 'text-violet-200' : cfg.enterprise ? 'text-gray-400' : 'text-gray-400'}`}>
                     {plan.desc}
                   </p>
 
                   <ul className="space-y-2 mb-5 flex-1">
-                    {plan.features.map((f) => (
+                    {planFeatures.map(f => (
                       <li key={f} className="flex items-start gap-2 text-xs">
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${plan.highlight ? 'bg-white/20' : plan.enterprise ? 'bg-gray-700' : 'bg-violet-100'}`}>
-                          <svg className={`w-2 h-2 ${plan.highlight || plan.enterprise ? 'text-white' : 'text-violet-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${cfg.highlight ? 'bg-white/20' : cfg.enterprise ? 'bg-gray-700' : 'bg-violet-100'}`}>
+                          <svg className={`w-2 h-2 ${cfg.highlight || cfg.enterprise ? 'text-white' : 'text-violet-600'}`} viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
-                        <span className={plan.highlight ? 'text-violet-100' : plan.enterprise ? 'text-gray-300' : 'text-gray-600'}>{f}</span>
+                        <span className={cfg.highlight ? 'text-violet-100' : cfg.enterprise ? 'text-gray-300' : 'text-gray-600'}>{f}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {plan.enterprise ? (
-                    <a href={plan.href} className="block text-center py-2.5 rounded-full font-bold text-xs bg-amber-500 text-white hover:bg-amber-400 transition-colors">
+                  {cfg.enterprise ? (
+                    <a href={`mailto:comercial@jarbis.cc?subject=Enterprise`} className="block text-center py-2.5 rounded-full font-bold text-xs bg-amber-500 text-white hover:bg-amber-400 transition-colors">
                       {plan.cta}
                     </a>
                   ) : (
-                    <Link href={plan.href} className={`block text-center py-2.5 rounded-full font-bold text-xs transition-colors ${
-                      plan.highlight ? 'bg-white text-violet-700 hover:bg-violet-50' : plan.key === 'free' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-700'
+                    <Link href={key === 'free' ? '/signup' : '/signup'} className={`block text-center py-2.5 rounded-full font-bold text-xs transition-colors ${
+                      cfg.highlight ? 'bg-white text-violet-700 hover:bg-violet-50' : key === 'free' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-700'
                     }`}>
                       {plan.cta}
                     </Link>
@@ -644,12 +535,10 @@ export default function LandingPage() {
             })}
           </div>
 
-          {annual && (
-            <p className="text-center text-xs text-gray-400 mt-4">Cobrado anualmente · Economize 20% em relação ao plano mensal</p>
-          )}
-          {!annual && (
-            <p className="text-center text-xs text-gray-400 mt-4">Todos os planos pagos incluem 7 dias grátis sem cartão · Cancele quando quiser</p>
-          )}
+          {annual
+            ? <p className="text-center text-xs text-gray-400 mt-4">{t('pricing.footerAnnual')}</p>
+            : <p className="text-center text-xs text-gray-400 mt-4">{t('pricing.footerMonthly')}</p>
+          }
         </div>
       </section>
 
@@ -657,11 +546,11 @@ export default function LandingPage() {
       <section className="py-20 sm:py-28 px-6" style={{ background: '#FAFAF8' }}>
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">Dúvidas frequentes</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">Perguntas e respostas</h2>
+            <p className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('faq.label')}</p>
+            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">{t('faq.title')}</h2>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8">
-            {FAQ.map(item => <FaqItem key={item.q} {...item} />)}
+            {faqItems.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
           </div>
         </div>
       </section>
@@ -672,18 +561,16 @@ export default function LandingPage() {
           style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.2) 0%, transparent 70%)' }} />
         <div className="relative max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white tracking-tight mb-5 leading-tight">
-            Comece hoje.<br />
+            {t('finalCta.title1')}<br />
             <span style={{ background: 'linear-gradient(135deg, #a78bfa, #67e8f9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Seus dados merecem ser entendidos.
+              {t('finalCta.title2')}
             </span>
           </h2>
-          <p className="text-lg text-gray-400 mb-4">
-            Acesso completo por 7 dias. Seu primeiro dashboard em 2 minutos.
-          </p>
-          <p className="text-sm text-gray-600 mb-8">7 dias grátis · Sem cartão · Cancele quando quiser</p>
+          <p className="text-lg text-gray-400 mb-4">{t('finalCta.subtitle')}</p>
+          <p className="text-sm text-gray-600 mb-8">{t('finalCta.badge')}</p>
           <Link href="/signup"
             className="inline-flex items-center gap-2 bg-violet-600 text-white font-bold px-10 py-5 rounded-full hover:bg-violet-500 transition-all text-lg shadow-xl shadow-violet-900/50">
-            Criar conta e testar grátis
+            {t('finalCta.cta')}
             <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
           </Link>
         </div>
@@ -696,15 +583,15 @@ export default function LandingPage() {
             <NavLogo />
             <span className="text-gray-200">·</span>
             <span className="text-xs text-gray-400">
-              Desenvolvido pela <strong className="text-gray-600">Mazzel Tech</strong>
+              {t('footer.madeBy')} <strong className="text-gray-600">{t('footer.company')}</strong>
             </span>
           </div>
           <div className="flex gap-6 text-sm text-gray-400">
-            <Link href="/termos" className="hover:text-gray-700 transition-colors">Termos</Link>
-            <Link href="/privacidade" className="hover:text-gray-700 transition-colors">Privacidade</Link>
-            <Link href="/login" className="hover:text-gray-700 transition-colors">Entrar</Link>
+            <Link href="/termos" className="hover:text-gray-700 transition-colors">{t('footer.terms')}</Link>
+            <Link href="/privacidade" className="hover:text-gray-700 transition-colors">{t('footer.privacy')}</Link>
+            <Link href="/login" className="hover:text-gray-700 transition-colors">{t('footer.login')}</Link>
           </div>
-          <p className="text-xs text-gray-300">© 2026 Mazzel Tech. Todos os direitos reservados.</p>
+          <p className="text-xs text-gray-300">{t('footer.copyright')}</p>
         </div>
       </footer>
 

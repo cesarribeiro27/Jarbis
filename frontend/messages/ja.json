@@ -1,0 +1,291 @@
+{
+  "nav": {
+    "howItWorks": "使い方",
+    "features": "機能",
+    "pricing": "料金",
+    "login": "ログイン",
+    "trialCta": "無料トライアル — 7日間"
+  },
+  "hero": {
+    "badge": "世界中のビジネスに — あなたの言語で",
+    "title1": "データをお持ちですか？",
+    "title2": "理解するお手伝いをします。",
+    "subtitle": "技術的な知識不要で、数分でグラフとダッシュボードを作成できます。スプレッドシートを接続し、ブロックをドラッグするだけで完成。",
+    "ctaPrimary": "無料で始める",
+    "ctaSecondary": "使い方を見る",
+    "freeBadge": "7日間無料 · カード不要 · いつでもキャンセル可",
+    "mockupUrl": "app.jarbis.cc/dashboards",
+    "kpi": {
+      "totalSales": "総売上",
+      "newClients": "新規顧客",
+      "conversion": "コンバージョン率",
+      "mrr": "MRR"
+    },
+    "chart": {
+      "revenue": "月次収益",
+      "byChannel": "チャネル別",
+      "direct": "ダイレクト",
+      "organic": "オーガニック",
+      "paid": "有料"
+    },
+    "months": ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
+  },
+  "problem": {
+    "label": "課題",
+    "title": "こんな経験はありませんか？",
+    "beforeBadge": "Jarbis導入前",
+    "afterBadge": "Jarbis導入後",
+    "beforeItems": [
+      "誰も理解できないスプレッドシートが散在している",
+      "チャットのデータが数日後に消えてしまう",
+      "レポート作成を誰かに頼まなければならない",
+      "今週何が最も売れているかわからない",
+      "顧客がレポートを求めるとExcelで何時間もかかる"
+    ],
+    "afterItems": [
+      "すべての数字が1か所に集約、常に最新の状態",
+      "スマートフォンでダッシュボードをいつでも確認",
+      "数分で自分でグラフを作成できる",
+      "何が売れて何が滞っているかを正確に把握",
+      "30秒でレポートリンクを顧客に送信"
+    ]
+  },
+  "howItWorks": {
+    "label": "使い方",
+    "title": "3つの簡単なステップ",
+    "subtitle": "複雑な設定不要、ITに連絡する必要なし。",
+    "steps": [
+      {
+        "step": "01",
+        "emoji": "📂",
+        "title": "データをアップロード",
+        "desc": "ExcelやCSVファイルをインポートするか、Google SheetsのリンクをペーストするだけOK。1分以内に完了。"
+      },
+      {
+        "step": "02",
+        "emoji": "🎨",
+        "title": "ダッシュボードを作成",
+        "desc": "グラフ、テーブル、KPIをキャンバスにドラッグ＆ドロップ。AIが自動で作成することも可能。"
+      },
+      {
+        "step": "03",
+        "emoji": "🔗",
+        "title": "誰でも共有",
+        "desc": "リンクをコピーしてメールで送信するか、ウェブサイトに埋め込む。リアルタイムデータを全員が確認可能。"
+      }
+    ]
+  },
+  "features": {
+    "label": "機能",
+    "title": "必要なものすべて、\n余分なものは何もない",
+    "subtitle": "エンタープライズツールの複雑さと高コストなしに、プロフェッショナルな分析を必要とする企業向けに構築。",
+    "items": [
+      {
+        "title": "コーディング不要で作成",
+        "desc": "グラフ、テーブル、KPIをキャンバスにドラッグ＆ドロップ。クリックですべて設定可能。"
+      },
+      {
+        "title": "スプレッドシートに接続",
+        "desc": "Excel、CSVをインポートするか、Google Sheetsに接続。数秒でデータが準備完了。"
+      },
+      {
+        "title": "あなたの言語で話すAI",
+        "desc": "「最も売れている商品は？」と聞くだけで即座に回答。数式は不要。"
+      },
+      {
+        "title": "リンクで共有",
+        "desc": "公開リンクを生成して共有。顧客はアカウント作成なしでダッシュボードを確認可能。"
+      },
+      {
+        "title": "自動アラート",
+        "desc": "アラートを設定し、売上が下落したり在庫が少なくなったときに通知を受け取る。"
+      },
+      {
+        "title": "システムに埋め込む",
+        "desc": "コードを任意のウェブサイトやアプリに貼り付けると、あなたのブランドでダッシュボードが表示される。"
+      }
+    ]
+  },
+  "comparison": {
+    "label": "比較",
+    "title": "なぜJarbisなのか？",
+    "subtitle": "成長企業向けに構築された組み込みBIプラットフォーム。",
+    "colFeature": "機能",
+    "rows": [
+      { "feature": "開始価格", "jarbis": "7日間無料", "luzmo": "$1,000+/月", "powerbi": "$10/ユーザー" },
+      { "feature": "日本語インターフェース", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "日本語サポート", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "iframeで埋め込み", "jarbis": true, "luzmo": true, "powerbi": "複雑" },
+      { "feature": "自然言語AI", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "数分でセットアップ", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "トライアルにカード不要", "jarbis": true, "luzmo": false, "powerbi": false }
+    ]
+  },
+  "pricing": {
+    "label": "料金",
+    "title": "公正な価格、驚きなし",
+    "subtitle": "ドルの驚きなし。いつでもキャンセル可能。",
+    "monthly": "月払い",
+    "annual": "年払い",
+    "perMonth": "/月",
+    "free": "無料",
+    "onRequest": "お問い合わせ",
+    "footerMonthly": "無料プランは期限なし · 有料プランは月次請求 · いつでもキャンセル可",
+    "footerAnnual": "年次請求 · 月払いより20%節約",
+    "mostPopular": "最も人気",
+    "plans": {
+      "free": {
+        "name": "無料",
+        "desc": "コミットメントなしで試す",
+        "cta": "無料アカウント作成",
+        "features": ["ダッシュボード2つ", "データソース2つ", "ユーザー1人", "公開リンク"]
+      },
+      "solo": {
+        "name": "Solo",
+        "desc": "フリーランスと個人起業家向け",
+        "cta": "Soloを選ぶ",
+        "features": ["ダッシュボード8つ", "データソース8つ", "ユーザー1人", "アラート5件", "ウェブサイトに埋め込み"]
+      },
+      "equipe": {
+        "name": "プロフェッショナル",
+        "desc": "中小企業向け",
+        "cta": "プロフェッショナルを選ぶ",
+        "features": ["ダッシュボード20つ", "データソース15つ", "ユーザー1人", "アラート15件", "AIアシスタント", "ウェブサイトに埋め込み"]
+      },
+      "ilimitado": {
+        "name": "無制限",
+        "desc": "成長企業向け",
+        "cta": "無制限を選ぶ",
+        "features": ["ダッシュボード50つ", "データソース30つ", "ユーザー5人", "アラート50件", "AIアシスタント", "ホワイトラベルダッシュボード"]
+      },
+      "enterprise": {
+        "name": "エンタープライズ",
+        "desc": "大規模企業向け",
+        "cta": "営業に連絡",
+        "features": ["すべて無制限", "無制限ユーザー", "SLA保証", "専任アカウントマネージャー", "カスタムオンボーディング"]
+      }
+    }
+  },
+  "faq": {
+    "label": "よくある質問",
+    "title": "質問と回答",
+    "items": [
+      {
+        "q": "プログラミングの知識は必要ですか？",
+        "a": "いいえ。JarbisはビジネスオーナーのためのもC、開発者向けではありません。Excelが使えれば、Jarbisも使えます。"
+      },
+      {
+        "q": "Google SheetsやExcelと連携できますか？",
+        "a": "はい！ExcelとCSVファイルを直接インポートするか、リンク経由でGoogle Sheetsに接続できます。データは自動的に更新されます。"
+      },
+      {
+        "q": "データは安全ですか？",
+        "a": "はい。すべてのデータは暗号化され、安全なサーバーに保存されています。データが第三者と共有されることはありません。"
+      },
+      {
+        "q": "いつでもキャンセルできますか？",
+        "a": "はい、手間なし、ペナルティなし。いつでもダッシュボードから直接キャンセルできます。"
+      },
+      {
+        "q": "無料プランとは何ですか？",
+        "a": "無料プランでは、2つのデータソースを持つ最大2つのダッシュボードを期限なしで作成できます。クレジットカード不要で永久無料です。"
+      },
+      {
+        "q": "顧客にグラフを見せられますか？",
+        "a": "はい。公開リンクを生成してメールで送信できます。顧客はアカウント作成なしでリアルタイムデータを確認できます。"
+      }
+    ]
+  },
+  "finalCta": {
+    "title1": "今日から始めましょう。",
+    "title2": "あなたのデータは理解される価値があります。",
+    "subtitle": "7日間無料アクセス。2分で最初のダッシュボードを作成。",
+    "badge": "7日間無料 · カード不要 · いつでもキャンセル可",
+    "cta": "アカウントを作成して無料で試す"
+  },
+  "footer": {
+    "madeBy": "開発元：",
+    "company": "Mazzel Tech",
+    "terms": "利用規約",
+    "privacy": "プライバシー",
+    "login": "ログイン",
+    "copyright": "© 2026 Mazzel Tech. All rights reserved."
+  },
+  "language": {
+    "label": "言語",
+    "pt-BR": "Português",
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano",
+    "zh": "中文",
+    "ja": "日本語"
+  },
+  "signup": {
+    "title": "無料アカウントを作成",
+    "subtitle": "7日間無料、クレジットカード不要",
+    "nameLabel": "お名前",
+    "namePlaceholder": "あなたの名前",
+    "emailLabel": "メールアドレス",
+    "emailPlaceholder": "you@email.com",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "最低8文字",
+    "confirmPasswordLabel": "パスワードを確認",
+    "confirmPasswordPlaceholder": "パスワードをもう一度入力",
+    "passwordMismatch": "パスワードが一致しません",
+    "passwordMatch": "パスワードが一致しました",
+    "passwordStrong": "強い",
+    "passwordMedium": "普通",
+    "passwordWeak": "弱い",
+    "submit": "無料アカウントを作成 →",
+    "submitLoading": "アカウント作成中...",
+    "orContinueWith": "または次の方法で続ける",
+    "googleButton": "Googleで続ける",
+    "microsoftButton": "Microsoftで続ける",
+    "githubButton": "GitHubで続ける",
+    "termsText": "アカウントを作成することで、",
+    "termsLink": "利用規約",
+    "andText": "および",
+    "privacyLink": "プライバシーポリシーに同意します",
+    "hasAccount": "すでにアカウントをお持ちですか？",
+    "loginLink": "ログイン",
+    "bullets": [
+      { "icon": "⚡", "text": "2分でセットアップ" },
+      { "icon": "🌐", "text": "あなたの言語のインターフェース" },
+      { "icon": "🔒", "text": "クラウドでデータを安全に保護" },
+      { "icon": "💳", "text": "クレジットカード不要" },
+      { "icon": "🤖", "text": "AI アシスタント内蔵" }
+    ]
+  },
+  "login": {
+    "title": "おかえりなさい",
+    "subtitle": "続けるにはアカウントにログインしてください",
+    "emailLabel": "メールアドレス",
+    "emailPlaceholder": "you@email.com",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "••••••••",
+    "submit": "ログイン",
+    "submitLoading": "ログイン中...",
+    "orContinueWith": "または次の方法で続ける",
+    "googleButton": "Googleで続ける",
+    "microsoftButton": "Microsoftで続ける",
+    "githubButton": "GitHubで続ける",
+    "noAccount": "アカウントをお持ちでない方は？",
+    "signupLink": "無料アカウントを作成",
+    "errorDefault": "認証情報が無効です",
+    "rightTitle": "意思決定を\n促すデータ",
+    "rightSubtitle": "あなたの言語で提供する組み込みBI。必要な形で。"
+  },
+  "app": {
+    "nav": {
+      "dashboard": "ダッシュボード",
+      "dashboards": "ダッシュボード一覧",
+      "data": "データ",
+      "alerts": "アラート",
+      "users": "ユーザー",
+      "settings": "設定",
+      "logout": "ログアウト"
+    }
+  }
+}

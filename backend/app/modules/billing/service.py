@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.modules.billing.plan_limits import PLAN_LIMITS
+from app.modules.billing.plan_limits import PLAN_LIMITS, get_effective_limits
 from app.modules.tenants.models import Tenant
 
 PRICE_TO_PLAN: dict[str, str] = {}
@@ -89,6 +89,31 @@ class BillingService:
         )
         return session.url
 
+    async def create_addon_checkout_session(
+        self,
+        tenant_id: uuid.UUID,
+        user_email: str,
+    ) -> str:
+        """Cria sessão de checkout para pack de expansão."""
+        if not _init_stripe():
+            raise ValueError("Stripe não configurado.")
+        if not settings.stripe_price_addon:
+            raise ValueError("Pack de expansão não configurado.")
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+        customer_id = await self.get_or_create_customer(tenant, user_email)
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            mode="subscription",
+            line_items=[{"price": settings.stripe_price_addon, "quantity": 1}],
+            success_url=f"{settings.frontend_url}/configuracoes/planos?addon=1",
+            cancel_url=f"{settings.frontend_url}/configuracoes/planos",
+            metadata={"tenant_id": str(tenant_id), "type": "addon"},
+            subscription_data={"metadata": {"tenant_id": str(tenant_id), "type": "addon"}},
+        )
+        return session.url
+
     async def create_portal_session(self, tenant_id: uuid.UUID) -> str:
         """Cria sessão do portal do cliente e retorna a URL."""
         if not _init_stripe():
@@ -133,11 +158,21 @@ class BillingService:
         tenant = await self._get_tenant(uuid.UUID(tenant_id))
         if not tenant:
             return
-        tenant.stripe_subscription_id = session.get("subscription")
+
+        checkout_type = session.get("metadata", {}).get("type", "")
+        sub_id = session.get("subscription")
+
+        if checkout_type == "addon":
+            # Pack de expansão: incrementa addon_packs
+            current = getattr(tenant, "addon_packs", 0) or 0
+            tenant.addon_packs = current + 1
+            await self.db.commit()
+            return
+
+        tenant.stripe_subscription_id = sub_id
         tenant.subscription_status = "active"
 
         # Busca o price_id da subscription para mapear o plano
-        sub_id = session.get("subscription")
         if sub_id:
             sub = stripe.Subscription.retrieve(sub_id)
             price_id = sub["items"]["data"][0]["price"]["id"]
@@ -214,7 +249,8 @@ class BillingService:
             raise ValueError("Tenant não encontrado.")
 
         plan = tenant.plan or "free"
-        limits = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+        addon_packs = getattr(tenant, "addon_packs", 0) or 0
+        limits = get_effective_limits(plan, addon_packs)
 
         dash_count = await self.db.scalar(
             select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)
@@ -237,6 +273,7 @@ class BillingService:
             "subscription_status": tenant.subscription_status,
             "trial_days_remaining": tenant.trial_days_remaining,
             "has_stripe": bool(tenant.stripe_customer_id),
+            "addon_packs": addon_packs,
             "limits": limits,
             "usage": {
                 "dashboards": dash_count,

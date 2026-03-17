@@ -1,8 +1,10 @@
+import createNextIntlPlugin from 'next-intl/plugin'
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.js')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    // Em dev, faz proxy das chamadas /api/* para o backend de produção
-    // Isso evita erros de CORS ao rodar localmente
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     return [
       {
@@ -13,4 +15,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

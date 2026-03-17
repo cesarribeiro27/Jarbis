@@ -1,0 +1,291 @@
+{
+  "nav": {
+    "howItWorks": "How it works",
+    "features": "Features",
+    "pricing": "Pricing",
+    "login": "Log in",
+    "trialCta": "Try free — 7 days"
+  },
+  "hero": {
+    "badge": "Built for global businesses — in your language",
+    "title1": "You have the data.",
+    "title2": "We help you understand it.",
+    "subtitle": "Create charts and dashboards in minutes, no technical knowledge required. Connect your spreadsheet, drag the blocks, and you're done.",
+    "ctaPrimary": "Start for free",
+    "ctaSecondary": "See how it works",
+    "freeBadge": "7 days free · No credit card · Cancel anytime",
+    "mockupUrl": "app.jarbis.cc/dashboards",
+    "kpi": {
+      "totalSales": "Total Sales",
+      "newClients": "New Clients",
+      "conversion": "Conversion",
+      "mrr": "MRR"
+    },
+    "chart": {
+      "revenue": "Monthly Revenue",
+      "byChannel": "By channel",
+      "direct": "Direct",
+      "organic": "Organic",
+      "paid": "Paid"
+    },
+    "months": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  },
+  "problem": {
+    "label": "The problem",
+    "title": "Does this sound familiar?",
+    "beforeBadge": "Before Jarbis",
+    "afterBadge": "With Jarbis",
+    "beforeItems": [
+      "Spreadsheets scattered across computers that nobody understands",
+      "Data buried in chat apps that disappear after a week",
+      "You need to ask someone else to build a report",
+      "You don't know what's selling best this week",
+      "A client asks for a report and you spend hours in Excel"
+    ],
+    "afterItems": [
+      "All your numbers in one place, always up to date",
+      "Dashboard on your phone to check anytime, anywhere",
+      "You build the charts yourself in minutes, no help needed",
+      "You know exactly what's selling and what's sitting still",
+      "Send the report link to your client in 30 seconds"
+    ]
+  },
+  "howItWorks": {
+    "label": "How it works",
+    "title": "3 simple steps",
+    "subtitle": "No complex setup, no need to call IT.",
+    "steps": [
+      {
+        "step": "01",
+        "emoji": "📂",
+        "title": "Drop your data here",
+        "desc": "Import an Excel or CSV file, or paste your Google Sheets link. Ready in under 1 minute."
+      },
+      {
+        "step": "02",
+        "emoji": "🎨",
+        "title": "Build your dashboard",
+        "desc": "Drag charts, tables, and KPIs onto the canvas. AI can auto-build it — you just tweak."
+      },
+      {
+        "step": "03",
+        "emoji": "🔗",
+        "title": "Share with anyone",
+        "desc": "Copy the link and send via email or embed on your website. Live data for everyone to see."
+      }
+    ]
+  },
+  "features": {
+    "label": "Features",
+    "title": "Everything you need,\nnothing you don't",
+    "subtitle": "Built for businesses that need professional analytics without the complexity and price of enterprise tools.",
+    "items": [
+      {
+        "title": "Build without coding",
+        "desc": "Drag charts, tables, and KPIs onto the canvas. Configure everything with clicks, no tech skills needed."
+      },
+      {
+        "title": "Connect your spreadsheets",
+        "desc": "Import Excel, CSV, or connect Google Sheets. Your data is ready in seconds, no code required."
+      },
+      {
+        "title": "AI that speaks your language",
+        "desc": "Ask \"what's my best-selling product?\" and get the answer instantly, without formulas."
+      },
+      {
+        "title": "Share with a link",
+        "desc": "Generate a public link and share it. Your client sees the dashboard without creating an account."
+      },
+      {
+        "title": "Automatic alerts",
+        "desc": "Set alerts and get notified when sales drop or inventory runs low."
+      },
+      {
+        "title": "Embed in your system",
+        "desc": "Paste the code into any website or app and the dashboard appears with your branding, not Jarbis."
+      }
+    ]
+  },
+  "comparison": {
+    "label": "Comparison",
+    "title": "Why Jarbis?",
+    "subtitle": "The embedded BI platform built for growing businesses.",
+    "colFeature": "Feature",
+    "rows": [
+      { "feature": "Starting price", "jarbis": "Free for 7 days", "luzmo": "$1,000+/mo", "powerbi": "$10/user" },
+      { "feature": "English interface", "jarbis": true, "luzmo": true, "powerbi": true },
+      { "feature": "English support", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "Embed via iframe", "jarbis": true, "luzmo": true, "powerbi": "Complex" },
+      { "feature": "AI in plain language", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "Setup in minutes", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "No card for trial", "jarbis": true, "luzmo": false, "powerbi": false }
+    ]
+  },
+  "pricing": {
+    "label": "Pricing",
+    "title": "Fair price, no surprises",
+    "subtitle": "No dollar surprises. Cancel anytime.",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "perMonth": "/mo",
+    "free": "Free",
+    "onRequest": "Contact us",
+    "footerMonthly": "Free plan forever · Paid plans billed monthly · Cancel anytime",
+    "footerAnnual": "Billed annually · Save 20% vs monthly",
+    "mostPopular": "Most popular",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "desc": "Try it with no commitment",
+        "cta": "Create free account",
+        "features": ["2 dashboards", "2 data sources", "1 user", "Public link"]
+      },
+      "solo": {
+        "name": "Solo",
+        "desc": "For freelancers and solopreneurs",
+        "cta": "Get Solo",
+        "features": ["8 dashboards", "8 data sources", "1 user", "5 alerts", "Embed on website"]
+      },
+      "equipe": {
+        "name": "Professional",
+        "desc": "For independent professionals",
+        "cta": "Get Professional",
+        "features": ["20 dashboards", "15 data sources", "1 user", "15 alerts", "AI assistant", "Embed on website"]
+      },
+      "ilimitado": {
+        "name": "Unlimited",
+        "desc": "For growing companies",
+        "cta": "Get Unlimited",
+        "features": ["50 dashboards", "30 data sources", "5 users", "50 alerts", "AI assistant", "White-label dashboards"]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "For large operations",
+        "cta": "Talk to sales",
+        "features": ["Everything unlimited", "Unlimited users", "Guaranteed SLA", "Dedicated account manager", "Custom onboarding"]
+      }
+    }
+  },
+  "faq": {
+    "label": "FAQ",
+    "title": "Questions & answers",
+    "items": [
+      {
+        "q": "Do I need to know how to code?",
+        "a": "No. Jarbis was built for business owners, not developers. If you can use Excel, you can use Jarbis."
+      },
+      {
+        "q": "Does it work with Google Sheets or Excel?",
+        "a": "Yes! You can import Excel and CSV files directly, or connect a Google Sheets spreadsheet via link. Data updates automatically."
+      },
+      {
+        "q": "Is my data secure?",
+        "a": "Yes. All data is encrypted and stored on secure servers. No data is shared with third parties."
+      },
+      {
+        "q": "Can I cancel anytime?",
+        "a": "Yes, no hassle and no penalty. Cancel directly from your dashboard at any time."
+      },
+      {
+        "q": "What is the free plan?",
+        "a": "The free plan lets you create up to 2 dashboards with 2 data sources, with no expiry. It's free forever, no credit card needed."
+      },
+      {
+        "q": "Can I show charts to my clients?",
+        "a": "Yes. Generate a public link and send it by email. Your client sees live data without creating an account. On the Unlimited plan, dashboards show your own branding."
+      }
+    ]
+  },
+  "finalCta": {
+    "title1": "Start today.",
+    "title2": "Your data deserves to be understood.",
+    "subtitle": "Free access for 7 days. Your first dashboard in 2 minutes.",
+    "badge": "7 days free · No credit card · Cancel anytime",
+    "cta": "Create account and try free"
+  },
+  "footer": {
+    "madeBy": "Powered by",
+    "company": "Mazzel Tech",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "login": "Log in",
+    "copyright": "© 2026 Mazzel Tech. All rights reserved."
+  },
+  "language": {
+    "label": "Language",
+    "pt-BR": "Português",
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano",
+    "zh": "中文",
+    "ja": "日本語"
+  },
+  "signup": {
+    "title": "Create free account",
+    "subtitle": "7 days free, no credit card required",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Minimum 8 characters",
+    "confirmPasswordLabel": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordMatch": "Passwords match",
+    "passwordStrong": "Strong",
+    "passwordMedium": "Medium",
+    "passwordWeak": "Weak",
+    "submit": "Create free account →",
+    "submitLoading": "Creating account...",
+    "orContinueWith": "or continue with",
+    "googleButton": "Continue with Google",
+    "microsoftButton": "Continue with Microsoft",
+    "githubButton": "Continue with GitHub",
+    "termsText": "By creating an account you agree to our",
+    "termsLink": "Terms",
+    "andText": "and",
+    "privacyLink": "Privacy",
+    "hasAccount": "Already have an account?",
+    "loginLink": "Log in",
+    "bullets": [
+      { "icon": "⚡", "text": "Set up in 2 minutes" },
+      { "icon": "🌐", "text": "Interface in your language" },
+      { "icon": "🔒", "text": "Secure data in the cloud" },
+      { "icon": "💳", "text": "No credit card required" },
+      { "icon": "🤖", "text": "Built-in AI assistant" }
+    ]
+  },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your account to continue",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Log in",
+    "submitLoading": "Logging in...",
+    "orContinueWith": "or continue with",
+    "googleButton": "Continue with Google",
+    "microsoftButton": "Continue with Microsoft",
+    "githubButton": "Continue with GitHub",
+    "noAccount": "Don't have an account?",
+    "signupLink": "Create free account",
+    "errorDefault": "Invalid credentials",
+    "rightTitle": "Data that\ndrives decisions",
+    "rightSubtitle": "Embedded BI in your language, the way you need it."
+  },
+  "app": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "dashboards": "Dashboards",
+      "data": "Data",
+      "alerts": "Alerts",
+      "users": "Users",
+      "settings": "Settings",
+      "logout": "Log out"
+    }
+  }
+}

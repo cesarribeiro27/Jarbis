@@ -41,6 +41,9 @@ class Report(Base):
     # Imagem de capa (base64 data URL da imagem recortada)
     cover_image: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Idioma padrão do link público (ex: "pt-BR", "en", "es")
+    language: Mapped[str] = mapped_column(String(10), nullable=False, server_default="pt-BR", default="pt-BR")
+
     # Share
     share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
     is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

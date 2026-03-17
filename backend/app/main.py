@@ -18,6 +18,7 @@ from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.modules.auth.router import router as auth_router
 from app.modules.billing.router import router as billing_router
 from app.modules.reports.router import router as reports_router
+from app.modules.support.router import router as support_router
 
 
 async def _refresh_loop():
@@ -104,6 +105,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(billing_router)
 app.include_router(reports_router)
+app.include_router(support_router)
 
 
 @app.get("/health", tags=["Sistema"])

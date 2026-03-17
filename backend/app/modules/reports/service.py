@@ -53,6 +53,7 @@ class ReportService:
                 "cover_image": r.cover_image,
                 "is_shared": r.is_shared,
                 "block_count": len(r.blocks) if r.blocks else 0,
+                "language": r.language if hasattr(r, "language") else "pt-BR",
                 "created_at": r.created_at,
                 "updated_at": r.updated_at,
             }
@@ -93,6 +94,24 @@ class ReportService:
         await self.db.commit()
         await self.db.refresh(report)
         return report
+
+    async def clone(self, report_id: uuid.UUID, tenant_id: uuid.UUID) -> Report:
+        source = await self.get(report_id, tenant_id)
+        if not source:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Relatório não encontrado")
+        cloned = Report(
+            tenant_id=tenant_id,
+            title=f"Cópia de {source.title}",
+            description=source.description,
+            blocks=source.blocks,
+            pages=source.pages,
+            language=source.language if hasattr(source, "language") else "pt-BR",
+        )
+        self.db.add(cloned)
+        await self.db.commit()
+        await self.db.refresh(cloned)
+        return cloned
 
     async def delete(self, report_id: uuid.UUID, tenant_id: uuid.UUID) -> bool:
         report = await self.get(report_id, tenant_id)

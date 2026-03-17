@@ -79,6 +79,7 @@ export const api = {
     update: (id, data) => apiFetch(`/reports/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => apiFetch(`/reports/${id}`, { method: 'DELETE' }),
     share: (id) => apiFetch(`/reports/${id}/share`, { method: 'POST' }),
+    clone: (id) => apiFetch(`/reports/${id}/clone`, { method: 'POST' }),
     public: (token) => apiFetch(`/reports/public/${token}`),
     data: (source, params = {}) => apiFetch(`/reports/data/${source}?${buildQS(params)}`),
     datasets: {
@@ -130,5 +131,6 @@ export const api = {
     status: () => apiFetch('/billing/status'),
     checkout: (priceId) => apiFetch('/billing/checkout', { method: 'POST', body: JSON.stringify({ price_id: priceId }) }),
     portal: () => apiFetch('/billing/portal', { method: 'POST' }),
+    addonCheckout: () => apiFetch('/billing/addon/checkout', { method: 'POST' }),
   },
 }

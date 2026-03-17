@@ -258,3 +258,81 @@ async def update_user(
         target.is_active = data.is_active
 
     return UserResponse.model_validate(target)
+
+
+# ─── OAuth endpoints ──────────────────────────────────────────────────────────
+
+from app.modules.auth.oauth import PROVIDERS, get_authorization_url, exchange_code_for_profile
+
+
+@router.get("/oauth/{provider}/authorize", summary="Retorna URL de autorização OAuth")
+async def oauth_authorize(provider: str):
+    if provider not in PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Provedor '{provider}' não suportado.")
+    cfg = PROVIDERS[provider]
+    if not cfg["client_id"]():
+        raise HTTPException(status_code=503, detail=f"Provedor '{provider}' não configurado.")
+    url = get_authorization_url(provider)
+    return {"url": url}
+
+
+@router.get("/oauth/{provider}/callback", summary="Callback OAuth — troca code por JWT", include_in_schema=False)
+async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(get_db)):
+    """
+    Recebe o code do provedor, busca/cria usuário e redireciona para o frontend
+    com token JWT como query param.
+    """
+    from fastapi.responses import RedirectResponse
+    from app.core.security import create_access_token
+    from app.modules.tenants.models import Tenant
+    import secrets
+
+    if provider not in PROVIDERS:
+        raise HTTPException(status_code=400, detail="Provedor inválido.")
+
+    try:
+        profile = await exchange_code_for_profile(provider, code)
+    except Exception as e:
+        redirect_url = f"{settings.frontend_url}/auth/callback?error={str(e)[:100]}"
+        return RedirectResponse(url=redirect_url)
+
+    email = profile.get("email", "").lower().strip()
+    if not email:
+        return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?error=email_missing")
+
+    # Busca usuário existente pelo email
+    user = await db.scalar(select(User).where(User.email == email))
+
+    if not user:
+        # Cria tenant + usuário
+        slug_base = email.split("@")[0].lower().replace(".", "-")
+        slug = f"{slug_base}-{secrets.token_hex(3)}"
+        name = profile.get("name") or slug_base
+
+        tenant = Tenant(name=name, slug=slug, plan="free")
+        db.add(tenant)
+        await db.flush()
+
+        from datetime import datetime, timezone, timedelta
+        trial_ends = datetime.now(timezone.utc) + timedelta(days=7)
+        tenant.trial_ends_at = trial_ends
+
+        user = User(
+            tenant_id=tenant.id,
+            email=email,
+            hashed_password="",  # sem senha — login apenas via OAuth
+            full_name=name,
+            role="owner",
+            is_active=True,
+            email_verified=True,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    token = create_access_token({"sub": str(user.id)})
+    import json
+    from urllib.parse import quote
+    user_data = {"id": str(user.id), "email": user.email, "full_name": user.full_name, "role": user.role}
+    redirect_url = f"{settings.frontend_url}/auth/callback?token={token}&user={quote(json.dumps(user_data))}"
+    return RedirectResponse(url=redirect_url)

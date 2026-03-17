@@ -1,0 +1,291 @@
+{
+  "nav": {
+    "howItWorks": "如何使用",
+    "features": "功能",
+    "pricing": "定价",
+    "login": "登录",
+    "trialCta": "免费试用 — 7天"
+  },
+  "hero": {
+    "badge": "面向全球企业 — 支持您的语言",
+    "title1": "您拥有数据。",
+    "title2": "我们帮助您理解它。",
+    "subtitle": "无需技术知识，几分钟内创建图表和仪表板。连接您的电子表格，拖放模块，即可完成。",
+    "ctaPrimary": "免费开始",
+    "ctaSecondary": "了解如何使用",
+    "freeBadge": "7天免费 · 无需信用卡 · 随时取消",
+    "mockupUrl": "app.jarbis.cc/dashboards",
+    "kpi": {
+      "totalSales": "总销售额",
+      "newClients": "新客户",
+      "conversion": "转化率",
+      "mrr": "月经常性收入"
+    },
+    "chart": {
+      "revenue": "月度收入",
+      "byChannel": "按渠道",
+      "direct": "直接",
+      "organic": "自然",
+      "paid": "付费"
+    },
+    "months": ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]
+  },
+  "problem": {
+    "label": "问题",
+    "title": "您是否遇到过这种情况？",
+    "beforeBadge": "使用Jarbis之前",
+    "afterBadge": "使用Jarbis之后",
+    "beforeItems": [
+      "散落各处、无人能懂的电子表格",
+      "聊天中的数据几天后消失不见",
+      "需要请别人帮忙制作报告",
+      "不知道本周哪些产品卖得最好",
+      "客户要报告，您却要在Excel里花好几个小时"
+    ],
+    "afterItems": [
+      "所有数据集中一处，始终保持最新",
+      "手机上的仪表板，随时随地查看",
+      "几分钟内自己创建图表",
+      "清楚掌握销售情况",
+      "30秒内将报告链接发给客户"
+    ]
+  },
+  "howItWorks": {
+    "label": "如何使用",
+    "title": "3个简单步骤",
+    "subtitle": "无需复杂设置，无需联系IT部门。",
+    "steps": [
+      {
+        "step": "01",
+        "emoji": "📂",
+        "title": "上传您的数据",
+        "desc": "导入Excel、CSV文件，或粘贴Google Sheets链接。不到1分钟即可完成。"
+      },
+      {
+        "step": "02",
+        "emoji": "🎨",
+        "title": "创建您的仪表板",
+        "desc": "将图表、表格和KPI拖放到画布上。AI可以自动创建。"
+      },
+      {
+        "step": "03",
+        "emoji": "🔗",
+        "title": "与任何人分享",
+        "desc": "复制链接并通过电子邮件发送或嵌入网站。实时数据供所有人查看。"
+      }
+    ]
+  },
+  "features": {
+    "label": "功能",
+    "title": "拥有所需的一切，\n摒弃多余的功能",
+    "subtitle": "专为需要专业数据分析却不想承担企业级工具复杂性和高昂费用的企业而设计。",
+    "items": [
+      {
+        "title": "无需编程即可创建",
+        "desc": "将图表、表格和KPI拖放到画布上。点击即可配置一切，无需技术技能。"
+      },
+      {
+        "title": "连接您的电子表格",
+        "desc": "导入Excel、CSV或连接Google Sheets。您的数据几秒内即可就绪。"
+      },
+      {
+        "title": "用您的语言与AI对话",
+        "desc": "问\"我最畅销的产品是什么？\"并立即获得答案，无需公式。"
+      },
+      {
+        "title": "通过链接分享",
+        "desc": "生成公开链接并分享。您的客户无需创建账户即可查看仪表板。"
+      },
+      {
+        "title": "自动提醒",
+        "desc": "设置提醒，当销售下滑或库存不足时及时获得通知。"
+      },
+      {
+        "title": "嵌入您的系统",
+        "desc": "将代码粘贴到任何网站或应用程序中，仪表板将以您的品牌显示。"
+      }
+    ]
+  },
+  "comparison": {
+    "label": "比较",
+    "title": "为什么选择Jarbis？",
+    "subtitle": "专为成长型企业打造的嵌入式BI平台。",
+    "colFeature": "功能",
+    "rows": [
+      { "feature": "起始价格", "jarbis": "7天免费", "luzmo": "1,000美元/月", "powerbi": "10美元/用户" },
+      { "feature": "中文界面", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "中文支持", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "iframe嵌入", "jarbis": true, "luzmo": true, "powerbi": "复杂" },
+      { "feature": "自然语言AI", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "几分钟完成设置", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "试用无需信用卡", "jarbis": true, "luzmo": false, "powerbi": false }
+    ]
+  },
+  "pricing": {
+    "label": "定价",
+    "title": "公平定价，无惊喜",
+    "subtitle": "没有美元惊喜。随时取消。",
+    "monthly": "按月",
+    "annual": "按年",
+    "perMonth": "/月",
+    "free": "免费",
+    "onRequest": "联系我们",
+    "footerMonthly": "免费计划永久有效 · 付费计划按月计费 · 随时取消",
+    "footerAnnual": "按年计费 · 比按月节省20%",
+    "mostPopular": "最受欢迎",
+    "plans": {
+      "free": {
+        "name": "免费版",
+        "desc": "无需承诺，随时体验",
+        "cta": "创建免费账户",
+        "features": ["2个仪表板", "2个数据源", "1个用户", "公开链接"]
+      },
+      "solo": {
+        "name": "Solo版",
+        "desc": "适合自由职业者和个人创业者",
+        "cta": "选择Solo版",
+        "features": ["8个仪表板", "8个数据源", "1个用户", "5条提醒", "嵌入网站"]
+      },
+      "equipe": {
+        "name": "专业版",
+        "desc": "适合小型企业",
+        "cta": "选择专业版",
+        "features": ["20个仪表板", "15个数据源", "1个用户", "15条告警", "AI助手", "嵌入网站"]
+      },
+      "ilimitado": {
+        "name": "无限版",
+        "desc": "适合成长型企业",
+        "cta": "选择无限版",
+        "features": ["50个仪表板", "30个数据源", "5个用户", "50条告警", "AI助手", "白标仪表板"]
+      },
+      "enterprise": {
+        "name": "企业版",
+        "desc": "适合大型企业",
+        "cta": "联系销售",
+        "features": ["一切无限", "无限用户", "保证SLA", "专属客户经理", "定制化入门培训"]
+      }
+    }
+  },
+  "faq": {
+    "label": "常见问题",
+    "title": "问题与解答",
+    "items": [
+      {
+        "q": "我需要懂编程吗？",
+        "a": "不需要。Jarbis是为企业主而非开发者设计的。如果您会用Excel，就能使用Jarbis。"
+      },
+      {
+        "q": "支持Google Sheets或Excel吗？",
+        "a": "支持！您可以直接导入Excel和CSV文件，或通过链接连接Google Sheets。数据自动更新。"
+      },
+      {
+        "q": "我的数据安全吗？",
+        "a": "安全。所有数据均经过加密，存储在安全服务器上。不与任何第三方共享数据。"
+      },
+      {
+        "q": "可以随时取消吗？",
+        "a": "可以，无麻烦，无罚款。随时直接从您的仪表板取消。"
+      },
+      {
+        "q": "免费计划是什么？",
+        "a": "免费计划允许创建最多2个仪表板，包含2个数据源，永不过期。永久免费，无需信用卡。"
+      },
+      {
+        "q": "可以向客户展示图表吗？",
+        "a": "可以。生成公开链接并通过电子邮件发送。您的客户无需创建账户即可实时查看数据。"
+      }
+    ]
+  },
+  "finalCta": {
+    "title1": "今天就开始。",
+    "title2": "您的数据值得被理解。",
+    "subtitle": "7天免费访问。2分钟内完成第一个仪表板。",
+    "badge": "7天免费 · 无需信用卡 · 随时取消",
+    "cta": "创建账户并免费试用"
+  },
+  "footer": {
+    "madeBy": "由",
+    "company": "Mazzel Tech 开发",
+    "terms": "条款",
+    "privacy": "隐私",
+    "login": "登录",
+    "copyright": "© 2026 Mazzel Tech. 保留所有权利。"
+  },
+  "language": {
+    "label": "语言",
+    "pt-BR": "Português",
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano",
+    "zh": "中文",
+    "ja": "日本語"
+  },
+  "signup": {
+    "title": "创建免费账户",
+    "subtitle": "7天免费，无需信用卡",
+    "nameLabel": "姓名",
+    "namePlaceholder": "您的姓名",
+    "emailLabel": "电子邮件",
+    "emailPlaceholder": "您的@邮件.com",
+    "passwordLabel": "密码",
+    "passwordPlaceholder": "至少8个字符",
+    "confirmPasswordLabel": "确认密码",
+    "confirmPasswordPlaceholder": "重复您的密码",
+    "passwordMismatch": "密码不匹配",
+    "passwordMatch": "密码匹配",
+    "passwordStrong": "强",
+    "passwordMedium": "中",
+    "passwordWeak": "弱",
+    "submit": "创建免费账户 →",
+    "submitLoading": "正在创建账户...",
+    "orContinueWith": "或使用以下方式继续",
+    "googleButton": "使用Google继续",
+    "microsoftButton": "使用Microsoft继续",
+    "githubButton": "使用GitHub继续",
+    "termsText": "创建账户即表示您同意我们的",
+    "termsLink": "条款",
+    "andText": "和",
+    "privacyLink": "隐私政策",
+    "hasAccount": "已有账户？",
+    "loginLink": "登录",
+    "bullets": [
+      { "icon": "⚡", "text": "2分钟内完成设置" },
+      { "icon": "🌐", "text": "支持您的语言界面" },
+      { "icon": "🔒", "text": "云端安全数据" },
+      { "icon": "💳", "text": "无需信用卡" },
+      { "icon": "🤖", "text": "内置AI助手" }
+    ]
+  },
+  "login": {
+    "title": "欢迎回来",
+    "subtitle": "登录您的账户以继续",
+    "emailLabel": "电子邮件",
+    "emailPlaceholder": "您的@邮件.com",
+    "passwordLabel": "密码",
+    "passwordPlaceholder": "••••••••",
+    "submit": "登录",
+    "submitLoading": "登录中...",
+    "orContinueWith": "或使用以下方式继续",
+    "googleButton": "使用Google继续",
+    "microsoftButton": "使用Microsoft继续",
+    "githubButton": "使用GitHub继续",
+    "noAccount": "没有账户？",
+    "signupLink": "创建免费账户",
+    "errorDefault": "凭据无效",
+    "rightTitle": "驱动决策的\n数据",
+    "rightSubtitle": "以您的语言提供嵌入式BI，满足您的需求。"
+  },
+  "app": {
+    "nav": {
+      "dashboard": "仪表板",
+      "dashboards": "仪表板列表",
+      "data": "数据",
+      "alerts": "告警",
+      "users": "用户",
+      "settings": "设置",
+      "logout": "退出"
+    }
+  }
+}
