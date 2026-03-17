@@ -713,6 +713,20 @@
         "label": "图像",
         "desc": "照片或标志"
       }
+    },
+    "rail": {
+      "edit": "编辑",
+      "data": "数据",
+      "filters": "过滤器",
+      "config": "配置",
+      "notes": "笔记",
+      "ai": "人工智能",
+      "help": "帮助",
+      "helpTitle": "快捷方式和帮助",
+      "open": "打开",
+      "close": "关闭",
+      "openPanel": "打开面板",
+      "closePanel": "关闭面板"
     }
   },
   "configuracoes": {

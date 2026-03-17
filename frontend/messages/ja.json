@@ -713,6 +713,20 @@
         "label": "画像",
         "desc": "写真またはロゴ"
       }
+    },
+    "rail": {
+      "edit": "編集",
+      "data": "データ",
+      "filters": "フィルター",
+      "config": "構成",
+      "notes": "注意事項",
+      "ai": "AI",
+      "help": "ヘルプ",
+      "helpTitle": "ショートカットとヘルプ",
+      "open": "開ける",
+      "close": "閉じる",
+      "openPanel": "オープンパネル",
+      "closePanel": "パネルを閉じる"
     }
   },
   "configuracoes": {

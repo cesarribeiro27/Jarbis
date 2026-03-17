@@ -161,7 +161,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
           <div className="pt-3">
             {!collapsed && (
               <div className="text-[10px] text-gray-400 font-semibold px-2.5 pb-1.5 uppercase tracking-widest">
-                Admin
+                {t('admin')}
               </div>
             )}
             {NAV_ADMIN.map(({ href, label, Icon }) => {
@@ -334,7 +334,7 @@ export default function AppLayout({ children }) {
             <button
               onClick={() => setMobileOpen(true)}
               className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
-              aria-label="Abrir menu"
+              aria-label={t('openMenu')}
             >
               <Icons.Hamburger />
             </button>
@@ -351,10 +351,10 @@ export default function AppLayout({ children }) {
             <Icons.Zap />
             <span className="text-center">
               {trialDays === 0
-                ? 'Seu período de teste expirou. Escolha um plano para continuar.'
-                : `Teste gratuito termina em ${trialDays} dia${trialDays !== 1 ? 's' : ''}.`}
+                ? t('trialExpired')
+                : t('trialDays', { days: trialDays })}
             </span>
-            <Link href="/configuracoes/planos" className="underline font-bold ml-1 whitespace-nowrap">Ver planos</Link>
+            <Link href="/configuracoes/planos" className="underline font-bold ml-1 whitespace-nowrap">{t('trialCta')}</Link>
           </div>
         )}
 

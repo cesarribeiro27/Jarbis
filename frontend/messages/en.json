@@ -713,6 +713,20 @@
         "label": "Image",
         "desc": "Photo or logo"
       }
+    },
+    "rail": {
+      "edit": "Edit",
+      "data": "Data",
+      "filters": "Filters",
+      "config": "Config",
+      "notes": "Notes",
+      "ai": "AI",
+      "help": "Help",
+      "helpTitle": "Shortcuts and help",
+      "open": "Open",
+      "close": "Close",
+      "openPanel": "Open panel",
+      "closePanel": "Close panel"
     }
   },
   "configuracoes": {

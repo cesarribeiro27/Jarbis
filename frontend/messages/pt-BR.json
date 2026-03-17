@@ -550,6 +550,20 @@
       "addBtn": "Adicionar nota",
       "empty": "Nenhuma nota ainda. Adicione comentários aos blocos."
     },
+    "rail": {
+      "edit": "Editar",
+      "data": "Dados",
+      "filters": "Filtros",
+      "config": "Config",
+      "notes": "Notas",
+      "ai": "IA",
+      "help": "Ajuda",
+      "helpTitle": "Atalhos e ajuda",
+      "open": "Abrir",
+      "close": "Fechar",
+      "openPanel": "Abrir painel",
+      "closePanel": "Fechar painel"
+    },
     "blockTypes": {
       "kpi":         { "label": "KPI",         "desc": "Número em destaque" },
       "bar":         { "label": "Barras",       "desc": "Comparar categorias" },

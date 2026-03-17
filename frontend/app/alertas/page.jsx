@@ -4,30 +4,20 @@ import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
+import { useTranslations, useLocale } from 'next-intl'
 
-const OPERATORS = [
-  { value: 'gt',  label: '> maior que' },
-  { value: 'gte', label: '≥ maior ou igual' },
-  { value: 'lt',  label: '< menor que' },
-  { value: 'lte', label: '≤ menor ou igual' },
-  { value: 'eq',  label: '= igual a' },
-]
-
-const AGG_OPTIONS = [
-  { value: 'sum',   label: 'Soma' },
-  { value: 'count', label: 'Contagem' },
-  { value: 'avg',   label: 'Média' },
-  { value: 'max',   label: 'Máximo' },
-  { value: 'min',   label: 'Mínimo' },
-]
+const OPERATOR_VALUES = ['gt', 'gte', 'lt', 'lte', 'eq']
+const AGG_VALUES = ['sum', 'count', 'avg', 'max', 'min']
 
 function StatusBadge({ status }) {
-  if (!status) return <span className="inline-flex items-center gap-1 text-xs text-gray-400"><span className="w-1.5 h-1.5 rounded-full bg-gray-300" />Não verificado</span>
-  if (status === 'triggered') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Disparado</span>
-  return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />OK</span>
+  const t = useTranslations('alerts')
+  if (!status) return <span className="inline-flex items-center gap-1 text-xs text-gray-400"><span className="w-1.5 h-1.5 rounded-full bg-gray-300" />{t('status.pending')}</span>
+  if (status === 'triggered') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{t('status.triggered')}</span>
+  return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{t('status.ok')}</span>
 }
 
 function CreateModal({ datasets, onClose, onCreated }) {
+  const t = useTranslations('alerts')
   const [form, setForm] = useState({ name: '', dataset_id: datasets[0]?.id || '', value_col: '', agg: 'sum', operator: 'lt', threshold: '', filter_col: '', filter_val: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -53,50 +43,50 @@ function CreateModal({ datasets, onClose, onCreated }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white">
-          <h2 className="font-semibold text-gray-800">Criar alerta</h2>
+          <h2 className="font-semibold text-gray-800">{t('modal.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
         <form onSubmit={submit} className="p-6 flex flex-col gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome do alerta</label>
-            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Vendas abaixo da meta" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.nameLabel')}</label>
+            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('modal.namePlaceholder')} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Dataset</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.datasetLabel')}</label>
             <select required value={form.dataset_id} onChange={e => setForm(f => ({ ...f, dataset_id: e.target.value, value_col: '' }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
               {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Coluna de valor</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.columnLabel')}</label>
               <select required value={form.value_col} onChange={e => setForm(f => ({ ...f, value_col: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                <option value="">Selecione...</option>
+                <option value="">{t('modal.selectDefault')}</option>
                 {columns.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Agregação</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.aggLabel')}</label>
               <select value={form.agg} onChange={e => setForm(f => ({ ...f, agg: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                {AGG_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {AGG_VALUES.map(v => <option key={v} value={v}>{t(`aggregations.${v}`)}</option>)}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Condição</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.conditionLabel')}</label>
               <select value={form.operator} onChange={e => setForm(f => ({ ...f, operator: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {OPERATOR_VALUES.map(v => <option key={v} value={v}>{t(`operators.${v}`)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Valor limite</label>
-              <input required type="number" step="any" value={form.threshold} onChange={e => setForm(f => ({ ...f, threshold: e.target.value }))} placeholder="Ex: 10000" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.thresholdLabel')}</label>
+              <input required type="number" step="any" value={form.threshold} onChange={e => setForm(f => ({ ...f, threshold: e.target.value }))} placeholder={t('modal.thresholdPlaceholder')} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
             </div>
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}
           <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
-            {loading ? 'Criando...' : 'Criar alerta'}
+            {loading ? t('modal.creating') : t('modal.createBtn')}
           </button>
         </form>
       </div>
@@ -105,6 +95,8 @@ function CreateModal({ datasets, onClose, onCreated }) {
 }
 
 export default function AlertasPage() {
+  const t = useTranslations('alerts')
+  const locale = useLocale()
   const toast = useToast()
   const [alerts, setAlerts] = useState([])
   const [datasets, setDatasets] = useState([])
@@ -116,7 +108,7 @@ export default function AlertasPage() {
   useEffect(() => {
     Promise.all([api.reports.alerts.list(), api.reports.datasets.list()])
       .then(([al, ds]) => { setAlerts(al); setDatasets(ds) })
-      .catch(() => toast('Erro ao carregar alertas.', 'error'))
+      .catch(() => toast(t('toast.loadError'), 'error'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -126,7 +118,7 @@ export default function AlertasPage() {
       const updated = await api.reports.alerts.check(id)
       setAlerts(prev => prev.map(a => a.id === updated.id ? updated : a))
       const status = updated.last_status === 'triggered' ? 'warn' : 'success'
-      toast(updated.last_status === 'triggered' ? 'Alerta disparado!' : 'Alerta verificado — tudo OK.', status)
+      toast(updated.last_status === 'triggered' ? t('toast.triggered') : t('toast.ok'), status)
     } catch (e) { toast(e.message, 'error') }
     finally { setCheckingId(null) }
   }
@@ -135,7 +127,7 @@ export default function AlertasPage() {
     try {
       const updated = await api.reports.alerts.toggle(a.id, !a.is_active)
       setAlerts(prev => prev.map(x => x.id === updated.id ? updated : x))
-      toast(updated.is_active ? 'Alerta ativado.' : 'Alerta pausado.', 'info')
+      toast(updated.is_active ? t('toast.enabled') : t('toast.paused'), 'info')
     } catch (e) { toast(e.message, 'error') }
   }
 
@@ -144,7 +136,7 @@ export default function AlertasPage() {
       await api.reports.alerts.delete(id)
       setAlerts(prev => prev.filter(a => a.id !== id))
       setDeleteConfirmId(null)
-      toast('Alerta excluído.', 'success')
+      toast(t('toast.deleted'), 'success')
     } catch (e) { toast(e.message, 'error') }
   }
 
@@ -156,26 +148,26 @@ export default function AlertasPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-              Alertas
-              {triggered > 0 && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{triggered} disparado{triggered > 1 ? 's' : ''}</span>}
+              {t('title')}
+              {triggered > 0 && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{t('badge', { count: triggered })}</span>}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">Monitore métricas e receba avisos quando um limite for ultrapassado</p>
+            <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
           </div>
           <div className="flex gap-2">
             {alerts.some(a => a.is_active) && (
               <button onClick={() => alerts.filter(a => a.is_active).forEach(a => checkAlert(a.id))} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-xl text-gray-600 hover:border-gray-300 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                Verificar todos
+                {t('checkAllBtn')}
               </button>
             )}
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
-              + Novo alerta
+              {t('newBtn')}
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-16 text-gray-400 text-sm">Carregando...</div>
+          <div className="text-center py-16 text-gray-400 text-sm">{t('loading')}</div>
         ) : alerts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
             <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -184,9 +176,9 @@ export default function AlertasPage() {
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
             </div>
-            <p className="font-semibold text-gray-800 mb-2">Nenhum alerta configurado</p>
-            <p className="text-sm text-gray-400 mb-6">Crie alertas para monitorar métricas automaticamente</p>
-            <button onClick={() => setShowCreate(true)} className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">Criar primeiro alerta</button>
+            <p className="font-semibold text-gray-800 mb-2">{t('empty.title')}</p>
+            <p className="text-sm text-gray-400 mb-6">{t('empty.desc')}</p>
+            <button onClick={() => setShowCreate(true)} className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">{t('empty.cta')}</button>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -206,11 +198,11 @@ export default function AlertasPage() {
                       <StatusBadge status={alert.is_active ? alert.last_status : null} />
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {ds?.name || '—'} · {AGG_OPTIONS.find(a => a.value === alert.agg)?.label}({alert.value_col}) {OPERATORS.find(o => o.value === alert.operator)?.label.split(' ')[0]} {alert.threshold?.toLocaleString('pt-BR')}
+                      {ds?.name || '—'} · {t(`aggregations.${alert.agg}`)}({alert.value_col}) {t(`operators.${alert.operator}`).split(' ')[0]} {alert.threshold?.toLocaleString(locale)}
                     </p>
                     {alert.last_value != null && (
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Último valor: <span className={`font-semibold ${alert.last_status === 'triggered' ? 'text-red-600' : 'text-green-600'}`}>{alert.last_value.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                        {t('lastValue')} <span className={`font-semibold ${alert.last_status === 'triggered' ? 'text-red-600' : 'text-green-600'}`}>{alert.last_value.toLocaleString(locale, { maximumFractionDigits: 2 })}</span>
                       </p>
                     )}
                   </div>
@@ -223,8 +215,8 @@ export default function AlertasPage() {
                     </button>
                     {deleteConfirmId === alert.id ? (
                       <div className="flex items-center gap-1">
-                        <button onClick={() => deleteAlert(alert.id)} className="text-xs text-red-600 font-semibold px-2 py-1 hover:bg-red-50 rounded">Sim</button>
-                        <button onClick={() => setDeleteConfirmId(null)} className="text-xs text-gray-400 px-2 py-1 hover:bg-gray-50 rounded">Não</button>
+                        <button onClick={() => deleteAlert(alert.id)} className="text-xs text-red-600 font-semibold px-2 py-1 hover:bg-red-50 rounded">{t('yes')}</button>
+                        <button onClick={() => setDeleteConfirmId(null)} className="text-xs text-gray-400 px-2 py-1 hover:bg-gray-50 rounded">{t('no')}</button>
                       </div>
                     ) : (
                       <button onClick={() => setDeleteConfirmId(alert.id)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors">
@@ -243,8 +235,8 @@ export default function AlertasPage() {
       {showCreate && datasets.length === 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCreate(false)}>
           <div className="bg-white rounded-2xl shadow-2xl p-8 mx-4 text-center">
-            <p className="text-gray-600 mb-2 font-semibold">Nenhum dataset disponível</p>
-            <p className="text-sm text-gray-400">Faça upload de um dataset antes de criar alertas.</p>
+            <p className="text-gray-600 mb-2 font-semibold">{t('noDataset.title')}</p>
+            <p className="text-sm text-gray-400">{t('noDataset.desc')}</p>
           </div>
         </div>
       )}

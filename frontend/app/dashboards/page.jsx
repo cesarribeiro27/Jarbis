@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
+import { useTranslations, useLocale } from 'next-intl'
 
 const PALETTE = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#db2777', '#0891b2', '#7c3aed', '#16a34a']
 
@@ -27,6 +28,7 @@ function PreviewThumb({ report, color }) {
 
 // ─── Cropper estilo Instagram ────────────────────────────────────────────────
 function ImageCropperModal({ onSave, onClose }) {
+  const t = useTranslations('dashboards')
   const [imgSrc, setImgSrc] = useState(null)
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 })
   const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -35,9 +37,10 @@ function ImageCropperModal({ onSave, onClose }) {
   const containerRef = useRef()
   const fileRef = useRef()
 
-  // Área de corte fixa: 16:9, 480×270 no modal
+  // Área de corte proporcional à capa real do card:
+  // card ~395px × h-36 (144px) → ratio 2.74:1 → a 480px de largura = 175px de altura
   const CROP_W = 480
-  const CROP_H = 270
+  const CROP_H = 175
 
   function loadFile(e) {
     const file = e.target.files?.[0]
@@ -104,7 +107,7 @@ function ImageCropperModal({ onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[540px] mx-4 sm:mx-0 overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <span className="font-semibold text-gray-800 text-sm">Imagem de capa</span>
+          <span className="font-semibold text-gray-800 text-sm">{t('cropper.title')}</span>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
@@ -118,14 +121,14 @@ function ImageCropperModal({ onSave, onClose }) {
                 <svg className="w-6 h-6 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-gray-700">Clique para escolher uma imagem</p>
+                <p className="text-sm font-semibold text-gray-700">{t('cropper.clickToChoose')}</p>
                 <p className="text-xs text-gray-400 mt-1">PNG, JPG ou WEBP · Logo da empresa, foto, ilustração</p>
               </div>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={loadFile} />
             </label>
           ) : (
             <>
-              <p className="text-xs text-gray-400 text-center">Arraste a imagem para ajustar o enquadramento</p>
+              <p className="text-xs text-gray-400 text-center">{t('cropper.dragToAdjust')}</p>
               {/* Crop area */}
               <div
                 ref={containerRef}
@@ -162,13 +165,13 @@ function ImageCropperModal({ onSave, onClose }) {
                   onClick={() => { setImgSrc(null); if (fileRef.current) fileRef.current.value = '' }}
                   className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  Trocar imagem
+                  {t('cropper.swap')}
                 </button>
                 <button
                   onClick={handleSave}
                   className="flex-1 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors"
                 >
-                  Salvar capa
+                  {t('cropper.save')}
                 </button>
               </div>
             </>
@@ -182,6 +185,8 @@ function ImageCropperModal({ onSave, onClose }) {
 export default function DashboardsPage() {
   const router = useRouter()
   const toast = useToast()
+  const t = useTranslations('dashboards')
+  const locale = useLocale()
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(null)
@@ -194,7 +199,7 @@ export default function DashboardsPage() {
   function fetchReports() {
     api.reports.list()
       .then(data => setReports(data || []))
-      .catch(() => toast('Erro ao carregar dashboards.', 'error'))
+      .catch(() => toast(t('toast.loadError'), 'error'))
       .finally(() => setLoading(false))
   }
 
@@ -204,9 +209,9 @@ export default function DashboardsPage() {
       setReports(prev => prev.filter(r => r.id !== id))
       setDeleteConfirm(null)
       setMenuOpen(null)
-      toast('Dashboard excluído.', 'success')
+      toast(t('toast.deleted'), 'success')
     } catch (err) {
-      toast(err.message || 'Erro ao excluir.', 'error')
+      toast(err.message || t('toast.deleteError'), 'error')
     }
   }
 
@@ -217,11 +222,11 @@ export default function DashboardsPage() {
       const lang = report?.language || 'pt-BR'
       const shareUrl = `${window.location.origin}/r/${res.token}?lang=${lang}`
       await navigator.clipboard.writeText(shareUrl)
-      toast('Link copiado para a área de transferência!', 'success')
+      toast(t('toast.copied'), 'success')
       setMenuOpen(null)
       setReports(prev => prev.map(r => r.id === id ? { ...r, is_shared: true, share_token: res.token } : r))
     } catch (err) {
-      toast(err.message || 'Erro ao compartilhar.', 'error')
+      toast(err.message || t('toast.shareError'), 'error')
     }
   }
 
@@ -229,10 +234,10 @@ export default function DashboardsPage() {
     try {
       const cloned = await api.reports.clone(id)
       setMenuOpen(null)
-      toast('Dashboard clonado com sucesso!', 'success')
+      toast(t('toast.cloned'), 'success')
       router.push(`/dashboards/${cloned.id}`)
     } catch (err) {
-      toast(err.message || 'Erro ao clonar.', 'error')
+      toast(err.message || t('toast.cloneError'), 'error')
     }
   }
 
@@ -242,9 +247,9 @@ export default function DashboardsPage() {
       setReports(prev => prev.map(r => r.id === reportId ? { ...r, cover_image: coverDataUrl } : r))
       setCropTargetId(null)
       setMenuOpen(null)
-      toast('Capa atualizada!', 'success')
+      toast(t('toast.coverSaved'), 'success')
     } catch (err) {
-      toast('Erro ao salvar capa.', 'error')
+      toast(t('toast.coverError'), 'error')
     }
   }
 
@@ -253,9 +258,9 @@ export default function DashboardsPage() {
       await api.reports.update(reportId, { cover_image: '' })
       setReports(prev => prev.map(r => r.id === reportId ? { ...r, cover_image: null } : r))
       setMenuOpen(null)
-      toast('Capa removida.', 'success')
+      toast(t('toast.coverRemoved'), 'success')
     } catch (err) {
-      toast('Erro ao remover capa.', 'error')
+      toast(t('toast.coverRemoveError'), 'error')
     }
   }
 
@@ -270,9 +275,9 @@ export default function DashboardsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Dashboards</h1>
+            <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
             <p className="text-sm text-gray-400 mt-1">
-              {reports.length > 0 ? `${reports.length} dashboard${reports.length !== 1 ? 's' : ''}` : 'Relatórios interativos conectados aos seus dados'}
+              {reports.length > 0 ? (reports.length === 1 ? t('subtitleOne') : t('subtitleMany', { count: reports.length })) : t('subtitleEmpty')}
             </p>
           </div>
           <button
@@ -280,7 +285,7 @@ export default function DashboardsPage() {
             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200 sm:w-auto"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-            Novo dashboard
+            {t('newBtn')}
           </button>
         </div>
 
@@ -290,7 +295,7 @@ export default function DashboardsPage() {
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
               type="text"
-              placeholder="Buscar dashboards..."
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full max-w-sm pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
@@ -314,18 +319,18 @@ export default function DashboardsPage() {
             </div>
             {search ? (
               <>
-                <p className="font-semibold text-gray-700 mb-1">Nenhum resultado para "{search}"</p>
-                <button onClick={() => setSearch('')} className="text-sm text-violet-600 hover:underline mt-2">Limpar busca</button>
+                <p className="font-semibold text-gray-700 mb-1">{t('noResults', { query: search })}</p>
+                <button onClick={() => setSearch('')} className="text-sm text-violet-600 hover:underline mt-2">{t('clearSearch')}</button>
               </>
             ) : (
               <>
-                <p className="font-semibold text-gray-800 mb-2">Nenhum dashboard criado</p>
-                <p className="text-sm text-gray-400 mb-6">Crie dashboards com gráficos, KPIs e tabelas conectados aos seus dados</p>
+                <p className="font-semibold text-gray-800 mb-2">{t('empty.title')}</p>
+                <p className="text-sm text-gray-400 mb-6">{t('empty.desc')}</p>
                 <button
                   onClick={() => router.push('/dashboards/novo')}
                   className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors"
                 >
-                  Criar primeiro dashboard
+                  {t('empty.cta')}
                 </button>
               </>
             )}
@@ -339,12 +344,12 @@ export default function DashboardsPage() {
               return (
                 <div
                   key={r.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200 relative group overflow-hidden"
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200 relative group"
                   onClick={() => router.push(`/dashboards/${r.id}`)}
                 >
                   {/* Preview / Capa */}
                   <div
-                    className="h-36 relative overflow-hidden"
+                    className="h-36 relative overflow-hidden rounded-t-2xl"
                     style={r.cover_image ? {} : { background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)` }}
                   >
                     {r.cover_image ? (
@@ -376,47 +381,6 @@ export default function DashboardsPage() {
                           <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
                         </svg>
                       </button>
-                      {menuOpen === r.id && (
-                        <div className="absolute right-0 top-8 z-20 w-48 bg-white border border-gray-200 rounded-xl shadow-xl py-1">
-                          <button onClick={() => { router.push(`/dashboards/${r.id}`); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            Editar
-                          </button>
-                          <button onClick={() => { setCropTargetId(r.id); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            {r.cover_image ? 'Alterar capa' : 'Adicionar capa'}
-                          </button>
-                          {r.cover_image && (
-                            <button onClick={() => handleRemoveCover(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2">
-                              <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                              Remover capa
-                            </button>
-                          )}
-                          <button onClick={() => handleShare(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                            Copiar link público
-                          </button>
-                          <button onClick={() => handleClone(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                            Clonar
-                          </button>
-                          <div className="h-px bg-gray-100 my-1" />
-                          {deleteConfirm === r.id ? (
-                            <div className="px-4 py-2">
-                              <p className="text-xs text-gray-500 mb-2 font-medium">Confirmar exclusão?</p>
-                              <div className="flex gap-3">
-                                <button onClick={() => handleDelete(r.id)} className="text-xs text-red-600 font-bold hover:underline">Excluir</button>
-                                <button onClick={() => { setDeleteConfirm(null); setMenuOpen(null) }} className="text-xs text-gray-400 hover:underline">Cancelar</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button onClick={() => setDeleteConfirm(r.id)} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                              Excluir
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     {/* Botão "Adicionar capa" inline quando sem capa */}
@@ -426,17 +390,60 @@ export default function DashboardsPage() {
                         className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-2.5 py-1 bg-white/80 backdrop-blur-sm rounded-lg text-[11px] font-semibold text-gray-600 hover:bg-white transition-all shadow-sm"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        Adicionar capa
+                        {t('addCoverBtn')}
                       </button>
                     )}
                   </div>
+
+                  {/* Dropdown fora do overflow-hidden para não ser cortado */}
+                  {menuOpen === r.id && (
+                    <div className="absolute right-2 top-10 z-30 w-48 bg-white border border-gray-200 rounded-xl shadow-xl py-1" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => { router.push(`/dashboards/${r.id}`); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        {t('menu.edit')}
+                      </button>
+                      <button onClick={() => { setCropTargetId(r.id); setMenuOpen(null) }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        {r.cover_image ? t('menu.changeCover') : t('menu.addCover')}
+                      </button>
+                      {r.cover_image && (
+                        <button onClick={() => handleRemoveCover(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          {t('menu.removeCover')}
+                        </button>
+                      )}
+                      <button onClick={() => handleShare(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                        {t('menu.copyLink')}
+                      </button>
+                      <button onClick={() => handleClone(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        {t('menu.clone')}
+                      </button>
+                      <div className="h-px bg-gray-100 my-1" />
+                      {deleteConfirm === r.id ? (
+                        <div className="px-4 py-2">
+                          <p className="text-xs text-gray-500 mb-2 font-medium">{t('menu.confirmDelete')}</p>
+                          <div className="flex gap-3">
+                            <button onClick={() => handleDelete(r.id)} className="text-xs text-red-600 font-bold hover:underline">{t('menu.delete')}</button>
+                            <button onClick={() => { setDeleteConfirm(null); setMenuOpen(null) }} className="text-xs text-gray-400 hover:underline">{t('menu.cancel')}</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteConfirm(r.id)} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          {t('menu.delete')}
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Card body */}
                   <div className="px-4 py-3.5">
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <h3 className="font-bold text-gray-900 text-sm leading-snug truncate">{r.title}</h3>
                       {r.is_shared && (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0">Público</span>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0">{t('public')}</span>
                       )}
                     </div>
                     {r.description && (
@@ -445,9 +452,9 @@ export default function DashboardsPage() {
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                        <span className="text-xs text-gray-400">{r.block_count ?? 0} {r.block_count === 1 ? 'bloco' : 'blocos'}</span>
+                        <span className="text-xs text-gray-400">{r.block_count ?? 0} {r.block_count === 1 ? t('block') : t('blocks')}</span>
                       </div>
-                      <span className="text-xs text-gray-300">{new Date(r.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
+                      <span className="text-xs text-gray-300">{new Date(r.updated_at).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}</span>
                     </div>
                   </div>
                 </div>

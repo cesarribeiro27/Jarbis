@@ -542,7 +542,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const delta = config.delta != null && config.delta !== '' ? String(config.delta) : null
     const deltaNum = delta ? parseFloat(delta) : null
     const deltaPositive = deltaNum != null ? deltaNum >= 0 : null
-    const deltaLabel = config.delta_label || vs.vsMonth
+    const isDefaultVsMonth = !config.delta_label ||
+      Object.values(VIEWER_STRINGS).some(s => s.vsMonth === config.delta_label)
+    const deltaLabel = isDefaultVsMonth ? vs.vsMonth : config.delta_label
     return (
       <div className="flex flex-col gap-0 pt-0.5">
         <p className="font-black leading-none tracking-tight tabular-nums" style={{ color: valueColor, fontSize: valueFontSize }}>

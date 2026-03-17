@@ -713,6 +713,20 @@
         "label": "Imagen",
         "desc": "Foto o logotipo"
       }
+    },
+    "rail": {
+      "edit": "Editar",
+      "data": "Datos",
+      "filters": "Filtros",
+      "config": "configuración",
+      "notes": "Notas",
+      "ai": "AI",
+      "help": "Ayuda",
+      "helpTitle": "Atajos y ayuda",
+      "open": "Abierto",
+      "close": "Cerrar",
+      "openPanel": "panel abierto",
+      "closePanel": "Cerrar panel"
     }
   },
   "configuracoes": {
