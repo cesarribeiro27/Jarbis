@@ -95,7 +95,7 @@ export default function LoginPage() {
 
           {/* OAuth buttons */}
           <div className="space-y-2 mb-5">
-            {(['google', 'microsoft', 'github']).map(provider => (
+            {(['google', 'github']).map(provider => (
               <button
                 key={provider}
                 type="button"
