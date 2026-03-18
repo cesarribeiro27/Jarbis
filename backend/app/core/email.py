@@ -9,6 +9,52 @@ import httpx
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "Jarbis <noreply@jarbis.cc>")
 
+_TAGLINE = "Inteligência de dados para quem faz acontecer."
+
+_BASE_STYLES = """
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: #f1f5f9;
+  margin: 0;
+  padding: 40px 20px;
+""".strip()
+
+# Logo como <img> hospedado — SVG inline é ignorado por Gmail/Outlook.
+# Logo correto: símbolo de órbita + ∴ (versão branca para fundo violeta).
+_LOGO_HTML = (
+    '<img src="https://jarbis.cc/logo-email.svg" '
+    'width="36" height="36" alt="Jarbis" '
+    'style="display:block;width:36px;height:36px;" />'
+)
+
+_HEADER_HTML = (
+    '<div style="background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); padding: 28px 32px; text-align: center;">'
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+    '<tr><td align="center">'
+    '<table cellpadding="0" cellspacing="0" border="0">'
+    '<tr>'
+    '<td style="vertical-align:middle;">' + _LOGO_HTML + '</td>'
+    '<td style="padding-left:10px;vertical-align:middle;">'
+    '<span style="color:white;font-weight:800;font-size:18px;letter-spacing:-0.3px;">jarbis</span>'
+    '</td>'
+    '</tr>'
+    '</table>'
+    '</td></tr>'
+    '</table>'
+    '</div>'
+)
+
+_FOOTER_HTML = """
+  <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center; background: #f8fafc;">
+    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 6px;">{tagline}</p>
+    <p style="color: #cbd5e1; font-size: 11px; margin: 0;">
+      <a href="https://jarbis.cc" style="color: #94a3b8; text-decoration: none;">jarbis.cc</a>
+      &nbsp;·&nbsp;
+      <a href="mailto:suporte@jarbis.cc" style="color: #94a3b8; text-decoration: none;">suporte@jarbis.cc</a>
+      &nbsp;·&nbsp; © 2026 Jarbis
+    </p>
+  </div>
+""".format(tagline=_TAGLINE).strip()
+
 
 async def send_verification_email(to_email: str, full_name: str, code: str) -> None:
     """Envia email com código de verificação de 6 dígitos."""
@@ -16,43 +62,66 @@ async def send_verification_email(to_email: str, full_name: str, code: str) -> N
         print(f"[EMAIL] RESEND_API_KEY não configurada. Código para {to_email}: {code}")
         return
 
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="utf-8"></head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; margin: 0; padding: 40px 20px;">
-      <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
-        <!-- Header -->
-        <div style="background: #4f46e5; padding: 32px; text-align: center;">
-          <div style="width: 40px; height: 40px; background: white; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-            <span style="color: #4f46e5; font-weight: 900; font-size: 18px;">J</span>
-          </div>
-          <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 800;">Jarbis</h1>
+    digit_boxes = "".join([
+        f'<span style="display:inline-block;width:38px;height:48px;line-height:48px;'
+        f'text-align:center;font-size:26px;font-weight:900;color:#0f172a;'
+        f'background:white;border:2px solid #ddd6fe;border-radius:8px;'
+        f'margin:0 3px;font-family:\'Courier New\',Courier,monospace;">{d}</span>'
+        for d in code
+    ])
+
+    html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Confirme seu email</title>
+</head>
+<body style="{_BASE_STYLES}">
+  <!-- Preheader (oculto, aparece no preview do inbox) -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    Seu código de verificação: {code} · Expira em 15 minutos.
+  </div>
+
+  <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    {_HEADER_HTML}
+
+    <!-- Corpo -->
+    <div style="padding: 40px 32px 32px;">
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.4px;">
+        Confirme seu email
+      </h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 32px;">
+        Olá, <strong style="color: #0f172a;">{full_name}</strong>! Use o código abaixo para ativar sua conta. Simples assim.
+      </p>
+
+      <!-- Caixa do código OTP -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 28px 24px; text-align: center; margin-bottom: 28px;">
+        <p style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin: 0 0 16px;">
+          Código de verificação
+        </p>
+        <div style="margin-bottom: 16px;">
+          {digit_boxes}
         </div>
-
-        <!-- Body -->
-        <div style="padding: 40px 32px;">
-          <h2 style="color: #111827; font-size: 20px; font-weight: 700; margin: 0 0 8px;">Confirme seu email</h2>
-          <p style="color: #6b7280; font-size: 15px; margin: 0 0 32px;">Olá, <strong>{full_name}</strong>! Use o código abaixo para ativar sua conta no Jarbis.</p>
-
-          <!-- Code box -->
-          <div style="background: #f3f4f6; border-radius: 12px; padding: 28px; text-align: center; margin-bottom: 32px;">
-            <p style="color: #6b7280; font-size: 13px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Código de verificação</p>
-            <p style="color: #111827; font-size: 40px; font-weight: 900; letter-spacing: 12px; margin: 0; font-family: monospace;">{code}</p>
-            <p style="color: #9ca3af; font-size: 12px; margin: 12px 0 0;">Expira em 15 minutos</p>
-          </div>
-
-          <p style="color: #9ca3af; font-size: 13px; margin: 0;">Se você não criou uma conta no Jarbis, pode ignorar este email com segurança.</p>
-        </div>
-
-        <!-- Footer -->
-        <div style="border-top: 1px solid #f3f4f6; padding: 20px 32px; text-align: center;">
-          <p style="color: #d1d5db; font-size: 12px; margin: 0;">Jarbis · BI embarcado para empresas brasileiras</p>
-        </div>
+        <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+          &#9201; Expira em <strong>15 minutos</strong>
+        </p>
       </div>
-    </body>
-    </html>
-    """
+
+      <!-- Aviso de segurança -->
+      <div style="display: flex; align-items: flex-start; gap: 10px; background: #fafafa; border-left: 3px solid #e2e8f0; border-radius: 0 8px 8px 0; padding: 12px 16px;">
+        <span style="font-size: 14px; line-height: 1.5;">&#128274;</span>
+        <p style="color: #94a3b8; font-size: 13px; margin: 0; line-height: 1.5;">
+          Se você não criou uma conta no Jarbis, pode ignorar este email com segurança.
+        </p>
+      </div>
+    </div>
+
+    {_FOOTER_HTML}
+  </div>
+</body>
+</html>"""
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -64,7 +133,7 @@ async def send_verification_email(to_email: str, full_name: str, code: str) -> N
             json={
                 "from": FROM_EMAIL,
                 "to": [to_email],
-                "subject": f"{code} é seu código de verificação do Jarbis",
+                "subject": f"{code} · Confirme sua conta no Jarbis",
                 "html": html,
             },
             timeout=10,
@@ -73,60 +142,124 @@ async def send_verification_email(to_email: str, full_name: str, code: str) -> N
             print(f"[EMAIL] Erro ao enviar: {resp.status_code} {resp.text}")
 
 
+_LIFECYCLE_ICONS = {
+    "d1_welcome": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2l2-2-5-5-2 2z"/>
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+    </svg>""",
+    "d3_activation": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/>
+      <line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/>
+      <line x1="2" y1="20" x2="22" y2="20"/>
+    </svg>""",
+    "d7_engagement": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>""",
+    "d30_retention": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>""",
+}
+
 _LIFECYCLE_TEMPLATES = {
     "d1_welcome": {
-        "subject": "Bem-vindo ao Jarbis! Seu primeiro dashboard em 5 minutos",
+        "subject": "Tudo pronto — crie seu primeiro dashboard agora",
+        "headline": "Você está dentro. E agora?",
+        "body": "Sua conta está ativa. Em menos de 5 minutos você já pode ter seu primeiro dashboard funcionando. Arraste, solte, visualize — sem código, sem complicação.",
         "cta_label": "Criar meu primeiro dashboard",
         "cta_url": "https://jarbis.cc/dashboards/novo",
-        "headline": "Tudo pronto para começar 🚀",
-        "body": "Sua conta está ativa. O próximo passo é criar seu primeiro dashboard e conectar seus dados. Leva menos de 5 minutos.",
+        "tip": "Dashboards com arrastar e soltar — sem escrever uma linha de código.",
     },
     "d3_activation": {
-        "subject": "Como estão seus dados no Jarbis?",
+        "subject": "Seus dados reais estão esperando por você",
+        "headline": "Hora de conectar seus dados",
+        "body": "O Jarbis fica muito mais útil quando você conecta dados reais. Importe um CSV ou aponte para uma API — seus números aparecem na tela em segundos.",
         "cta_label": "Adicionar meu primeiro dataset",
         "cta_url": "https://jarbis.cc/datasets",
-        "headline": "Conecte seus dados reais",
-        "body": "O Jarbis fica mais poderoso quando você conecta dados reais. Importe um CSV ou conecte uma API externa para ver seus números ao vivo.",
+        "tip": "Suporte a CSV, Google Sheets e APIs REST. Tudo sem configuração complexa.",
     },
     "d7_engagement": {
-        "subject": "Convide seu time para o Jarbis",
+        "subject": "Compartilhe seus dados com quem importa",
+        "headline": "Dados são melhores compartilhados",
+        "body": "Convide seu time para ver e editar dashboards. Defina quem pode visualizar, quem pode editar — controle total sem burocracia.",
         "cta_label": "Convidar colaboradores",
         "cta_url": "https://jarbis.cc/configuracoes/usuarios",
-        "headline": "Análise de dados é melhor em equipe",
-        "body": "Você pode convidar membros do seu time para visualizar ou editar dashboards. Cada um com o nível de acesso certo.",
+        "tip": "Controle de acesso por nível: visualizador, editor e administrador.",
     },
     "d30_retention": {
-        "subject": "1 mês de Jarbis — como está sendo?",
+        "subject": "1 mês de Jarbis — como estão seus dados?",
+        "headline": "Um mês. E seus dados?",
+        "body": "Já faz um mês desde que você entrou no Jarbis. Esperamos que seus números estejam mais claros e suas decisões mais rápidas. Tem alguma dúvida ou sugestão? Responda este email — a gente lê tudo.",
         "cta_label": "Ver meus dashboards",
         "cta_url": "https://jarbis.cc/dashboards",
-        "headline": "Um mês de insights 📊",
-        "body": "Você está usando o Jarbis há 1 mês. Esperamos que seus dados estejam fazendo mais sentido. Tem alguma dúvida ou sugestão? Responda este email — lemos tudo.",
+        "tip": "Suporte disponível em suporte@jarbis.cc. Resposta em até 24h.",
     },
 }
 
 
 def _lifecycle_html(template_key: str, tenant_name: str) -> str:
     t = _LIFECYCLE_TEMPLATES[template_key]
+    icon = _LIFECYCLE_ICONS.get(template_key, "")
+
     return f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
-  <div style="max-width:480px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-    <div style="background:#4f46e5;padding:28px 32px;display:flex;align-items:center;gap:12px;">
-      <div style="width:36px;height:36px;background:white;border-radius:9px;display:flex;align-items:center;justify-content:center;">
-        <span style="color:#4f46e5;font-weight:900;font-size:16px;">J</span>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{t['subject']}</title>
+</head>
+<body style="{_BASE_STYLES}">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    {t['body'][:80]}...
+  </div>
+
+  <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    {_HEADER_HTML}
+
+    <!-- Corpo -->
+    <div style="padding: 40px 32px 32px;">
+
+      <!-- Ícone temático -->
+      <div style="width: 56px; height: 56px; background: #eef2ff; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+        {icon}
       </div>
-      <span style="color:white;font-weight:800;font-size:16px;">jarbis</span>
-    </div>
-    <div style="padding:36px 32px;">
-      <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 12px;">{t['headline']}</h2>
-      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 28px;">Olá, <strong>{tenant_name}</strong>! {t['body']}</p>
-      <a href="{t['cta_url']}" style="display:inline-block;background:#4f46e5;color:white;font-size:14px;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;">
-        {t['cta_label']}
+
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.4px;">
+        {t['headline']}
+      </h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin: 0 0 28px;">
+        Olá, <strong style="color: #0f172a;">{tenant_name}</strong>! {t['body']}
+      </p>
+
+      <!-- CTA Button -->
+      <a href="{t['cta_url']}" style="display: inline-block; background-color: #6D28D9; background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); color: white; font-size: 14px; font-weight: 700; padding: 14px 28px; border-radius: 12px; text-decoration: none; letter-spacing: -0.1px;">
+        {t['cta_label']} &rarr;
       </a>
+
+      <!-- Dica rápida -->
+      <div style="margin-top: 32px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+        <p style="color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 6px;">Dica rápida</p>
+        <p style="color: #475569; font-size: 13px; line-height: 1.5; margin: 0;">
+          &#128161; {t['tip']}
+        </p>
+      </div>
     </div>
-    <div style="border-top:1px solid #f3f4f6;padding:16px 32px;">
-      <p style="color:#d1d5db;font-size:12px;margin:0;">Jarbis · BI embarcado para empresas brasileiras · <a href="https://jarbis.cc" style="color:#d1d5db;">jarbis.cc</a></p>
+
+    <!-- Footer lifecycle com descadastro -->
+    <div style="border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center; background: #f8fafc;">
+      <p style="color: #94a3b8; font-size: 12px; margin: 0 0 6px;">{_TAGLINE}</p>
+      <p style="color: #cbd5e1; font-size: 11px; margin: 0;">
+        <a href="https://jarbis.cc" style="color: #94a3b8; text-decoration: none;">jarbis.cc</a>
+        &nbsp;·&nbsp;
+        <a href="mailto:suporte@jarbis.cc" style="color: #94a3b8; text-decoration: none;">suporte@jarbis.cc</a>
+        &nbsp;·&nbsp; © 2026 Jarbis
+      </p>
     </div>
   </div>
 </body>

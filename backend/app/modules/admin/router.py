@@ -34,7 +34,7 @@ import httpx
 from fastapi.responses import StreamingResponse
 
 from app.config import settings
-from app.core.email import send_admin_email
+from app.core.email import send_admin_email, _HEADER_HTML, _FOOTER_HTML, _TAGLINE
 from app.core.security import create_access_token
 from app.database import get_db, AsyncSessionLocal
 from app.modules.admin.models import (
@@ -1932,19 +1932,15 @@ def _build_campaign_html(subject: str, body_html: str, tenant_name: str) -> str:
     """Monta o HTML do email de campanha com template padrão Jarbis."""
     return f"""<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; margin: 0; padding: 40px 20px;">
-  <div style="max-width: 560px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
-    <div style="background: #4f46e5; padding: 28px 32px;">
-      <span style="color: white; font-weight: 900; font-size: 20px;">jarbis</span>
-    </div>
-    <div style="padding: 36px 32px;">
-      <p style="color: #6b7280; font-size: 14px; margin: 0 0 20px;">Olá, <strong>{tenant_name}</strong>!</p>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: #f1f5f9; margin: 0; padding: 40px 20px;">
+  <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+    {_HEADER_HTML}
+    <div style="padding: 40px 32px;">
+      <p style="color: #475569; font-size: 14px; margin: 0 0 20px;">Olá, <strong style="color: #0f172a;">{tenant_name}</strong>!</p>
       {body_html}
     </div>
-    <div style="border-top: 1px solid #f3f4f6; padding: 16px 32px; text-align: center;">
-      <p style="color: #d1d5db; font-size: 11px; margin: 0;">Jarbis · <a href="https://jarbis.cc" style="color: #d1d5db;">jarbis.cc</a></p>
-    </div>
+    {_FOOTER_HTML}
   </div>
 </body>
 </html>"""
