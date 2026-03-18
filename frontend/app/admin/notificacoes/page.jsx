@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -57,7 +57,6 @@ export default function NotificacoesAdminPage() {
   }
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-2xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-white">Notificações in-app</h1>
@@ -172,6 +171,5 @@ export default function NotificacoesAdminPage() {
           <p>Notificações não lidas ficam em destaque e um contador aparece no ícone.</p>
         </div>
       </div>
-    </AdminLayout>
   )
 }

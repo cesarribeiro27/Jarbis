@@ -2,18 +2,18 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
-const ThemeContext = createContext({ theme: 'dark', toggleTheme: () => {} })
+const ThemeContext = createContext({ theme: 'light', toggleTheme: () => {} })
 
 export function useTheme() {
   return useContext(ThemeContext)
 }
 
 export default function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('dark')
+  const [theme, setTheme] = useState('light')
 
   useEffect(() => {
     const saved = localStorage.getItem('jarbis_theme')
-    const initial = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    const initial = saved || 'light'
     setTheme(initial)
     document.documentElement.classList.toggle('dark', initial === 'dark')
   }, [])

@@ -1059,8 +1059,27 @@
       "users": "+1 user per pack",
       "dashboards": "+5 dashboards per pack",
       "datasets": "+3 data sources per pack",
-      "addPack": "Add pack →",
-      "adding": "Redirecting..."
+      "addPack": "Add Pack",
+      "adding": "Please wait...",
+      "sectionTitle": "Expansion Packs",
+      "sectionDesc": "Add resources to your current plan",
+      "completo": {
+        "title": "Complete Pack",
+        "feature1": "+1 extra user",
+        "feature2": "+5 dashboards",
+        "feature3": "+3 data sources",
+        "active": "active"
+      },
+      "dash": {
+        "title": "Dashboard Pack",
+        "feature": "+5 dashboards",
+        "active": "active dashboards"
+      },
+      "dataset": {
+        "title": "Data Sources Pack",
+        "feature": "+3 data sources",
+        "active": "active sources"
+      }
     },
     "toast": {
       "success": "Subscription activated successfully! Your plan has been updated.",
@@ -1072,26 +1091,11 @@
       "portalError": "Error opening portal."
     },
     "plans": {
-      "free": {
-        "name": "Free",
-        "desc": "To try"
-      },
-      "solo": {
-        "name": "Solo",
-        "desc": "For self-employed people and MEIs"
-      },
-      "equipe": {
-        "name": "Professional",
-        "desc": "For small businesses"
-      },
-      "ilimitado": {
-        "name": "Team",
-        "desc": "For growing companies"
-      },
-      "enterprise": {
-        "name": "Enterprise",
-        "desc": "For large operations"
-      }
+      "free":       { "name": "Free",         "desc": "To try",                    "f1": "2 dashboards", "f2": "2 data sources", "f3": "1 user", "f4": "Public link" },
+      "solo":       { "name": "Solo",         "desc": "For freelancers and SMBs",  "f1": "8 dashboards", "f2": "8 data sources", "f3": "1 user", "f4": "5 alerts", "f5": "Embed on site" },
+      "equipe":     { "name": "Professional", "desc": "For small businesses",      "f1": "20 dashboards", "f2": "15 data sources", "f3": "1 user", "f4": "15 alerts", "f5": "AI in Portuguese", "f6": "Embed on site" },
+      "ilimitado":  { "name": "Team",         "desc": "For growing companies",     "f1": "50 dashboards", "f2": "30 data sources", "f3": "5 users", "f4": "50 alerts", "f5": "AI in Portuguese", "f6": "White label", "f7": "Embed on site" },
+      "enterprise": { "name": "Enterprise",   "desc": "For large operations",      "f1": "Everything in Team", "f2": "Unlimited users", "f3": "SLA guaranteed by contract", "f4": "Dedicated account manager", "f5": "Personalized onboarding" }
     }
   },
   "usuarios": {

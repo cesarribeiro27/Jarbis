@@ -525,10 +525,9 @@ export default function DashboardDetailPage() {
   useEffect(() => {
     api.billing.status().then(data => {
       if (!data?.usage || !data?.limits) return
-      const keys = ['dashboards', 'datasets', 'users']
-      const near = keys.some(k => {
+      const near = ['dashboards', 'datasets'].some(k => {
         const limit = data.limits[k]
-        return limit > 0 && data.usage[k] / limit >= 0.8
+        return limit > 0 && data.usage[k] / limit >= 0.9
       })
       setNearLimit(near)
     }).catch(() => {})
@@ -628,16 +627,16 @@ export default function DashboardDetailPage() {
   // EDIT MODE
   if (mode === 'edit') {
     return (
-      <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f7]">
+      <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f7] dark:bg-gray-950">
         {/* Luzmo-style top bar */}
-        <div className="bg-white border-b border-gray-200/80 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-700 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm">
           {/* Left: back + title + add */}
-          <button onClick={cancelEdit} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors pr-2 border-r border-gray-200 mr-1">
+          <button onClick={cancelEdit} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors pr-2 border-r border-gray-200 dark:border-gray-600 mr-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 5l-7 7 7 7" /></svg>
             <span className="hidden sm:inline font-medium">{t('backEdit')}</span>
           </button>
 
-          <button onClick={() => router.push('/dashboards/novo')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors border border-gray-200">
+          <button onClick={() => router.push('/dashboards/novo')} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-600">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h16M4 9h16M4 13h10" /></svg>
             <span className="hidden sm:inline">{t('templates')}</span>
           </button>
@@ -649,11 +648,11 @@ export default function DashboardDetailPage() {
               <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 9l6 6 6-6" /></svg>
             </button>
             {showAddMenu && (
-              <div className="absolute top-full left-0 mt-1.5 w-60 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-0.5">
+              <div className="absolute top-full left-0 mt-1.5 w-60 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 p-2 z-50 grid grid-cols-2 gap-0.5">
                 {BLOCK_TYPES.map(bt => (
-                  <button key={bt.type} onClick={() => { addBlock(bt.type); setShowAddMenu(false) }} className="flex flex-col items-start px-2.5 py-2 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group">
-                    <p className="text-xs font-semibold text-gray-800 group-hover:text-violet-700">{bt.label}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{bt.desc}</p>
+                  <button key={bt.type} onClick={() => { addBlock(bt.type); setShowAddMenu(false) }} className="flex flex-col items-start px-2.5 py-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 transition-colors text-left group">
+                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-violet-700">{bt.label}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">{bt.desc}</p>
                   </button>
                 ))}
               </div>
@@ -663,7 +662,7 @@ export default function DashboardDetailPage() {
           {/* Dashboard title in center */}
           <div className="flex-1 flex justify-center min-w-0 px-4">
             <input
-              className="text-sm font-semibold text-gray-700 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-400 text-center max-w-xs truncate transition-colors"
+              className="text-sm font-semibold text-gray-700 dark:text-gray-200 bg-transparent outline-none border-b-2 border-transparent focus:border-violet-400 text-center max-w-xs truncate transition-colors"
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
               title={editTitle}
@@ -674,18 +673,18 @@ export default function DashboardDetailPage() {
           <button
             onClick={() => togglePanel('filtros')}
             title={t('titleFilters')}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'filtros' && sidebarOpen || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'filtros' && sidebarOpen || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
           </button>
 
-          <button onClick={handleShare} disabled={sharingLoading} title={t('titleShare')} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          <button onClick={handleShare} disabled={sharingLoading} title={t('titleShare')} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
           </button>
 
-          <div className="w-px h-5 bg-gray-200 mx-1" />
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-1" />
 
-          <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             {t('cancel')}
           </button>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shadow-violet-200">
@@ -713,18 +712,18 @@ export default function DashboardDetailPage() {
           <div className="flex-1 overflow-auto p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
             <div className="flex items-center gap-1 mb-4 flex-wrap" onClick={e => e.stopPropagation()}>
               {pages.map((page, pageIdx) => (
-                <div key={page.id} className={`group flex items-center gap-1 rounded-lg border transition-colors ${activePageId === page.id ? 'bg-white border-violet-300 shadow-sm' : 'bg-transparent border-transparent hover:border-gray-200'}`}>
+                <div key={page.id} className={`group flex items-center gap-1 rounded-lg border transition-colors ${activePageId === page.id ? 'bg-white dark:bg-gray-700 border-violet-300 shadow-sm' : 'bg-transparent border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}>
                   {renamingPageId === page.id ? (
                     <input autoFocus className="text-xs font-medium px-2 py-1.5 bg-transparent outline-none w-24" placeholder={t('pageName', { n: pageIdx + 1 })} value={page.title} onChange={e => renamePage(page.id, e.target.value)} onBlur={() => setRenamingPageId(null)} onKeyDown={e => e.key === 'Enter' && setRenamingPageId(null)} />
                   ) : (
-                    <button className={`text-xs font-medium px-2.5 py-1.5 rounded-lg ${activePageId === page.id ? 'text-violet-700' : 'text-gray-500 hover:text-gray-800'}`} onClick={() => { setActivePageId(page.id); setSelectedBlockId(null) }} onDoubleClick={() => setRenamingPageId(page.id)}>
+                    <button className={`text-xs font-medium px-2.5 py-1.5 rounded-lg ${activePageId === page.id ? 'text-violet-700 dark:text-violet-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`} onClick={() => { setActivePageId(page.id); setSelectedBlockId(null) }} onDoubleClick={() => setRenamingPageId(page.id)}>
                       {page.title || t('pageName', { n: pageIdx + 1 })}
                     </button>
                   )}
-                  {pages.length > 1 && <button onClick={() => removePage(page.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 pr-1 text-xs">×</button>}
+                  {pages.length > 1 && <button onClick={() => removePage(page.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-500 hover:text-red-400 pr-1 text-xs">×</button>}
                 </div>
               ))}
-              <button onClick={addPage} className="flex items-center justify-center w-7 h-7 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors text-sm">+</button>
+              <button onClick={addPage} className="flex items-center justify-center w-7 h-7 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-violet-400 hover:text-violet-500 transition-colors text-sm">+</button>
             </div>
 
 
@@ -785,28 +784,31 @@ export default function DashboardDetailPage() {
   return (
     <AppLayout>
       {nearLimit && (
-        <div className="px-6 py-2.5 text-sm font-medium flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border-b border-amber-100">
+        <div className="px-6 py-2.5 text-sm font-medium flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border-b border-amber-100 relative">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
           <span>Você está próximo do limite do seu plano.</span>
           <a href="/configuracoes/planos" className="underline font-bold whitespace-nowrap">Ver planos</a>
+          <button onClick={() => setNearLimit(false)} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:opacity-60 transition-opacity" aria-label="Fechar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       )}
       <div className="p-6 max-w-screen-xl mx-auto">
         <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
           <div>
             <button onClick={() => router.push('/dashboards')} className="text-sm text-gray-400 hover:text-gray-700 mb-2 block">← {t('back')}</button>
-            <h1 className="text-2xl font-black text-gray-900">{(displayReport ?? report).title}</h1>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{(displayReport ?? report).title}</h1>
             {(displayReport ?? report).description && <p className="text-sm text-gray-500 mt-1">{(displayReport ?? report).description}</p>}
           </div>
           <div className="flex gap-2 flex-wrap items-center">
             <button onClick={enterEditMode} className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">{t('edit')}</button>
-            <button onClick={() => setShowAiPanel(true)} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-700 text-sm rounded-xl hover:border-gray-300 transition-colors">
+            <button onClick={() => setShowAiPanel(true)} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
               {t('ask')}
             </button>
-            <button onClick={handleShare} disabled={sharingLoading} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-700 text-sm rounded-xl hover:border-gray-300 transition-colors">
+            <button onClick={handleShare} disabled={sharingLoading} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
               {sharingLoading ? t('sharing') : t('share')}
             </button>
@@ -814,7 +816,7 @@ export default function DashboardDetailPage() {
               <button onClick={() => setDeleteConfirm(true)} className="px-3 py-2 text-sm text-red-500 hover:text-red-700 transition-colors">{t('delete')}</button>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">{t('confirm')}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">{t('confirm')}</span>
                 <button onClick={handleDelete} className="text-sm text-red-600 font-semibold">{t('yes')}</button>
                 <button onClick={() => setDeleteConfirm(false)} className="text-sm text-gray-400">{t('no')}</button>
               </div>
@@ -823,14 +825,14 @@ export default function DashboardDetailPage() {
         </div>
 
         {shareData && (
-          <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 space-y-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-6 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-gray-500 font-medium shrink-0">{t('shareLinkLang')}</span>
               {SHARE_LANGS.map(l => (
                 <button
                   key={l.code}
                   onClick={() => setShareLanguage(l.code)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${shareLanguage === l.code ? 'bg-violet-100 text-violet-700 font-semibold' : 'text-gray-500 hover:bg-gray-100'}`}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${shareLanguage === l.code ? 'bg-violet-100 text-violet-700 font-semibold' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 >
                   <span>{l.flag}</span>
                   <span className="hidden sm:inline">{l.label}</span>
@@ -838,7 +840,7 @@ export default function DashboardDetailPage() {
               ))}
             </div>
             <div className="flex items-center gap-3">
-              <input readOnly value={`${shareData.share_url}?lang=${shareLanguage}`} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none font-mono text-gray-600" />
+              <input readOnly value={`${shareData.share_url}?lang=${shareLanguage}`} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 focus:outline-none font-mono text-gray-600 dark:text-gray-300" />
               <button
                 onClick={async () => { await navigator.clipboard.writeText(`${shareData.share_url}?lang=${shareLanguage}`); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
                 className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-lg hover:bg-violet-700 transition-colors shrink-0"
@@ -850,19 +852,19 @@ export default function DashboardDetailPage() {
         )}
 
         <div className="mb-4 flex items-center gap-2 flex-wrap">
-          <button onClick={() => setShowDateFilter(v => !v)} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl border transition-colors ${showDateFilter || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+          <button onClick={() => setShowDateFilter(v => !v)} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl border transition-colors ${showDateFilter || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
             {t('dateFilter')}
           </button>
           {showDateFilter && (
             <>
-              <select value={globalDateFilter.dateCol} onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))} className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+              <select value={globalDateFilter.dateCol} onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))} className="border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400">
                 <option value="">{t('filters.dateColPlaceholder')}</option>
                 {[...new Set(datasets.flatMap(ds => ds.columns || []))].sort().map(col => <option key={col} value={col}>{col}</option>)}
               </select>
-              <input type="date" value={globalDateFilter.dateFrom} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <input type="date" value={globalDateFilter.dateFrom} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
               <span className="text-sm text-gray-400">{t('dateTo')}</span>
-              <input type="date" value={globalDateFilter.dateTo} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <input type="date" value={globalDateFilter.dateTo} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
               <button onClick={() => setGlobalDateFilter({ dateCol: '', dateFrom: '', dateTo: '' })} className="text-sm text-gray-400 hover:text-gray-700">{t('clear')}</button>
             </>
           )}
@@ -876,9 +878,9 @@ export default function DashboardDetailPage() {
         )}
 
         {((displayReport ?? report).pages || pages).length > 1 && (
-          <div className="flex items-center gap-1 mb-4 flex-wrap border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-1 mb-4 flex-wrap border-b border-gray-100 dark:border-gray-700 pb-3">
             {((displayReport ?? report).pages || pages).map((page, pageIdx) => (
-              <button key={page.id} onClick={() => setActivePageId(page.id)} className={`px-3 py-1.5 text-sm rounded-xl transition-colors ${activePageId === page.id ? 'bg-violet-600 text-white font-bold' : 'text-gray-600 hover:bg-gray-100'}`}>
+              <button key={page.id} onClick={() => setActivePageId(page.id)} className={`px-3 py-1.5 text-sm rounded-xl transition-colors ${activePageId === page.id ? 'bg-violet-600 text-white font-bold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
                 {page.title || t('pageName', { n: pageIdx + 1 })}
               </button>
             ))}

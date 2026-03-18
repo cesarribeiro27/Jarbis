@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -57,7 +57,6 @@ export default function AdminCrmPage() {
   }
 
   return (
-    <AdminLayout>
       <div className="p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -132,6 +131,5 @@ export default function AdminCrmPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   )
 }

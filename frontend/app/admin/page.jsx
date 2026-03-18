@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -144,7 +144,6 @@ export default function AdminMetricsPage() {
   }))
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-white">Métricas Globais</h1>
@@ -395,6 +394,5 @@ export default function AdminMetricsPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   )
 }

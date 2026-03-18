@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -136,7 +136,6 @@ export default function AdminEmailsPage() {
   }
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-white">Email Dispatch</h1>
@@ -301,6 +300,5 @@ export default function AdminEmailsPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   )
 }

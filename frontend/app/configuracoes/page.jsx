@@ -106,7 +106,7 @@ export default function ConfiguracoesPage() {
               <span className="text-white font-black text-xl">{initials}</span>
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-lg">{user?.full_name}</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">{user?.full_name}</p>
               <p className="text-sm text-gray-500">{user?.email}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold mt-1 inline-block ${ROLE_COLORS[user?.role] || 'bg-gray-100 text-gray-600'}`}>
                 {user?.role ? t(`roles.${user.role}`) : user?.role}
@@ -148,7 +148,7 @@ export default function ConfiguracoesPage() {
                   type={showPw ? 'text' : 'password'}
                   value={pwForm.current}
                   onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
                   placeholder="••••••••"
                   required
                 />
@@ -180,7 +180,7 @@ export default function ConfiguracoesPage() {
                   type={showPw ? 'text' : 'password'}
                   value={pwForm.confirm}
                   onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
-                  className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 ${pwForm.confirm && pwForm.new !== pwForm.confirm ? 'border-red-300' : 'border-gray-200'}`}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 dark:bg-gray-700 dark:text-gray-200 ${pwForm.confirm && pwForm.new !== pwForm.confirm ? 'border-red-300 dark:border-red-700' : 'border-gray-200 dark:border-gray-600'}`}
                   placeholder={t('password.confirmPlaceholder')}
                   required
                 />
@@ -199,7 +199,7 @@ export default function ConfiguracoesPage() {
         {/* Card — plano */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-gray-800">{t('plan.title')}</h2>
+            <h2 className="font-bold text-gray-800 dark:text-gray-200">{t('plan.title')}</h2>
             <Link href="/configuracoes/planos" className="text-xs text-violet-600 font-semibold hover:underline">
               {t('plan.viewAll')}
             </Link>
@@ -210,7 +210,7 @@ export default function ConfiguracoesPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-gray-900 text-lg">{billing.plan_name}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">{billing.plan_name}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                       billing.subscription_status === 'active' ? 'bg-emerald-100 text-emerald-700' :
                       billing.subscription_status === 'past_due' ? 'bg-red-100 text-red-700' :
@@ -232,7 +232,7 @@ export default function ConfiguracoesPage() {
                     {t('plan.upgrade')}
                   </Link>
                 ) : (
-                  <Link href="/configuracoes/planos" className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+                  <Link href="/configuracoes/planos" className="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     {t('plan.manage')}
                   </Link>
                 )}
@@ -253,7 +253,7 @@ export default function ConfiguracoesPage() {
                     <div key={item.label} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
                       <div className="flex justify-between items-baseline mb-1.5">
                         <span className="text-xs text-gray-500 font-medium">{item.label}</span>
-                        <span className={`text-xs font-bold ${atLimit ? 'text-red-500' : nearLimit ? 'text-amber-600' : 'text-gray-700'}`}>
+                        <span className={`text-xs font-bold ${atLimit ? 'text-red-500' : nearLimit ? 'text-amber-600' : 'text-gray-700 dark:text-gray-300'}`}>
                           {item.used}{unlimited ? '' : `/${item.max}`}
                           {nearLimit && <span className="ml-1 font-normal text-amber-500">Próximo do limite</span>}
                         </span>
@@ -261,7 +261,7 @@ export default function ConfiguracoesPage() {
                       {unlimited ? (
                         <p className="text-xs text-emerald-600 font-semibold">{t('plan.unlimited')}</p>
                       ) : (
-                        <div className="h-1.5 bg-gray-200 rounded-full">
+                        <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full">
                           <div className={`h-1.5 rounded-full transition-all ${atLimit ? 'bg-red-400' : nearLimit ? 'bg-amber-400' : item.color}`} style={{ width: `${pct}%` }} />
                         </div>
                       )}
@@ -284,12 +284,12 @@ export default function ConfiguracoesPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-gray-800">Chaves de API</h2>
+              <h2 className="font-bold text-gray-800 dark:text-gray-200">Chaves de API</h2>
               <p className="text-sm text-gray-500 mt-0.5">Integre o Jarbis com outros sistemas via API</p>
             </div>
             <Link
               href="/configuracoes/api-keys"
-              className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Gerenciar
             </Link>
@@ -300,12 +300,12 @@ export default function ConfiguracoesPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-gray-800">Webhooks</h2>
+              <h2 className="font-bold text-gray-800 dark:text-gray-200">Webhooks</h2>
               <p className="text-sm text-gray-500 mt-0.5">Receba notificações HTTP quando eventos ocorrerem</p>
             </div>
             <Link
               href="/configuracoes/webhooks"
-              className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Configurar
             </Link>
@@ -316,12 +316,12 @@ export default function ConfiguracoesPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-gray-800">Personalização</h2>
+              <h2 className="font-bold text-gray-800 dark:text-gray-200">Personalização</h2>
               <p className="text-sm text-gray-500 mt-0.5">Logo e cores personalizadas (white-label — plano Grupo)</p>
             </div>
             <Link
               href="/configuracoes/personalizacao"
-              className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Personalizar
             </Link>

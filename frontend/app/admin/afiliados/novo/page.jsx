@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -54,7 +54,6 @@ export default function AdminNovoAfiliadoPage() {
   }
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-xl mx-auto">
         <div className="mb-6 flex items-center gap-4">
           <Link href="/admin/afiliados" className="text-gray-500 hover:text-gray-300 transition-colors">
@@ -159,6 +158,5 @@ export default function AdminNovoAfiliadoPage() {
           </div>
         </form>
       </div>
-    </AdminLayout>
   )
 }

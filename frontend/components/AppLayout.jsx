@@ -469,7 +469,7 @@ export default function AppLayout({ children }) {
             <LanguageSwitcher />
             <button
               onClick={() => setNotifOpen(o => !o)}
-              className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+              className="relative p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <Icons.Bell />
               {unreadCount > 0 && (
@@ -480,7 +480,7 @@ export default function AppLayout({ children }) {
             </button>
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label={t('openMenu')}
             >
               <Icons.Hamburger />
@@ -586,21 +586,21 @@ export default function AppLayout({ children }) {
       {/* Modal NPS */}
       {npsModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             {npsDone ? (
               <div className="text-center py-4">
                 <div className="text-4xl mb-3">🙏</div>
-                <h3 className="font-bold text-gray-900">Obrigado pelo feedback!</h3>
-                <p className="text-sm text-gray-500 mt-1">Sua resposta nos ajuda a melhorar o Jarbis.</p>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">Obrigado pelo feedback!</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sua resposta nos ajuda a melhorar o Jarbis.</p>
               </div>
             ) : (
               <>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="font-bold text-gray-900">Uma pergunta rápida</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">De 0 a 10, o quanto você indicaria o Jarbis a um colega?</p>
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100">Uma pergunta rápida</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">De 0 a 10, o quanto você indicaria o Jarbis a um colega?</p>
                   </div>
-                  <button onClick={dismissNps} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
+                  <button onClick={dismissNps} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
                 </div>
                 <div className="flex gap-1 mb-4 flex-wrap justify-center">
                   {[0,1,2,3,4,5,6,7,8,9,10].map(n => (
@@ -612,7 +612,7 @@ export default function AppLayout({ children }) {
                           ? n >= 9 ? 'bg-emerald-600 text-white'
                             : n >= 7 ? 'bg-amber-500 text-white'
                             : 'bg-red-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       {n}
@@ -629,7 +629,7 @@ export default function AppLayout({ children }) {
                     onChange={e => setNpsComment(e.target.value)}
                     placeholder="Comentário opcional — o que podemos melhorar?"
                     rows={2}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-violet-400 resize-none mb-3"
+                    className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-violet-400 resize-none mb-3"
                   />
                 )}
                 <div className="flex gap-2">
@@ -656,7 +656,7 @@ export default function AppLayout({ children }) {
       )}
 
       {/* ── Bottom navigation mobile (< md) ── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-30 safe-area-inset-bottom">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 z-30 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16">
           {NAV_KEYS.map(({ href, key, Icon }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
@@ -666,7 +666,7 @@ export default function AppLayout({ children }) {
                 key={href}
                 href={href}
                 className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-                  active ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600'
+                  active ? 'text-violet-600' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                 }`}
               >
                 <span className={active ? 'text-violet-600' : ''}><Icon /></span>

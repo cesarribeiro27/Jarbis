@@ -1059,8 +1059,13 @@
       "users": "+1 utilisateur par pack",
       "dashboards": "+5 tableaux de bord par pack",
       "datasets": "+3 sources de données par pack",
-      "addPack": "Ajouter un pack →",
-      "adding": "Redirection..."
+      "addPack": "Ajouter un pack",
+      "adding": "Veuillez patienter...",
+      "sectionTitle": "Packs d'extension",
+      "sectionDesc": "Ajoutez des ressources à votre forfait actuel",
+      "completo": { "title": "Pack Complet", "feature1": "+1 utilisateur", "feature2": "+5 tableaux de bord", "feature3": "+3 sources de données", "active": "actif" },
+      "dash": { "title": "Pack Tableaux de Bord", "feature": "+5 tableaux de bord", "active": "tableaux actifs" },
+      "dataset": { "title": "Pack Sources de Données", "feature": "+3 sources de données", "active": "sources actives" }
     },
     "toast": {
       "success": "Abonnement activé avec succès ! Votre forfait a été mis à jour.",
@@ -1072,25 +1077,11 @@
       "portalError": "Erreur lors de l'ouverture du portail."
     },
     "plans": {
-      "free": {
-        "name": "Gratuit",
-        "desc": "Pour essayer"
-      },
-      "solo": {
-        "name": "Sol",
-        "desc": "Pour les travailleurs autonomes et les MEI"
-      },
-      "equipe": {
-        "name": "Professionnel",
-        "desc": "Pour les petites entreprises"
-      },
-      "ilimitado": {
-        "name": "Illimité",
-        "desc": "Pour les entreprises en croissance"
-      },
-      "enterprise": {
-        "name": "Entreprise",
-        "desc": "Pour les grandes opérations"
+      "free":       { "name": "Gratuit",      "desc": "Pour essayer",                       "f1": "2 tableaux de bord", "f2": "2 sources de données", "f3": "1 utilisateur", "f4": "Lien public" },
+      "solo":       { "name": "Solo",         "desc": "Pour les freelances et PME",         "f1": "8 tableaux de bord", "f2": "8 sources de données", "f3": "1 utilisateur", "f4": "5 alertes", "f5": "Intégrer au site" },
+      "equipe":     { "name": "Professionnel","desc": "Pour les petites entreprises",       "f1": "20 tableaux de bord", "f2": "15 sources de données", "f3": "1 utilisateur", "f4": "15 alertes", "f5": "AI Assistente", "f6": "Intégrer au site" },
+      "ilimitado":  { "name": "Équipe",       "desc": "Pour les entreprises en croissance", "f1": "50 tableaux de bord", "f2": "30 sources de données", "f3": "5 utilisateurs", "f4": "50 alertes", "f5": "AI Assistente", "f6": "Marque blanche", "f7": "Intégrer au site" },
+      "enterprise": { "name": "Entreprise",   "desc": "Pour les grandes opérations",        "f1": "Tout de l'Équipe", "f2": "Utilisateurs illimités", "f3": "SLA garanti par contrat", "f4": "Gestionnaire de compte dédié", "f5": "Onboarding personnalisé"
       }
     }
   },

@@ -21,10 +21,10 @@ function OnboardingChecklist({ onDismiss }) {
   if (!data || data.completed) return null
 
   return (
-    <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-2xl border border-violet-100 p-5 mb-8">
+    <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl border border-violet-100 dark:border-gray-700 p-5 mb-8">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-bold text-gray-900 text-sm">Primeiros passos</h3>
+          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">Primeiros passos</h3>
           <p className="text-xs text-gray-500 mt-0.5">{data.done_count} de {data.total} concluídos</p>
         </div>
         <button onClick={onDismiss} className="text-gray-400 hover:text-gray-600 transition-colors text-xs">✕</button>
@@ -39,7 +39,7 @@ function OnboardingChecklist({ onDismiss }) {
       <div className="space-y-2">
         {data.steps.map(step => (
           <div key={step.key} className="flex items-center gap-3">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-violet-600' : 'bg-white border-2 border-gray-200'}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-violet-600' : 'bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600'}`}>
               {step.done && (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
@@ -179,7 +179,7 @@ export default function DashboardHome() {
             <Link
               key={stat.label}
               href={stat.href}
-              className={`relative bg-gradient-to-br ${stat.bg} rounded-2xl p-5 border border-white/80 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 overflow-hidden group`}
+              className={`relative bg-gradient-to-br ${stat.bg} dark:from-gray-800 dark:to-gray-800 rounded-2xl p-5 border border-white/80 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 overflow-hidden group`}
             >
               <div className="relative z-10">
                 <div className={`w-10 h-10 ${stat.iconBg} text-white rounded-xl flex items-center justify-center mb-4 shadow-sm`}>

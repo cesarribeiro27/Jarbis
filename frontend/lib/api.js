@@ -150,5 +150,7 @@ export const api = {
     checkout: (priceId) => apiFetch('/billing/checkout', { method: 'POST', body: JSON.stringify({ price_id: priceId }) }),
     portal: () => apiFetch('/billing/portal', { method: 'POST' }),
     addonCheckout: () => apiFetch('/billing/addon/checkout', { method: 'POST' }),
+    addonDashCheckout: () => apiFetch('/billing/addon/dashboard/checkout', { method: 'POST' }),
+    addonDatasetCheckout: () => apiFetch('/billing/addon/dataset/checkout', { method: 'POST' }),
   },
 }

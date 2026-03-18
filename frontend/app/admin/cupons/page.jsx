@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AdminLayout from '@/components/AdminLayout'
 import { useAdminRole } from '@/components/AdminLayout'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
@@ -148,7 +147,6 @@ export default function AdminCuponsPage() {
   const totalUses = coupons.reduce((s, c) => s + (c.used_count || 0), 0)
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -397,6 +395,5 @@ export default function AdminCuponsPage() {
           )}
         </div>
       </div>
-    </AdminLayout>
   )
 }

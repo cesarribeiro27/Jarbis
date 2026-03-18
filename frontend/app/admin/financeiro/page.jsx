@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -107,7 +107,6 @@ export default function AdminFinanceiroPage() {
   const pages = Math.ceil(total / PAGE_SIZE)
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -302,7 +301,6 @@ export default function AdminFinanceiroPage() {
         {/* Cohort Analysis */}
         <CohortAnalysis />
       </div>
-    </AdminLayout>
   )
 }
 

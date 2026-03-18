@@ -37,10 +37,10 @@ function ApiDatasetModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
           <div>
-            <h2 className="font-semibold text-gray-800">{t('modal.title')}</h2>
+            <h2 className="font-semibold text-gray-800 dark:text-gray-200">{t('modal.title')}</h2>
             <p className="text-xs text-gray-400 mt-0.5">{t('modal.subtitle')}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
@@ -50,27 +50,27 @@ function ApiDatasetModal({ onClose, onCreated }) {
         <form onSubmit={submit} className="p-6 flex flex-col gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.nameLabel')}</label>
-            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('modal.namePlaceholder')} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
+            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('modal.namePlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.urlLabel')}</label>
-              <input required type="url" value={form.api_url} onChange={e => setForm(f => ({ ...f, api_url: e.target.value }))} placeholder={t('modal.urlPlaceholder')} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <input required type="url" value={form.api_url} onChange={e => setForm(f => ({ ...f, api_url: e.target.value }))} placeholder={t('modal.urlPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.methodLabel')}</label>
-              <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+              <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
                 <option>GET</option><option>POST</option>
               </select>
             </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.headersLabel')}</label>
-            <textarea value={form.headers} onChange={e => setForm(f => ({ ...f, headers: e.target.value }))} placeholder={'{"Authorization": "Bearer token"}'} rows={2} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none" />
+            <textarea value={form.headers} onChange={e => setForm(f => ({ ...f, headers: e.target.value }))} placeholder={'{"Authorization": "Bearer token"}'} rows={2} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.intervalLabel')}</label>
-            <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+            <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}
           <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
@@ -172,13 +172,13 @@ export default function DatasetsPage() {
       <div className="p-6 max-w-screen-xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('title')}</h1>
             <p className="text-sm text-gray-500 mt-1">
               {datasets.length > 0 ? t('subtitle', { count: datasets.length }) : t('subtitleEmpty')}
             </p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={() => setShowApiModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors">
+            <button onClick={() => setShowApiModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
               {t('connectBtn')}
             </button>
@@ -192,32 +192,32 @@ export default function DatasetsPage() {
 
         {loading && (
           <div className="flex flex-col gap-3">
-            {[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-gray-100 h-20 animate-pulse" />)}
+            {[1,2,3].map(i => <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 h-20 animate-pulse" />)}
           </div>
         )}
 
         {!loading && datasets.length === 0 && (
           <div
-            className={`bg-white rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${dragOver ? 'border-violet-400 bg-violet-50' : 'border-gray-200'}`}
+            className={`bg-white dark:bg-gray-800/50 rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${dragOver ? 'border-violet-400 bg-violet-50' : 'border-gray-200 dark:border-gray-700'}`}
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
           >
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <ellipse cx="12" cy="5" rx="9" ry="3"/>
                 <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
                 <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
               </svg>
             </div>
-            <p className="font-semibold text-gray-800 mb-2">{dragOver ? t('dropRelease') : t('empty.title')}</p>
-            <p className="text-sm text-gray-400 mb-1">{t('empty.desc')}</p>
-            <p className="text-xs text-gray-300 mb-6">{t('empty.hint')}</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{dragOver ? t('dropRelease') : t('empty.title')}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-1">{t('empty.desc')}</p>
+            <p className="text-xs text-gray-300 dark:text-gray-600 mb-6">{t('empty.hint')}</p>
             <div className="flex items-center justify-center gap-3">
               <button onClick={() => fileRef.current?.click()} className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
                 {t('uploadBtn2')}
               </button>
-              <button onClick={() => setShowApiModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+              <button onClick={() => setShowApiModal(true)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 {t('connectBtn')}
               </button>
             </div>
@@ -232,7 +232,7 @@ export default function DatasetsPage() {
             onDrop={onDrop}
           >
             {datasets.map(ds => (
-              <div key={ds.id} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 hover:border-gray-200 hover:shadow-sm transition-all">
+              <div key={ds.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 sm:p-5 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm transition-all">
                 <div className="flex items-start gap-3">
                   {/* Ícone */}
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50' : 'bg-emerald-50'}`}>
@@ -244,7 +244,7 @@ export default function DatasetsPage() {
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 truncate">{ds.name}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{ds.name}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500 font-medium">{formatRows(ds.row_count)}</span>
                       {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} {t('columns')}</span>}
@@ -286,7 +286,7 @@ export default function DatasetsPage() {
             ))}
             {/* Drop zone quando já tem datasets */}
             <div
-              className={`border-2 border-dashed rounded-2xl py-4 text-center text-sm transition-all ${dragOver ? 'border-violet-400 bg-violet-50 text-violet-600' : 'border-gray-100 text-gray-300'}`}
+              className={`border-2 border-dashed rounded-2xl py-4 text-center text-sm transition-all ${dragOver ? 'border-violet-400 bg-violet-50 text-violet-600' : 'border-gray-100 dark:border-gray-700 text-gray-300 dark:text-gray-600'}`}
             >
               {dragOver ? t('dropRelease') : t('dropHint')}
             </div>

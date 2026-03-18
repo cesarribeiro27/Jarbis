@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -58,7 +58,6 @@ export default function CustomerSuccessPage() {
   const total       = data?.total ?? 0
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-6xl mx-auto">
 
         {/* Header */}
@@ -195,6 +194,5 @@ export default function CustomerSuccessPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   )
 }

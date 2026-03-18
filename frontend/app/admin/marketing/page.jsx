@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -57,7 +57,6 @@ export default function AdminMarketingPage() {
   const maxAffiliate = Math.max(...(aquisicao.by_affiliate || []).map(a => a.count), 1)
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-white">Marketing</h1>
@@ -201,6 +200,5 @@ export default function AdminMarketingPage() {
           </>
         )}
       </div>
-    </AdminLayout>
   )
 }

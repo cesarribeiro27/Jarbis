@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 const FRONTEND_URL = 'https://jarbis.cc'
@@ -131,19 +131,15 @@ export default function AdminAfiliadoDetailPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      </AdminLayout>
     )
   }
 
   if (!data) {
     return (
-      <AdminLayout>
         <div className="p-8 text-gray-500">Afiliado não encontrado.</div>
-      </AdminLayout>
     )
   }
 
@@ -153,7 +149,6 @@ export default function AdminAfiliadoDetailPage() {
   const total_commission = data.total_commission_estimated
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-start gap-4">
@@ -401,6 +396,5 @@ export default function AdminAfiliadoDetailPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   )
 }

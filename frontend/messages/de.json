@@ -1059,8 +1059,13 @@
       "users": "+1 Benutzer pro Paket",
       "dashboards": "+5 Dashboards pro Packung",
       "datasets": "+3 Datenquellen pro Paket",
-      "addPack": "Paket hinzufügen →",
-      "adding": "Weiterleitung..."
+      "addPack": "Paket hinzufügen",
+      "adding": "Bitte warten...",
+      "sectionTitle": "Erweiterungspakete",
+      "sectionDesc": "Ressourcen zu Ihrem Plan hinzufügen",
+      "completo": { "title": "Komplettpaket", "feature1": "+1 extra Benutzer", "feature2": "+5 Dashboards", "feature3": "+3 Datenquellen", "active": "aktiv" },
+      "dash": { "title": "Dashboard-Paket", "feature": "+5 Dashboards", "active": "aktive Dashboards" },
+      "dataset": { "title": "Datenquellen-Paket", "feature": "+3 Datenquellen", "active": "aktive Quellen" }
     },
     "toast": {
       "success": "Abonnement erfolgreich aktiviert! Ihr Plan wurde aktualisiert.",
@@ -1072,26 +1077,11 @@
       "portalError": "Fehler beim Öffnen des Portals."
     },
     "plans": {
-      "free": {
-        "name": "Frei",
-        "desc": "Um es zu versuchen"
-      },
-      "solo": {
-        "name": "Boden",
-        "desc": "Für Selbstständige und MEIs"
-      },
-      "equipe": {
-        "name": "Professional",
-        "desc": "Für kleine Unternehmen"
-      },
-      "ilimitado": {
-        "name": "Unbegrenzt",
-        "desc": "Für wachsende Unternehmen"
-      },
-      "enterprise": {
-        "name": "Unternehmen",
-        "desc": "Für große Einsätze"
-      }
+      "free":       { "name": "Kostenlos",    "desc": "Zum Ausprobieren",                "f1": "2 Dashboards", "f2": "2 Datenquellen", "f3": "1 Benutzer", "f4": "Öffentlicher Link" },
+      "solo":       { "name": "Solo",         "desc": "Für Freelancer und KMUs",         "f1": "8 Dashboards", "f2": "8 Datenquellen", "f3": "1 Benutzer", "f4": "5 Benachrichtigungen", "f5": "In Website einbetten" },
+      "equipe":     { "name": "Professional", "desc": "Für kleine Unternehmen",          "f1": "20 Dashboards", "f2": "15 Datenquellen", "f3": "1 Benutzer", "f4": "15 Benachrichtigungen", "f5": "AI Assistente", "f6": "In Website einbetten" },
+      "ilimitado":  { "name": "Team",         "desc": "Für wachsende Unternehmen",       "f1": "50 Dashboards", "f2": "30 Datenquellen", "f3": "5 Benutzer", "f4": "50 Benachrichtigungen", "f5": "AI Assistente", "f6": "White Label", "f7": "In Website einbetten" },
+      "enterprise": { "name": "Unternehmen",  "desc": "Für große Unternehmen",           "f1": "Alles aus Team", "f2": "Unbegrenzte Benutzer", "f3": "SLA vertraglich garantiert", "f4": "Dedizierter Account Manager", "f5": "Personalisiertes Onboarding" }
     }
   },
   "usuarios": {

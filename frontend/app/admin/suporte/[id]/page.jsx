@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -75,24 +75,19 @@ export default function TicketDetailPage() {
   }
 
   if (loading) return (
-    <AdminLayout>
       <div className="flex items-center justify-center h-64">
         <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
       </div>
-    </AdminLayout>
   )
 
   if (!ticket) return (
-    <AdminLayout>
       <div className="p-8 text-gray-500">Ticket não encontrado.</div>
-    </AdminLayout>
   )
 
   const sc = STATUS_CFG[ticket.status] || STATUS_CFG.open
   const pc = PRIORITY_CFG[ticket.priority] || PRIORITY_CFG.medium
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-4xl mx-auto">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-gray-500 mb-6">
@@ -213,6 +208,5 @@ export default function TicketDetailPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   )
 }

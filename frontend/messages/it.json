@@ -1059,8 +1059,13 @@
       "users": "+1 utente per pacchetto",
       "dashboards": "+5 dashboard per confezione",
       "datasets": "+3 fonti dati per pacchetto",
-      "addPack": "Aggiungi pacchetto →",
-      "adding": "Reindirizzamento..."
+      "addPack": "Aggiungi pacchetto",
+      "adding": "Attendere...",
+      "sectionTitle": "Pacchetti di Espansione",
+      "sectionDesc": "Aggiungi risorse al tuo piano attuale",
+      "completo": { "title": "Pacchetto Completo", "feature1": "+1 utente extra", "feature2": "+5 dashboard", "feature3": "+3 fonti dati", "active": "attivo" },
+      "dash": { "title": "Pacchetto Dashboard", "feature": "+5 dashboard", "active": "dashboard attivi" },
+      "dataset": { "title": "Pacchetto Fonti Dati", "feature": "+3 fonti dati", "active": "fonti attive" }
     },
     "toast": {
       "success": "Abbonamento attivato con successo! Il tuo piano è stato aggiornato.",
@@ -1072,25 +1077,11 @@
       "portalError": "Errore durante l'apertura del portale."
     },
     "plans": {
-      "free": {
-        "name": "Gratuito",
-        "desc": "Da provare"
-      },
-      "solo": {
-        "name": "Suolo",
-        "desc": "Per lavoratori autonomi e MEI"
-      },
-      "equipe": {
-        "name": "Professionale",
-        "desc": "Per le piccole imprese"
-      },
-      "ilimitado": {
-        "name": "Illimitato",
-        "desc": "Per le aziende in crescita"
-      },
-      "enterprise": {
-        "name": "Impresa",
-        "desc": "Per grandi operazioni"
+      "free":       { "name": "Gratuito",     "desc": "Per provare",                    "f1": "2 dashboard", "f2": "2 fonti dati", "f3": "1 utente", "f4": "Link pubblico" },
+      "solo":       { "name": "Solo",         "desc": "Per freelance e PMI",            "f1": "8 dashboard", "f2": "8 fonti dati", "f3": "1 utente", "f4": "5 avvisi", "f5": "Incorpora nel sito" },
+      "equipe":     { "name": "Professionale","desc": "Per le piccole imprese",         "f1": "20 dashboard", "f2": "15 fonti dati", "f3": "1 utente", "f4": "15 avvisi", "f5": "AI Assistente", "f6": "Incorpora nel sito" },
+      "ilimitado":  { "name": "Team",         "desc": "Per le aziende in crescita",    "f1": "50 dashboard", "f2": "30 fonti dati", "f3": "5 utenti", "f4": "50 avvisi", "f5": "AI Assistente", "f6": "White label", "f7": "Incorpora nel sito" },
+      "enterprise": { "name": "Impresa",      "desc": "Per grandi operazioni",          "f1": "Tutto del Team", "f2": "Utenti illimitati", "f3": "SLA garantito per contratto", "f4": "Account manager dedicato", "f5": "Onboarding personalizzato"
       }
     }
   },

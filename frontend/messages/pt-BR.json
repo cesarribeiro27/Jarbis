@@ -116,7 +116,7 @@
       { "feature": "Interface em português", "jarbis": true, "luzmo": false, "powerbi": false },
       { "feature": "Suporte em português", "jarbis": true, "luzmo": false, "powerbi": false },
       { "feature": "Incorporar via iframe", "jarbis": true, "luzmo": true, "powerbi": "Complexo" },
-      { "feature": "IA em português", "jarbis": true, "luzmo": false, "powerbi": false },
+      { "feature": "AI Assistente", "jarbis": true, "luzmo": false, "powerbi": false },
       { "feature": "Setup em minutos", "jarbis": true, "luzmo": false, "powerbi": false },
       { "feature": "Sem cartão no teste", "jarbis": true, "luzmo": false, "powerbi": false }
     ]
@@ -150,13 +150,13 @@
         "name": "Profissional",
         "desc": "Para profissionais liberais",
         "cta": "Assinar Profissional",
-        "features": ["20 dashboards", "15 fontes de dados", "1 usuário", "15 alertas", "IA em português", "Incorporar no site"]
+        "features": ["20 dashboards", "15 fontes de dados", "1 usuário", "15 alertas", "AI Assistente", "Incorporar no site"]
       },
       "ilimitado": {
         "name": "Grupo",
         "desc": "Para empresas em crescimento",
         "cta": "Assinar Grupo",
-        "features": ["50 dashboards", "30 fontes de dados", "5 usuários", "50 alertas", "IA em português", "Marca própria no dashboard"]
+        "features": ["50 dashboards", "30 fontes de dados", "5 usuários", "50 alertas", "AI Assistente", "Marca própria no dashboard"]
       },
       "enterprise": {
         "name": "Enterprise",
@@ -882,8 +882,27 @@
       "users": "+1 usuário por pack",
       "dashboards": "+5 dashboards por pack",
       "datasets": "+3 fontes de dados por pack",
-      "addPack": "Adicionar pack →",
-      "adding": "Redirecionando..."
+      "addPack": "Adicionar Pack",
+      "adding": "Aguarde...",
+      "sectionTitle": "Packs de Expansão",
+      "sectionDesc": "Adicione recursos ao seu plano atual",
+      "completo": {
+        "title": "Pack Completo",
+        "feature1": "+1 usuário extra",
+        "feature2": "+5 dashboards",
+        "feature3": "+3 fontes de dados",
+        "active": "ativo"
+      },
+      "dash": {
+        "title": "Pack Dashboards",
+        "feature": "+5 dashboards",
+        "active": "dashboards ativos"
+      },
+      "dataset": {
+        "title": "Pack Fontes de Dados",
+        "feature": "+3 fontes de dados",
+        "active": "fontes ativas"
+      }
     },
     "toast": {
       "success": "Assinatura ativada com sucesso! Seu plano foi atualizado.",
@@ -895,11 +914,11 @@
       "portalError": "Erro ao abrir portal."
     },
     "plans": {
-      "free":       { "name": "Gratuito",      "desc": "Para experimentar" },
-      "solo":       { "name": "Solo",          "desc": "Para autônomos e MEIs" },
-      "equipe":     { "name": "Profissional",  "desc": "Para pequenas empresas" },
-      "ilimitado":  { "name": "Grupo",          "desc": "Para empresas em crescimento" },
-      "enterprise": { "name": "Enterprise",    "desc": "Para grandes operações" }
+      "free":       { "name": "Gratuito",     "desc": "Para experimentar",           "f1": "2 dashboards", "f2": "2 fontes de dados", "f3": "1 usuário", "f4": "Link público" },
+      "solo":       { "name": "Solo",         "desc": "Para autônomos e MEIs",       "f1": "8 dashboards", "f2": "8 fontes de dados", "f3": "1 usuário", "f4": "5 alertas", "f5": "Incorporar no site" },
+      "equipe":     { "name": "Profissional", "desc": "Para pequenas empresas",      "f1": "20 dashboards", "f2": "15 fontes de dados", "f3": "1 usuário", "f4": "15 alertas", "f5": "AI Assistente", "f6": "Incorporar no site" },
+      "ilimitado":  { "name": "Grupo",        "desc": "Para empresas em crescimento","f1": "50 dashboards", "f2": "30 fontes de dados", "f3": "5 usuários", "f4": "50 alertas", "f5": "AI Assistente", "f6": "Marca própria", "f7": "Incorporar no site" },
+      "enterprise": { "name": "Enterprise",   "desc": "Para grandes operações",      "f1": "Tudo do Grupo", "f2": "Usuários ilimitados", "f3": "SLA garantido em contrato", "f4": "Gerente de conta dedicado", "f5": "Onboarding personalizado" }
     }
   },
   "usuarios": {

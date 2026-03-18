@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -101,7 +101,6 @@ export default function AdminEquipePage() {
   }
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -277,6 +276,5 @@ export default function AdminEquipePage() {
           )}
         </div>
       </div>
-    </AdminLayout>
   )
 }

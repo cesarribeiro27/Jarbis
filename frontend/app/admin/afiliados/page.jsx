@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import AdminLayout from '@/components/AdminLayout'
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -39,7 +39,6 @@ export default function AdminAfiliadosPage() {
   const totalPages = Math.ceil(total / pageSize)
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-5xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -154,6 +153,5 @@ export default function AdminAfiliadosPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   )
 }

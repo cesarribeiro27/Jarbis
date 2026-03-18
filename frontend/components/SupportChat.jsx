@@ -36,8 +36,10 @@ export default function SupportChat() {
     try {
       const res = await fetch(`${API_URL}/support/chat`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('jarbis_token')}`,
+        },
         body: JSON.stringify({ message: userMsg.content, history }),
       })
       if (!res.ok) throw new Error('error')

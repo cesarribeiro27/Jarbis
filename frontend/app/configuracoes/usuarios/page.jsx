@@ -40,11 +40,11 @@ function InviteModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div>
-            <h2 className="font-bold text-gray-800">{t('modal.title')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{t('modal.subtitle')}</p>
+            <h2 className="font-bold text-gray-800 dark:text-gray-200">{t('modal.title')}</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('modal.subtitle')}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -54,25 +54,25 @@ function InviteModal({ onClose, onCreated }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.nameLabel')}</label>
-              <input required value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
+              <input required value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.emailLabel')}</label>
-              <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
             </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.passwordLabel')}</label>
-            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={t('modal.passwordPlaceholder')} />
+            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={t('modal.passwordPlaceholder')} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.roleLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               {ROLES.map(r => (
-                <label key={r.value} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-colors ${form.role === r.value ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <label key={r.value} className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-colors ${form.role === r.value ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}`}>
                   <input type="radio" name="role" value={r.value} checked={form.role === r.value} onChange={() => setForm(f => ({ ...f, role: r.value }))} className="hidden" />
-                  <p className="text-sm font-semibold text-gray-800">{r.label}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{r.desc}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{r.label}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">{r.desc}</p>
                 </label>
               ))}
             </div>
@@ -143,7 +143,7 @@ export default function UsuariosPage() {
       <div className="p-6 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('title')}</h1>
             <p className="text-sm text-gray-500 mt-1">
               {users.length > 0
                 ? t('activeCount', { active: users.filter(u => u.is_active).length, total: users.length })
@@ -159,22 +159,22 @@ export default function UsuariosPage() {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            {[1,2,3].map(i => <div key={i} className="h-16 border-b border-gray-50 animate-pulse" />)}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            {[1,2,3].map(i => <div key={i} className="h-16 border-b border-gray-50 dark:border-gray-700 animate-pulse" />)}
           </div>
         ) : users.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <p className="font-semibold text-gray-700 mb-1">{t('noUsers')}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center">
+            <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">{t('noUsers')}</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-50 dark:divide-gray-700">
             {users.map(u => {
               const isSelf = u.id === currentUser?.id
               const manageable = canManage(u)
               const isUpdating = updatingId === u.id
 
               return (
-                <div key={u.id} className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-50/60 ${!u.is_active ? 'opacity-50' : ''}`}>
+                <div key={u.id} className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-700/50 ${!u.is_active ? 'opacity-50' : ''}`}>
                   {/* Avatar */}
                   <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
                     <span className="text-violet-700 font-bold text-sm">
@@ -185,7 +185,7 @@ export default function UsuariosPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{u.full_name}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{u.full_name}</p>
                       {isSelf && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">{t('you')}</span>}
                     </div>
                     <p className="text-xs text-gray-400 truncate">{u.email}</p>
@@ -203,12 +203,12 @@ export default function UsuariosPage() {
                           {t(`roles.${u.role}`, { defaultValue: u.role })} ▾
                         </button>
                         {editRoleId === u.id && (
-                          <div className="absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-40">
+                          <div className="absolute right-0 top-8 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1 w-40">
                             {ROLES.filter(r => ({ owner: 3, admin: 2, member: 1, viewer: 0 }[r.value] < currentRank).map(() => true) ? true : false).map(r => (
                               <button
                                 key={r.value}
                                 onClick={() => handleChangeRole(u, r.value)}
-                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${u.role === r.value ? 'font-bold text-violet-700' : 'text-gray-700'}`}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 ${u.role === r.value ? 'font-bold text-violet-700 dark:text-violet-400' : 'text-gray-700 dark:text-gray-200'}`}
                               >
                                 {u.role === r.value && <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />}
                                 {r.label}

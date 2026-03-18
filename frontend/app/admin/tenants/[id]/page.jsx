@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminLayout, { useAdminRole } from '@/components/AdminLayout'
+import { useAdminRole } from '@/components/AdminLayout'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -233,22 +233,19 @@ export default function AdminTenantDetailPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      </AdminLayout>
     )
   }
 
   if (!tenant) {
-    return <AdminLayout><div className="p-8 text-gray-500">Tenant não encontrado.</div></AdminLayout>
+    return <div className="p-8 text-gray-500">Tenant não encontrado.</div>
   }
 
   const { users = [], usage = {}, limits = {} } = tenant
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-start gap-4">
@@ -589,6 +586,5 @@ export default function AdminTenantDetailPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   )
 }
