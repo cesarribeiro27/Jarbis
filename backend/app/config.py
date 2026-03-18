@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     # Enterprise: negociação manual — sem price_id automático
     # Add-on packs de expansão
     stripe_price_addon: str = ""
+    stripe_price_addon_dash: str = ""       # Pack Dashboards (+5 dash, R$19,90/mês)
+    stripe_price_addon_dataset: str = ""    # Pack Datasets (+3 datasets, R$19,90/mês)
     # Planos legados (mantidos para webhooks de subscriptions antigas)
     stripe_price_starter: str = ""
     stripe_price_pro: str = ""

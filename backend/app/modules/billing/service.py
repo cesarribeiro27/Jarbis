@@ -94,7 +94,7 @@ class BillingService:
         tenant_id: uuid.UUID,
         user_email: str,
     ) -> str:
-        """Cria sessão de checkout para pack de expansão."""
+        """Cria sessão de checkout para pack de expansão completo."""
         if not _init_stripe():
             raise ValueError("Stripe não configurado.")
         if not settings.stripe_price_addon:
@@ -111,6 +111,58 @@ class BillingService:
             cancel_url=f"{settings.frontend_url}/configuracoes/planos",
             metadata={"tenant_id": str(tenant_id), "type": "addon"},
             subscription_data={"metadata": {"tenant_id": str(tenant_id), "type": "addon"}},
+        )
+        return session.url
+
+    async def create_addon_dash_checkout_session(
+        self,
+        tenant_id: uuid.UUID,
+        user_email: str,
+    ) -> str:
+        """Cria sessão de checkout para pack de dashboards individuais."""
+        if not _init_stripe():
+            raise ValueError("Stripe não configurado.")
+        price_id = getattr(settings, "stripe_price_addon_dash", None)
+        if not price_id:
+            raise ValueError("Pack de dashboards não configurado.")
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+        customer_id = await self.get_or_create_customer(tenant, user_email)
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{settings.frontend_url}/configuracoes/planos?addon=1",
+            cancel_url=f"{settings.frontend_url}/configuracoes/planos",
+            metadata={"tenant_id": str(tenant_id), "type": "addon_dashboard"},
+            subscription_data={"metadata": {"tenant_id": str(tenant_id), "type": "addon_dashboard"}},
+        )
+        return session.url
+
+    async def create_addon_dataset_checkout_session(
+        self,
+        tenant_id: uuid.UUID,
+        user_email: str,
+    ) -> str:
+        """Cria sessão de checkout para pack de datasets individuais."""
+        if not _init_stripe():
+            raise ValueError("Stripe não configurado.")
+        price_id = getattr(settings, "stripe_price_addon_dataset", None)
+        if not price_id:
+            raise ValueError("Pack de fontes de dados não configurado.")
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+        customer_id = await self.get_or_create_customer(tenant, user_email)
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{settings.frontend_url}/configuracoes/planos?addon=1",
+            cancel_url=f"{settings.frontend_url}/configuracoes/planos",
+            metadata={"tenant_id": str(tenant_id), "type": "addon_dataset"},
+            subscription_data={"metadata": {"tenant_id": str(tenant_id), "type": "addon_dataset"}},
         )
         return session.url
 
@@ -165,9 +217,17 @@ class BillingService:
         sub_id = session.get("subscription")
 
         if checkout_type == "addon":
-            # Pack de expansão: incrementa addon_packs
-            current = getattr(tenant, "addon_packs", 0) or 0
-            tenant.addon_packs = current + 1
+            tenant.addon_packs = (getattr(tenant, "addon_packs", 0) or 0) + 1
+            await self.db.commit()
+            return
+
+        if checkout_type == "addon_dashboard":
+            tenant.addon_dashboards = (getattr(tenant, "addon_dashboards", 0) or 0) + 5
+            await self.db.commit()
+            return
+
+        if checkout_type == "addon_dataset":
+            tenant.addon_datasets = (getattr(tenant, "addon_datasets", 0) or 0) + 3
             await self.db.commit()
             return
 
@@ -335,7 +395,9 @@ class BillingService:
 
         plan = tenant.plan or "free"
         addon_packs = getattr(tenant, "addon_packs", 0) or 0
-        limits = get_effective_limits(plan, addon_packs)
+        addon_dashboards = getattr(tenant, "addon_dashboards", 0) or 0
+        addon_datasets = getattr(tenant, "addon_datasets", 0) or 0
+        limits = get_effective_limits(plan, addon_packs, addon_dashboards, addon_datasets)
 
         dash_count = await self.db.scalar(
             select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)
@@ -359,6 +421,8 @@ class BillingService:
             "trial_days_remaining": tenant.trial_days_remaining,
             "has_stripe": bool(tenant.stripe_customer_id),
             "addon_packs": addon_packs,
+            "addon_dashboards": addon_dashboards,
+            "addon_datasets": addon_datasets,
             "limits": limits,
             "usage": {
                 "dashboards": dash_count,

@@ -24,7 +24,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import Date, cast, func, select
+from sqlalchemy import Date, cast, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import asyncio
@@ -557,6 +557,39 @@ async def admin_update_tenant(
     return {"ok": True, "tenant_id": str(tenant_id)}
 
 
+@router.delete("/tenants/{tenant_id}", summary="Deletar tenant (apenas full)")
+async def admin_delete_tenant(
+    tenant_id: uuid.UUID,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.modules.reports.models import Report, ReportBlock
+    from app.modules.reports.dataset_models import ReportDataset
+    from app.modules.reports.alert_models import ReportAlert
+
+    _, role = admin_data
+    _check_roles(role, {"full"})
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+
+    # Cascata manual: remove tudo vinculado ao tenant
+    await db.execute(delete(ReportAlert).where(ReportAlert.tenant_id == tenant_id))
+    await db.execute(delete(ReportDataset).where(ReportDataset.tenant_id == tenant_id))
+
+    reports = await db.scalars(select(Report).where(Report.tenant_id == tenant_id))
+    for r in reports:
+        await db.execute(delete(ReportBlock).where(ReportBlock.report_id == r.id))
+    await db.execute(delete(Report).where(Report.tenant_id == tenant_id))
+
+    await db.execute(delete(User).where(User.tenant_id == tenant_id))
+    await db.delete(tenant)
+    await db.commit()
+
+    return {"ok": True, "deleted_tenant_id": str(tenant_id)}
+
+
 # ─── /admin/tenants/{tenant_id}/notes ─────────────────────────────────────────
 
 @router.get("/tenants/{tenant_id}/notes", summary="Listar notas internas de um tenant")
@@ -639,6 +672,52 @@ async def admin_delete_tenant_note(
         raise HTTPException(status_code=403, detail="Você só pode deletar suas próprias notas.")
 
     await db.delete(note)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/tenants/{tenant_id}/users/{user_id}/reset-password", summary="Enviar reset de senha para usuário")
+async def admin_reset_user_password(
+    tenant_id: uuid.UUID,
+    user_id: uuid.UUID,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Envia email de reset de senha para o usuário. Roles: full, vendas, suporte."""
+    _, role = admin_data
+    _check_roles(role, {"full", "vendas", "suporte"})
+
+    user = await db.scalar(
+        select(User).where(User.id == user_id, User.tenant_id == tenant_id)
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    from app.modules.auth.service import AuthService
+    service = AuthService(db)
+    await service.forgot_password(user.email, settings.frontend_url)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/tenants/{tenant_id}/users/{user_id}/revoke-sessions", summary="Revogar todas as sessões do usuário")
+async def admin_revoke_user_sessions(
+    tenant_id: uuid.UUID,
+    user_id: uuid.UUID,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Invalida todas as sessões ativas do usuário. Role: full."""
+    _, role = admin_data
+    _check_roles(role, {"full"})
+
+    user = await db.scalar(
+        select(User).where(User.id == user_id, User.tenant_id == tenant_id)
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    user.session_revoked_at = datetime.now(timezone.utc)
     await db.commit()
     return {"ok": True}
 

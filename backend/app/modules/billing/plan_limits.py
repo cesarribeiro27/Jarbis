@@ -112,21 +112,28 @@ PLANS: dict[str, PlanLimits] = {
     ),
 }
 
-# ── Add-on pack: R$49,90/mês por pack (+1 user, +5 dash, +3 datasets) ────────
-ADDON_PACK_PRICE = Decimal("49.90")
+# ── Add-on packs ──────────────────────────────────────────────────────────────
+ADDON_PACK_PRICE = Decimal("49.90")       # Pack Completo: +1 user, +5 dash, +3 datasets
 ADDON_PACK_USERS = 1
 ADDON_PACK_DASHBOARDS = 5
 ADDON_PACK_DATASETS = 3
 
+ADDON_DASH_PRICE = Decimal("19.90")       # Pack Dashboards: +5 dashboards
+ADDON_DASH_DASHBOARDS = 5
 
-def get_effective_limits(plan: str, addon_packs: int = 0) -> dict:
+ADDON_DATASET_PRICE = Decimal("19.90")    # Pack Fontes de Dados: +3 datasets
+ADDON_DATASET_DATASETS = 3
+
+
+def get_effective_limits(plan: str, addon_packs: int = 0, addon_dashboards: int = 0, addon_datasets: int = 0) -> dict:
     """Retorna os limites efetivos considerando add-on packs."""
     base = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
-    if addon_packs <= 0:
+    has_addons = addon_packs > 0 or addon_dashboards > 0 or addon_datasets > 0
+    if not has_addons:
         return base
     return {
-        "dashboards":  base["dashboards"] + addon_packs * ADDON_PACK_DASHBOARDS if base["dashboards"] != -1 else -1,
-        "datasets":    base["datasets"]   + addon_packs * ADDON_PACK_DATASETS   if base["datasets"]   != -1 else -1,
+        "dashboards":  base["dashboards"] + addon_packs * ADDON_PACK_DASHBOARDS + addon_dashboards * ADDON_DASH_DASHBOARDS if base["dashboards"] != -1 else -1,
+        "datasets":    base["datasets"]   + addon_packs * ADDON_PACK_DATASETS   + addon_datasets   * ADDON_DATASET_DATASETS if base["datasets"]   != -1 else -1,
         "users":       base["users"]      + addon_packs * ADDON_PACK_USERS      if base["users"]      != -1 else -1,
         "alerts":      base["alerts"],
         "white_label": base["white_label"],

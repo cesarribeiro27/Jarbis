@@ -72,6 +72,9 @@ export default function AdminTenantDetailPage() {
   // Impersonation
   const [impersonating, setImpersonating] = useState(false)
 
+  // Ações de usuário
+  const [userActionMsg, setUserActionMsg] = useState({}) // { [userId]: {type, text} }
+
   // Notas
   const [notes, setNotes] = useState([])
   const [newNote, setNewNote] = useState('')
@@ -210,6 +213,41 @@ export default function AdminTenantDetailPage() {
     }
   }
 
+  async function deleteTenant() {
+    if (!confirm(`⚠️ DELETAR "${tenant.name}" permanentemente?\n\nIsso remove todos os usuários, dashboards e dados. Esta ação é irreversível.`)) return
+    const r = await fetch(`${API_URL}/admin/tenants/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
+    if (r.ok) {
+      router.replace('/admin/tenants')
+    } else {
+      const d = await r.json().catch(() => ({}))
+      alert(d.detail || 'Erro ao deletar tenant.')
+    }
+  }
+
+  async function resetUserPassword(userId) {
+    const r = await fetch(`${API_URL}/admin/tenants/${id}/users/${userId}/reset-password`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+    const text = r.ok ? { type: 'ok', text: 'Link de reset enviado!' } : { type: 'err', text: 'Erro ao resetar senha.' }
+    setUserActionMsg(prev => ({ ...prev, [userId]: text }))
+    setTimeout(() => setUserActionMsg(prev => { const n = { ...prev }; delete n[userId]; return n }), 4000)
+  }
+
+  async function revokeUserSessions(userId, userName) {
+    if (!confirm(`Revogar todas as sessões de "${userName}"?\nO usuário será desconectado imediatamente.`)) return
+    const r = await fetch(`${API_URL}/admin/tenants/${id}/users/${userId}/revoke-sessions`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+    const text = r.ok ? { type: 'ok', text: 'Sessões revogadas!' } : { type: 'err', text: 'Erro ao revogar sessões.' }
+    setUserActionMsg(prev => ({ ...prev, [userId]: text }))
+    setTimeout(() => setUserActionMsg(prev => { const n = { ...prev }; delete n[userId]; return n }), 4000)
+  }
+
   const save = async () => {
     setSaving(true)
     setMsg(null)
@@ -334,6 +372,12 @@ export default function AdminTenantDetailPage() {
                   className="w-full bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
+                {role === 'full' && (
+                  <button onClick={deleteTenant}
+                    className="w-full mt-1 bg-red-950/40 hover:bg-red-900/50 border border-red-900/50 text-red-400 text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                    Deletar tenant
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -368,6 +412,7 @@ export default function AdminTenantDetailPage() {
                       <th className="text-left text-xs text-gray-600 font-medium px-5 py-2">Role</th>
                       <th className="text-left text-xs text-gray-600 font-medium px-5 py-2 hidden lg:table-cell">Último acesso</th>
                       <th className="text-right text-xs text-gray-600 font-medium px-5 py-2">Status</th>
+                      <th className="text-right text-xs text-gray-600 font-medium px-5 py-2">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -376,6 +421,11 @@ export default function AdminTenantDetailPage() {
                         <td className="px-5 py-3">
                           <div className="text-sm text-gray-200">{u.full_name}</div>
                           <div className="text-xs text-gray-500">{u.email}</div>
+                          {userActionMsg[u.id] && (
+                            <div className={`text-xs mt-1 font-medium ${userActionMsg[u.id].type === 'ok' ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {userActionMsg[u.id].text}
+                            </div>
+                          )}
                         </td>
                         <td className="px-5 py-3">
                           <span className={`text-xs font-bold px-2 py-1 rounded-md ${ROLE_COLORS[u.role] || 'bg-gray-700 text-gray-300'}`}>
@@ -389,6 +439,32 @@ export default function AdminTenantDetailPage() {
                           <span className={`text-xs ${u.is_active ? 'text-emerald-500' : 'text-red-500'}`}>
                             {u.is_active ? 'Ativo' : 'Inativo'}
                           </span>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => resetUserPassword(u.id)}
+                              title="Enviar link de reset de senha"
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-violet-400 hover:bg-violet-900/20 transition-colors"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                              </svg>
+                            </button>
+                            {role === 'full' && (
+                              <button
+                                onClick={() => revokeUserSessions(u.id, u.full_name || u.email)}
+                                title="Revogar todas as sessões"
+                                className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -250,6 +250,9 @@ export default function AdminLayout({ children }) {
     return () => clearInterval(interval)
   }, [adminRole])
 
+  // Página de login não precisa de auth — renderiza direto
+  if (pathname === '/admin/login') return <>{children}</>
+
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">

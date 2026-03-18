@@ -23,7 +23,7 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang={locale} className={inter.variable}>
-      <head>
+      <body className="antialiased">
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-17421636806"
           strategy="afterInteractive"
@@ -34,8 +34,6 @@ export default async function RootLayout({ children }) {
           gtag('js', new Date());
           gtag('config', 'AW-17421636806');
         `}</Script>
-      </head>
-      <body className="antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
             <ToastProvider>{children}</ToastProvider>

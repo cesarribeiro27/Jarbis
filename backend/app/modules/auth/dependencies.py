@@ -6,6 +6,7 @@ Aceita token via httpOnly cookie (jarbis_token) ou header Bearer.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import Depends, Request
 from jose import JWTError
@@ -49,6 +50,12 @@ async def get_current_user(
     user = await db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
     if not user or not user.is_active:
         raise UnauthorizedError("Usuário não encontrado ou desativado.")
+
+    # Rejeita tokens emitidos antes da revogação de sessão (ex: após reset de senha)
+    token_iat = payload.get("iat")
+    if user.session_revoked_at and token_iat:
+        if datetime.fromtimestamp(token_iat, tz=timezone.utc) < user.session_revoked_at:
+            raise UnauthorizedError("Sessão revogada. Faça login novamente.")
 
     return user
 

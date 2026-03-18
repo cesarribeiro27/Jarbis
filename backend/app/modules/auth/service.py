@@ -5,6 +5,7 @@ Responsável por: registro de novos tenants, login, geração de tokens.
 """
 
 import random
+import secrets
 import string
 from datetime import datetime, timedelta, timezone
 
@@ -12,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from slugify import slugify
 
-from app.core.email import send_verification_email
+from app.core.email import send_password_reset_email, send_verification_email
 from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import (
     create_access_token,
@@ -138,6 +139,44 @@ class AuthService:
         user.last_login_at = datetime.now(timezone.utc)
 
         return self._build_auth_response(user)
+
+    async def forgot_password(self, email: str, frontend_url: str) -> None:
+        """
+        Gera token de reset e envia email com link de redefinição.
+        Não revela se o email existe ou não (segurança).
+        """
+        user = await self.db.scalar(select(User).where(User.email == email))
+        if not user:
+            return  # Silencioso por segurança
+
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        await self.db.flush()
+
+        reset_url = f"{frontend_url}/nova-senha?token={token}"
+        try:
+            await send_password_reset_email(user.email, user.full_name, reset_url)
+        except Exception as e:
+            print(f"[EMAIL] Falha ao enviar reset de senha: {e}")
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        """
+        Valida token, atualiza senha e invalida todas as sessões ativas.
+        """
+        user = await self.db.scalar(select(User).where(User.reset_token == token))
+        if not user:
+            raise UnauthorizedError("Token inválido ou já utilizado.")
+
+        now = datetime.now(timezone.utc)
+        if not user.reset_token_expires_at or user.reset_token_expires_at < now:
+            raise UnauthorizedError("Token expirado. Solicite um novo link de redefinição.")
+
+        user.hashed_password = hash_password(new_password)
+        user.reset_token = None
+        user.reset_token_expires_at = None
+        user.session_revoked_at = now
+        await self.db.flush()
 
     def _build_auth_response(self, user: User, needs_verification: bool = False) -> AuthResponse:
         token_payload = {"sub": str(user.id), "tenant_id": str(user.tenant_id), "role": user.role}

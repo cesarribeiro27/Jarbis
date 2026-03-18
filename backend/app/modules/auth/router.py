@@ -294,6 +294,45 @@ async def update_user(
     return UserResponse.model_validate(target)
 
 
+# ─── Reset de senha ───────────────────────────────────────────────────────────
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=6, max_length=100)
+
+
+@router.post("/forgot-password", status_code=200)
+@limiter.limit("5/hour")
+async def forgot_password(
+    request: Request,
+    data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Solicita reset de senha. Sempre retorna ok=True independentemente do email existir."""
+    service = AuthService(db)
+    await service.forgot_password(data.email, settings.frontend_url)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/reset-password", status_code=200)
+@limiter.limit("10/hour")
+async def reset_password(
+    request: Request,
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Redefine a senha a partir de um token válido e invalida todas as sessões ativas."""
+    service = AuthService(db)
+    await service.reset_password(data.token, data.new_password)
+    await db.commit()
+    return {"ok": True}
+
+
 # ─── OAuth endpoints ──────────────────────────────────────────────────────────
 
 from app.modules.auth.oauth import PROVIDERS, get_authorization_url, exchange_code_for_profile
