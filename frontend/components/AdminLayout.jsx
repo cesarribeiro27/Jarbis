@@ -10,7 +10,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up
 export const AdminRoleContext = createContext({ role: null, email: null })
 export const useAdminRole = () => useContext(AdminRoleContext)
 
-// Definição da navegação com controle de roles
 const NAV = [
   {
     href: '/admin',
@@ -177,6 +176,113 @@ const ROLE_BADGE = {
   suporte:     { label: 'Suporte',     cls: 'bg-gray-800 text-gray-400' },
 }
 
+function SidebarContent({ collapsed, onToggleCollapse, onClose, adminEmail, adminRole, roleBadge, visibleNav, alertCount, ticketCount, pathname }) {
+  return (
+    <>
+      {/* Header */}
+      <div className={`h-[60px] flex items-center border-b border-gray-800 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
+        <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
+          <LogoA size={28} color="#fff" light={true} className="flex-shrink-0" />
+          {!collapsed && (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-black text-white text-sm tracking-tight">jarbis</span>
+              <span className="text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md flex-shrink-0">ADMIN</span>
+            </div>
+          )}
+        </Link>
+
+        {onClose ? (
+          <button onClick={onClose} className="ml-auto w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        ) : onToggleCollapse ? (
+          <button
+            onClick={onToggleCollapse}
+            className={`${collapsed ? 'ml-0' : 'ml-auto'} w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 transition-colors flex-shrink-0`}
+          >
+            {collapsed
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+            }
+          </button>
+        ) : null}
+      </div>
+
+      {/* Nav */}
+      <nav className={`flex-1 py-3 overflow-y-auto space-y-0.5 ${collapsed ? 'px-2' : 'px-3'}`}>
+        {visibleNav.map(({ href, label, icon }) => {
+          const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
+          const isAlerts  = href === '/admin/alertas'
+          const isSupport = href === '/admin/suporte'
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={onClose}
+              title={collapsed ? label : undefined}
+              className={`flex items-center gap-3 rounded-xl text-sm font-medium transition-colors ${
+                collapsed ? 'px-2.5 py-2.5 justify-center' : 'px-3 py-2.5'
+              } ${
+                active
+                  ? 'bg-violet-600/20 text-violet-400'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+              }`}
+            >
+              <span className={`flex-shrink-0 ${active ? 'text-violet-400' : ''}`}>{icon}</span>
+              {!collapsed && <span className="flex-1 truncate">{label}</span>}
+              {!collapsed && isAlerts && alertCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                  {alertCount > 99 ? '99+' : alertCount}
+                </span>
+              )}
+              {!collapsed && isSupport && ticketCount > 0 && (
+                <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                  {ticketCount > 99 ? '99+' : ticketCount}
+                </span>
+              )}
+              {collapsed && isAlerts && alertCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              )}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className={`border-t border-gray-800 space-y-0.5 ${collapsed ? 'px-2 py-3' : 'px-3 py-4'}`}>
+        <Link
+          href="/dashboard"
+          onClick={onClose}
+          title={collapsed ? 'Voltar ao app' : undefined}
+          className={`flex items-center gap-3 rounded-xl text-sm text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors ${collapsed ? 'px-2.5 py-2.5 justify-center' : 'px-3 py-2'}`}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          {!collapsed && <span>Voltar ao app</span>}
+        </Link>
+
+        {!collapsed && (
+          <div className="px-3 py-2 space-y-1">
+            <div className="text-xs text-gray-600 truncate">{adminEmail}</div>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${roleBadge.cls}`}>
+              {roleBadge.label}
+            </span>
+          </div>
+        )}
+
+        {collapsed && (
+          <div title={adminEmail} className="flex justify-center py-1">
+            <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black ${roleBadge.cls}`}>
+              {roleBadge.label[0]}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
 export default function AdminLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -185,15 +291,24 @@ export default function AdminLayout({ children }) {
   const [adminRole, setAdminRole] = useState(null)
   const [alertCount, setAlertCount] = useState(0)
   const [ticketCount, setTicketCount] = useState(0)
-  const [sseData, setSseData] = useState(null)
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Em tablet (< 1024px) começa colapsada
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)')
+    setCollapsed(mq.matches)
+    const handler = (e) => { if (!mobileOpen) setCollapsed(e.matches) }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  // Fecha drawer mobile ao trocar de página
+  useEffect(() => { setMobileOpen(false) }, [pathname])
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-
-    if (!token) {
-      router.replace('/admin/login')
-      return
-    }
+    if (!token) { router.replace('/admin/login'); return }
 
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
 
@@ -209,7 +324,6 @@ export default function AdminLayout({ children }) {
           setAdminRole(data.role)
           setChecking(false)
         } else if (data?.is_superadmin) {
-          // retrocompatibilidade
           setAdminEmail(data.email)
           setAdminRole('full')
           setChecking(false)
@@ -220,37 +334,25 @@ export default function AdminLayout({ children }) {
       .catch(() => router.replace('/admin/login'))
   }, [])
 
-  // SSE: recebe updates em tempo real do backend
   useEffect(() => {
     if (!adminRole) return
     const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
     if (!token) return
-
-    // Carrega alertas e tickets na primeira vez
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+
     fetch(`${API_URL}/admin/alerts`, { credentials: 'include', headers })
       .then(r => r.json()).then(d => setAlertCount(d.total || 0)).catch(() => {})
     fetch(`${API_URL}/admin/support/tickets?status=open&page_size=1`, { credentials: 'include', headers })
       .then(r => r.json()).then(d => setTicketCount(d.total || 0)).catch(() => {})
 
-    // SSE connection
-    const evtSource = new EventSource(
-      `${API_URL}/admin/events`,
-      // EventSource não suporta headers nativamente; usa token via cookie ou query param não é ideal
-      // Para auth via Bearer, usamos fetch manual com ReadableStream
-    )
-    // Fallback: polling a cada 60s via fetch (EventSource não suporta headers custom no browser)
     const interval = setInterval(() => {
       fetch(`${API_URL}/admin/alerts`, { credentials: 'include', headers })
         .then(r => r.json()).then(d => setAlertCount(d.total || 0)).catch(() => {})
     }, 60000)
 
-    evtSource.close() // fecha o EventSource sem auth — usamos o polling acima
-
     return () => clearInterval(interval)
   }, [adminRole])
 
-  // Página de login não precisa de auth — renderiza direto
   if (pathname === '/admin/login') return <>{children}</>
 
   if (checking) {
@@ -263,80 +365,62 @@ export default function AdminLayout({ children }) {
 
   const visibleNav = NAV.filter(item => item.roles.includes(adminRole))
   const roleBadge = ROLE_BADGE[adminRole] || ROLE_BADGE.suporte
+  const sidebarProps = { adminEmail, adminRole, roleBadge, visibleNav, alertCount, ticketCount, pathname }
 
   return (
     <AdminRoleContext.Provider value={{ role: adminRole, email: adminEmail }}>
-      <div className="flex h-screen bg-gray-950">
-        {/* Sidebar */}
-        <aside className="w-[220px] bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0">
-          {/* Header */}
-          <div className="px-4 py-5 border-b border-gray-800">
-            <Link href="/admin" className="flex items-center gap-2.5">
-              <LogoA size={28} color="#fff" light={true} />
-              <div>
-                <span className="font-black text-white text-sm tracking-tight">jarbis</span>
-                <span className="ml-1.5 text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
-              </div>
-            </Link>
-          </div>
+      <div className="flex h-screen bg-gray-950 overflow-hidden">
 
-          {/* Nav */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {visibleNav.map(({ href, label, icon }) => {
-              const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
-              const isAlerts  = href === '/admin/alertas'
-              const isSupport = href === '/admin/suporte'
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-violet-600/20 text-violet-400'
-                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                  }`}
-                >
-                  <span className={active ? 'text-violet-400' : ''}>{icon}</span>
-                  <span className="flex-1">{label}</span>
-                  {isAlerts && alertCount > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
-                      {alertCount > 99 ? '99+' : alertCount}
-                    </span>
-                  )}
-                  {isSupport && ticketCount > 0 && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
-                      {ticketCount > 99 ? '99+' : ticketCount}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-          </nav>
+        {/* Overlay mobile */}
+        {mobileOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/60 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
 
-          {/* Footer */}
-          <div className="px-3 py-4 border-t border-gray-800 space-y-1">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
-              </svg>
-              Voltar ao app
-            </Link>
-            <div className="px-3 py-2 space-y-1">
-              <div className="text-xs text-gray-600 truncate">{adminEmail}</div>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${roleBadge.cls}`}>
-                {roleBadge.label}
-              </span>
-            </div>
-          </div>
+        {/* Drawer mobile */}
+        <aside className={`fixed inset-y-0 left-0 z-40 w-[220px] bg-gray-900 border-r border-gray-800 flex flex-col transition-transform duration-300 md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <SidebarContent
+            {...sidebarProps}
+            collapsed={false}
+            onClose={() => setMobileOpen(false)}
+          />
+        </aside>
+
+        {/* Sidebar desktop/tablet */}
+        <aside className={`hidden md:flex flex-col bg-gray-900 border-r border-gray-800 flex-shrink-0 transition-all duration-300 ${collapsed ? 'w-[60px]' : 'w-[220px]'}`}>
+          <SidebarContent
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed(c => !c)}
+          />
         </aside>
 
         {/* Main */}
-        <main className="flex-1 overflow-y-auto bg-gray-950">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Topbar mobile */}
+          <header className="md:hidden flex items-center gap-3 px-4 h-14 bg-gray-900 border-b border-gray-800 flex-shrink-0">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <Link href="/admin" className="flex items-center gap-2">
+              <LogoA size={24} color="#fff" light={true} />
+              <span className="font-black text-white text-sm">jarbis</span>
+              <span className="text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
+            </Link>
+          </header>
+
+          <main className="flex-1 overflow-y-auto bg-gray-950">
+            {children}
+          </main>
+        </div>
+
       </div>
     </AdminRoleContext.Provider>
   )
