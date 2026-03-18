@@ -230,8 +230,8 @@ export default function AdminEquipePage() {
                   <th className="text-left px-6 py-3 font-medium">Email</th>
                   <th className="text-left px-6 py-3 font-medium">Role</th>
                   <th className="text-left px-6 py-3 font-medium">Status</th>
-                  <th className="text-left px-6 py-3 font-medium">Observações</th>
-                  <th className="text-right px-6 py-3 font-medium">Ações</th>
+                  <th className="text-left px-6 py-3 font-medium w-28">Cargo</th>
+                  <th className="text-center px-6 py-3 font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,12 +274,21 @@ export default function AdminEquipePage() {
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-xs text-gray-500 max-w-xs truncate">
-                      {member.notes || '—'}
+                    <td className="px-6 py-4 w-28">
+                      <div className="relative group inline-block max-w-[7rem]">
+                        <span className="text-xs text-gray-500 truncate block max-w-[7rem] cursor-default">
+                          {member.notes || '—'}
+                        </span>
+                        {member.notes && (
+                          <div className="pointer-events-none absolute bottom-full left-0 mb-1.5 z-20 hidden group-hover:block bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-xl">
+                            {member.notes}
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      {!member.is_env_admin && (
-                        <div className="flex items-center justify-end gap-2">
+                    <td className="px-6 py-4 text-center">
+                      {!member.is_env_admin ? (
+                        <div className="flex items-center justify-center gap-2">
                           {/* Enviar link de acesso */}
                           {linkSent[member.email] === 'ok' ? (
                             <span className="text-xs text-emerald-400">Link enviado!</span>
@@ -321,6 +330,8 @@ export default function AdminEquipePage() {
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                           </button>
                         </div>
+                      ) : (
+                        <span className="text-xs text-gray-700 flex justify-center">—</span>
                       )}
                     </td>
                   </tr>

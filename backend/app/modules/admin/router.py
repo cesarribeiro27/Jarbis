@@ -1205,7 +1205,7 @@ async def admin_list_equipe(
             "role": "full",
             "role_label": "Acesso Total",
             "is_active": True,
-            "notes": "Fundador — acesso via variável de ambiente",
+            "notes": "Fundador",
             "created_by": "sistema",
             "created_at": None,
             "is_env_admin": True,
