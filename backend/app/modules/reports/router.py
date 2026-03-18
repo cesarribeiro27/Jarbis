@@ -18,13 +18,18 @@ DELETE /reports/datasets/{id}           — remove dataset
 GET    /reports/datasets/{id}/query     — consulta dataset com agregação
 """
 
+import hashlib
+import hmac
+import json
+import secrets
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+import httpx
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -792,6 +797,365 @@ async def clone_report(
     await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     service = ReportService(db)
     return await service.clone(report_id, current_user.tenant_id)
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — Notificações in-app
+# ---------------------------------------------------------------------------
+
+from app.modules.admin.models import UserNotification, TenantWebhook  # noqa: E402
+
+
+@router.get("/notifications", summary="Listar notificações do usuário")
+async def list_notifications(
+    unread_only: bool = Query(default=False),
+    limit: int = Query(default=20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    q = select(UserNotification).where(
+        UserNotification.user_id == current_user.id,
+        UserNotification.tenant_id == current_user.tenant_id,
+    )
+    if unread_only:
+        q = q.where(UserNotification.read_at.is_(None))
+    q = q.order_by(UserNotification.created_at.desc()).limit(limit)
+    rows = await db.scalars(q)
+    items = rows.all()
+    return {
+        "items": [
+            {
+                "id": str(n.id),
+                "type": n.type,
+                "title": n.title,
+                "body": n.body,
+                "link": n.link,
+                "read": n.read_at is not None,
+                "created_at": n.created_at.isoformat(),
+            }
+            for n in items
+        ],
+        "unread_count": sum(1 for n in items if n.read_at is None),
+    }
+
+
+@router.post("/notifications/read-all", summary="Marcar todas as notificações como lidas")
+async def mark_all_notifications_read(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await db.execute(
+        update(UserNotification)
+        .where(
+            UserNotification.user_id == current_user.id,
+            UserNotification.read_at.is_(None),
+        )
+        .values(read_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/notifications/{notification_id}/read", summary="Marcar notificação como lida")
+async def mark_notification_read(
+    notification_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    n = await db.scalar(
+        select(UserNotification).where(
+            UserNotification.id == notification_id,
+            UserNotification.user_id == current_user.id,
+        )
+    )
+    if not n:
+        raise HTTPException(status_code=404, detail="Notificação não encontrada.")
+    if not n.read_at:
+        n.read_at = datetime.now(timezone.utc)
+        await db.commit()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — Webhooks outbound
+# ---------------------------------------------------------------------------
+
+
+class WebhookCreateInput(BaseModel):
+    url: str
+    events: str = "alert.triggered"
+
+
+class WebhookUpdateInput(BaseModel):
+    url: str | None = None
+    events: str | None = None
+    is_active: bool | None = None
+
+
+@router.get("/tenant/webhooks", summary="Listar webhooks do tenant")
+async def list_webhooks(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await db.scalars(
+        select(TenantWebhook)
+        .where(TenantWebhook.tenant_id == current_user.tenant_id)
+        .order_by(TenantWebhook.created_at.desc())
+    )
+    items = rows.all()
+    return {
+        "items": [
+            {
+                "id": str(w.id),
+                "url": w.url,
+                "events": w.events,
+                "is_active": w.is_active,
+                "last_triggered_at": w.last_triggered_at.isoformat() if w.last_triggered_at else None,
+                "last_status_code": w.last_status_code,
+                "created_by": w.created_by,
+                "created_at": w.created_at.isoformat(),
+            }
+            for w in items
+        ]
+    }
+
+
+@router.post("/tenant/webhooks", status_code=201, summary="Criar webhook")
+async def create_webhook(
+    data: WebhookCreateInput,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    if tenant and tenant.plan not in ("ilimitado", "enterprise"):
+        raise HTTPException(status_code=403, detail="Webhooks disponíveis apenas no plano Ilimitado.")
+    secret = secrets.token_hex(32)
+    webhook = TenantWebhook(
+        tenant_id=current_user.tenant_id,
+        url=data.url,
+        events=data.events,
+        secret=secret,
+        is_active=True,
+        created_by=current_user.email,
+    )
+    db.add(webhook)
+    await db.commit()
+    await db.refresh(webhook)
+    return {"id": str(webhook.id), "secret": secret}
+
+
+@router.patch("/tenant/webhooks/{webhook_id}", summary="Atualizar webhook")
+async def update_webhook(
+    webhook_id: uuid.UUID,
+    data: WebhookUpdateInput,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    w = await db.scalar(
+        select(TenantWebhook).where(
+            TenantWebhook.id == webhook_id,
+            TenantWebhook.tenant_id == current_user.tenant_id,
+        )
+    )
+    if not w:
+        raise HTTPException(status_code=404, detail="Webhook não encontrado.")
+    if data.url is not None:
+        w.url = data.url
+    if data.events is not None:
+        w.events = data.events
+    if data.is_active is not None:
+        w.is_active = data.is_active
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/tenant/webhooks/{webhook_id}", summary="Deletar webhook")
+async def delete_webhook(
+    webhook_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    w = await db.scalar(
+        select(TenantWebhook).where(
+            TenantWebhook.id == webhook_id,
+            TenantWebhook.tenant_id == current_user.tenant_id,
+        )
+    )
+    if not w:
+        raise HTTPException(status_code=404, detail="Webhook não encontrado.")
+    await db.delete(w)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/tenant/webhooks/{webhook_id}/test", summary="Testar webhook")
+async def test_webhook(
+    webhook_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    w = await db.scalar(
+        select(TenantWebhook).where(
+            TenantWebhook.id == webhook_id,
+            TenantWebhook.tenant_id == current_user.tenant_id,
+        )
+    )
+    if not w:
+        raise HTTPException(status_code=404, detail="Webhook não encontrado.")
+    payload = {
+        "event": "webhook.test",
+        "tenant_id": str(current_user.tenant_id),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    body = json.dumps(payload).encode()
+    sig = hmac.new(w.secret.encode(), body, hashlib.sha256).hexdigest()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                w.url,
+                content=body,
+                headers={"Content-Type": "application/json", "X-Jarbis-Signature": f"sha256={sig}"},
+            )
+        w.last_triggered_at = datetime.now(timezone.utc)
+        w.last_status_code = resp.status_code
+        await db.commit()
+        return {"ok": True, "status_code": resp.status_code}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — White-label / Customização
+# ---------------------------------------------------------------------------
+
+
+class CustomizationUpdateInput(BaseModel):
+    custom_logo_url: str | None = None
+    primary_color: str | None = None
+
+
+@router.get("/tenant/customization", summary="Configurações de personalização")
+async def get_customization(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+    return {
+        "custom_logo_url": tenant.custom_logo_url,
+        "primary_color": tenant.primary_color,
+        "plan": tenant.plan,
+        "white_label_enabled": tenant.plan in ("ilimitado", "enterprise"),
+    }
+
+
+@router.patch("/tenant/customization", summary="Atualizar personalização (white-label)")
+async def update_customization(
+    data: CustomizationUpdateInput,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+    if tenant.plan not in ("ilimitado", "enterprise"):
+        raise HTTPException(status_code=403, detail="White-label disponível apenas no plano Ilimitado.")
+    if data.custom_logo_url is not None:
+        tenant.custom_logo_url = data.custom_logo_url
+    if data.primary_color is not None:
+        if data.primary_color and not (len(data.primary_color) == 7 and data.primary_color.startswith("#")):
+            raise HTTPException(status_code=400, detail="Cor deve ser no formato #RRGGBB.")
+        tenant.primary_color = data.primary_color
+    await db.commit()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — Templates de dashboard
+# ---------------------------------------------------------------------------
+
+DASHBOARD_TEMPLATES = [
+    {
+        "id": "sales-overview",
+        "name": "Visão Geral de Vendas",
+        "description": "KPIs de faturamento, pedidos e ticket médio com gráfico de evolução.",
+        "category": "vendas",
+        "preview_color": "#7c3aed",
+        "pages": [{"id": "p1", "title": "Vendas", "blocks": [
+            {"id": "b1", "type": "metric", "x": 0, "y": 0, "w": 3, "h": 2, "config": {"title": "Faturamento", "format": "currency"}},
+            {"id": "b2", "type": "metric", "x": 3, "y": 0, "w": 3, "h": 2, "config": {"title": "Pedidos", "format": "number"}},
+            {"id": "b3", "type": "metric", "x": 6, "y": 0, "w": 3, "h": 2, "config": {"title": "Ticket Médio", "format": "currency"}},
+            {"id": "b4", "type": "bar", "x": 0, "y": 2, "w": 12, "h": 4, "config": {"title": "Faturamento por Período", "x_field": "data", "y_field": "valor"}},
+        ]}],
+    },
+    {
+        "id": "marketing-analytics",
+        "name": "Analytics de Marketing",
+        "description": "Funil de conversão, canais de aquisição e performance de campanhas.",
+        "category": "marketing",
+        "preview_color": "#0891b2",
+        "pages": [{"id": "p1", "title": "Marketing", "blocks": [
+            {"id": "b1", "type": "pie", "x": 0, "y": 0, "w": 6, "h": 4, "config": {"title": "Canais de Aquisição", "field": "canal"}},
+            {"id": "b2", "type": "bar", "x": 6, "y": 0, "w": 6, "h": 4, "config": {"title": "Conversões por Campanha", "x_field": "campanha", "y_field": "conversoes"}},
+        ]}],
+    },
+    {
+        "id": "financial-dashboard",
+        "name": "Dashboard Financeiro",
+        "description": "Receitas, despesas, margem e fluxo de caixa em um só lugar.",
+        "category": "financeiro",
+        "preview_color": "#059669",
+        "pages": [{"id": "p1", "title": "Financeiro", "blocks": [
+            {"id": "b1", "type": "metric", "x": 0, "y": 0, "w": 4, "h": 2, "config": {"title": "Receita Bruta", "format": "currency"}},
+            {"id": "b2", "type": "metric", "x": 4, "y": 0, "w": 4, "h": 2, "config": {"title": "Despesas", "format": "currency"}},
+            {"id": "b3", "type": "metric", "x": 8, "y": 0, "w": 4, "h": 2, "config": {"title": "Margem Líquida", "format": "percent"}},
+            {"id": "b4", "type": "line", "x": 0, "y": 2, "w": 12, "h": 4, "config": {"title": "Evolução Financeira", "x_field": "mes", "y_field": "valor"}},
+        ]}],
+    },
+    {
+        "id": "operations-kpi",
+        "name": "KPIs Operacionais",
+        "description": "Indicadores operacionais: SLA, satisfação, volume de atendimentos.",
+        "category": "operacoes",
+        "preview_color": "#d97706",
+        "pages": [{"id": "p1", "title": "Operações", "blocks": [
+            {"id": "b1", "type": "metric", "x": 0, "y": 0, "w": 3, "h": 2, "config": {"title": "Atendimentos", "format": "number"}},
+            {"id": "b2", "type": "metric", "x": 3, "y": 0, "w": 3, "h": 2, "config": {"title": "SLA Cumprido", "format": "percent"}},
+            {"id": "b3", "type": "metric", "x": 6, "y": 0, "w": 3, "h": 2, "config": {"title": "Satisfação (NPS)", "format": "number"}},
+            {"id": "b4", "type": "table", "x": 0, "y": 2, "w": 12, "h": 5, "config": {"title": "Detalhamento por Equipe"}},
+        ]}],
+    },
+]
+
+
+@router.get("/templates", summary="Listar templates de dashboard")
+async def list_templates(
+    current_user: User = Depends(get_current_active_user),
+):
+    return {"items": DASHBOARD_TEMPLATES}
+
+
+@router.post("/from-template/{template_id}", status_code=201, summary="Criar dashboard a partir de template")
+async def create_from_template(
+    template_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    template = next((t for t in DASHBOARD_TEMPLATES if t["id"] == template_id), None)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template não encontrado.")
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
+    service = ReportService(db)
+    report = await service.create(
+        ReportCreate(title=template["name"], description=template["description"]),
+        current_user.tenant_id,
+    )
+    report.pages = template["pages"]
+    await db.commit()
+    await db.refresh(report)
+    return {"id": str(report.id), "title": report.title}
 
 
 # ---------------------------------------------------------------------------

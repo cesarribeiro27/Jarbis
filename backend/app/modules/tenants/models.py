@@ -69,6 +69,10 @@ class Tenant(Base):
     cidade: Mapped[str | None] = mapped_column(String(100), nullable=True)
     estado: Mapped[str | None] = mapped_column(String(2), nullable=True, comment="UF: SP, RJ, etc.")
 
+    # ── White-label (plano Enterprise) ───────────────────────────────────────
+    custom_logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="URL da logo customizada do tenant")
+    primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True, comment="Cor primária hex: #7c3aed")
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow

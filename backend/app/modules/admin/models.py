@@ -219,6 +219,8 @@ class MrrSnapshot(Base):
         comment="Novos pagantes em relação ao dia anterior")
     churned_tenants: Mapped[int] = mapped_column(Integer, nullable=False, default=0,
         comment="Cancelamentos no dia")
+    digest_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True,
+        comment="Quando o digest mensal foi enviado para este snapshot")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     def __repr__(self) -> str:
@@ -383,3 +385,60 @@ class NpsSurvey(Base):
 
     def __repr__(self) -> str:
         return f"<NpsSurvey score={self.score} tenant={self.tenant_id}>"
+
+
+class UserNotification(Base):
+    """
+    Notificação in-app para um usuário — exibida no sino do header.
+    Gerada por eventos como: alerta disparado, dataset atualizado, convite aceito.
+    """
+    __tablename__ = "user_notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    type: Mapped[str] = mapped_column(
+        String(50), nullable=False,
+        comment="alert_triggered | dataset_synced | user_invited | plan_changed | trial_expiring"
+    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    link: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<UserNotification {self.type} user={self.user_id}>"
+
+
+class TenantWebhook(Base):
+    """
+    Webhook outbound configurado pelo tenant para receber eventos do Jarbis.
+    """
+    __tablename__ = "tenant_webhooks"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    url: Mapped[str] = mapped_column(String(500), nullable=False)
+    events: Mapped[str] = mapped_column(
+        String(300), nullable=False, default="alert.triggered",
+        comment="Eventos separados por vírgula: alert.triggered, dataset.synced, user.invited"
+    )
+    secret: Mapped[str] = mapped_column(String(64), nullable=False, comment="HMAC-SHA256 signing secret")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_by: Mapped[str] = mapped_column(String(254), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<TenantWebhook {self.url[:40]} tenant={self.tenant_id}>"

@@ -151,6 +151,30 @@ async def _refresh_loop():
                 if True:  # flush lifecycle logs
                     await db.commit()
 
+                # ── Digest mensal (1º de cada mês às ~00:00 UTC) ──────────────────
+                if today.day == 1:
+                    snapshot_last = await db.scalar(
+                        select(MrrSnapshot).order_by(MrrSnapshot.snapshot_date.desc())
+                    )
+                    if snapshot_last and snapshot_last.digest_sent_at is None:
+                        from app.core.email import send_admin_email
+                        from app.config import settings as _settings
+                        import calendar
+                        month_name = calendar.month_name[today.month]
+                        subject = f"[Jarbis] Digest Mensal — {month_name}/{today.year}"
+                        body = (
+                            f"<h2>Digest Mensal — {month_name}/{today.year}</h2>"
+                            f"<p><b>MRR:</b> R$ {snapshot_last.mrr:,.2f}</p>"
+                            f"<p><b>ARR:</b> R$ {snapshot_last.arr:,.2f}</p>"
+                            f"<p><b>Clientes pagantes:</b> {snapshot_last.paying_tenants}</p>"
+                            f"<p><b>Novos (último dia):</b> {snapshot_last.new_tenants}</p>"
+                            f"<p><b>Cancelamentos (último dia):</b> {snapshot_last.churned_tenants}</p>"
+                        )
+                        for admin_email in _settings.admin_emails:
+                            await send_admin_email(admin_email, subject, body)
+                        snapshot_last.digest_sent_at = now
+                        await db.commit()
+
         except Exception:
             pass
 

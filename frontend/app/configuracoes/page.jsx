@@ -295,6 +295,38 @@ export default function ConfiguracoesPage() {
             </Link>
           </div>
         </div>
+
+        {/* Card — Webhooks */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-800">Webhooks</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Receba notificações HTTP quando eventos ocorrerem</p>
+            </div>
+            <Link
+              href="/configuracoes/webhooks"
+              className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Configurar
+            </Link>
+          </div>
+        </div>
+
+        {/* Card — Personalização */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-800">Personalização</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Logo e cores personalizadas (white-label — plano Ilimitado)</p>
+            </div>
+            <Link
+              href="/configuracoes/personalizacao"
+              className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Personalizar
+            </Link>
+          </div>
+        </div>
       </div>
     </AppLayout>
   )

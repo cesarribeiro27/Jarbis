@@ -41,6 +41,7 @@ from app.modules.admin.models import (
     Affiliate, AdminUser, AdminAuditLog, AffiliatePayment, ApiKey, Coupon,
     LifecycleEmailLog, MrrSnapshot, NfeDocument, NpsSurvey,
     SupportTicket, SupportTicketComment, TenantNote,
+    UserNotification,
 )
 from app.modules.auth.dependencies import get_current_active_user
 from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, PLANS, get_effective_limits
@@ -105,6 +106,8 @@ class TenantUpdateInput(BaseModel):
     addon_packs: int | None = None
     extend_trial_days: int | None = None
     crm_stage: str | None = None
+    custom_logo_url: str | None = None
+    primary_color: str | None = None
 
 
 class BulkExtendTrialInput(BaseModel):
@@ -529,6 +532,11 @@ async def admin_update_tenant(
         if data.crm_stage not in valid_stages:
             raise HTTPException(status_code=400, detail=f"Estágio CRM inválido: {data.crm_stage}")
         tenant.crm_stage = data.crm_stage
+
+    if data.custom_logo_url is not None:
+        tenant.custom_logo_url = data.custom_logo_url or None
+    if data.primary_color is not None:
+        tenant.primary_color = data.primary_color or None
 
     user, _ = admin_data
     desc_parts = []
@@ -2939,3 +2947,42 @@ async def list_lifecycle_emails(
             "sent_at": r.sent_at.isoformat(),
         })
     return {"items": result, "total": len(result)}
+
+
+# ── Fase 8 — Broadcast de notificações (admin → usuários de um tenant) ────────
+
+class NotificationBroadcastInput(BaseModel):
+    title: str
+    body: str
+    link: str | None = None
+    type: str = "info"
+    tenant_id: uuid.UUID | None = None  # None = todos os tenants
+
+
+@router.post("/notifications/broadcast", summary="Enviar notificação in-app para tenant(s)")
+async def broadcast_notification(
+    data: NotificationBroadcastInput,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _, role = admin_data
+    _check_roles(role, {"full"})
+
+    q = select(User).where(User.is_active == True)  # noqa: E712
+    if data.tenant_id:
+        q = q.where(User.tenant_id == data.tenant_id)
+
+    users = await db.scalars(q)
+    count = 0
+    for u in users.all():
+        db.add(UserNotification(
+            user_id=u.id,
+            tenant_id=u.tenant_id,
+            type=data.type,
+            title=data.title,
+            body=data.body,
+            link=data.link,
+        ))
+        count += 1
+    await db.commit()
+    return {"ok": True, "sent_to": count}

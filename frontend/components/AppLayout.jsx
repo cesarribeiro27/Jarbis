@@ -112,7 +112,7 @@ const PLAN_BADGES = {
   enterprise:   { label: 'Enterprise', bg: 'bg-amber-100',  text: 'text-amber-700'  },
 }
 
-function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initials, isAdmin, pathname, logout, onClose }) {
+function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initials, isAdmin, pathname, logout, onClose, unreadCount, onBellClick }) {
   const t = useTranslations('app')
   const NAV = NAV_KEYS.map(n => ({ ...n, label: t(`nav.${n.key}`) }))
   const NAV_ADMIN = NAV_ADMIN_KEYS.map(n => ({ ...n, label: t(`nav.${n.key}`) }))
@@ -219,6 +219,21 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
           </div>
         )}
         <button
+          onClick={onBellClick}
+          title={collapsed ? 'Notificações' : undefined}
+          className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-violet-600 hover:bg-violet-50 w-full transition-all duration-150 relative"
+        >
+          <span className="flex-shrink-0 relative">
+            <Icons.Bell />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </span>
+          {!collapsed && <span>Notificações{unreadCount > 0 ? ` (${unreadCount})` : ''}</span>}
+        </button>
+        <button
           onClick={logout}
           title={collapsed ? t('nav.logout') : undefined}
           className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 w-full transition-all duration-150"
@@ -248,6 +263,9 @@ export default function AppLayout({ children }) {
   const [npsComment, setNpsComment] = useState('')
   const [npsSending, setNpsSending] = useState(false)
   const [npsDone, setNpsDone] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const impBy = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_by') : null
@@ -341,6 +359,41 @@ export default function AppLayout({ children }) {
     return () => window.removeEventListener('upgrade-required', handler)
   }, [])
 
+  // Notificações in-app
+  useEffect(() => {
+    const API = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+    async function fetchNotifs() {
+      try {
+        const token = localStorage.getItem('jarbis_token')
+        if (!token) return
+        const r = await fetch(`${API}/reports/notifications?limit=20`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (r.ok) {
+          const d = await r.json()
+          setNotifications(d.items || [])
+          setUnreadCount(d.unread_count || 0)
+        }
+      } catch {}
+    }
+    fetchNotifs()
+    const interval = setInterval(fetchNotifs, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  async function markAllRead() {
+    try {
+      const token = localStorage.getItem('jarbis_token')
+      const API = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+      await fetch(`${API}/reports/notifications/read-all`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+      setUnreadCount(0)
+    } catch {}
+  }
+
   // Fecha drawer ao navegar
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
@@ -359,7 +412,7 @@ export default function AppLayout({ children }) {
   const badge = PLAN_BADGES[plan] || null
   const showTrial = trialDays !== null && trialDays <= 7
 
-  const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout }
+  const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, onBellClick: () => setNotifOpen(o => !o) }
 
   return (
     <div className="flex h-screen bg-[#f8f7fc]">
@@ -407,6 +460,17 @@ export default function AppLayout({ children }) {
           </div>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
+            <button
+              onClick={() => setNotifOpen(o => !o)}
+              className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+            >
+              <Icons.Bell />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setMobileOpen(true)}
               className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
@@ -472,6 +536,45 @@ export default function AppLayout({ children }) {
       </main>
 
       <SupportChat />
+
+      {/* Painel de notificações */}
+      {notifOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)}>
+          <div
+            className="absolute top-14 md:top-auto md:bottom-16 right-4 md:left-[228px] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="text-sm font-bold text-gray-900">Notificações</span>
+              {unreadCount > 0 && (
+                <button onClick={markAllRead} className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors">
+                  Marcar todas como lidas
+                </button>
+              )}
+            </div>
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-gray-400">Nenhuma notificação</div>
+              ) : notifications.map(n => (
+                <div key={n.id} className={`px-4 py-3 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-violet-50/50' : ''}`}>
+                  <div className="flex items-start gap-2">
+                    {!n.read && <span className="w-1.5 h-1.5 bg-violet-500 rounded-full mt-1.5 flex-shrink-0" />}
+                    <div className={!n.read ? '' : 'pl-3.5'}>
+                      <div className="text-xs font-semibold text-gray-800">{n.title}</div>
+                      {n.body && <div className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.body}</div>}
+                      {n.link && (
+                        <a href={n.link} className="text-xs text-violet-600 hover:underline mt-1 inline-block" onClick={() => setNotifOpen(false)}>
+                          Ver mais →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal NPS */}
       {npsModal && (

@@ -193,8 +193,43 @@ export default function DashboardsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [search, setSearch] = useState('')
   const [cropTargetId, setCropTargetId] = useState(null)
+  const [templates, setTemplates] = useState([])
+  const [creatingFromTemplate, setCreatingFromTemplate] = useState(null)
 
-  useEffect(() => { fetchReports() }, [])
+  useEffect(() => { fetchReports(); fetchTemplates() }, [])
+
+  async function fetchTemplates() {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+      const API = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+      const r = await fetch(`${API}/reports/templates`, { headers: { Authorization: `Bearer ${token}` } })
+      if (r.ok) { const d = await r.json(); setTemplates(d.items || []) }
+    } catch {}
+  }
+
+  async function createFromTemplate(templateId) {
+    setCreatingFromTemplate(templateId)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+      const API = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+      const r = await fetch(`${API}/reports/from-template/${templateId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      if (r.ok) {
+        const d = await r.json()
+        toast('Dashboard criado a partir do template!', 'success')
+        router.push(`/dashboards/${d.id}`)
+      } else {
+        const err = await r.json()
+        toast(err.detail || 'Erro ao criar dashboard', 'error')
+      }
+    } catch {
+      toast('Erro ao criar dashboard', 'error')
+    } finally {
+      setCreatingFromTemplate(null)
+    }
+  }
 
   function fetchReports() {
     api.reports.list()
@@ -300,6 +335,43 @@ export default function DashboardsPage() {
               onChange={e => setSearch(e.target.value)}
               className="w-full max-w-sm pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
             />
+          </div>
+        )}
+
+        {/* Templates — mostrar apenas quando não há dashboards ainda */}
+        {!loading && reports.length === 0 && templates.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Começar com um template</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {templates.map(tpl => (
+                <button
+                  key={tpl.id}
+                  onClick={() => createFromTemplate(tpl.id)}
+                  disabled={creatingFromTemplate === tpl.id}
+                  className="group text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-violet-200 hover:shadow-[0_4px_16px_rgba(124,58,237,0.1)] transition-all duration-200 disabled:opacity-60"
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl mb-3 flex items-center justify-center"
+                    style={{ backgroundColor: tpl.preview_color + '20' }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={tpl.preview_color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                  </div>
+                  <div className="font-semibold text-sm text-gray-800 group-hover:text-violet-700 transition-colors mb-1">
+                    {creatingFromTemplate === tpl.id ? 'Criando...' : tpl.name}
+                  </div>
+                  <div className="text-xs text-gray-400 line-clamp-2">{tpl.description}</div>
+                  <div className="mt-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full inline-block" style={{ backgroundColor: tpl.preview_color + '15', color: tpl.preview_color }}>
+                    {tpl.category}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
