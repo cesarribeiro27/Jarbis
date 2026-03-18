@@ -83,3 +83,12 @@
            transition-all duration-200;
   }
 }
+
+/* ── Hero glow animation ─────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50%       { opacity: 0.4;  transform: scale(1.08); }
+}
+.hero-glow {
+  animation: pulse-glow 6s ease-in-out infinite;
+}
