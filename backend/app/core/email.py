@@ -337,6 +337,76 @@ async def send_password_reset_email(to_email: str, full_name: str, reset_url: st
             print(f"[EMAIL] Erro ao enviar reset de senha: {resp.status_code} {resp.text}")
 
 
+async def send_admin_invite_email(to_email: str, role_label: str, inviter_email: str) -> None:
+    """Envia convite para membro da equipe interna que ainda não tem conta Jarbis."""
+    if not RESEND_API_KEY:
+        print(f"[EMAIL] RESEND_API_KEY não configurada. Convite para {to_email}")
+        return
+
+    html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Convite para o painel Jarbis</title>
+</head>
+<body style="{_BASE_STYLES}">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    Você foi convidado para acessar o painel interno do Jarbis como {role_label}.
+  </div>
+
+  <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    {_HEADER_HTML}
+
+    <div style="padding: 40px 32px 32px;">
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.4px;">
+        Você foi adicionado à equipe
+      </h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">
+        <strong style="color: #0f172a;">{inviter_email}</strong> adicionou você ao painel interno do Jarbis como <strong style="color: #6D28D9;">{role_label}</strong>.
+      </p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 28px;">
+        Para acessar, crie sua conta gratuita usando <strong>{to_email}</strong> — o acesso ao painel será liberado automaticamente.
+      </p>
+
+      <div style="text-align: center; margin-bottom: 28px;">
+        <a href="https://jarbis.cc/cadastro" style="display: inline-block; background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); color: white; font-size: 15px; font-weight: 700; padding: 16px 32px; border-radius: 12px; text-decoration: none; letter-spacing: -0.1px;">
+          Criar minha conta &rarr;
+        </a>
+      </div>
+
+      <div style="background: #fafafa; border-left: 3px solid #e2e8f0; border-radius: 0 8px 8px 0; padding: 12px 16px;">
+        <p style="color: #94a3b8; font-size: 13px; margin: 0; line-height: 1.5;">
+          &#128274; Use exatamente o email <strong>{to_email}</strong> no cadastro para que o acesso seja reconhecido automaticamente.
+        </p>
+      </div>
+    </div>
+
+    {_FOOTER_HTML}
+  </div>
+</body>
+</html>"""
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": FROM_EMAIL,
+                "to": [to_email],
+                "subject": f"Convite para o painel Jarbis — {role_label}",
+                "html": html,
+            },
+            timeout=10,
+        )
+        if resp.status_code not in (200, 201):
+            print(f"[EMAIL] Erro ao enviar convite: {resp.status_code} {resp.text}")
+
+
 async def send_lifecycle_email(to_email: str, tenant_name: str, template_key: str) -> bool:
     """Envia email de ciclo de vida baseado no template configurado."""
     if template_key not in _LIFECYCLE_TEMPLATES:

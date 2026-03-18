@@ -34,7 +34,7 @@ import httpx
 from fastapi.responses import StreamingResponse
 
 from app.config import settings
-from app.core.email import send_admin_email, _HEADER_HTML, _FOOTER_HTML, _TAGLINE
+from app.core.email import send_admin_email, send_admin_invite_email, _HEADER_HTML, _FOOTER_HTML, _TAGLINE
 from app.core.security import create_access_token
 from app.database import get_db, AsyncSessionLocal
 from app.modules.admin.models import (
@@ -1292,6 +1292,43 @@ async def admin_update_equipe(
 
     await db.commit()
     return {"ok": True}
+
+
+@router.post("/equipe/{admin_user_id}/send-invite", summary="Enviar link de acesso ao membro")
+async def admin_send_equipe_invite(
+    admin_user_id: uuid.UUID,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    inviter, role = admin_data
+    _check_roles(role, {"full"})
+
+    admin_user = await db.scalar(select(AdminUser).where(AdminUser.id == admin_user_id))
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="Membro não encontrado.")
+
+    role_label = ROLE_LABELS.get(admin_user.role, admin_user.role)
+
+    # Verifica se já tem conta Jarbis
+    existing_user = await db.scalar(
+        select(User).where(User.email == admin_user.email)
+    )
+
+    if existing_user:
+        # Tem conta → envia link de reset de senha
+        token = secrets.token_urlsafe(32)
+        existing_user.reset_token = token
+        existing_user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        await db.flush()
+        await db.commit()
+        reset_url = f"{settings.frontend_url}/nova-senha?token={token}"
+        from app.core.email import send_password_reset_email
+        await send_password_reset_email(existing_user.email, existing_user.full_name, reset_url)
+    else:
+        # Sem conta → envia convite para criar conta
+        await send_admin_invite_email(admin_user.email, role_label, inviter.email)
+
+    return {"ok": True, "has_account": existing_user is not None}
 
 
 @router.delete("/equipe/{admin_user_id}", summary="Remover membro da equipe")

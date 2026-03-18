@@ -94,10 +94,9 @@ export default function AdminEquipePage() {
   async function sendAccessLink(member) {
     setLinkSent(prev => ({ ...prev, [member.email]: 'sending' }))
     try {
-      const r = await fetch(`${API_URL}/auth/forgot-password`, {
+      const r = await fetch(`${API_URL}/admin/equipe/${member.id}/send-invite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: member.email }),
+        headers: authHeaders(),
       })
       setLinkSent(prev => ({ ...prev, [member.email]: r.ok ? 'ok' : 'err' }))
     } catch {
