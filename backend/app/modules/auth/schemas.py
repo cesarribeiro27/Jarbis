@@ -2,6 +2,7 @@
 
 import re
 import uuid
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -44,6 +45,8 @@ class UserResponse(BaseModel):
     tenant_id: uuid.UUID
     is_active: bool = True
     email_verified: bool = False
+    last_login_at: datetime | None = None
+    created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

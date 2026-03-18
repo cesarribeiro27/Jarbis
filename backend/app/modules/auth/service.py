@@ -176,6 +176,8 @@ class AuthService:
         user.reset_token = None
         user.reset_token_expires_at = None
         user.session_revoked_at = now
+        user.is_active = True
+        user.email_verified = True
         await self.db.flush()
 
     def _build_auth_response(self, user: User, needs_verification: bool = False) -> AuthResponse:

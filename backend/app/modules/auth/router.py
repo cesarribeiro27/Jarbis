@@ -66,6 +66,12 @@ class UpdateUserRequest(BaseModel):
     is_active: bool | None = None
 
 
+class InviteByEmailRequest(BaseModel):
+    full_name: str = Field(min_length=2, max_length=200)
+    email: EmailStr
+    role: str = "member"
+
+
 @router.post("/register", response_model=AuthResponse, status_code=201)
 @limiter.limit("3/minute")
 async def register(request: Request, data: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
@@ -258,6 +264,72 @@ async def invite_user(
     )
     db.add(user)
     await db.flush()
+    return UserResponse.model_validate(user)
+
+
+@router.post("/users/invite-email", response_model=UserResponse, status_code=201)
+async def invite_user_by_email(
+    data: InviteByEmailRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cria usuário inativo e envia email de convite para ele definir a própria senha."""
+    if ROLE_ORDER.get(current_user.role, 0) < 2:
+        raise HTTPException(status_code=403, detail="Apenas owners e admins podem convidar usuários.")
+    if data.role not in VALID_ROLES:
+        raise HTTPException(status_code=422, detail=f"Role inválido. Use: {', '.join(VALID_ROLES)}")
+    if ROLE_ORDER.get(data.role, 0) >= ROLE_ORDER.get(current_user.role, 0):
+        raise HTTPException(status_code=403, detail="Você não pode criar um usuário com role igual ou maior que o seu.")
+
+    existing = await db.scalar(select(User).where(User.email == data.email))
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Email '{data.email}' já cadastrado.")
+
+    import secrets
+    temp_password = secrets.token_urlsafe(32)
+    user = User(
+        tenant_id=current_user.tenant_id,
+        email=data.email,
+        hashed_password=hash_password(temp_password),
+        full_name=data.full_name,
+        role=data.role,
+        is_active=False,
+        email_verified=False,
+    )
+    db.add(user)
+    await db.flush()
+
+    from app.modules.auth.service import AuthService
+    service = AuthService(db)
+    await service.forgot_password(data.email, settings.frontend_url)
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)
+
+
+@router.post("/users/{user_id}/resend-invite", response_model=UserResponse)
+async def resend_invite(
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reenvia email de convite para usuário inativo. Requer owner ou admin."""
+    if ROLE_ORDER.get(current_user.role, 0) < 2:
+        raise HTTPException(status_code=403, detail="Apenas owners e admins podem reenviar convites.")
+
+    user = await db.scalar(
+        select(User).where(User.id == user_id, User.tenant_id == current_user.tenant_id)
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    if user.is_active:
+        raise HTTPException(status_code=400, detail="Usuário já está ativo. Use 'resetar senha' para usuários ativos.")
+
+    from app.modules.auth.service import AuthService
+    service = AuthService(db)
+    await service.forgot_password(user.email, settings.frontend_url)
+    await db.commit()
+    await db.refresh(user)
     return UserResponse.model_validate(user)
 
 

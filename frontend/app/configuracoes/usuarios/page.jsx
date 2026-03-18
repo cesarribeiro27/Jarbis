@@ -6,6 +6,21 @@ import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+
+function authHeaders() {
+  const t = localStorage.getItem('jarbis_token')
+  return { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) }
+}
+
+const ROLES = [
+  { value: 'admin',  label: 'Admin',        desc: 'Gerencia usuários e configurações' },
+  { value: 'member', label: 'Membro',       desc: 'Cria e edita dashboards' },
+  { value: 'viewer', label: 'Visualizador', desc: 'Somente visualização' },
+]
+
+const ROLE_RANK = { owner: 3, admin: 2, member: 1, viewer: 0 }
+
 const ROLE_COLORS = {
   owner:  'bg-violet-100 text-violet-700',
   admin:  'bg-blue-100 text-blue-700',
@@ -16,26 +31,41 @@ const ROLE_COLORS = {
 function InviteModal({ onClose, onCreated }) {
   const t = useTranslations('usuarios')
   const toast = useToast()
+  const [mode, setMode] = useState('email') // 'email' | 'manual'
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'member' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const ROLES = [
-    { value: 'admin',  label: t('roles.admin'),  desc: t('roleDescs.admin') },
-    { value: 'member', label: t('roles.member'), desc: t('roleDescs.member') },
-    { value: 'viewer', label: t('roles.viewer'), desc: t('roleDescs.viewer') },
-  ]
-
   async function submit(e) {
     e.preventDefault()
-    setLoading(true); setError(null)
+    setLoading(true)
+    setError(null)
     try {
-      const user = await api.users.invite(form)
-      onCreated(user)
-      onClose()
-      toast(t('modal.successToast', { name: user.full_name }), 'success')
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
+      if (mode === 'email') {
+        const res = await fetch(`${API_URL}/auth/users/invite-email`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ full_name: form.full_name, email: form.email, role: form.role }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.detail || 'Erro ao enviar convite')
+        }
+        const user = await res.json()
+        onCreated(user)
+        onClose()
+        toast(`Convite enviado para ${form.email}!`, 'success')
+      } else {
+        const user = await api.users.invite(form)
+        onCreated(user)
+        onClose()
+        toast(t('modal.successToast', { name: user.full_name }), 'success')
+      }
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -44,7 +74,9 @@ function InviteModal({ onClose, onCreated }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <div>
             <h2 className="font-bold text-gray-800 dark:text-gray-200">{t('modal.title')}</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('modal.subtitle')}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              {mode === 'email' ? 'O usuário receberá um link para definir a própria senha' : t('modal.subtitle')}
+            </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -61,10 +93,14 @@ function InviteModal({ onClose, onCreated }) {
               <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
             </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.passwordLabel')}</label>
-            <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={t('modal.passwordPlaceholder')} />
-          </div>
+
+          {mode === 'manual' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.passwordLabel')}</label>
+              <input required type="password" minLength={6} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" placeholder={t('modal.passwordPlaceholder')} />
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.roleLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
@@ -77,10 +113,33 @@ function InviteModal({ onClose, onCreated }) {
               ))}
             </div>
           </div>
+
           {error && <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-sm text-red-600">{error}</div>}
+
           <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors">
-            {loading ? t('modal.creating') : t('modal.createBtn')}
+            {loading
+              ? (mode === 'email' ? 'Enviando convite...' : t('modal.creating'))
+              : (mode === 'email' ? 'Enviar convite por email' : t('modal.createBtn'))
+            }
           </button>
+
+          <p className="text-center text-xs text-gray-400">
+            {mode === 'email' ? (
+              <>
+                Prefere definir a senha agora?{' '}
+                <button type="button" onClick={() => { setMode('manual'); setError(null) }} className="text-violet-600 hover:underline font-medium">
+                  Definir senha manualmente
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => { setMode('email'); setError(null) }} className="text-violet-600 hover:underline font-medium">
+                  Enviar convite por email
+                </button>
+                {' '}(recomendado)
+              </>
+            )}
+          </p>
         </form>
       </div>
     </div>
@@ -96,6 +155,7 @@ export default function UsuariosPage() {
   const [currentUser, setCurrentUser] = useState(null)
   const [updatingId, setUpdatingId] = useState(null)
   const [editRoleId, setEditRoleId] = useState(null)
+  const [resendingId, setResendingId] = useState(null)
 
   useEffect(() => {
     const u = localStorage.getItem('jarbis_user')
@@ -107,7 +167,7 @@ export default function UsuariosPage() {
   }, [])
 
   const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin'
-  const currentRank = { owner: 3, admin: 2, member: 1, viewer: 0 }[currentUser?.role] ?? 0
+  const currentRank = ROLE_RANK[currentUser?.role] ?? 0
 
   async function handleToggleActive(u) {
     setUpdatingId(u.id)
@@ -117,7 +177,9 @@ export default function UsuariosPage() {
       toast(t(updated.is_active ? 'toast.activated' : 'toast.deactivated', { name: updated.full_name }), 'success')
     } catch (err) {
       toast(err.message || t('toast.toggleError'), 'error')
-    } finally { setUpdatingId(null) }
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
   async function handleChangeRole(u, role) {
@@ -129,13 +191,42 @@ export default function UsuariosPage() {
       toast(t('toast.roleChanged', { name: updated.full_name, role: t(`roles.${role}`) }), 'success')
     } catch (err) {
       toast(err.message || t('toast.roleError'), 'error')
-    } finally { setUpdatingId(null) }
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  async function handleResendInvite(u) {
+    setResendingId(u.id)
+    try {
+      const res = await fetch(`${API_URL}/auth/users/${u.id}/resend-invite`, {
+        method: 'POST',
+        headers: authHeaders(),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || 'Erro ao reenviar convite')
+      }
+      toast(`Convite reenviado para ${u.email}!`, 'success')
+    } catch (err) {
+      toast(err.message || 'Erro ao reenviar convite', 'error')
+    } finally {
+      setResendingId(null)
+    }
   }
 
   const canManage = (target) => {
     if (currentUser?.id === target.id) return false
-    const targetRank = { owner: 3, admin: 2, member: 1, viewer: 0 }[target.role] ?? 0
+    const targetRank = ROLE_RANK[target.role] ?? 0
     return currentRank >= 2 && currentRank > targetRank
+  }
+
+  function formatLastLogin(dateStr) {
+    try {
+      return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch {
+      return null
+    }
   }
 
   return (
@@ -172,12 +263,15 @@ export default function UsuariosPage() {
               const isSelf = u.id === currentUser?.id
               const manageable = canManage(u)
               const isUpdating = updatingId === u.id
+              const isResending = resendingId === u.id
+              const isPending = u.is_active === false
+              const wasActive = isPending && u.last_login_at != null
 
               return (
-                <div key={u.id} className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-700/50 ${!u.is_active ? 'opacity-50' : ''}`}>
+                <div key={u.id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-700/50">
                   {/* Avatar */}
-                  <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                    <span className="text-violet-700 font-bold text-sm">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isPending ? 'bg-amber-100' : 'bg-violet-100'}`}>
+                    <span className={`font-bold text-sm ${isPending ? 'text-amber-600' : 'text-violet-700'}`}>
                       {u.full_name ? u.full_name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() : '?'}
                     </span>
                   </div>
@@ -187,8 +281,18 @@ export default function UsuariosPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{u.full_name}</p>
                       {isSelf && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">{t('you')}</span>}
+                      {isPending && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                          Convite pendente
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                    {u.last_login_at && (
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Último acesso: {formatLastLogin(u.last_login_at)}
+                      </p>
+                    )}
                   </div>
 
                   {/* Role — clicável se pode gerenciar */}
@@ -204,7 +308,7 @@ export default function UsuariosPage() {
                         </button>
                         {editRoleId === u.id && (
                           <div className="absolute right-0 top-8 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1 w-40">
-                            {ROLES.filter(r => ({ owner: 3, admin: 2, member: 1, viewer: 0 }[r.value] < currentRank).map(() => true) ? true : false).map(r => (
+                            {ROLES.filter(r => ROLE_RANK[r.value] < currentRank).map(r => (
                               <button
                                 key={r.value}
                                 onClick={() => handleChangeRole(u, r.value)}
@@ -224,32 +328,67 @@ export default function UsuariosPage() {
                     )}
                   </div>
 
-                  {/* Status */}
-                  <div className="shrink-0 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                    <span className="text-xs text-gray-400">{u.is_active ? t('statusActive') : t('statusInactive')}</span>
+                  {/* Status badge */}
+                  <div className="shrink-0">
+                    {u.is_active ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Ativo
+                      </span>
+                    ) : wasActive ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                        Inativo
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* Ações */}
                   {manageable && (
-                    <button
-                      onClick={() => handleToggleActive(u)}
-                      disabled={isUpdating}
-                      title={u.is_active ? t('statusInactive') : t('statusActive')}
-                      className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 ${
-                        u.is_active
-                          ? 'text-gray-300 hover:text-red-400 hover:bg-red-50'
-                          : 'text-gray-300 hover:text-emerald-500 hover:bg-emerald-50'
-                      }`}
-                    >
-                      {isUpdating ? (
-                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      ) : u.is_active ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                    <div className="shrink-0 flex items-center gap-1">
+                      {isPending ? (
+                        /* Botão Reenviar convite */
+                        <button
+                          onClick={() => handleResendInvite(u)}
+                          disabled={isResending}
+                          title="Reenviar convite por email"
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {isResending ? (
+                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                          ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          )}
+                          Reenviar convite
+                        </button>
                       ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        /* Botão Desativar/Reativar para usuários ativos */
+                        <button
+                          onClick={() => handleToggleActive(u)}
+                          disabled={isUpdating}
+                          title={u.is_active ? 'Desativar acesso' : 'Reativar acesso'}
+                          className={`group shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50 ${
+                            u.is_active
+                              ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                              : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {isUpdating ? (
+                            <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                          ) : u.is_active ? (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                              <span className="text-xs font-semibold hidden group-hover:inline">Desativar</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                              <span className="text-xs font-semibold hidden group-hover:inline">Reativar</span>
+                            </>
+                          )}
+                        </button>
                       )}
-                    </button>
+                    </div>
                   )}
                 </div>
               )
