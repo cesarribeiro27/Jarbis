@@ -34,6 +34,7 @@ export default function AdminEquipePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [linkSent, setLinkSent] = useState({}) // { [email]: 'sending' | 'ok' | 'err' }
 
   async function load() {
     setLoading(true)
@@ -88,6 +89,21 @@ export default function AdminEquipePage() {
       body: JSON.stringify({ role: newRole }),
     })
     load()
+  }
+
+  async function sendAccessLink(member) {
+    setLinkSent(prev => ({ ...prev, [member.email]: 'sending' }))
+    try {
+      const r = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: member.email }),
+      })
+      setLinkSent(prev => ({ ...prev, [member.email]: r.ok ? 'ok' : 'err' }))
+    } catch {
+      setLinkSent(prev => ({ ...prev, [member.email]: 'err' }))
+    }
+    setTimeout(() => setLinkSent(prev => { const n = { ...prev }; delete n[member.email]; return n }), 5000)
   }
 
   async function handleRemove(member) {
@@ -173,6 +189,9 @@ export default function AdminEquipePage() {
                   className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-violet-500"
                 />
               </div>
+              <div className="bg-gray-800/60 rounded-xl px-4 py-3 text-xs text-gray-500 leading-relaxed">
+                ⚠️ A pessoa precisa ter uma conta Jarbis com esse email para conseguir acessar o painel. Após adicionar, clique em <strong className="text-gray-400">Enviar link</strong> para ela receber o link de acesso por email — ou peça para ela criar uma conta em <span className="text-violet-400">jarbis.cc/cadastro</span>.
+              </div>
               {error && <p className="text-sm text-red-400">{error}</p>}
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setShowForm(false)} className="text-sm text-gray-400 hover:text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
@@ -212,7 +231,7 @@ export default function AdminEquipePage() {
                   <th className="text-left px-6 py-3 font-medium">Role</th>
                   <th className="text-left px-6 py-3 font-medium">Status</th>
                   <th className="text-left px-6 py-3 font-medium">Observações</th>
-                  <th className="px-6 py-3" />
+                  <th className="text-right px-6 py-3 font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,13 +279,48 @@ export default function AdminEquipePage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {!member.is_env_admin && (
-                        <button
-                          onClick={() => handleRemove(member)}
-                          className="text-gray-600 hover:text-red-400 transition-colors"
-                          title="Remover acesso"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Enviar link de acesso */}
+                          {linkSent[member.email] === 'ok' ? (
+                            <span className="text-xs text-emerald-400">Link enviado!</span>
+                          ) : linkSent[member.email] === 'err' ? (
+                            <span className="text-xs text-red-400">Erro ao enviar</span>
+                          ) : (
+                            <button
+                              onClick={() => sendAccessLink(member)}
+                              disabled={linkSent[member.email] === 'sending'}
+                              title="Enviar link de acesso/reset de senha"
+                              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-violet-400 hover:bg-violet-900/20 px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {linkSent[member.email] === 'sending' ? (
+                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                              )}
+                              Enviar link
+                            </button>
+                          )}
+                          {/* Toggle ativo/inativo */}
+                          <button
+                            onClick={() => toggleActive(member)}
+                            title={member.is_active ? 'Desativar acesso' : 'Reativar acesso'}
+                            className={`p-1.5 rounded-lg transition-colors ${member.is_active ? 'text-gray-600 hover:text-red-400 hover:bg-red-900/20' : 'text-gray-600 hover:text-emerald-400 hover:bg-emerald-900/20'}`}
+                          >
+                            {member.is_active ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            )}
+                          </button>
+                          {/* Remover */}
+                          <button
+                            onClick={() => handleRemove(member)}
+                            title="Remover acesso"
+                            className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
