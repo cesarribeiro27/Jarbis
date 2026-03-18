@@ -8,6 +8,17 @@ import { api } from '@/lib/api'
 function VerificarEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Google Ads — dispara conversão ao chegar na página de verificação
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'conversion', {
+        send_to: 'AW-17421636806/QRlVCPr7oIscEMappPNA',
+        value: 1.0,
+        currency: 'BRL',
+      })
+    }
+  }, [])
   const email = searchParams.get('email') || ''
 
   const [code, setCode] = useState(['', '', '', '', '', ''])
