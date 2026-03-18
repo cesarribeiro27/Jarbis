@@ -7,15 +7,15 @@ import AdminLayout from '@/components/AdminLayout'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
 const HEALTH_CONFIG = {
-  saudavel: { label: 'Saudável', emoji: '🟢', cls: 'bg-emerald-900/40 text-emerald-300', bar: 'bg-emerald-500' },
-  risco:    { label: 'Em risco', emoji: '🟡', cls: 'bg-amber-900/40 text-amber-300',    bar: 'bg-amber-500' },
-  churn:    { label: 'Churn',    emoji: '🔴', cls: 'bg-red-900/40 text-red-300',        bar: 'bg-red-500' },
+  saudavel: { label: 'Saudável', emoji: '🟢', cls: 'bg-emerald-900/40 text-emerald-300', textCls: 'text-emerald-300', bar: 'bg-emerald-500' },
+  risco:    { label: 'Em risco', emoji: '🟡', cls: 'bg-amber-900/40 text-amber-300',    textCls: 'text-amber-300',   bar: 'bg-amber-500' },
+  churn:    { label: 'Churn',    emoji: '🔴', cls: 'bg-red-900/40 text-red-300',        textCls: 'text-red-300',     bar: 'bg-red-500' },
 }
 
 const PLAN_LABELS = {
   free: 'Gratuito', starter: 'Solo', solo: 'Solo',
   professional: 'Profissional', equipe: 'Profissional',
-  ilimitado: 'Equipe', enterprise: 'Enterprise',
+  ilimitado: 'Grupo', enterprise: 'Enterprise',
 }
 
 function fmtDate(s) {
@@ -124,7 +124,7 @@ export default function CustomerSuccessPage() {
 
                     {/* Score bar */}
                     <div className="flex-shrink-0 w-12 text-center">
-                      <div className={`text-lg font-black ${hc.cls.split(' ')[1]}`}>{score}</div>
+                      <div className={`text-lg font-black ${hc.textCls}`}>{score}</div>
                       <div className="w-full bg-gray-800 rounded-full h-1 mt-1">
                         <div
                           className={`h-1 rounded-full transition-all ${hc.bar}`}

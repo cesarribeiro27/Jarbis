@@ -160,7 +160,7 @@ export default function DashboardHome() {
               {firstName ? firstName[0].toUpperCase() : '?'}
             </div>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 leading-none">
+              <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-none">
                 {greeting}{firstName ? `, ${firstName}` : ''}
               </h1>
               <p className="text-sm text-gray-400 mt-0.5">{t('subtitle')}</p>
@@ -185,7 +185,7 @@ export default function DashboardHome() {
                 <div className={`w-10 h-10 ${stat.iconBg} text-white rounded-xl flex items-center justify-center mb-4 shadow-sm`}>
                   {StatIcons[stat.iconKey]}
                 </div>
-                <div className="text-3xl font-black text-gray-900 tabular-nums leading-none mb-1">
+                <div className="text-3xl font-black text-gray-900 dark:text-gray-100 tabular-nums leading-none mb-1">
                   {loading ? <span className="text-gray-300">—</span> : stat.value.toLocaleString(locale)}
                 </div>
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{stat.label}</div>
@@ -199,11 +199,11 @@ export default function DashboardHome() {
         </div>
 
         {/* Recent dashboards */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <h2 className="font-bold text-gray-900 text-sm">{t('recent')}</h2>
+              <h2 className="font-bold text-gray-900 dark:text-gray-100 text-sm">{t('recent')}</h2>
             </div>
             <Link
               href="/dashboards/novo"
@@ -239,14 +239,14 @@ export default function DashboardHome() {
                   <Link
                     key={d.id}
                     href={`/dashboards/${d.id}`}
-                    className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 hover:bg-gray-50/80 transition-colors border-b border-gray-50 last:border-b-0 group"
+                    className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-50 dark:border-gray-700 last:border-b-0 group"
                   >
                     {/* mini chart — oculto em telas muito pequenas */}
                     <div className="hidden xs:block w-12 sm:w-14 h-7 sm:h-8 shrink-0 rounded-lg overflow-hidden bg-gray-50/80">
                       <MiniChart color={color} seed={i + 1} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-800 group-hover:text-violet-700 transition-colors truncate">{d.title}</div>
+                      <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors truncate">{d.title}</div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-gray-400">{d.block_count ?? 0} {t('blocks')}</span>
                         {d.share_token && <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t('public')}</span>}

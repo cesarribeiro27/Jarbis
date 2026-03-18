@@ -803,7 +803,7 @@ async def clone_report(
 # Phase 8 — Notificações in-app
 # ---------------------------------------------------------------------------
 
-from app.modules.admin.models import UserNotification, TenantWebhook  # noqa: E402
+from app.modules.admin.models import UserNotification, TenantWebhook, ApiKey  # noqa: E402
 
 
 @router.get("/notifications", summary="Listar notificações do usuário")
@@ -1156,6 +1156,93 @@ async def create_from_template(
     await db.commit()
     await db.refresh(report)
     return {"id": str(report.id), "title": report.title}
+
+
+# ---------------------------------------------------------------------------
+# API Keys — tenant-facing (self-service)
+# ---------------------------------------------------------------------------
+
+
+class ApiKeyCreate(BaseModel):
+    name: str
+    scopes: str = "read"
+    expires_in_days: int | None = None
+
+
+@router.get("/api-keys", summary="Lista API Keys do tenant")
+async def list_api_keys(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await db.scalars(
+        select(ApiKey)
+        .where(ApiKey.tenant_id == current_user.tenant_id)
+        .order_by(ApiKey.created_at.desc())
+    )
+    return [
+        {
+            "id": str(k.id),
+            "name": k.name,
+            "key_prefix": k.key_prefix,
+            "scopes": k.scopes,
+            "is_active": k.is_active,
+            "last_used_at": k.last_used_at.isoformat() if k.last_used_at else None,
+            "expires_at": k.expires_at.isoformat() if k.expires_at else None,
+            "created_at": k.created_at.isoformat() if k.created_at else None,
+        }
+        for k in rows.all()
+    ]
+
+
+@router.post("/api-keys", summary="Cria nova API Key para o tenant", status_code=201)
+async def create_api_key(
+    data: ApiKeyCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    raw_key = f"jrb_live_{secrets.token_hex(20)}"
+    hashed = hashlib.sha256(raw_key.encode()).hexdigest()
+    prefix = raw_key[:12]
+    expires_at = None
+    if data.expires_in_days:
+        from datetime import timedelta
+        expires_at = datetime.now(timezone.utc) + timedelta(days=data.expires_in_days)
+    key = ApiKey(
+        tenant_id=current_user.tenant_id,
+        name=data.name,
+        key_prefix=prefix,
+        hashed_key=hashed,
+        scopes=data.scopes,
+        expires_at=expires_at,
+        created_by=current_user.email,
+    )
+    db.add(key)
+    await db.commit()
+    await db.refresh(key)
+    return {
+        "id": str(key.id),
+        "name": key.name,
+        "key": raw_key,
+        "key_prefix": key.key_prefix,
+        "scopes": key.scopes,
+        "expires_at": key.expires_at.isoformat() if key.expires_at else None,
+        "created_at": key.created_at.isoformat() if key.created_at else None,
+    }
+
+
+@router.delete("/api-keys/{key_id}", summary="Revoga (desativa) uma API Key", status_code=204)
+async def revoke_api_key(
+    key_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    key = await db.scalar(
+        select(ApiKey).where(ApiKey.id == key_id, ApiKey.tenant_id == current_user.tenant_id)
+    )
+    if not key:
+        raise HTTPException(status_code=404, detail="Chave não encontrada.")
+    key.is_active = False
+    await db.commit()
 
 
 # ---------------------------------------------------------------------------

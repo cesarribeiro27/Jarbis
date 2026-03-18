@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { ToastProvider } from '@/lib/toast'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
+import ThemeProvider from '@/components/ThemeProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -23,7 +24,9 @@ export default async function RootLayout({ children }) {
     <html lang={locale} className={inter.variable}>
       <body className="antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <ToastProvider>{children}</ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

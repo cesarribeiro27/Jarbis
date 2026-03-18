@@ -93,13 +93,13 @@ export default function ConfiguracoesPage() {
     <AppLayout>
       <div className="p-6 max-w-2xl mx-auto space-y-4">
         <div className="mb-2">
-          <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('title')}</h1>
           <p className="text-sm text-gray-400 mt-1">{t('subtitle')}</p>
         </div>
 
         {/* Card — perfil */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-bold text-gray-800 mb-5">{t('profile.title')}</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+          <h2 className="font-bold text-gray-800 dark:text-gray-200 mb-5">{t('profile.title')}</h2>
 
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-md shadow-violet-200">
@@ -120,7 +120,7 @@ export default function ConfiguracoesPage() {
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 transition-all"
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 transition-all"
                 placeholder={t('profile.placeholder')}
               />
             </div>
@@ -137,8 +137,8 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Card — alterar senha */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-bold text-gray-800 mb-5">{t('password.title')}</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+          <h2 className="font-bold text-gray-800 dark:text-gray-200 mb-5">{t('password.title')}</h2>
 
           <form onSubmit={handleSavePassword} className="space-y-4">
             <div>
@@ -169,7 +169,7 @@ export default function ConfiguracoesPage() {
                   type={showPw ? 'text' : 'password'}
                   value={pwForm.new}
                   onChange={e => setPwForm(f => ({ ...f, new: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
                   placeholder={t('password.newPlaceholder')}
                   required
                 />
@@ -197,7 +197,7 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Card — plano */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800">{t('plan.title')}</h2>
             <Link href="/configuracoes/planos" className="text-xs text-violet-600 font-semibold hover:underline">
@@ -250,7 +250,7 @@ export default function ConfiguracoesPage() {
                   const atLimit = !unlimited && item.used >= item.max
                   const nearLimit = !unlimited && !atLimit && pct >= 80
                   return (
-                    <div key={item.label} className="bg-gray-50 rounded-xl p-3">
+                    <div key={item.label} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
                       <div className="flex justify-between items-baseline mb-1.5">
                         <span className="text-xs text-gray-500 font-medium">{item.label}</span>
                         <span className={`text-xs font-bold ${atLimit ? 'text-red-500' : nearLimit ? 'text-amber-600' : 'text-gray-700'}`}>
@@ -281,7 +281,7 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Card — API Keys */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-bold text-gray-800">Chaves de API</h2>
@@ -297,7 +297,7 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Card — Webhooks */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-bold text-gray-800">Webhooks</h2>
@@ -313,11 +313,11 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Card — Personalização */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-bold text-gray-800">Personalização</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Logo e cores personalizadas (white-label — plano Ilimitado)</p>
+              <p className="text-sm text-gray-500 mt-0.5">Logo e cores personalizadas (white-label — plano Grupo)</p>
             </div>
             <Link
               href="/configuracoes/personalizacao"

@@ -310,7 +310,7 @@ export default function DashboardsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('title')}</h1>
             <p className="text-sm text-gray-400 mt-1">
               {reports.length > 0 ? (reports.length === 1 ? t('subtitleOne') : t('subtitleMany', { count: reports.length })) : t('subtitleEmpty')}
             </p>
@@ -333,7 +333,7 @@ export default function DashboardsPage() {
               placeholder={t('searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full max-w-sm pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
+              className="w-full max-w-sm pl-10 pr-4 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 border border-gray-200 rounded-xl outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
             />
           </div>
         )}
@@ -351,7 +351,7 @@ export default function DashboardsPage() {
                   key={tpl.id}
                   onClick={() => createFromTemplate(tpl.id)}
                   disabled={creatingFromTemplate === tpl.id}
-                  className="group text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-violet-200 hover:shadow-[0_4px_16px_rgba(124,58,237,0.1)] transition-all duration-200 disabled:opacity-60"
+                  className="group text-left bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 hover:border-violet-200 dark:hover:border-violet-700 hover:shadow-[0_4px_16px_rgba(124,58,237,0.1)] transition-all duration-200 disabled:opacity-60"
                 >
                   <div
                     className="w-10 h-10 rounded-xl mb-3 flex items-center justify-center"
@@ -377,12 +377,12 @@ export default function DashboardsPage() {
 
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-gray-100 h-52 animate-pulse" />)}
+            {[1,2,3].map(i => <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 h-52 animate-pulse" />)}
           </div>
         )}
 
         {!loading && filtered.length === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-14 text-center shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-14 text-center shadow-sm">
             <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
@@ -416,7 +416,7 @@ export default function DashboardsPage() {
               return (
                 <div
                   key={r.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200 relative group"
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 dark:hover:border-gray-600 hover:-translate-y-0.5 transition-all duration-200 relative group"
                   onClick={() => router.push(`/dashboards/${r.id}`)}
                 >
                   {/* Preview / Capa */}

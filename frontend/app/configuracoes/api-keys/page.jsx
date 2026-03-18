@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
-import { api } from '@/lib/api'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -19,13 +18,6 @@ function fmtDate(s) {
   return new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function getTenantId() {
-  try {
-    const u = localStorage.getItem('jarbis_user')
-    return u ? JSON.parse(u).tenant_id : null
-  } catch { return null }
-}
-
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,10 +29,8 @@ export default function ApiKeysPage() {
 
   async function load() {
     setLoading(true)
-    const tenantId = getTenantId()
-    if (!tenantId) { setLoading(false); return }
-    const r = await fetch(`${API_URL}/admin/tenants/${tenantId}/api-keys`, {
-      credentials: 'include', headers: authHeaders(),
+    const r = await fetch(`${API_URL}/reports/api-keys`, {
+      headers: authHeaders(),
     })
     if (r.ok) setKeys(await r.json())
     setLoading(false)
@@ -51,11 +41,10 @@ export default function ApiKeysPage() {
   async function createKey(e) {
     e.preventDefault()
     setCreating(true)
-    const tenantId = getTenantId()
     const body = { name: form.name, scopes: form.scopes }
     if (form.expires_in_days) body.expires_in_days = parseInt(form.expires_in_days)
-    const r = await fetch(`${API_URL}/admin/tenants/${tenantId}/api-keys`, {
-      method: 'POST', credentials: 'include', headers: authHeaders(),
+    const r = await fetch(`${API_URL}/reports/api-keys`, {
+      method: 'POST', headers: authHeaders(),
       body: JSON.stringify(body),
     })
     if (r.ok) {
@@ -70,9 +59,8 @@ export default function ApiKeysPage() {
 
   async function revokeKey(keyId) {
     if (!confirm('Revogar esta API key? Integrações que a usam vão parar de funcionar.')) return
-    const tenantId = getTenantId()
-    await fetch(`${API_URL}/admin/tenants/${tenantId}/api-keys/${keyId}`, {
-      method: 'DELETE', credentials: 'include', headers: authHeaders(),
+    await fetch(`${API_URL}/reports/api-keys/${keyId}`, {
+      method: 'DELETE', headers: authHeaders(),
     })
     load()
   }

@@ -51,7 +51,7 @@ const PLANS = [
   },
   {
     key: 'ilimitado',
-    name: 'Ilimitado',
+    name: 'Grupo',
     monthlyPrice: 599.90,
     desc: 'Para empresas em crescimento',
     features: ['50 dashboards', '30 fontes de dados', '5 usuários', '50 alertas', 'IA em português', 'Marca própria', 'Incorporar no site'],
@@ -67,7 +67,7 @@ const PLANS = [
     name: 'Enterprise',
     monthlyPrice: null,
     desc: 'Para grandes operações',
-    features: ['Tudo do Ilimitado', 'Usuários ilimitados', 'SLA garantido em contrato', 'Gerente de conta dedicado', 'Onboarding personalizado'],
+    features: ['Tudo do Grupo', 'Usuários ilimitados', 'SLA garantido em contrato', 'Gerente de conta dedicado', 'Onboarding personalizado'],
     color: 'border-gray-700',
     accentColor: 'text-amber-400',
     highlight: false,

@@ -9,6 +9,7 @@ import { LogoA } from '@/components/logos/JarbisLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
 import UpgradeModal from '@/components/UpgradeModal'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const Icons = {
   Dashboard: () => (
@@ -108,7 +109,7 @@ const PLAN_BADGES = {
   equipe:       { label: 'Equipe',     bg: 'bg-violet-100', text: 'text-violet-700' },
   starter:      { label: 'Starter',    bg: 'bg-blue-100',   text: 'text-blue-700'   },
   professional: { label: 'Pro',        bg: 'bg-violet-100', text: 'text-violet-700' },
-  ilimitado:    { label: 'Ilimitado',  bg: 'bg-indigo-100', text: 'text-indigo-700' },
+  ilimitado:    { label: 'Grupo',      bg: 'bg-indigo-100', text: 'text-indigo-700' },
   enterprise:   { label: 'Enterprise', bg: 'bg-amber-100',  text: 'text-amber-700'  },
 }
 
@@ -119,17 +120,17 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
   return (
     <>
       {/* Logo */}
-      <div className={`h-[60px] flex items-center border-b border-gray-100/80 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
+      <div className={`h-[60px] flex items-center border-b border-gray-100/80 dark:border-gray-800 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
         <LogoA size={32} className="flex-shrink-0" />
-        {!collapsed && <span className="font-black text-gray-900 text-[15px] tracking-tight">jarbis</span>}
+        {!collapsed && <span className="font-black text-gray-900 dark:text-gray-100 text-[15px] tracking-tight">jarbis</span>}
         {onClose ? (
-          <button onClick={onClose} className="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+          <button onClick={onClose} className="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Icons.X />
           </button>
         ) : onToggleCollapse ? (
           <button
             onClick={onToggleCollapse}
-            className={`${collapsed ? 'ml-0' : 'ml-auto'} w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors`}
+            className={`${collapsed ? 'ml-0' : 'ml-auto'} w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}
           >
             {collapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
           </button>
@@ -149,7 +150,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
               className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                 active
                   ? 'bg-violet-600 text-white shadow-sm shadow-violet-200'
-                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               <span className="flex-shrink-0"><Icon /></span>
@@ -176,7 +177,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
                   className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                     active
                       ? 'bg-violet-600 text-white shadow-sm shadow-violet-200'
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   <span className="flex-shrink-0"><Icon /></span>
@@ -189,14 +190,14 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
       </nav>
 
       {/* Footer */}
-      <div className="p-2 border-t border-gray-100/80 space-y-0.5">
+      <div className="p-2 border-t border-gray-100/80 dark:border-gray-800 space-y-0.5">
         {!collapsed && user && (
-          <Link href="/configuracoes" onClick={onClose} className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 hover:bg-gray-50 transition-colors group">
+          <Link href="/configuracoes" onClick={onClose} className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
             <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black flex-shrink-0">
               {initials}
             </div>
             <div className="overflow-hidden flex-1 min-w-0">
-              <div className="text-xs font-semibold text-gray-800 truncate group-hover:text-violet-700 transition-colors">{user.full_name}</div>
+              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors">{user.full_name}</div>
               <div className="text-[11px] text-gray-400 truncate">{user.email}</div>
             </div>
             {badge && (
@@ -207,21 +208,27 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
           </Link>
         )}
         {collapsed && user && (
-          <Link href="/configuracoes" title="Configurações" className="flex items-center justify-center w-full py-2 rounded-xl hover:bg-gray-50 transition-colors">
+          <Link href="/configuracoes" title="Configurações" className="flex items-center justify-center w-full py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black">
               {initials}
             </div>
           </Link>
         )}
         {!collapsed && (
-          <div className="px-2.5 py-1">
+          <div className="px-2.5 py-1 flex items-center gap-2">
             <LanguageSwitcher dropUp />
+            <ThemeToggle />
+          </div>
+        )}
+        {collapsed && (
+          <div className="flex justify-center py-1">
+            <ThemeToggle />
           </div>
         )}
         <button
           onClick={onBellClick}
           title={collapsed ? 'Notificações' : undefined}
-          className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-violet-600 hover:bg-violet-50 w-full transition-all duration-150 relative"
+          className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30 w-full transition-all duration-150 relative"
         >
           <span className="flex-shrink-0 relative">
             <Icons.Bell />
@@ -236,7 +243,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
         <button
           onClick={logout}
           title={collapsed ? t('nav.logout') : undefined}
-          className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 w-full transition-all duration-150"
+          className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-all duration-150"
         >
           <span className="flex-shrink-0"><Icons.Logout /></span>
           {!collapsed && t('nav.logout')}
@@ -415,11 +422,11 @@ export default function AppLayout({ children }) {
   const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, onBellClick: () => setNotifOpen(o => !o) }
 
   return (
-    <div className="flex h-screen bg-[#f8f7fc]">
+    <div className="flex h-screen bg-[#f8f7fc] dark:bg-gray-950">
 
       {/* ── Sidebar desktop (md+) ── */}
       <aside
-        className={`hidden md:flex ${collapsed ? 'w-[68px]' : 'w-[220px]'} bg-white border-r border-gray-100/80 flex-col transition-all duration-200 flex-shrink-0`}
+        className={`hidden md:flex ${collapsed ? 'w-[68px]' : 'w-[220px]'} bg-white dark:bg-gray-900 border-r border-gray-100/80 dark:border-gray-800 flex-col transition-all duration-200 flex-shrink-0`}
         style={{ boxShadow: '1px 0 0 0 #f0eef8' }}
       >
         <SidebarContent
@@ -439,7 +446,7 @@ export default function AppLayout({ children }) {
             onClick={() => setMobileOpen(false)}
           />
           {/* Painel */}
-          <aside className="absolute left-0 top-0 h-full w-[260px] bg-white shadow-2xl flex flex-col">
+          <aside className="absolute left-0 top-0 h-full w-[260px] bg-white dark:bg-gray-900 shadow-2xl flex flex-col">
             <SidebarContent
               {...sidebarProps}
               collapsed={false}
@@ -453,10 +460,10 @@ export default function AppLayout({ children }) {
       <main className="flex-1 overflow-y-auto flex flex-col min-w-0 pb-16 md:pb-0">
 
         {/* Header mobile */}
-        <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-gray-100 sticky top-0 z-30 flex-shrink-0">
+        <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
             <LogoA size={28} />
-            <span className="font-black text-gray-900 text-sm tracking-tight">jarbis</span>
+            <span className="font-black text-gray-900 dark:text-gray-100 text-sm tracking-tight">jarbis</span>
           </div>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
@@ -541,27 +548,27 @@ export default function AppLayout({ children }) {
       {notifOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)}>
           <div
-            className="absolute top-14 md:top-auto md:bottom-16 right-4 md:left-[228px] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+            className="absolute top-14 md:top-auto md:bottom-16 right-4 md:left-[228px] w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <span className="text-sm font-bold text-gray-900">Notificações</span>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Notificações</span>
               {unreadCount > 0 && (
                 <button onClick={markAllRead} className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors">
                   Marcar todas como lidas
                 </button>
               )}
             </div>
-            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
               {notifications.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-gray-400">Nenhuma notificação</div>
               ) : notifications.map(n => (
-                <div key={n.id} className={`px-4 py-3 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-violet-50/50' : ''}`}>
+                <div key={n.id} className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!n.read ? 'bg-violet-50/50 dark:bg-violet-900/20' : ''}`}>
                   <div className="flex items-start gap-2">
                     {!n.read && <span className="w-1.5 h-1.5 bg-violet-500 rounded-full mt-1.5 flex-shrink-0" />}
                     <div className={!n.read ? '' : 'pl-3.5'}>
-                      <div className="text-xs font-semibold text-gray-800">{n.title}</div>
-                      {n.body && <div className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.body}</div>}
+                      <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{n.title}</div>
+                      {n.body && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.body}</div>}
                       {n.link && (
                         <a href={n.link} className="text-xs text-violet-600 hover:underline mt-1 inline-block" onClick={() => setNotifOpen(false)}>
                           Ver mais →
