@@ -371,7 +371,7 @@ async def send_admin_invite_email(to_email: str, role_label: str, inviter_email:
       </p>
 
       <div style="text-align: center; margin-bottom: 28px;">
-        <a href="https://jarbis.cc/cadastro" style="display: inline-block; background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); color: white; font-size: 15px; font-weight: 700; padding: 16px 32px; border-radius: 12px; text-decoration: none; letter-spacing: -0.1px;">
+        <a href="https://jarbis.cc/signup" style="display: inline-block; background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); color: white; font-size: 15px; font-weight: 700; padding: 16px 32px; border-radius: 12px; text-decoration: none; letter-spacing: -0.1px;">
           Criar minha conta &rarr;
         </a>
       </div>
