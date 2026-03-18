@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
 
       // 3. Salvar token e redirecionar
       localStorage.setItem('jarbis_token', token)
-      router.replace('/admin')
+      window.location.href = '/admin'
     } catch {
       setError('Erro de conexão. Tente novamente.')
     } finally {
