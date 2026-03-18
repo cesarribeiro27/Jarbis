@@ -563,7 +563,7 @@ async def admin_delete_tenant(
     admin_data: tuple = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.modules.reports.models import Report, ReportBlock
+    from app.modules.reports.models import Report
     from app.modules.reports.dataset_models import ReportDataset
     from app.modules.reports.alert_models import ReportAlert
 
@@ -577,12 +577,7 @@ async def admin_delete_tenant(
     # Cascata manual: remove tudo vinculado ao tenant
     await db.execute(delete(ReportAlert).where(ReportAlert.tenant_id == tenant_id))
     await db.execute(delete(ReportDataset).where(ReportDataset.tenant_id == tenant_id))
-
-    reports = await db.scalars(select(Report).where(Report.tenant_id == tenant_id))
-    for r in reports:
-        await db.execute(delete(ReportBlock).where(ReportBlock.report_id == r.id))
     await db.execute(delete(Report).where(Report.tenant_id == tenant_id))
-
     await db.execute(delete(User).where(User.tenant_id == tenant_id))
     await db.delete(tenant)
     await db.commit()
