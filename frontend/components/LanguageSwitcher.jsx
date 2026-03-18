@@ -65,13 +65,13 @@ export default function LanguageSwitcher({ light = false, dropUp = false }) {
       </button>
 
       {open && (
-        <div className={`absolute right-0 w-40 rounded-xl bg-white border border-gray-100 shadow-lg shadow-gray-200/50 py-1 z-50 ${dropUp ? 'bottom-full mb-1' : 'mt-1'}`}>
+        <div className={`absolute left-0 w-44 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg shadow-gray-200/50 py-1 z-[200] ${dropUp ? 'bottom-full mb-1' : 'mt-1'}`}>
           {LANGS.map(lang => (
             <button
               key={lang.code}
               onClick={() => switchLocale(lang.code)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${
-                lang.code === locale ? 'text-violet-700 font-semibold' : 'text-gray-700'
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                lang.code === locale ? 'text-violet-700 dark:text-violet-400 font-semibold' : 'text-gray-700 dark:text-gray-300'
               }`}
             >
               <span>{lang.flag}</span>
