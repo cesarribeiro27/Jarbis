@@ -1663,6 +1663,20 @@ async def admin_mrr_history(
     }
 
 
+# ─── /admin/metrics/mrr-snapshots (reset) ─────────────────────────────────────
+
+@router.delete("/metrics/mrr-snapshots", summary="Limpar histórico MRR (reset)")
+async def admin_reset_mrr_snapshots(
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _, role = admin_data
+    _check_roles(role, {"full"})
+    await db.execute(delete(MrrSnapshot))
+    await db.commit()
+    return {"ok": True, "message": "Histórico MRR apagado. Novos snapshots serão gerados a partir de hoje."}
+
+
 # ─── /admin/metrics/retention ─────────────────────────────────────────────────
 
 @router.get("/metrics/retention", summary="Churn rate, LTV e métricas de retenção")
