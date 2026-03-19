@@ -1270,7 +1270,20 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           {/* Dataset selector */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">{t('block.labelDataSource')}</label>
-            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => onChange({ ...block, dataset_id: e.target.value || null, label_col: null, value_col: null, config: { ...(block.config || {}), dim_type: null, granularity: null } })}>
+            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => {
+              const newVal = e.target.value || null
+              const newDs = newVal ? datasets.find(d => d.id === newVal) : null
+              const updates = { ...block, dataset_id: newVal, label_col: null, value_col: null, config: { ...(block.config || {}), dim_type: null, granularity: null } }
+              // Auto-fill cols using column_types if available
+              if (newDs && newDs.columns && newDs.columns.length > 0) {
+                const dsColTypes = newDs.column_types || {}
+                const textCol = newDs.columns.find(c => dsColTypes[c] !== 'number')
+                if (textCol) updates.label_col = textCol
+                const numCol = newDs.columns.find(c => dsColTypes[c] === 'number')
+                if (numCol) { updates.value_col = numCol; updates.agg = 'sum' }
+              }
+              onChange(updates)
+            }}>
               <option value="">{t('block.placeholderDataset')}</option>
               {datasets.map(d => <option key={d.id} value={d.id}>{d.name} ({d.row_count?.toLocaleString()} linhas)</option>)}
             </select>
@@ -2363,30 +2376,47 @@ export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, o
 
                     return (
                       <div key={col}>
-                        <button
-                          onClick={() => {
-                            if (isDate) {
-                              setExpandedDates(prev => {
-                                const next = new Set(prev)
-                                if (next.has(key)) next.delete(key)
-                                else next.add(key)
-                                return next
-                              })
-                            }
-                            onAssignColumn?.(col, type, null, ds.id)
-                          }}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-violet-50 text-left transition-colors"
-                        >
-                          <span className={`text-[11px] font-bold w-5 text-center shrink-0 ${
-                            type === 'number' ? 'text-emerald-500' : type === 'date' ? 'text-blue-500' : 'text-gray-400'
-                          }`}>
-                            {type === 'number' ? '#' : type === 'date' ? '⊞' : 'Aa'}
-                          </span>
-                          <span className="text-xs text-gray-700 flex-1 truncate">{col}</span>
-                          {isDate && (
-                            <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                          )}
-                        </button>
+                        <div className="group flex items-center gap-1 rounded-lg hover:bg-violet-50 transition-colors">
+                          <button
+                            onClick={() => {
+                              if (isDate) {
+                                setExpandedDates(prev => {
+                                  const next = new Set(prev)
+                                  if (next.has(key)) next.delete(key)
+                                  else next.add(key)
+                                  return next
+                                })
+                              }
+                              onAssignColumn?.(col, type, null, ds.id)
+                            }}
+                            className="flex-1 flex items-center gap-2 px-2 py-1.5 text-left"
+                          >
+                            <span className={`text-[11px] font-bold w-5 text-center shrink-0 rounded px-0.5 ${
+                              type === 'number' ? 'text-green-600 bg-green-50' : type === 'date' ? 'text-orange-600 bg-orange-50' : 'text-blue-600 bg-blue-50'
+                            }`}>
+                              {type === 'number' ? '#' : type === 'date' ? '📅' : 'A'}
+                            </span>
+                            <span className="text-xs text-gray-700 flex-1 truncate">{col}</span>
+                            {isDate && (
+                              <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                            )}
+                          </button>
+                          {/* Quick assign buttons — visible on hover */}
+                          <div className="flex gap-0.5 pr-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            {type !== 'number' && (
+                              <button
+                                onClick={e => { e.stopPropagation(); onAssignColumn?.(col, type === 'date' ? 'date' : 'text', null, ds.id) }}
+                                title="Atribuir como Dimensão"
+                                className="px-1.5 py-0.5 text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 rounded hover:bg-violet-100 transition-colors"
+                              >Dim</button>
+                            )}
+                            <button
+                              onClick={e => { e.stopPropagation(); onAssignColumn?.(col, 'number', null, ds.id) }}
+                              title="Atribuir como Métrica"
+                              className="px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors"
+                            >Mét</button>
+                          </div>
+                        </div>
                         {isDate && isExpanded && (
                           <div className="ml-7 mb-1 space-y-0.5">
                             {GRANULARITIES.map(g => (
@@ -2541,12 +2571,12 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             key={block.id}
             className={`group relative rounded-xl flex flex-col transition-all duration-200 ${
               isSelected
-                ? 'border-2 border-violet-500 shadow-[0_0_0_4px_rgba(139,92,246,0.12)] shadow-violet-100'
+                ? 'ring-2 ring-purple-500 ring-offset-1 shadow-lg border border-transparent'
                 : isCrossFiltered
                 ? 'border-2 border-emerald-400 shadow-[0_4px_16px_rgba(52,211,153,0.2)]'
                 : isUnrelated
                 ? 'border border-gray-200/60 opacity-35'
-                : 'border border-gray-200/70 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] hover:border-violet-200/60 hover:-translate-y-px'
+                : 'border border-gray-200/70 shadow-sm hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] hover:border-violet-200/60 hover:-translate-y-px'
             }`}
             style={{
               backgroundColor: isCrossFiltered
@@ -2565,10 +2595,35 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
+            {/* Quick chart type switcher — shown above selected block in edit mode */}
+            {!readOnly && isSelected && ['bar','line','pie','area','bar_h'].includes(block.type) && (
+              <div
+                className="absolute -top-9 left-0 bg-white rounded-lg shadow-lg border border-gray-200 flex items-center px-1 py-1 gap-0.5 z-50"
+                onClick={e => e.stopPropagation()}
+              >
+                {[
+                  { type: 'bar',   icon: TYPE_ICONS.bar,   label: 'Barras' },
+                  { type: 'bar_h', icon: TYPE_ICONS.bar_h, label: 'Barras H.' },
+                  { type: 'line',  icon: TYPE_ICONS.line,  label: 'Linha' },
+                  { type: 'area',  icon: TYPE_ICONS.area,  label: 'Área' },
+                  { type: 'pie',   icon: TYPE_ICONS.pie,   label: 'Pizza' },
+                ].map(({ type, icon, label }) => (
+                  <button
+                    key={type}
+                    title={label}
+                    onClick={() => onChange(blocks.map(b => b.id === block.id ? { ...b, type } : b))}
+                    className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${block.type === type ? 'bg-purple-100 text-purple-700 font-bold' : 'hover:bg-gray-100 text-gray-500'}`}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Header */}
             <div className={`flex items-center gap-2 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''} ${block.config?.hide_header ? 'px-1 pt-1 pb-0 h-3 overflow-hidden' : 'px-3 pt-3 pb-1.5'}`}>
               {!readOnly && (
-                <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400 shrink-0 transition-colors" viewBox="0 0 10 16" fill="currentColor">
+                <svg className={`w-3.5 h-3.5 shrink-0 transition-colors ${isSelected ? 'text-purple-400' : 'text-gray-200 group-hover:text-gray-400'}`} viewBox="0 0 10 16" fill="currentColor">
                   <circle cx="2" cy="3" r="1.5"/><circle cx="8" cy="3" r="1.5"/>
                   <circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/>
                   <circle cx="2" cy="13" r="1.5"/><circle cx="8" cy="13" r="1.5"/>
@@ -2698,6 +2753,13 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
               </div>
+            )}
+            {/* Binding Mode — drop zone borders */}
+            {bindingMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && isSelected && (
+              <div className="absolute inset-0 rounded-lg border-2 border-dashed border-purple-400 pointer-events-none z-10 animate-pulse" />
+            )}
+            {bindingMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && !isSelected && (
+              <div className="absolute inset-0 rounded-lg border-2 border-dashed border-gray-200 pointer-events-none z-10" />
             )}
             {/* Binding Mode Overlay */}
             {bindingMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && (

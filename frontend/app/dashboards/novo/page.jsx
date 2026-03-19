@@ -522,18 +522,35 @@ const TPL_COLORS = {
   operacoes_noc:  'from-slate-50 to-gray-50',
 }
 
+const CATEGORY_FILTERS = [
+  { label: 'Todos',      value: null },
+  { label: 'Vendas',     value: 'vendas' },
+  { label: 'Marketing',  value: 'marketing' },
+  { label: 'RH',         value: 'rh' },
+  { label: 'E-commerce', value: 'ecommerce' },
+  { label: 'Logística',  value: 'logística' },
+  { label: 'Finanças',   value: 'finanças' },
+  { label: 'Educação',   value: 'educação' },
+]
+
 function TemplateGallery({ onSelect }) {
   const t = useTranslations('dashboardNovo')
   const [search, setSearch] = useState('')
-  const filtered = TEMPLATES.filter(t =>
-    !search || t.title.toLowerCase().includes(search.toLowerCase()) ||
-    (t.tags || []).some(tag => tag.includes(search.toLowerCase()))
-  )
+  const [activeCategory, setActiveCategory] = useState(null)
+
+  const filtered = TEMPLATES.filter(tpl => {
+    const matchSearch = !search ||
+      tpl.title.toLowerCase().includes(search.toLowerCase()) ||
+      (tpl.tags || []).some(tag => tag.includes(search.toLowerCase()))
+    const matchCat = !activeCategory ||
+      (tpl.tags || []).some(tag => tag.toLowerCase().includes(activeCategory))
+    return matchSearch && matchCat
+  })
 
   return (
     <div className="min-h-screen bg-[#f8f7fc] flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 h-[60px] flex items-center gap-3 shrink-0">
+      {/* Top nav bar */}
+      <div className="bg-white border-b border-gray-100 px-6 h-[60px] flex items-center gap-3 shrink-0 shadow-sm">
         <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center shadow-sm shadow-violet-200">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="white"/>
@@ -545,54 +562,108 @@ function TemplateGallery({ onSelect }) {
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-8 py-10">
+        <div className="max-w-6xl mx-auto px-6 sm:px-10 py-10">
+
+          {/* Hero header */}
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-black text-gray-900 mb-2">{t('gallery.title')}</h1>
-            <p className="text-sm text-gray-500 mb-5">{t('gallery.subtitle')}</p>
-            <div className="relative max-w-xs mx-auto">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Escolha um ponto de partida</h1>
+            <p className="text-sm text-gray-500 mb-6">Selecione um template ou comece em branco</p>
+            <div className="relative max-w-sm mx-auto">
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               <input
                 type="text"
                 placeholder={t('gallery.searchPlaceholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent shadow-sm"
               />
             </div>
           </div>
 
+          {/* Category filter chips */}
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-1 scrollbar-hide">
+            {CATEGORY_FILTERS.map(cat => (
+              <button
+                key={cat.label}
+                onClick={() => setActiveCategory(cat.value)}
+                className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all duration-150 ${
+                  activeCategory === cat.value
+                    ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-violet-300 hover:text-violet-600'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Template grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map(tpl => {
               const preview = TPL_PREVIEWS[tpl.id]
               const gradientClass = TPL_COLORS[tpl.id] || 'from-gray-50 to-gray-100'
+              const isBlank = tpl.id === 'blank'
+
+              if (isBlank) {
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => onSelect(tpl)}
+                    className="group text-left bg-white border-2 border-dashed border-gray-200 rounded-2xl overflow-hidden hover:border-violet-400 hover:shadow-md hover:shadow-violet-100 transition-all duration-200 flex flex-col"
+                  >
+                    <div className="w-full h-32 flex flex-col items-center justify-center gap-2 bg-gray-50 group-hover:bg-violet-50 transition-colors">
+                      <div className="w-10 h-10 rounded-xl border-2 border-dashed border-gray-300 group-hover:border-violet-400 flex items-center justify-center transition-colors">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" className="group-hover:stroke-violet-500 transition-colors"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <p className="font-bold text-gray-800 group-hover:text-violet-700 transition-colors text-sm mb-1">Em branco</p>
+                      <p className="text-xs text-gray-400">Comece do zero</p>
+                    </div>
+                  </button>
+                )
+              }
+
               return (
                 <button
                   key={tpl.id}
                   onClick={() => onSelect(tpl)}
-                  className="group text-left bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 transition-all duration-200"
+                  className="group text-left bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  {/* Preview ilustrado */}
+                  {/* Illustrated preview */}
                   <div className={`w-full h-32 bg-gradient-to-br ${gradientClass} overflow-hidden relative`}>
                     {preview}
+                    {/* Icon top-right corner */}
+                    {tpl.icon && (
+                      <div className="absolute top-2 left-2 text-base leading-none select-none pointer-events-none drop-shadow-sm">
+                        {tpl.icon}
+                      </div>
+                    )}
+                    {/* Badges */}
                     {tpl.badges && tpl.badges.length > 0 && (
                       <div className="absolute top-2 right-2 flex gap-1">
-                        {tpl.badges.slice(0,2).map(b => (
-                          <span key={b} className="text-[9px] bg-violet-600 text-white font-bold px-1.5 py-0.5 rounded-full capitalize">{b}</span>
+                        {tpl.badges.slice(0, 2).map(b => (
+                          <span key={b} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize ${b === 'popular' ? 'bg-amber-500 text-white' : 'bg-violet-600 text-white'}`}>{b === 'popular' ? 'Popular' : b === 'novo' ? 'Novo' : b}</span>
                         ))}
                       </div>
                     )}
+                    {/* Hover overlay with CTA */}
+                    <div className="absolute inset-0 bg-violet-900/0 group-hover:bg-violet-900/10 transition-colors duration-200 flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-violet-600 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-lg">
+                        Usar template
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Info */}
+                  {/* Card info */}
                   <div className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base leading-none">{tpl.icon}</span>
+                    <div className="flex items-start justify-between gap-2 mb-1">
                       <p className="font-bold text-gray-900 group-hover:text-violet-700 transition-colors text-sm leading-tight">{tpl.title}</p>
                     </div>
-                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{tpl.description}</p>
-                    <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed mb-3">{tpl.description}</p>
+                    <div className="flex items-center justify-between">
                       <div className="flex flex-wrap gap-1">
-                        {(tpl.tags || []).slice(0,2).map(tag => (
+                        {(tpl.tags || []).slice(0, 2).map(tag => (
                           <span key={tag} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">{tag}</span>
                         ))}
                       </div>
@@ -605,6 +676,13 @@ function TemplateGallery({ onSelect }) {
               )
             })}
           </div>
+
+          {filtered.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-gray-400 text-sm">Nenhum template encontrado para <strong>{search || activeCategory}</strong></p>
+              <button onClick={() => { setSearch(''); setActiveCategory(null) }} className="mt-3 text-violet-600 text-sm hover:underline">Limpar filtros</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
