@@ -6,7 +6,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const WELCOME = {
   role: 'assistant',
-  content: 'Olá! Sou o assistente de suporte do Jarbis. Como posso te ajudar?',
+  content: 'Olá! Sou o assistente do Jarbis. Como posso te ajudar?',
+}
+
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('jarbis_token')}`,
+  }
 }
 
 export default function SupportChat() {
@@ -14,6 +21,7 @@ export default function SupportChat() {
   const [messages, setMessages] = useState([WELCOME])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [usage, setUsage] = useState(null) // { used, limit, remaining, plan }
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -25,10 +33,18 @@ export default function SupportChat() {
     if (open) textareaRef.current?.focus()
   }, [open])
 
+  // Busca uso ao abrir o chat
+  useEffect(() => {
+    if (!open) return
+    fetch(`${API_URL}/support/usage`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setUsage(data) })
+      .catch(() => {})
+  }, [open])
+
   const send = async () => {
     if (!input.trim() || loading) return
     const userMsg = { role: 'user', content: input.trim() }
-    // histórico sem a mensagem de boas-vindas inicial
     const history = messages.slice(1)
     setMessages(prev => [...prev, userMsg])
     setInput('')
@@ -36,15 +52,23 @@ export default function SupportChat() {
     try {
       const res = await fetch(`${API_URL}/support/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jarbis_token')}`,
-        },
+        headers: authHeaders(),
         body: JSON.stringify({ message: userMsg.content, history }),
       })
+      if (res.status === 402) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '⚠️ Você atingiu o limite de mensagens deste mês. Faça upgrade do seu plano para continuar usando o assistente.',
+        }])
+        return
+      }
       if (!res.ok) throw new Error('error')
       const data = await res.json()
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      // Atualiza badge de uso
+      if (data.limit > 0) {
+        setUsage(prev => prev ? { ...prev, used: data.used, remaining: data.limit - data.used } : null)
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Erro ao conectar. Tente novamente.' }])
     } finally {
@@ -58,6 +82,12 @@ export default function SupportChat() {
       send()
     }
   }
+
+  // Badge de uso: só exibe para planos com limite definido (Solo)
+  const showBadge = usage && usage.limit > 0
+  const badgeColor = !showBadge ? '' :
+    usage.remaining === 0 ? 'text-red-500' :
+    usage.remaining <= 10 ? 'text-amber-500' : 'text-emerald-500'
 
   return (
     <>
@@ -93,18 +123,25 @@ export default function SupportChat() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900 leading-none">Suporte Jarbis</p>
+              <p className="text-sm font-semibold text-gray-900 leading-none">Assistente Jarbis</p>
               <p className="text-[10px] text-emerald-500 mt-0.5">Online</p>
             </div>
           </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {showBadge && (
+              <span className={`text-[10px] font-medium ${badgeColor}`}>
+                {usage.remaining}/{usage.limit} msgs
+              </span>
+            )}
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mensagens */}
@@ -136,31 +173,40 @@ export default function SupportChat() {
 
         {/* Input */}
         <div className="px-3 pb-3 pt-2 border-t border-gray-100 shrink-0">
-          <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-200 focus-within:border-indigo-300 transition-colors">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Mensagem..."
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 resize-none outline-none max-h-28 leading-relaxed"
-              style={{ height: 'auto', minHeight: '20px' }}
-              onInput={e => {
-                e.target.style.height = 'auto'
-                e.target.style.height = e.target.scrollHeight + 'px'
-              }}
-            />
-            <button
-              onClick={send}
-              disabled={!input.trim() || loading}
-              className="shrink-0 w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19V5m0 0l-7 7m7-7l7 7" />
-              </svg>
-            </button>
-          </div>
+          {usage?.remaining === 0 && usage?.limit > 0 ? (
+            <div className="text-center py-2">
+              <p className="text-xs text-red-500 font-medium">Limite mensal atingido</p>
+              <a href="/configuracoes/planos" className="text-xs text-indigo-600 hover:underline">
+                Fazer upgrade →
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-200 focus-within:border-indigo-300 transition-colors">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder="Mensagem..."
+                rows={1}
+                className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 resize-none outline-none max-h-28 leading-relaxed"
+                style={{ height: 'auto', minHeight: '20px' }}
+                onInput={e => {
+                  e.target.style.height = 'auto'
+                  e.target.style.height = e.target.scrollHeight + 'px'
+                }}
+              />
+              <button
+                onClick={send}
+                disabled={!input.trim() || loading}
+                className="shrink-0 w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19V5m0 0l-7 7m7-7l7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
           <p className="text-[10px] text-gray-300 text-center mt-1.5">Enter para enviar · Shift+Enter para nova linha</p>
         </div>
       </div>

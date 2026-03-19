@@ -153,6 +153,34 @@ async def check_ai_query_limit(
         )
 
 
+async def check_halp_limit(
+    db: AsyncSession, tenant_id: uuid.UUID, plan: str
+) -> None:
+    """Verifica se o tenant pode usar o Halp com IA. Retorna True se pode chamar IA, False se é FAQ fixo."""
+    from app.modules.support.models import HalpUsageLog
+
+    limits = PLANS.get(plan, PLANS["free"])
+    max_halp = limits.max_halp_monthly
+
+    if max_halp == -1:
+        return  # ilimitado
+    if max_halp == 0:
+        raise PlanLimitError("halp_faq_only")  # Free: sinaliza FAQ fixo
+
+    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    count = await db.scalar(
+        select(func.count()).select_from(HalpUsageLog).where(
+            HalpUsageLog.tenant_id == tenant_id,
+            HalpUsageLog.created_at >= month_start,
+        )
+    )
+    if (count or 0) >= max_halp:
+        raise PlanLimitError(
+            f"Limite de {max_halp} mensagens do Halp por mês atingido no plano {PLAN_NAMES.get(plan, plan)}. "
+            f"Faça upgrade para continuar usando o assistente."
+        )
+
+
 def _next_plan(current: str) -> str:
     order = ["free", "solo", "equipe", "ilimitado", "enterprise"]
     idx = order.index(current) if current in order else 0
