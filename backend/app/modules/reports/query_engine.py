@@ -273,15 +273,17 @@ def execute_query(rows: list[dict], req: QueryRequest) -> QueryResult:
     if not filtered:
         return QueryResult(data=[], total_rows=0, columns=[])
 
-    # 3. Determinar dimensão principal (primeira da lista)
+    # 3. Determinar dimensão principal (primeira da lista) e dimensões extras
     dim = req.dimensions[0] if req.dimensions else None
+    extra_dims = req.dimensions[1:] if len(req.dimensions) > 1 else []
 
     # 4. Agrupar e agregar
     groups: dict[str, dict[str, list]] = {}  # key -> {col -> [values]}
     dim_labels: dict[str, str] = {}  # key -> label legível
+    extra_dim_vals: dict[str, dict[str, str]] = {}  # key -> {extra_col: value}
 
     for row in filtered:
-        # Calcular chave de agrupamento
+        # Calcular chave de agrupamento (dimensão principal)
         if dim is None:
             key = "_total_"
             label = "Total"
@@ -298,7 +300,22 @@ def execute_query(rows: list[dict], req: QueryRequest) -> QueryResult:
             key = str(raw) if raw is not None else "(vazio)"
             label = key
 
+        # Se há dimensões extras, incluir no agrupamento composto
+        if extra_dims:
+            extra_parts = []
+            for ed in extra_dims:
+                ev = str(row.get(ed.column, "")) if row.get(ed.column) is not None else "(vazio)"
+                extra_parts.append(ev)
+            key = key + "\x00" + "\x00".join(extra_parts)
+
         dim_labels[key] = label
+
+        # Guardar valores das dimensões extras para incluir no resultado
+        if extra_dims and key not in extra_dim_vals:
+            extra_dim_vals[key] = {}
+            for ed in extra_dims:
+                ev = str(row.get(ed.column, "")) if row.get(ed.column) is not None else "(vazio)"
+                extra_dim_vals[key][ed.column] = ev
 
         if key not in groups:
             groups[key] = {m.column: [] for m in req.metrics}
@@ -332,8 +349,13 @@ def execute_query(rows: list[dict], req: QueryRequest) -> QueryResult:
     if req.limit and req.limit > 0:
         data = data[:req.limit]
 
-    # 9. Limpar _key interno
+    # 9. Adicionar colunas de dimensões extras e limpar _key interno
     for r in data:
+        if extra_dims:
+            composite_key = r.get("_key", "")
+            ev = extra_dim_vals.get(composite_key, {})
+            for ed in extra_dims:
+                r[ed.column] = ev.get(ed.column, "")
         r.pop("_key", None)
 
     # 10. Comparação de período anterior (opcional)

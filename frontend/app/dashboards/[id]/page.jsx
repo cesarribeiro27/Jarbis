@@ -123,7 +123,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
     if (!q) setQuestion('')
     try {
       const result = await api.reports.aiQuery(datasetId, qText)
-      setHistory(h => h.map(e => e.id === entry.id ? { ...e, answer: result.answer } : e))
+      setHistory(h => h.map(e => e.id === entry.id ? { ...e, answer: result.answer, aiResult: result, datasetId } : e))
       api.reports.aiUsage().then(setAiUsage).catch(() => {})
     } catch (e) {
       setHistory(h => h.map(e => e.id === entry.id ? { ...e, error: e.message } : e))
@@ -225,6 +225,35 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
                       {entry.answer ? (
                         <div className="bg-violet-50 px-3 py-2.5">
                           <p className="text-sm text-violet-900 leading-relaxed">{entry.answer}</p>
+                          {entry.aiResult?.suggested_chart_type && onAddBlock && (
+                            <button
+                              onClick={() => {
+                                const newB = {
+                                  id: crypto.randomUUID(),
+                                  type: entry.aiResult.suggested_chart_type || 'bar',
+                                  title: entry.aiResult.suggested_title || 'Gráfico AI',
+                                  dataset_id: entry.datasetId || null,
+                                  label_col: entry.aiResult.suggested_config?.label_col || null,
+                                  value_col: entry.aiResult.suggested_config?.value_col || null,
+                                  agg: 'sum',
+                                  config: {
+                                    label_col: entry.aiResult.suggested_config?.label_col || '',
+                                    value_col: entry.aiResult.suggested_config?.value_col || '',
+                                    agg: 'sum',
+                                  },
+                                  layout: { x: 0, y: 999, w: 6, h: 4 },
+                                }
+                                onAddBlock(newB)
+                                onClose()
+                              }}
+                              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                              Adicionar {entry.aiResult.suggested_chart_type} ao dashboard
+                            </button>
+                          )}
                         </div>
                       ) : entry.error ? (
                         <div className="bg-red-50 px-3 py-2.5">
@@ -491,6 +520,10 @@ export default function DashboardDetailPage() {
   const [mode, setMode] = useState('view')
   const [pages, setPages] = useState([])
   const [activePageId, setActivePageId] = useState(null)
+  // Undo/Redo history for pages state in edit mode
+  const [pagesHistory, setPagesHistory] = useState([])
+  const [pagesHistoryIndex, setPagesHistoryIndex] = useState(-1)
+  const MAX_HISTORY = 20
   const [renamingPageId, setRenamingPageId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -510,6 +543,7 @@ export default function DashboardDetailPage() {
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [nearLimit, setNearLimit] = useState(false)
+  const [exportingPDF, setExportingPDF] = useState(false)
   const addMenuRef = useRef()
 
   useEffect(() => {
@@ -546,6 +580,40 @@ export default function DashboardDetailPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Undo/Redo keyboard handler
+  useEffect(() => {
+    if (mode !== 'edit') return
+    function handleKey(e) {
+      const isMac = navigator.platform.toUpperCase().includes('MAC')
+      const ctrl = isMac ? e.metaKey : e.ctrlKey
+      if (!ctrl) return
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        setPagesHistoryIndex(prev => {
+          const nextIdx = prev - 1
+          if (nextIdx >= 0 && pagesHistory[nextIdx]) {
+            setPages(JSON.parse(JSON.stringify(pagesHistory[nextIdx])))
+            return nextIdx
+          }
+          return prev
+        })
+      }
+      if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+        e.preventDefault()
+        setPagesHistoryIndex(prev => {
+          const nextIdx = prev + 1
+          if (nextIdx < pagesHistory.length && pagesHistory[nextIdx]) {
+            setPages(JSON.parse(JSON.stringify(pagesHistory[nextIdx])))
+            return nextIdx
+          }
+          return prev
+        })
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [mode, pagesHistory, pagesHistoryIndex])
+
   useEffect(() => {
     api.billing.status().then(data => {
       if (!data?.usage || !data?.limits) return
@@ -560,7 +628,16 @@ export default function DashboardDetailPage() {
   const blocks = pages.find(p => p.id === activePageId)?.blocks || []
 
   function setBlocks(newBlocks) {
-    setPages(prev => prev.map(p => p.id === activePageId ? { ...p, blocks: newBlocks } : p))
+    setPages(prev => {
+      const next = prev.map(p => p.id === activePageId ? { ...p, blocks: newBlocks } : p)
+      // Push to undo history whenever blocks change
+      setPagesHistory(h => {
+        const trimmed = h.slice(0, pagesHistoryIndex + 1)
+        return [...trimmed, JSON.parse(JSON.stringify(next))].slice(-MAX_HISTORY)
+      })
+      setPagesHistoryIndex(i => Math.min(i + 1, MAX_HISTORY - 1))
+      return next
+    })
   }
 
   function enterEditMode() {
@@ -568,6 +645,9 @@ export default function DashboardDetailPage() {
     const rawPs = (report.pages && report.pages.length > 0) ? JSON.parse(JSON.stringify(report.pages)) : [{ id: 'page_1', title: '', blocks: JSON.parse(JSON.stringify(report.blocks || [])) }]
     const ps = rawPs.map(p => ({ ...p, title: normalizePageTitle(p.title) }))
     setPages(ps); setActivePageId(ps[0].id)
+    // Reset undo/redo history on enter edit
+    setPagesHistory([JSON.parse(JSON.stringify(ps))])
+    setPagesHistoryIndex(0)
     setEditTitle(report.title); setEditDescription(report.description || '')
     setSelectedBlockId(null); setSidebarOpen(false); setSidePanel(null); setMode('edit')
   }
@@ -632,6 +712,39 @@ export default function DashboardDetailPage() {
     const block = newBlock(type, BLOCK_TYPES)
     setBlocks([...blocks, block])
     setSelectedBlockId(block.id)
+  }
+
+  function addBlockObject(block) {
+    setBlocks([...blocks, block])
+    setSelectedBlockId(block.id)
+  }
+
+  async function exportPDF() {
+    const canvas = document.querySelector('.report-canvas')
+    if (!canvas) return
+    const { default: html2canvas } = await import('html2canvas')
+    const { default: jsPDF } = await import('jspdf')
+    setExportingPDF(true)
+    try {
+      const canvasEl = await html2canvas(canvas, {
+        scale: 1.5,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        windowWidth: canvas.scrollWidth,
+        windowHeight: canvas.scrollHeight,
+      })
+      const imgData = canvasEl.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: canvasEl.width > canvasEl.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvasEl.width / 1.5, canvasEl.height / 1.5],
+      })
+      pdf.addImage(imgData, 'PNG', 0, 0, canvasEl.width / 1.5, canvasEl.height / 1.5)
+      pdf.save(`${(displayReport ?? report)?.title || 'dashboard'}.pdf`)
+    } finally {
+      setExportingPDF(false)
+    }
   }
 
   function updateActiveBlock(updated) {
@@ -733,6 +846,36 @@ export default function DashboardDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Undo / Redo buttons */}
+          <button
+            title="Desfazer (Ctrl+Z)"
+            onClick={() => {
+              const nextIdx = pagesHistoryIndex - 1
+              if (nextIdx >= 0 && pagesHistory[nextIdx]) {
+                setPages(JSON.parse(JSON.stringify(pagesHistory[nextIdx])))
+                setPagesHistoryIndex(nextIdx)
+              }
+            }}
+            disabled={pagesHistoryIndex <= 0}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+          </button>
+          <button
+            title="Refazer (Ctrl+Y)"
+            onClick={() => {
+              const nextIdx = pagesHistoryIndex + 1
+              if (nextIdx < pagesHistory.length && pagesHistory[nextIdx]) {
+                setPages(JSON.parse(JSON.stringify(pagesHistory[nextIdx])))
+                setPagesHistoryIndex(nextIdx)
+              }
+            }}
+            disabled={pagesHistoryIndex >= pagesHistory.length - 1}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
+          </button>
 
           {/* Dashboard title in center */}
           <div className="flex-1 flex justify-center min-w-0 px-4">
@@ -860,7 +1003,7 @@ export default function DashboardDetailPage() {
             setShowAiPanel={setShowAiPanel}
           />
         </div>
-        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} />}
+        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} />}
       </div>
     )
   }
@@ -888,6 +1031,23 @@ export default function DashboardDetailPage() {
             {(displayReport ?? report).description && <p className="text-sm text-gray-500 mt-1">{(displayReport ?? report).description}</p>}
           </div>
           <div className="flex gap-2 flex-wrap items-center">
+            <button
+              onClick={exportPDF}
+              disabled={exportingPDF}
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50"
+              title="Exportar como PDF"
+            >
+              {exportingPDF ? (
+                <span className="text-xs text-gray-500">Gerando...</span>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>PDF</span>
+                </>
+              )}
+            </button>
             <button onClick={enterEditMode} className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">{t('edit')}</button>
             <button onClick={() => setShowAiPanel(true)} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>

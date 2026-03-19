@@ -45,6 +45,8 @@ const BLOCK_TYPES = [
   { type: 'table',       label: 'Tabela',      desc: 'Dados em linhas' },
   { type: 'funnel',      label: 'Funil',       desc: 'Funil de conversão' },
   { type: 'map',         label: 'Mapa BR',     desc: 'Mapa por estado' },
+  { type: 'bar_stacked', label: 'Barras Emp.', desc: 'Barras empilhadas' },
+  { type: 'area_stacked',label: 'Área Emp.',   desc: 'Área empilhada' },
   { type: 'text',        label: 'Texto',       desc: 'Comentários' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
@@ -71,6 +73,8 @@ const TYPE_ICONS = {
   slider:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>,
   funnel:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18l-7 9v7l-4-2v-5L3 4z" /></svg>,
   map:         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>,
+  bar_stacked: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="14" width="4" height="7" rx="1" strokeWidth={1.5}/><rect x="3" y="9" width="4" height="5" rx="0" strokeWidth={1.5}/><rect x="10" y="10" width="4" height="11" rx="1" strokeWidth={1.5}/><rect x="10" y="5" width="4" height="5" rx="0" strokeWidth={1.5}/><rect x="17" y="12" width="4" height="9" rx="1" strokeWidth={1.5}/><rect x="17" y="7" width="4" height="5" rx="0" strokeWidth={1.5}/></svg>,
+  area_stacked: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 18l4-6 4 3 4-7 4 4v6H3z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13l4-4 4 2 4-5 4 3" opacity=".5"/></svg>,
 }
 
 
@@ -142,12 +146,18 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
     })
   }
 
+  const dims = [{
+    column: effectiveLabelCol,
+    type: block.config?.dim_type || 'text',
+    granularity: block.config?.granularity || null,
+  }]
+  // For stacked charts, add series_col as a second dimension
+  if (['bar_stacked', 'area_stacked'].includes(block.type) && block.config?.series_col) {
+    dims.push({ column: block.config.series_col, type: 'text', granularity: null })
+  }
+
   const req = {
-    dimensions: [{
-      column: effectiveLabelCol,
-      type: block.config?.dim_type || 'text',
-      granularity: block.config?.granularity || null,
-    }],
+    dimensions: dims,
     metrics: [{
       column: block.value_col,
       aggregation: block.agg || 'sum',
@@ -1043,6 +1053,68 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return <TableBlock block={block} data={data} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} vs={vs} />
   }
 
+  if (block.type === 'bar_stacked' || block.type === 'area_stacked') {
+    const seriesCol = config.series_col
+    if (!seriesCol) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-1.5 px-3 text-center">
+          <p className="text-[10px] text-gray-300">Configure a Coluna de Série no painel lateral</p>
+        </div>
+      )
+    }
+    // pivot: label_col → { label, [seriesValue]: sumOfValueCol }
+    const pivotMap = {}
+    for (const row of data) {
+      const label = String(row.label ?? '')
+      const series = String(row[seriesCol] ?? row.series ?? '')
+      const val = parseFloat(row.value ?? 0) || 0
+      if (!pivotMap[label]) pivotMap[label] = { label }
+      pivotMap[label][series] = (pivotMap[label][series] || 0) + val
+    }
+    const pivotData = Object.values(pivotMap)
+    const seriesValues = [...new Set(data.map(r => String(r[seriesCol] ?? r.series ?? '')))]
+
+    if (block.type === 'bar_stacked') return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={pivotData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+              <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
+              {seriesValues.map((s, i) => (
+                <Bar key={s} dataKey={s} stackId="a" fill={palette[i % palette.length]} radius={i === seriesValues.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} maxBarSize={52} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
+
+    if (block.type === 'area_stacked') return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={pivotData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+              <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
+              {seriesValues.map((s, i) => (
+                <Area key={s} type="monotone" dataKey={s} stackId="a" stroke={palette[i % palette.length]} fill={palette[i % palette.length]} fillOpacity={0.6} strokeWidth={1.5} dot={false} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
+  }
+
   return null
 }
 
@@ -1134,7 +1206,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
   const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
   const hasData = !['text', 'filter', 'image', 'slider'].includes(block.type)
-  const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer'].includes(block.type)
+  const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
   const COL_TYPE_BADGE = { text: 'Aa', number: '#', date: '📅' }
@@ -1521,6 +1593,21 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
                   <button key={c} onClick={() => updConfig('color', c)} className={`w-6 h-6 rounded-full transition-transform hover:scale-110 ${block.config?.color === c ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`} style={{ backgroundColor: c }} />
                 ))}
               </div>
+            </div>
+          )}
+          {/* Coluna de série — bar_stacked / area_stacked */}
+          {['bar_stacked', 'area_stacked'].includes(block.type) && selectedDataset && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna de Série (cor)</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value={block.config?.series_col || ''}
+                onChange={e => updConfig('series_col', e.target.value || null)}
+              >
+                <option value="">— selecionar —</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <p className="text-[10px] text-gray-400 mt-1">Coluna com os valores que separam as séries (ex: produto, região)</p>
             </div>
           )}
           {['bar', 'bar_h', 'pie', 'scatter', 'combo', 'bubble', 'treemap'].includes(block.type) && (
@@ -2532,14 +2619,14 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   }
 
   if (blocks.length === 0) return (
-    <div style={sheetStyle} ref={sheetRef} className="flex flex-col items-center justify-center gap-3 py-24 text-center">
+    <div style={sheetStyle} ref={sheetRef} className="report-canvas flex flex-col items-center justify-center gap-3 py-24 text-center">
       <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
       <p className="text-sm text-gray-400">{t('builder.emptyHint')}</p>
     </div>
   )
 
   return (
-    <div style={sheetStyle} ref={sheetRef}>
+    <div style={sheetStyle} ref={sheetRef} className="report-canvas">
     <GridLayout key={isMobile ? 'mobile' : 'desktop'} className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: 52, margin: [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={noCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)} onDragStart={() => setIsDragging(true)}>
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
@@ -2744,6 +2831,21 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </button>
+                {block.dataset_id && block.label_col && block.value_col && !['text','filter','slider','image'].includes(block.type) && (
+                  <button
+                    title="Exportar dados como CSV"
+                    onClick={async e => {
+                      e.stopPropagation()
+                      try {
+                        const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
+                        downloadCSV(rows, block.title)
+                      } catch {}
+                    }}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11h6" /></svg>
+                  </button>
+                )}
                 <div className="h-px bg-gray-100 mx-1" />
                 <button
                   title={t('builder.tooltipDelete')}

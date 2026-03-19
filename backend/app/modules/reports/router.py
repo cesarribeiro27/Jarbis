@@ -28,10 +28,12 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cache_get, cache_set, get_redis
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
 from app.modules.tenants.models import User
@@ -106,6 +108,34 @@ class ApiDatasetCreate(BaseModel):
         return self.headers or self.api_headers
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
+
+_CACHE_TTL = 300  # 5 minutos
+
+
+def _make_cache_key(dataset_id: str, query_params: dict, version: str = "") -> str:
+    """Gera chave MD5 determinística para cache de query de dataset.
+
+    O campo `version` permite invalidar todo o cache de um dataset de uma vez:
+    basta mudar a versão armazenada em Redis (chave jarbis:ds_version:{dataset_id}).
+    """
+    params_str = json.dumps(query_params, sort_keys=True, default=str)
+    h = hashlib.md5(f"query:{dataset_id}:{version}:{params_str}".encode()).hexdigest()
+    return f"jarbis:query:{h}"
+
+
+async def _get_dataset_version(redis, dataset_id: str) -> str:
+    """Retorna a versão atual do dataset (usada para invalidação de cache)."""
+    key = f"jarbis:ds_version:{dataset_id}"
+    version = await redis.get(key)
+    return version or "0"
+
+
+async def _bump_dataset_version(redis, dataset_id: str) -> None:
+    """Incrementa a versão do dataset, invalidando todo o cache de queries associado."""
+    key = f"jarbis:ds_version:{dataset_id}"
+    await redis.incr(key)
+    # Mantém a chave de versão por 24h para não acumular entradas obsoletas
+    await redis.expire(key, 86400)
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +263,27 @@ async def public_query_dataset(
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
-    return dataset_service.query(ds, label_col, value_col, agg, filter_col, filter_val, date_col, date_from, date_to)
+    query_params = {
+        "label_col": label_col, "value_col": value_col, "agg": agg,
+        "filter_col": filter_col, "filter_val": filter_val,
+        "date_col": date_col, "date_from": date_from, "date_to": date_to,
+        "tenant_id": str(report.tenant_id),
+    }
+
+    redis = get_redis()
+    try:
+        version = await _get_dataset_version(redis, str(dataset_id))
+        cache_key = _make_cache_key(str(dataset_id), query_params, version)
+
+        cached = await cache_get(redis, cache_key)
+        if cached is not None:
+            return JSONResponse(content=cached, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
+
+        result = dataset_service.query(ds, label_col, value_col, agg, filter_col, filter_val, date_col, date_from, date_to)
+        await cache_set(redis, cache_key, result, ttl=_CACHE_TTL)
+        return JSONResponse(content=result, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
+    finally:
+        await redis.aclose()
 
 
 # ---------------------------------------------------------------------------
@@ -381,6 +431,17 @@ async def sync_dataset(
         raise HTTPException(status_code=400, detail=f"Erro ao sincronizar: {e}")
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado ou não é do tipo API")
+
+    # Invalida cache de queries deste dataset incrementando sua versão
+    try:
+        redis = get_redis()
+        try:
+            await _bump_dataset_version(redis, str(dataset_id))
+        finally:
+            await redis.aclose()
+    except Exception:
+        pass  # Falha no cache não deve bloquear a resposta
+
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
@@ -452,7 +513,28 @@ async def query_dataset(
     ds = await service.get(dataset_id, current_user.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
-    return service.query(ds, label_col, value_col, agg, filter_col, filter_val, date_col, date_from, date_to)
+
+    query_params = {
+        "label_col": label_col, "value_col": value_col, "agg": agg,
+        "filter_col": filter_col, "filter_val": filter_val,
+        "date_col": date_col, "date_from": date_from, "date_to": date_to,
+        "tenant_id": str(current_user.tenant_id),
+    }
+
+    redis = get_redis()
+    try:
+        version = await _get_dataset_version(redis, str(dataset_id))
+        cache_key = _make_cache_key(str(dataset_id), query_params, version)
+
+        cached = await cache_get(redis, cache_key)
+        if cached is not None:
+            return cached
+
+        result = service.query(ds, label_col, value_col, agg, filter_col, filter_val, date_col, date_from, date_to)
+        await cache_set(redis, cache_key, result, ttl=_CACHE_TTL)
+        return result
+    finally:
+        await redis.aclose()
 
 
 # ---------------------------------------------------------------------------
@@ -482,7 +564,25 @@ async def query_dataset_v2(
     ds = await service.get(dataset_id, current_user.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
-    return execute_query(ds.rows or [], req)
+
+    query_params = {**req.model_dump(), "tenant_id": str(current_user.tenant_id)}
+
+    redis = get_redis()
+    try:
+        version = await _get_dataset_version(redis, str(dataset_id))
+        cache_key = _make_cache_key(str(dataset_id), query_params, version)
+
+        cached = await cache_get(redis, cache_key)
+        if cached is not None:
+            return cached
+
+        result = execute_query(ds.rows or [], req)
+        # QueryResult is a Pydantic model — serialize before storing
+        result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+        await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+        return result
+    finally:
+        await redis.aclose()
 
 
 @router.post(
@@ -505,7 +605,27 @@ async def public_query_dataset_v2(
     ds = await dataset_service.get(dataset_id, report.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
-    return execute_query(ds.rows or [], req)
+
+    query_params = {**req.model_dump(), "tenant_id": str(report.tenant_id)}
+
+    redis = get_redis()
+    try:
+        version = await _get_dataset_version(redis, str(dataset_id))
+        cache_key = _make_cache_key(str(dataset_id), query_params, version)
+
+        cached = await cache_get(redis, cache_key)
+        if cached is not None:
+            return JSONResponse(content=cached, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
+
+        result = execute_query(ds.rows or [], req)
+        result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+        await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+        return JSONResponse(
+            content=result_dict,
+            headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"},
+        )
+    finally:
+        await redis.aclose()
 
 
 @router.get(
