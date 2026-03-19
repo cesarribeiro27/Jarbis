@@ -381,34 +381,6 @@ async def admin_metrics(
     }
 
 
-# ─── /admin/metrics/mrr-history ───────────────────────────────────────────────
-
-@router.get("/metrics/mrr-history", summary="Histórico de MRR dos últimos N dias")
-async def admin_mrr_history(
-    admin_data: tuple = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
-    days: int = Query(default=90, ge=7, le=365),
-):
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    rows = await db.execute(
-        select(MrrSnapshot)
-        .where(MrrSnapshot.created_at >= cutoff)
-        .order_by(MrrSnapshot.snapshot_date)
-    )
-    snapshots = rows.scalars().all()
-    return [
-        {
-            "date": s.snapshot_date.isoformat() if hasattr(s.snapshot_date, "isoformat") else str(s.snapshot_date),
-            "mrr": float(s.mrr),
-            "arr": float(s.arr),
-            "paying_tenants": s.paying_tenants,
-            "new_tenants": s.new_tenants,
-            "churned_tenants": s.churned_tenants,
-        }
-        for s in snapshots
-    ]
-
-
 # ─── /admin/metrics/churn-ltv ─────────────────────────────────────────────────
 
 @router.get("/metrics/churn-ltv", summary="Churn rate e LTV estimado")
