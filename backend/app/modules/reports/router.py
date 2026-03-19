@@ -68,6 +68,7 @@ class DatasetSummary(BaseModel):
     columns: list[str]
     row_count: int
     column_types: dict | None = None
+    is_demo: bool = False
     api_url: str | None = None
     last_synced_at: str | None = None
     refresh_interval_minutes: int | None = None
@@ -246,6 +247,7 @@ async def list_datasets(
             columns=ds.columns or [],
             row_count=ds.row_count,
             column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+            is_demo=bool(ds.is_demo),
             api_url=ds.api_url,
             last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
             refresh_interval_minutes=ds.refresh_interval_minutes,
@@ -253,6 +255,29 @@ async def list_datasets(
         )
         for ds in datasets
     ]
+
+
+@router.get(
+    "/onboarding-dataset",
+    response_model=DatasetSummary,
+    summary="Retorna (ou cria) o dataset de demonstração do tenant",
+)
+async def get_onboarding_dataset(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from .onboarding import ensure_onboarding_dataset
+    from .query_engine import detect_column_types
+    ds = await ensure_onboarding_dataset(current_user.tenant_id, db)
+    return DatasetSummary(
+        id=ds.id,
+        name=ds.name,
+        type=ds.type,
+        columns=ds.columns or [],
+        row_count=ds.row_count,
+        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        is_demo=True,
+    )
 
 
 @router.post(

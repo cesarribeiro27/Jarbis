@@ -244,7 +244,10 @@ export default function DatasetsPage() {
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{ds.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{ds.name}</p>
+                      {ds.is_demo && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 shrink-0">DEMO</span>}
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500 font-medium">{formatRows(ds.row_count)}</span>
                       {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} {t('columns')}</span>}

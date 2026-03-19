@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime, timezone
 
+import sqlalchemy as sa
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -40,6 +41,8 @@ class ReportDataset(Base):
     api_headers: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     api_data_path: Mapped[str | None] = mapped_column(String(200), nullable=True,
                                                        comment="Caminho no JSON, ex: data.items")
+
+    is_demo: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=False)
 
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     refresh_interval_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)

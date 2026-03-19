@@ -124,6 +124,8 @@ export const api = {
         apiFetch(`/reports/datasets/${id}/query`, { method: 'POST', body: JSON.stringify(req) }),
       // Colunas com tipos detectados automaticamente
       columns: (id) => apiFetch(`/reports/datasets/${id}/columns`),
+      // Retorna (ou cria) o dataset de demonstração do tenant
+      getOnboarding: () => apiFetch('/reports/onboarding-dataset'),
     },
     alerts: {
       list: () => apiFetch('/reports/alerts'),

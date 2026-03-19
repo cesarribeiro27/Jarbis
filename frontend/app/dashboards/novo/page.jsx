@@ -644,10 +644,57 @@ export default function NovoDashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  function applyTemplate(tpl) {
+  // Mapeamento de colunas padrão do dataset de demonstração por tipo de bloco
+  const ONBOARDING_COLS_BY_TYPE = {
+    kpi:         { label_col: 'categoria', value_col: 'receita' },
+    line:        { label_col: 'mes',       value_col: 'receita' },
+    area:        { label_col: 'mes',       value_col: 'receita' },
+    combo:       { label_col: 'mes',       value_col: 'receita' },
+    bar:         { label_col: 'produto',   value_col: 'receita' },
+    bar_h:       { label_col: 'regiao',    value_col: 'receita' },
+    pie:         { label_col: 'categoria', value_col: 'receita' },
+    table:       { label_col: 'produto',   value_col: 'receita' },
+    treemap:     { label_col: 'produto',   value_col: 'receita' },
+    gauge:       { label_col: 'categoria', value_col: 'receita' },
+    speedometer: { label_col: 'categoria', value_col: 'receita' },
+    scatter:     { label_col: 'mes',       value_col: 'receita' },
+    bubble:      { label_col: 'mes',       value_col: 'receita' },
+  }
+
+  async function applyTemplate(tpl) {
     setTitle(tpl.id === 'blank' ? '' : tpl.title)
-    setBlocks(tpl.blocks.map((b) => ({ ...b, id: crypto.randomUUID() })))
     if (tpl.canvasConfig) setCanvasConfig(tpl.canvasConfig)
+
+    const hasOnboarding = tpl.blocks.some(b => b.dataset_id === '__onboarding__')
+
+    let resolvedBlocks = tpl.blocks.map(b => ({ ...b, id: crypto.randomUUID() }))
+
+    if (hasOnboarding) {
+      try {
+        const ds = await api.reports.datasets.getOnboarding()
+        // Garante que o dataset de demo está na lista
+        setDatasets(prev => prev.some(d => d.id === ds.id) ? prev : [ds, ...prev])
+
+        resolvedBlocks = resolvedBlocks.map(b => {
+          if (b.dataset_id !== '__onboarding__') return b
+          const cols = ONBOARDING_COLS_BY_TYPE[b.type] || {}
+          return {
+            ...b,
+            dataset_id: ds.id,
+            label_col: b.label_col || cols.label_col || null,
+            value_col: b.value_col || cols.value_col || null,
+            // Filtro: auto-atribui coluna de categoria
+            ...(b.type === 'filter' ? { filter_col: b.filter_col || 'categoria' } : {}),
+            // Slider: auto-atribui coluna numérica
+            ...(b.type === 'slider' ? { config: { ...(b.config || {}), slider_col: b.config?.slider_col || 'receita' } } : {}),
+          }
+        })
+      } catch (e) {
+        console.warn('[applyTemplate] Falha ao buscar onboarding dataset:', e)
+      }
+    }
+
+    setBlocks(resolvedBlocks)
     setLayoutKey(k => k + 1)
     setTemplateSelected(true)
   }

@@ -77,6 +77,13 @@ class AuthService:
         self.db.add(user)
         await self.db.flush()
 
+        # Cria o dataset de demonstração para o novo tenant
+        try:
+            from app.modules.reports.onboarding import ensure_onboarding_dataset
+            await ensure_onboarding_dataset(tenant.id, self.db)
+        except Exception as e:
+            print(f"[ONBOARDING] Falha ao criar dataset demo: {e}")
+
         # Envia email com código (não bloqueia o registro se falhar)
         try:
             await send_verification_email(user.email, user.full_name, code)
