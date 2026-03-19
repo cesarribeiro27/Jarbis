@@ -4,6 +4,35 @@ import { useState, useRef, useEffect } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+// Renderiza markdown simples como JSX (bold, listas, quebras de linha)
+function renderMarkdown(text) {
+  const lines = text.split('\n')
+  const elements = []
+  let key = 0
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Linha vazia — espaço entre parágrafos
+    if (line.trim() === '') {
+      elements.push(<div key={key++} className="h-2" />)
+      continue
+    }
+
+    // Transforma **bold** em <strong>
+    const parts = line.split(/(\*\*[^*]+\*\*)/)
+    const rendered = parts.map((part, j) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={j}>{part.slice(2, -2)}</strong>
+      }
+      return part
+    })
+
+    elements.push(<div key={key++}>{rendered}</div>)
+  }
+  return elements
+}
+
 const WELCOME = {
   role: 'assistant',
   content: 'Olá! Sou o assistente do Jarbis. Como posso te ajudar?',
@@ -149,13 +178,13 @@ export default function SupportChat() {
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-indigo-600 text-white rounded-br-sm'
                     : 'bg-gray-100 text-gray-800 rounded-bl-sm'
                 }`}
               >
-                {msg.content}
+                {msg.role === 'assistant' ? renderMarkdown(msg.content) : msg.content}
               </div>
             </div>
           ))}

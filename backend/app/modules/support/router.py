@@ -61,18 +61,19 @@ COMO FAZER COISAS COMUNS:
 
 Se não souber a resposta, diga honestamente e sugira enviar email para comercial@jarbis.cc."""
 
-FAQ_RESPONSE = """Olá! No plano Gratuito posso te ajudar com as dúvidas mais comuns:
+FAQ_RESPONSE = """Olá! No plano Gratuito posso te ajudar com as dúvidas mais comuns.
 
-**Como fazer as coisas principais:**
-• **Criar dashboard** → Dashboards → "Novo dashboard"
-• **Adicionar dados** → Painel lateral no dashboard → aba Dados → "Adicionar dataset"
-• **Compartilhar** → Botão "Compartilhar" no dashboard → copiar link
-• **Configurar alerta** → Menu Alertas → "Novo alerta"
-• **Ver meu plano** → Configurações → Planos
+Como fazer as coisas principais:
 
-Para assistente inteligente com respostas personalizadas, faça upgrade para o plano **Solo** (R$79,90/mês).
+Criar dashboard → Dashboards → "Novo dashboard"
+Adicionar dados → Painel lateral no dashboard → aba Dados → "Adicionar dataset"
+Compartilhar → Botão "Compartilhar" no dashboard → copiar link
+Configurar alerta → Menu Alertas → "Novo alerta"
+Ver meu plano → Configurações → Planos
 
-Outras dúvidas? Escreva para **comercial@jarbis.cc**"""
+Para um assistente inteligente com respostas personalizadas, faça upgrade para o plano Solo (R$79,90/mês).
+
+Outras dúvidas? Escreva para comercial@jarbis.cc"""
 
 
 class ChatMessage(BaseModel):
