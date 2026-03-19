@@ -2054,9 +2054,19 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
     })
   }
 
-  const isMobile = gridWidth < 640
+  const isMobile = gridWidth < 500
   const layout = isMobile
-    ? blocks.map((b, idx) => ({ i: b.id, x: 0, y: idx * (b.layout?.h ?? 3), w: 12, h: b.layout?.h ?? 3, minW: 1, minH: 1 }))
+    ? [...blocks]
+        .sort((a, b) => {
+          const ay = a.layout?.y ?? 0, by = b.layout?.y ?? 0
+          const ax = a.layout?.x ?? 0, bx = b.layout?.x ?? 0
+          return ay !== by ? ay - by : ax - bx
+        })
+        .reduce((acc, b) => {
+          const prevY = acc.length > 0 ? acc[acc.length - 1].y + acc[acc.length - 1].h : 0
+          acc.push({ i: b.id, x: 0, y: prevY, w: 12, h: b.layout?.h ?? 3, minW: 1, minH: 1 })
+          return acc
+        }, [])
     : blocks.map(b => ({ i: b.id, x: b.layout?.x ?? 0, y: b.layout?.y ?? 0, w: b.layout?.w ?? 6, h: b.layout?.h ?? 3, minW: 1, minH: 1, static: !!b.config?.locked }))
 
   function syncLayout(newLayout) {
@@ -2066,10 +2076,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   const sheetStyle = {
     backgroundColor: sheetConfig.bgColor || '#f8f7fc',
-    borderRadius: '16px',
+    borderRadius: isMobile ? '12px' : '16px',
     boxShadow: '0 2px 8px rgba(109,40,217,0.04), 0 12px 40px rgba(0,0,0,0.08)',
-    minHeight: '640px',
-    padding: '28px 28px 40px',
+    minHeight: isMobile ? 'auto' : '640px',
+    padding: isMobile ? '12px 12px 24px' : '28px 28px 40px',
     backgroundImage: `radial-gradient(circle, ${sheetConfig.dotColor || 'rgba(109,40,217,0.08)'} 1px, transparent 1px)`,
     backgroundSize: '24px 24px',
   }
@@ -2083,7 +2093,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   return (
     <div style={sheetStyle} ref={sheetRef}>
-    <GridLayout className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: 52, margin: [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={noCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)} onDragStart={() => setIsDragging(true)}>
+    <GridLayout key={isMobile ? 'mobile' : 'desktop'} className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: 52, margin: [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={noCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)} onDragStart={() => setIsDragging(true)}>
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
         const isSelected = selectedBlockId === block.id

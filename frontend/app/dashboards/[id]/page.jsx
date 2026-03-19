@@ -708,8 +708,8 @@ export default function DashboardDetailPage() {
           </div>
         )}
 
-        <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 overflow-auto p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
+        <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 overflow-auto p-3 sm:p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
             <div className="flex items-center gap-1 mb-4 flex-wrap" onClick={e => e.stopPropagation()}>
               {pages.map((page, pageIdx) => (
                 <div key={page.id} className={`group flex items-center gap-1 rounded-lg border transition-colors ${activePageId === page.id ? 'bg-white dark:bg-gray-700 border-violet-300 shadow-sm' : 'bg-transparent border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}>
@@ -730,7 +730,17 @@ export default function DashboardDetailPage() {
             <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} />
           </div>
 
-          <aside className={`${sidebarOpen && sidePanel ? 'w-72' : 'w-0'} bg-white border-l border-gray-100 flex flex-col shrink-0 overflow-hidden transition-[width] duration-200`}>
+          {/* Backdrop mobile para o sidebar */}
+          {sidebarOpen && sidePanel && (
+            <div className="fixed inset-0 bg-black/40 z-40 sm:hidden" onClick={() => setSidebarOpen(false)} />
+          )}
+          <aside className={`
+            fixed inset-y-0 right-0 w-[280px] z-50
+            sm:static sm:inset-auto sm:z-auto
+            ${sidebarOpen && sidePanel ? 'translate-x-0 sm:w-72' : 'translate-x-full sm:w-0'}
+            bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800
+            flex flex-col shrink-0 overflow-hidden
+            transition-transform sm:transition-[width] duration-200`}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
               <span className="text-xs font-semibold text-gray-700 uppercase tracking-widest">
                 {sidePanel === 'dados' ? t('sidePanel.dados') :
@@ -795,11 +805,11 @@ export default function DashboardDetailPage() {
           </button>
         </div>
       )}
-      <div className="p-6 max-w-screen-xl mx-auto">
-        <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-          <div>
+      <div className="p-3 sm:p-6 max-w-screen-xl mx-auto">
+        <div className="flex items-start justify-between mb-4 sm:mb-6 gap-3 flex-wrap">
+          <div className="min-w-0">
             <button onClick={() => router.push('/dashboards')} className="text-sm text-gray-400 hover:text-gray-700 mb-2 block">← {t('back')}</button>
-            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{(displayReport ?? report).title}</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 truncate">{(displayReport ?? report).title}</h1>
             {(displayReport ?? report).description && <p className="text-sm text-gray-500 mt-1">{(displayReport ?? report).description}</p>}
           </div>
           <div className="flex gap-2 flex-wrap items-center">
@@ -851,7 +861,7 @@ export default function DashboardDetailPage() {
           </div>
         )}
 
-        <div className="mb-4 flex items-center gap-2 flex-wrap">
+        <div className="mb-4 flex items-center gap-2 flex-wrap text-sm">
           <button onClick={() => setShowDateFilter(v => !v)} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl border transition-colors ${showDateFilter || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
             {t('dateFilter')}

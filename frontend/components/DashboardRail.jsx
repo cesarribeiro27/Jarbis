@@ -82,7 +82,7 @@ export default function DashboardRail({
   ]
 
   return (
-    <div className="w-[72px] bg-white border-l border-gray-200/80 flex flex-col items-center py-2 gap-[3px] shrink-0">
+    <div className="hidden sm:flex w-[72px] bg-white border-l border-gray-200/80 flex-col items-center py-2 gap-[3px] shrink-0">
       <div className="flex flex-col items-center gap-[3px] w-full mb-auto">
         {railBtns.map((btn) => (
           <button
