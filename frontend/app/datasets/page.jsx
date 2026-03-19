@@ -16,6 +16,18 @@ function ApiDatasetModal({ onClose, onCreated }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  function normalizeUrl(url) {
+    const m = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
+    if (!m) return url
+    const id = m[1]
+    const gidM = url.match(/[#&?]gid=(\d+)/)
+    const gid = gidM ? gidM[1] : '0'
+    return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
+  }
+
+  const isGoogleSheets = form.api_url.includes('docs.google.com/spreadsheets')
+  const normalizedUrl = isGoogleSheets ? normalizeUrl(form.api_url) : form.api_url
+
   async function submit(e) {
     e.preventDefault()
     setLoading(true); setError(null)
@@ -25,7 +37,7 @@ function ApiDatasetModal({ onClose, onCreated }) {
         try { headers = JSON.parse(form.headers) } catch { setError(t('toast.headersInvalid')); setLoading(false); return }
       }
       const ds = await api.reports.datasets.createApi({
-        name: form.name, api_url: form.api_url, method: form.method,
+        name: form.name, api_url: normalizedUrl, method: form.method,
         headers, body: form.body || null,
         refresh_interval_minutes: form.refresh_interval_minutes ? parseInt(form.refresh_interval_minutes) : null,
       })
@@ -57,6 +69,12 @@ function ApiDatasetModal({ onClose, onCreated }) {
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.urlLabel')}</label>
               <input required type="url" value={form.api_url} onChange={e => setForm(f => ({ ...f, api_url: e.target.value }))} placeholder={t('modal.urlPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              {isGoogleSheets && (
+                <p className="mt-1 text-[11px] text-violet-600 flex items-center gap-1">
+                  <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Google Sheets detectado — será convertido para CSV automaticamente
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.methodLabel')}</label>

@@ -336,11 +336,22 @@ class DatasetService:
         self, url: str, headers: dict, data_path: str | None
     ) -> tuple[list[dict], list[str]]:
         _validate_ssrf(url)
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+        is_csv = "format=csv" in url
+
+        # Google Sheets redirect: first request gets 302, second fetches the CDN URL clean
+        async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
             resp = await client.get(url, headers=headers)
-            resp.raise_for_status()
-            content_type = resp.headers.get("content-type", "")
-            is_csv = "text/csv" in content_type or "format=csv" in url
+
+        if resp.status_code in (301, 302, 303, 307, 308):
+            redirect_url = resp.headers.get("location", "")
+            if redirect_url:
+                async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client2:
+                    resp = await client2.get(redirect_url)
+
+        resp.raise_for_status()
+        content_type = resp.headers.get("content-type", "")
+        if "text/csv" in content_type:
+            is_csv = True
 
         if is_csv:
             rows = _parse_csv(resp.content)
