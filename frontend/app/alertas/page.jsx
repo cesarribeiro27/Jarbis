@@ -18,7 +18,7 @@ function StatusBadge({ status }) {
 
 function CreateModal({ datasets, onClose, onCreated }) {
   const t = useTranslations('alerts')
-  const [form, setForm] = useState({ name: '', dataset_id: datasets[0]?.id || '', value_col: '', agg: 'sum', operator: 'lt', threshold: '', filter_col: '', filter_val: '' })
+  const [form, setForm] = useState({ name: '', dataset_id: datasets[0]?.id || '', value_col: '', agg: 'sum', operator: 'lt', threshold: '', filter_col: '', filter_val: '', notify_email: '', notify_slack_url: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -33,6 +33,7 @@ function CreateModal({ datasets, onClose, onCreated }) {
         name: form.name, dataset_id: form.dataset_id, value_col: form.value_col,
         agg: form.agg, operator: form.operator, threshold: parseFloat(form.threshold),
         filter_col: form.filter_col || null, filter_val: form.filter_val || null,
+        notify_email: form.notify_email || null, notify_slack_url: form.notify_slack_url || null,
       })
       onCreated(alert); onClose()
     } catch (e) { setError(e.message) }
@@ -82,6 +83,30 @@ function CreateModal({ datasets, onClose, onCreated }) {
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.thresholdLabel')}</label>
               <input required type="number" step="any" value={form.threshold} onChange={e => setForm(f => ({ ...f, threshold: e.target.value }))} placeholder={t('modal.thresholdPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+            </div>
+          </div>
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notificações adicionais (opcional)</p>
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail(s)</label>
+              <input
+                type="text"
+                value={form.notify_email || ''}
+                onChange={e => setForm(f => ({ ...f, notify_email: e.target.value }))}
+                placeholder="email1@ex.com, email2@ex.com"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Separados por vírgula</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Slack Webhook URL</label>
+              <input
+                type="text"
+                value={form.notify_slack_url || ''}
+                onChange={e => setForm(f => ({ ...f, notify_slack_url: e.target.value }))}
+                placeholder="https://hooks.slack.com/services/..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
             </div>
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}

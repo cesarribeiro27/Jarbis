@@ -90,6 +90,44 @@ def _coerce_row(row: dict) -> dict:
     return out
 
 
+def _apply_computed_columns(rows: list[dict], computed_columns: list[dict]) -> list[dict]:
+    """Aplica colunas calculadas a cada row. computed_columns: [{name, expression, refs}]"""
+    if not computed_columns or not rows:
+        return rows
+    try:
+        from simpleeval import simple_eval  # noqa: F401 — verifica disponibilidade
+    except ImportError:
+        return rows
+
+    result = []
+    for row in rows:
+        new_row = dict(row)
+        for col in computed_columns:
+            name = col.get("name", "").strip()
+            expr = col.get("expression", "").strip()
+            if not name or not expr:
+                continue
+            try:
+                names_num: dict[str, Any] = {}
+                for k, v in new_row.items():
+                    if isinstance(v, (int, float)):
+                        names_num[k] = v
+                    elif isinstance(v, str):
+                        try:
+                            names_num[k] = float(v.replace(",", "."))
+                        except ValueError:
+                            names_num[k] = 0
+                    elif v is None:
+                        names_num[k] = 0
+                from simpleeval import simple_eval
+                val = simple_eval(expr, names=names_num)
+                new_row[name] = round(float(val), 4) if isinstance(val, (int, float)) else val
+            except Exception:
+                new_row[name] = None
+        result.append(new_row)
+    return result
+
+
 def _parse_csv(content: bytes) -> list[dict]:
     text = content.decode("utf-8-sig", errors="replace")
     reader = csv.DictReader(io.StringIO(text))
@@ -256,10 +294,29 @@ class DatasetService:
         ds = await self.get(dataset_id, tenant_id)
         if not ds or ds.type != "api" or not ds.api_url:
             return None
-        rows, columns = await self._fetch_api(ds.api_url, ds.api_headers or {}, ds.api_data_path)
-        ds.rows = rows
-        ds.columns = columns
-        ds.row_count = len(rows)
+        new_rows, columns = await self._fetch_api(ds.api_url, ds.api_headers or {}, ds.api_data_path)
+
+        sync_mode = getattr(ds, 'sync_mode', 'replace') or 'replace'
+        if sync_mode == 'append':
+            # Acumula linhas novas, evitando duplicatas por hash da linha
+            existing = ds.rows or []
+            existing_hashes = {hash(frozenset(str(r.items()))) for r in existing}
+            added = [r for r in new_rows if hash(frozenset(str(r.items()))) not in existing_hashes]
+            merged = existing + added
+            from sqlalchemy.orm.attributes import flag_modified
+            ds.rows = merged
+            ds.columns = _detect_columns(merged)
+            ds.row_count = len(merged)
+            flag_modified(ds, 'rows')
+            flag_modified(ds, 'columns')
+        else:
+            from sqlalchemy.orm.attributes import flag_modified
+            ds.rows = new_rows
+            ds.columns = columns
+            ds.row_count = len(new_rows)
+            flag_modified(ds, 'rows')
+            flag_modified(ds, 'columns')
+
         ds.last_synced_at = _utcnow()
         await self.db.commit()
         await self.db.refresh(ds)
@@ -288,7 +345,9 @@ class DatasetService:
         date_to: str | None = None,
     ) -> list[dict]:
         """Agrega as rows do dataset e retorna [{label, value}]."""
-        available = ds.columns or []
+        computed = getattr(ds, 'computed_columns', None) or []
+        computed_names = [c.get("name") for c in computed if c.get("name")]
+        available = (ds.columns or []) + computed_names
         if agg not in self._VALID_AGGS:
             raise HTTPException(
                 status_code=422,
@@ -307,6 +366,8 @@ class DatasetService:
         if not ds.rows:
             return []
         rows = ds.rows
+        if computed:
+            rows = _apply_computed_columns(rows, computed)
         if filter_col and filter_val is not None:
             rows = [r for r in rows if str(r.get(filter_col, "")) == filter_val]
         if date_col and (date_from or date_to):
@@ -331,6 +392,45 @@ class DatasetService:
                 groups[label] = groups.get(label, 0) + 1
             return [{"label": k, "value": v} for k, v in groups.items()]
         return _aggregate(rows, label_col, value_col, agg)
+
+    async def add_computed_column(
+        self,
+        dataset_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+        name: str,
+        expression: str,
+        refs: list[str],
+    ) -> ReportDataset | None:
+        ds = await self.get(dataset_id, tenant_id)
+        if not ds:
+            return None
+        from sqlalchemy.orm.attributes import flag_modified
+        cols = list(ds.computed_columns or [])
+        # Remove existente com mesmo nome antes de inserir
+        cols = [c for c in cols if c.get("name") != name]
+        cols.append({"name": name, "expression": expression, "refs": refs})
+        ds.computed_columns = cols
+        flag_modified(ds, "computed_columns")
+        await self.db.commit()
+        await self.db.refresh(ds)
+        return ds
+
+    async def remove_computed_column(
+        self,
+        dataset_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+        col_name: str,
+    ) -> ReportDataset | None:
+        ds = await self.get(dataset_id, tenant_id)
+        if not ds:
+            return None
+        from sqlalchemy.orm.attributes import flag_modified
+        cols = [c for c in (ds.computed_columns or []) if c.get("name") != col_name]
+        ds.computed_columns = cols
+        flag_modified(ds, "computed_columns")
+        await self.db.commit()
+        await self.db.refresh(ds)
+        return ds
 
     async def _fetch_api(
         self, url: str, headers: dict, data_path: str | None

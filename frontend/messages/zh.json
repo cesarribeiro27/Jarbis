@@ -378,6 +378,7 @@
       "data": "数据",
       "alerts": "告警",
       "users": "用户",
+      "scheduled": "定时报告",
       "settings": "设置",
       "logout": "退出"
     },

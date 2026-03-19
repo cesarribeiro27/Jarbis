@@ -44,6 +44,12 @@ class ReportDataset(Base):
 
     is_demo: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=False)
 
+    # Modo de sincronização de APIs: replace (padrão) ou append (acumula)
+    sync_mode: Mapped[str] = mapped_column(String(20), nullable=False, server_default="replace", default="replace")
+
+    # Colunas calculadas: [{name, expression, refs}]
+    computed_columns: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     refresh_interval_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     next_refresh_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

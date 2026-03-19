@@ -43,6 +43,8 @@ const BLOCK_TYPES = [
   { type: 'gauge',       label: 'Gauge',       desc: 'Indicador circular' },
   { type: 'speedometer', label: 'Velocímetro', desc: 'Gauge semicircular' },
   { type: 'table',       label: 'Tabela',      desc: 'Dados em linhas' },
+  { type: 'funnel',      label: 'Funil',       desc: 'Funil de conversão' },
+  { type: 'map',         label: 'Mapa BR',     desc: 'Mapa por estado' },
   { type: 'text',        label: 'Texto',       desc: 'Comentários' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
@@ -67,6 +69,8 @@ const TYPE_ICONS = {
   gauge:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0 0v-8" /></svg>,
   speedometer: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C6.48 2 2 6.48 2 12h20c0-5.52-4.48-10-10-10zm0 10l-3-5" /></svg>,
   slider:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>,
+  funnel:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18l-7 9v7l-4-2v-5L3 4z" /></svg>,
+  map:         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>,
 }
 
 
@@ -97,7 +101,7 @@ function fmtCompactCurrency(value) {
 }
 
 // Monta um QueryRequest v2 a partir do bloco + estado de filtros
-function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown) {
+function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, drillFilters = []) {
   const dsId = block.dataset_id
   const filters = []
 
@@ -125,10 +129,17 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
     if (range.max != null) filters.push({ column: range.col, operator: 'lte', value: range.max })
   }
 
-  // Drilldown filter
+  // Drilldown filter (single-level legacy)
   const effectiveLabelCol = drilldown ? (block.config?.drilldown_col || block.label_col) : block.label_col
   if (drilldown) {
     filters.push({ column: block.label_col, operator: 'eq', value: drilldown.val })
+  }
+
+  // G11 multi-level drill filters — apply all accumulated filters from drill_columns chain
+  if (drillFilters && drillFilters.length > 0) {
+    drillFilters.forEach(f => {
+      filters.push({ column: f.col, operator: 'eq', value: String(f.value) })
+    })
   }
 
   const req = {
@@ -161,12 +172,12 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v) { return typeof v === 'string' && UUID_RE.test(v) }
 
-function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters = {}, globalDateFilter = {}, drilldown = null, shareToken = null) {
+function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters = {}, globalDateFilter = {}, drilldown = null, shareToken = null, drillFilters = []) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const req = buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown)
+  const req = buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, drillFilters)
   const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken })
 
   useEffect(() => {
@@ -361,6 +372,32 @@ function downloadCSV(data, title) {
   URL.revokeObjectURL(url)
 }
 
+async function downloadPNG(blockId, title) {
+  const el = document.querySelector(`[data-block-id="${blockId}"]`)
+  if (!el) return
+  try {
+    const { default: html2canvas } = await import('html2canvas')
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+    const a = document.createElement('a')
+    a.download = `${title || 'chart'}.png`
+    a.href = canvas.toDataURL('image/png')
+    a.click()
+  } catch (e) { console.error('PNG export error:', e) }
+}
+
+// Mapa BR — posições aproximadas dos centros de cada estado (% do SVG 100x80)
+const BR_STATES = [
+  { uf: 'AC', x: 12, y: 52 }, { uf: 'AL', x: 84, y: 43 }, { uf: 'AM', x: 24, y: 38 },
+  { uf: 'AP', x: 62, y: 20 }, { uf: 'BA', x: 74, y: 54 }, { uf: 'CE', x: 82, y: 32 },
+  { uf: 'DF', x: 61, y: 63 }, { uf: 'ES', x: 80, y: 67 }, { uf: 'GO', x: 57, y: 62 },
+  { uf: 'MA', x: 70, y: 33 }, { uf: 'MG', x: 70, y: 68 }, { uf: 'MS', x: 52, y: 74 },
+  { uf: 'MT', x: 42, y: 58 }, { uf: 'PA', x: 52, y: 30 }, { uf: 'PB', x: 87, y: 37 },
+  { uf: 'PE', x: 82, y: 41 }, { uf: 'PI', x: 75, y: 40 }, { uf: 'PR', x: 57, y: 82 },
+  { uf: 'RJ', x: 74, y: 73 }, { uf: 'RN', x: 87, y: 31 }, { uf: 'RO', x: 30, y: 57 },
+  { uf: 'RR', x: 30, y: 22 }, { uf: 'RS', x: 54, y: 92 }, { uf: 'SC', x: 58, y: 87 },
+  { uf: 'SE', x: 84, y: 48 }, { uf: 'SP', x: 64, y: 76 }, { uf: 'TO', x: 62, y: 47 },
+]
+
 function TableBlock({ block, data, config, format, getOpacity, handleClick, vs }) {
   const [sortDir, setSortDir] = useState('desc')
   const maxVal = Math.max(...data.map(d => Math.abs(d.value || 0)), 1)
@@ -439,8 +476,31 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick, vs }
 
 function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
   const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
-  const [drilldown, setDrilldown] = useState(null) // { val: string } when active
-  const { data, loading, error } = useBlockData(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, shareToken)
+  const [drilldown, setDrilldown] = useState(null) // { val: string } when active (legacy single-level)
+
+  // G11 — multi-level drill state: { level: number, filters: [{col, value}] }
+  const [drillState, setDrillState] = useState({ level: 0, filters: [] })
+
+  function handleDrillDown(clickedLabel) {
+    const drillCols = block.config?.drill_columns || []
+    if (drillState.level >= drillCols.length) return // already at deepest level
+    const nextCol = drillCols[drillState.level]
+    if (!nextCol) return
+    setDrillState(prev => ({
+      level: prev.level + 1,
+      filters: [...prev.filters, { col: nextCol, value: clickedLabel }]
+    }))
+  }
+
+  function handleDrillReset() {
+    setDrillState({ level: 0, filters: [] })
+  }
+
+  const drillFilters = drillState.filters
+  const hasDrillColumns = (block.config?.drill_columns || []).length > 0
+  const isDrilled = drillFilters.length > 0
+
+  const { data, loading, error } = useBlockData(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, shareToken, drillFilters)
   const activeCrossVal = drilldown ? null : crossFilters[block.dataset_id]?.val
   const hasDrilldown = !!block.config?.drilldown_col
   const canExport = data && data.length > 0 && !['text','filter','slider','image'].includes(block.type)
@@ -515,7 +575,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     : COLORS
 
   const handleClick = (label) => {
-    if (hasDrilldown && !drilldown) {
+    // G11 multi-level drill takes priority over legacy drilldown and cross-filter
+    if (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) {
+      handleDrillDown(label)
+    } else if (hasDrilldown && !drilldown) {
       setDrilldown({ val: label })
     } else if (!hasDrilldown && onCrossFilter) {
       onCrossFilter(block.dataset_id, block.label_col, label)
@@ -527,7 +590,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return label === activeCrossVal ? 1 : 0.25
   }
 
-  // Drilldown breadcrumb chip
+  // Drilldown breadcrumb chip (legacy single-level)
   const DrillChip = drilldown ? (
     <button
       onClick={() => setDrilldown(null)}
@@ -535,6 +598,19 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     >
       ← {block.label_col}: {drilldown.val}
     </button>
+  ) : null
+
+  // G11 multi-level drill breadcrumb
+  const DrillBreadcrumb = isDrilled ? (
+    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2 flex-wrap">
+      <span className="truncate">Drill: {drillState.filters.map(f => `${f.col}=${f.value}`).join(' → ')}</span>
+      <button
+        onClick={handleDrillReset}
+        className="text-purple-600 hover:underline shrink-0"
+      >
+        ← Voltar
+      </button>
+    </div>
   ) : null
 
   if (block.type === 'kpi') {
@@ -585,6 +661,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
 
   if (block.type === 'bar') return (
     <div className="flex flex-col h-full">
+      {DrillBreadcrumb}
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -594,7 +671,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
-            <Bar dataKey="value" name={block.title || vs.value} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
+            <Bar dataKey="value" name={block.title || vs.value} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}>
               {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
               {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
@@ -648,11 +725,11 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             <Area
-              type="monotone"
+              type={config.line_curve || (config.smooth ? 'basis' : 'monotone')}
               dataKey="value"
               name={block.title || vs.value}
               stroke={color}
-              strokeWidth={2.5}
+              strokeWidth={config.stroke_width || 2.5}
               fill={`url(#grad_${block.id})`}
               dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
               activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
@@ -669,36 +746,55 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     </div>
   )
 
-  if (block.type === 'line') return (
-    <div className="flex flex-col h-full">
-      {DrillChip}
-      <div style={{ flex: 1 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
-            <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
-            <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              name={block.title || vs.value}
-              stroke={color}
-              strokeWidth={2.5}
-              dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false}
-              activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}
-            >
-              {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
-            </Line>
-            {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
-            {config.reference_value != null && config.reference_value !== '' && (
-              <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+  if (block.type === 'line') {
+    const lineType = config.line_curve || (config.smooth ? 'basis' : 'monotone')
+    const strokeW = config.stroke_width || 2.5
+    const showGrad = !!config.show_gradient
+    return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            {showGrad ? (
+              <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+                <defs>
+                  <linearGradient id={`linegrad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+                <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+                <Area type={lineType} dataKey="value" name={block.title || vs.value} stroke={color} strokeWidth={strokeW} fill={`url(#linegrad_${block.id})`} dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false} activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}>
+                  {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
+                </Area>
+                {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
+                {config.reference_value != null && config.reference_value !== '' && (
+                  <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+                )}
+              </AreaChart>
+            ) : (
+              <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+                <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+                <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+                <Line type={lineType} dataKey="value" name={block.title || vs.value} stroke={color} strokeWidth={strokeW} dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false} activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}>
+                  {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
+                </Line>
+                {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
+                {config.reference_value != null && config.reference_value !== '' && (
+                  <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+                )}
+              </LineChart>
             )}
-          </LineChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (block.type === 'pie') {
     const pieInner = config.inner_radius_pct != null && config.inner_radius_pct !== '' ? `${config.inner_radius_pct}%` : '22%'
@@ -707,6 +803,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const showLegend = config.show_legend !== false
     return (
       <div className="flex flex-col h-full">
+        {DrillBreadcrumb}
         {DrillChip}
         <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -723,7 +820,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 return percent > 0.03 ? <text x={x} y={y} textAnchor={x > pcx ? 'start' : 'end'} dominantBaseline="central" style={{ fontSize: 9, fill: '#374151' }}>{`${(percent * 100).toFixed(0)}%`}</text> : null
               } : null}
               onClick={entry => handleClick(entry.label)}
-              style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}
+              style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}
             >
               {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
             </Pie>
@@ -864,6 +961,79 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
           <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fontWeight="800" fill={color}>{fmt(total, format, config)}</text>
           <text x={cx - r + 2} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_min || 0}</text>
           <text x={cx + r - 10} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_max || 100}</text>
+        </svg>
+      </div>
+    )
+  }
+
+  if (block.type === 'funnel') {
+    if (!data || data.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.noData}</div>
+    const maxVal = Math.max(...data.map(d => d.value || 0), 1)
+    return (
+      <div className="flex flex-col h-full gap-1 py-1 overflow-hidden">
+        {data.map((d, i) => {
+          const pct = d.value / maxVal
+          const convPct = i > 0 && data[i - 1]?.value > 0 ? Math.round((d.value / data[i - 1].value) * 100) : null
+          const c = palette[i % palette.length]
+          const leftPad = ((1 - pct) * 28).toFixed(1)
+          return (
+            <div key={i} className="flex-1 flex items-center min-h-0" style={{ paddingLeft: `${leftPad}%`, paddingRight: `${leftPad}%` }}>
+              <div className="w-full h-full min-h-[20px] rounded flex items-center justify-between px-2.5 gap-1" style={{ backgroundColor: c }}>
+                <span className="text-white text-[11px] font-semibold truncate">{d.label}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-white text-[11px] font-bold">{fmt(d.value, format, config)}</span>
+                  {convPct !== null && <span className="text-white/75 text-[10px]">({convPct}%)</span>}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  if (block.type === 'map') {
+    if (!data || data.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.noData}</div>
+    const byUF = {}
+    data.forEach(d => { byUF[String(d.label).toUpperCase()] = d.value })
+    const vals = Object.values(byUF).filter(v => v != null && !isNaN(v))
+    const minV = vals.length ? Math.min(...vals) : 0
+    const maxV = vals.length ? Math.max(...vals) : 1
+    const baseColor = config.color || '#6D28D9'
+    function hexToRgb(h) { const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h); return r ? [parseInt(r[1],16),parseInt(r[2],16),parseInt(r[3],16)] : [109,40,217] }
+    const [br,bg,bb] = hexToRgb(baseColor)
+    function stateColor(v) {
+      if (v == null) return '#f3f4f6'
+      const t = maxV > minV ? (v - minV) / (maxV - minV) : 0.5
+      return `rgba(${Math.round(br)},${Math.round(bg)},${Math.round(bb)},${(0.15 + t * 0.85).toFixed(2)})`
+    }
+    const [tooltip, setTooltip] = useState(null)
+    return (
+      <div className="relative flex items-center justify-center h-full w-full overflow-hidden">
+        <svg viewBox="0 0 100 100" className="w-full h-full" style={{ maxHeight: '100%' }}>
+          {/* Silhueta simplificada do Brasil */}
+          <ellipse cx="52" cy="55" rx="36" ry="40" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="0.5" opacity="0.6"/>
+          {BR_STATES.map(s => {
+            const v = byUF[s.uf]
+            const r = v != null ? 4.5 : 3
+            return (
+              <g key={s.uf}
+                onMouseEnter={() => setTooltip({ uf: s.uf, v, x: s.x, y: s.y })}
+                onMouseLeave={() => setTooltip(null)}
+                style={{ cursor: 'pointer' }}
+              >
+                <circle cx={s.x} cy={s.y} r={r} fill={stateColor(v)} stroke={v != null ? baseColor : '#d1d5db'} strokeWidth="0.4" opacity="0.9" />
+                <text x={s.x} y={s.y + 0.8} textAnchor="middle" fontSize="2.2" fill={v != null ? 'white' : '#9ca3af'} fontWeight="600">{s.uf}</text>
+              </g>
+            )
+          })}
+          {tooltip && (
+            <g>
+              <rect x={Math.min(tooltip.x + 3, 75)} y={tooltip.y - 8} width="20" height="9" rx="1.5" fill="white" stroke="#e5e7eb" strokeWidth="0.5" filter="url(#shadow)"/>
+              <text x={Math.min(tooltip.x + 13, 85)} y={tooltip.y - 4.5} textAnchor="middle" fontSize="2.5" fill="#374151" fontWeight="700">{tooltip.uf}</text>
+              <text x={Math.min(tooltip.x + 13, 85)} y={tooltip.y - 1} textAnchor="middle" fontSize="2" fill="#6b7280">{tooltip.v != null ? fmt(tooltip.v, format, config) : 'sem dados'}</text>
+            </g>
+          )}
         </svg>
       </div>
     )
@@ -1476,6 +1646,39 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             <label className="block text-xs text-gray-500 mb-1">{t('block.labelXAxisTitle')}</label>
             <input type="text" value={block.config?.x_axis_title || ''} onChange={e => updConfig('x_axis_title', e.target.value)} placeholder={t('block.placeholderXAxisTitle')} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
           </div>
+          {/* Interpolação — line/area */}
+          {['line', 'area'].includes(block.type) && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Interpolação</label>
+              <div className="flex gap-1">
+                {[{ v: 'monotone', l: 'Suave' }, { v: 'linear', l: 'Linear' }, { v: 'step', l: 'Degrau' }, { v: 'basis', l: 'Curva' }].map(o => (
+                  <button key={o.v} onClick={() => updConfig('line_curve', o.v)}
+                    className={`flex-1 px-1.5 py-1 rounded border text-[10px] font-medium transition-all ${(block.config?.line_curve || 'monotone') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                    {o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Espessura — line/area */}
+          {['line', 'area'].includes(block.type) && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Espessura da linha</label>
+              <div className="flex items-center gap-3">
+                <input type="range" min="1" max="6" step="0.5" value={block.config?.stroke_width || 2.5} onChange={e => updConfig('stroke_width', +e.target.value)} className="flex-1 accent-violet-600" />
+                <span className="text-xs text-gray-500 w-8 text-right">{block.config?.stroke_width || 2.5}px</span>
+              </div>
+            </div>
+          )}
+          {/* Gradiente sob a linha — só line */}
+          {block.type === 'line' && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => updConfig('show_gradient', !block.config?.show_gradient)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_gradient ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_gradient ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-600">Gradiente sob a linha</span>
+            </label>
+          )}
         </ConfigSection>
       )}
 
@@ -1534,6 +1737,43 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
                 {columns.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <p className="text-[10px] text-gray-400 mt-1">{t('block.hintDrilldown')}</p>
+            </div>
+          )}
+          {/* G11 — drill_columns: multi-level drill for bar and pie */}
+          {['bar', 'pie'].includes(block.type) && selectedDataset && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Colunas de drill-down</label>
+              <p className="text-[10px] text-gray-400 mb-2">Clique em uma barra/fatia para detalhar o próximo nível</p>
+              {(block.config?.drill_columns || []).map((col, idx) => (
+                <div key={idx} className="flex items-center gap-1 mb-1">
+                  <span className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-700 truncate">{col}</span>
+                  <button
+                    onClick={() => {
+                      const next = (block.config?.drill_columns || []).filter((_, i) => i !== idx)
+                      updConfig('drill_columns', next.length > 0 ? next : undefined)
+                    }}
+                    className="text-gray-400 hover:text-red-400 text-xs px-1 py-1 leading-none"
+                    title="Remover"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value=""
+                onChange={e => {
+                  const col = e.target.value
+                  if (!col) return
+                  const current = block.config?.drill_columns || []
+                  if (!current.includes(col)) {
+                    updConfig('drill_columns', [...current, col])
+                  }
+                }}
+              >
+                <option value="">+ Adicionar coluna...</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
           )}
           {/* Cross-filter — só ativo quando sem drilldown */}
@@ -2057,7 +2297,127 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
   )
 }
 
-export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR' }) {
+export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, onDatasetsChange }) {
+  const [tab, setTab] = useState('colunas')
+  const [search, setSearch] = useState('')
+  const [expandedDates, setExpandedDates] = useState(new Set())
+
+  const GRANULARITIES = [
+    { value: 'year', label: 'Ano' },
+    { value: 'quarter', label: 'Trimestre' },
+    { value: 'month', label: 'Mês' },
+    { value: 'week', label: 'Semana' },
+    { value: 'day', label: 'Dia' },
+    { value: 'hour', label: 'Hora' },
+    { value: 'minute', label: 'Minuto' },
+    { value: 'second', label: 'Segundo' },
+  ]
+
+  return (
+    <div className="space-y-3">
+      {/* Tabs */}
+      <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+        {[{ k: 'colunas', l: 'Colunas' }, { k: 'gerenciar', l: 'Gerenciar' }].map(tk => (
+          <button key={tk.k} onClick={() => setTab(tk.k)}
+            className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tk.k ? 'bg-white text-gray-800' : 'bg-gray-50 text-gray-400 hover:text-gray-600'}`}>
+            {tk.l}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'colunas' && (
+        <div className="space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar coluna..." className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-all" />
+          </div>
+
+          {!selectedBlockId && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              Selecione um bloco no canvas para atribuir colunas
+            </p>
+          )}
+
+          {datasets.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-6">Nenhum dataset — vá em Gerenciar para adicionar</p>
+          ) : datasets.map(ds => {
+            const cols = ds.columns || []
+            const colTypes = ds.column_types || {}
+            const filtered = search ? cols.filter(c => String(c).toLowerCase().includes(search.toLowerCase())) : cols
+            if (filtered.length === 0) return null
+
+            return (
+              <div key={ds.id}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z" /></svg>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">{ds.name}</p>
+                  {ds.is_demo && <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-amber-100 text-amber-600 shrink-0">DEMO</span>}
+                </div>
+                <div className="space-y-0.5">
+                  {filtered.map(col => {
+                    const type = colTypes[col] || 'text'
+                    const isDate = type === 'date'
+                    const key = `${ds.id}:${col}`
+                    const isExpanded = expandedDates.has(key)
+
+                    return (
+                      <div key={col}>
+                        <button
+                          onClick={() => {
+                            if (isDate) {
+                              setExpandedDates(prev => {
+                                const next = new Set(prev)
+                                if (next.has(key)) next.delete(key)
+                                else next.add(key)
+                                return next
+                              })
+                            }
+                            onAssignColumn?.(col, type, null, ds.id)
+                          }}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-violet-50 text-left transition-colors"
+                        >
+                          <span className={`text-[11px] font-bold w-5 text-center shrink-0 ${
+                            type === 'number' ? 'text-emerald-500' : type === 'date' ? 'text-blue-500' : 'text-gray-400'
+                          }`}>
+                            {type === 'number' ? '#' : type === 'date' ? '⊞' : 'Aa'}
+                          </span>
+                          <span className="text-xs text-gray-700 flex-1 truncate">{col}</span>
+                          {isDate && (
+                            <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                          )}
+                        </button>
+                        {isDate && isExpanded && (
+                          <div className="ml-7 mb-1 space-y-0.5">
+                            {GRANULARITIES.map(g => (
+                              <button key={g.value}
+                                onClick={() => onAssignColumn?.(col, 'date', g.value, ds.id)}
+                                className="w-full flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-50 text-left transition-colors"
+                              >
+                                <span className="text-[9px] text-blue-300 w-4">↳</span>
+                                <span className="text-xs text-gray-500">{g.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {tab === 'gerenciar' && (
+        <DatasetPanel datasets={datasets} onDatasetsChange={onDatasetsChange} />
+      )}
+    </div>
+  )
+}
+
+export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null }) {
   const t = useTranslations('dashboardEditor')
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
@@ -2200,6 +2560,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 borderWidth: `${block.config.border_width || 1}px`,
               }),
             }}
+            data-block-id={block.id}
             onMouseEnter={() => setHoveredBlockId(block.id)}
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
@@ -2322,6 +2683,14 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 </button>
                 <div className="h-px bg-gray-100 mx-1" />
                 <button
+                  title="Exportar como PNG"
+                  onClick={() => downloadPNG(block.id, block.title)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </button>
+                <div className="h-px bg-gray-100 mx-1" />
+                <button
                   title={t('builder.tooltipDelete')}
                   onClick={() => onChange(blocks.filter(b => b.id !== block.id))}
                   className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -2330,6 +2699,40 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 </button>
               </div>
             )}
+            {/* Binding Mode Overlay */}
+            {bindingMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && (
+              <div className="absolute inset-0 rounded-[inherit] bg-blue-500/15 border-2 border-blue-400 pointer-events-none flex flex-col items-start justify-end p-2 gap-1 z-10">
+                {block.label_col ? (
+                  <span className="bg-blue-500 text-white text-[9px] rounded px-1.5 py-0.5 font-semibold max-w-full truncate">Dim: {block.label_col}</span>
+                ) : (
+                  <span className="bg-blue-100 text-blue-600 text-[9px] rounded px-1.5 py-0.5 font-semibold border border-dashed border-blue-300">+ dimensão</span>
+                )}
+                {block.value_col ? (
+                  <span className="bg-emerald-500 text-white text-[9px] rounded px-1.5 py-0.5 font-semibold max-w-full truncate">Métrica: {block.value_col}</span>
+                ) : (
+                  <span className="bg-emerald-100 text-emerald-600 text-[9px] rounded px-1.5 py-0.5 font-semibold border border-dashed border-emerald-300">+ métrica</span>
+                )}
+              </div>
+            )}
+            {/* Filter Targeting Overlay */}
+            {filterTargetMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && (() => {
+              const fb = blocks.find(b => b.id === filterBlockId)
+              const targets = fb?.config?.target_block_ids
+              const isTargeted = !targets || targets.length === 0 || targets.includes(block.id)
+              return (
+                <div
+                  className={`absolute inset-0 rounded-[inherit] pointer-events-auto flex items-center justify-center z-10 cursor-pointer ${
+                    isTargeted ? 'bg-green-500/20 border-2 border-green-400' : 'bg-pink-500/20 border-2 border-pink-400'
+                  }`}
+                  onClick={e => { e.stopPropagation(); onToggleFilterTarget?.(filterBlockId, block.id) }}
+                  title={isTargeted ? 'Clique para remover este filtro do bloco' : 'Clique para aplicar este filtro ao bloco'}
+                >
+                  <span className={`text-3xl font-bold ${isTargeted ? 'text-green-500' : 'text-pink-400'}`}>
+                    {isTargeted ? '✓' : '✗'}
+                  </span>
+                </div>
+              )
+            })()}
           </div>
         )
       })}

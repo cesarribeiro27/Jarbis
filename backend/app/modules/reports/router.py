@@ -73,8 +73,21 @@ class DatasetSummary(BaseModel):
     last_synced_at: str | None = None
     refresh_interval_minutes: int | None = None
     next_refresh_at: str | None = None
+    computed_columns: list[dict] = []
 
     model_config = {"from_attributes": True}
+
+
+class ComputedColumnCreate(BaseModel):
+    name: str
+    expression: str
+    refs: list[str] = []
+
+
+class ComputedColumnResponse(BaseModel):
+    name: str
+    expression: str
+    refs: list[str] = []
 
 
 class ApiDatasetCreate(BaseModel):
@@ -86,6 +99,7 @@ class ApiDatasetCreate(BaseModel):
     body: str | None = None
     api_data_path: str | None = None
     refresh_interval_minutes: int | None = None
+    sync_mode: str = "replace"           # replace | append
 
     @property
     def resolved_headers(self) -> dict | None:
@@ -252,6 +266,7 @@ async def list_datasets(
             last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
             refresh_interval_minutes=ds.refresh_interval_minutes,
             next_refresh_at=ds.next_refresh_at.isoformat() if ds.next_refresh_at else None,
+            computed_columns=ds.computed_columns or [],
         )
         for ds in datasets
     ]
@@ -331,13 +346,14 @@ async def create_api_dataset(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao buscar API: {e}")
 
-    # Salva refresh schedule se informado
+    # Salva sync_mode e refresh schedule se informados
+    ds.sync_mode = body.sync_mode or "replace"
     if body.refresh_interval_minutes:
         from datetime import timedelta
         ds.refresh_interval_minutes = body.refresh_interval_minutes
         ds.next_refresh_at = datetime.now(timezone.utc) + timedelta(minutes=body.refresh_interval_minutes)
-        await db.commit()
-        await db.refresh(ds)
+    await db.commit()
+    await db.refresh(ds)
 
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
@@ -602,8 +618,99 @@ async def delete_dataset_column(
 
 
 # ---------------------------------------------------------------------------
+# Computed Columns — colunas calculadas por expressão
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/datasets/{dataset_id}/computed-columns",
+    response_model=list[ComputedColumnResponse],
+    summary="Adiciona ou atualiza uma coluna calculada no dataset",
+)
+async def add_computed_column(
+    dataset_id: uuid.UUID,
+    body: ComputedColumnCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = DatasetService(db)
+    ds = await service.add_computed_column(
+        dataset_id,
+        current_user.tenant_id,
+        body.name.strip(),
+        body.expression.strip(),
+        body.refs,
+    )
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    return [
+        ComputedColumnResponse(**c)
+        for c in (ds.computed_columns or [])
+    ]
+
+
+@router.delete(
+    "/datasets/{dataset_id}/computed-columns/{col_name}",
+    response_model=list[ComputedColumnResponse],
+    summary="Remove uma coluna calculada do dataset",
+)
+async def remove_computed_column(
+    dataset_id: uuid.UUID,
+    col_name: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = DatasetService(db)
+    ds = await service.remove_computed_column(
+        dataset_id,
+        current_user.tenant_id,
+        col_name,
+    )
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    return [
+        ComputedColumnResponse(**c)
+        for c in (ds.computed_columns or [])
+    ]
+
+
+# ---------------------------------------------------------------------------
 # AI — query em linguagem natural
 # ---------------------------------------------------------------------------
+
+
+def _suggest_chart(data: list[dict], question: str) -> dict:
+    """Sugere tipo de gráfico baseado nos dados."""
+    q_lower = question.lower()
+    num_rows = len(data)
+
+    # Detect column types
+    cols = list(data[0].keys()) if data else []
+    label_col = cols[0] if cols else None
+    value_col = cols[1] if len(cols) > 1 else None
+
+    chart_type = "bar"
+    if any(w in q_lower for w in ["pizza", "pie", "percentual", "distribui"]):
+        chart_type = "pie"
+    elif any(w in q_lower for w in ["linha", "line", "tendência", "evolução", "histórico", "tempo"]):
+        chart_type = "line"
+    elif any(w in q_lower for w in ["funil", "funnel", "etapa", "conversão"]):
+        chart_type = "funnel"
+    elif any(w in q_lower for w in ["mapa", "estado", "região", "uf"]):
+        chart_type = "map"
+    elif num_rows <= 6:
+        chart_type = "pie"
+
+    return {
+        "suggested_chart_type": chart_type,
+        "suggested_title": question[:80],
+        "suggested_config": {
+            "label_col": label_col,
+            "value_col": value_col,
+            "chart_type": chart_type,
+        },
+    }
+
 
 class AiQueryRequest(BaseModel):
     dataset_id: uuid.UUID
@@ -719,10 +826,13 @@ async def ai_query_endpoint(
 
     query_data = svc.query(ds, label_col, value_col, agg, filter_col, filter_val)
 
+    chart_suggestion = _suggest_chart(query_data, data.question)
+
     return {
         "data": query_data,
         "answer": answer,
         "query": {"label_col": label_col, "value_col": value_col, "agg": agg, "filter_col": filter_col, "filter_val": filter_val},
+        **chart_suggestion,
     }
 
 
@@ -788,6 +898,8 @@ class AlertCreate(BaseModel):
     threshold: float
     filter_col: str | None = None
     filter_val: str | None = None
+    notify_email: str | None = None
+    notify_slack_url: str | None = None
 
 
 class AlertResponse(BaseModel):
@@ -805,8 +917,33 @@ class AlertResponse(BaseModel):
     last_status: str | None
     checked_at: str | None
     created_at: str
+    notify_email: str | None = None
+    notify_slack_url: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+async def _send_alert_notifications(alert: ReportAlert, value: float) -> None:
+    """Envia notificações por email e/ou Slack quando alerta é disparado."""
+    msg = f"Alerta '{alert.name}' disparado! Valor atual: {value:.2f} (threshold: {alert.threshold})"
+
+    if alert.notify_email:
+        try:
+            from app.core.email import send_generic_email
+            for email in alert.notify_email.split(","):
+                email = email.strip()
+                if email:
+                    await send_generic_email(email, f"Alerta Jarbis: {alert.name}", msg)
+        except Exception as e:
+            print(f"[ALERT EMAIL] Falha: {e}")
+
+    if alert.notify_slack_url:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as client:
+                await client.post(alert.notify_slack_url, json={"text": msg})
+        except Exception as e:
+            print(f"[ALERT SLACK] Falha: {e}")
 
 
 def _eval_alert(alert: ReportAlert, current_value: float) -> str:
@@ -869,6 +1006,8 @@ async def create_alert(
         threshold=data.threshold,
         filter_col=data.filter_col,
         filter_val=data.filter_val,
+        notify_email=data.notify_email,
+        notify_slack_url=data.notify_slack_url,
     )
     db.add(alert)
     await db.flush()
@@ -904,11 +1043,17 @@ async def check_alert(
     rows = ds_svc.query(ds, alert.value_col, alert.value_col, alert.agg, alert.filter_col, alert.filter_val)
     total = sum(r.get("value", 0) or 0 for r in rows)
 
+    prev_status = alert.last_status
+    new_status = _eval_alert(alert, total)
     alert.last_value = total
-    alert.last_status = _eval_alert(alert, total)
+    alert.last_status = new_status
     alert.checked_at = datetime.now(_tz.utc)
     await db.commit()
     await db.refresh(alert)
+
+    # Dispara notificações se passou para triggered
+    if new_status == "triggered" and prev_status != "triggered":
+        await _send_alert_notifications(alert, total)
 
     return AlertResponse(
         id=alert.id, name=alert.name, dataset_id=alert.dataset_id, value_col=alert.value_col,
@@ -917,6 +1062,7 @@ async def check_alert(
         last_value=alert.last_value, last_status=alert.last_status,
         checked_at=alert.checked_at.isoformat() if alert.checked_at else None,
         created_at=alert.created_at.isoformat(),
+        notify_email=alert.notify_email, notify_slack_url=alert.notify_slack_url,
     )
 
 
@@ -1432,6 +1578,283 @@ async def revoke_api_key(
         raise HTTPException(status_code=404, detail="Chave não encontrada.")
     key.is_active = False
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Embed RLS tokens — geração e decodificação de tokens com filtros por usuário
+# ---------------------------------------------------------------------------
+
+
+class EmbedTokenCreate(BaseModel):
+    dashboard_id: uuid.UUID
+    user_ref: str  # external user identifier
+    filters: list[dict] = []  # [{col: str, value: str}]
+    expires_in_hours: int = 4
+
+
+class EmbedTokenResponse(BaseModel):
+    token: str
+    dashboard_id: uuid.UUID
+    expires_at: str
+    embed_url: str
+
+
+@router.post("/embed-tokens", response_model=EmbedTokenResponse)
+async def create_embed_token(
+    body: EmbedTokenCreate,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cria token embed com filtros RLS por usuário final."""
+    import jwt as pyjwt
+    from datetime import timedelta
+    from app.config import settings
+
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(hours=body.expires_in_hours)
+
+    payload = {
+        "sub": str(body.dashboard_id),
+        "tenant_id": str(current_user.tenant_id),
+        "user_ref": body.user_ref,
+        "filters": body.filters,
+        "exp": expires_at,
+        "iat": now,
+        "type": "embed",
+    }
+
+    secret = getattr(settings, "secret_key", "jarbis-secret")
+    token = pyjwt.encode(payload, secret, algorithm="HS256")
+
+    return EmbedTokenResponse(
+        token=token,
+        dashboard_id=body.dashboard_id,
+        expires_at=expires_at.isoformat(),
+        embed_url=f"https://app.jarbis.cc/embed/{token}",
+    )
+
+
+@router.get("/embed/{token}")
+async def decode_embed_token(token: str):
+    """Decodifica token embed e retorna dados do dashboard com filtros."""
+    import jwt as pyjwt
+    from app.config import settings
+
+    try:
+        secret = getattr(settings, "secret_key", "jarbis-secret")
+        payload = pyjwt.decode(token, secret, algorithms=["HS256"])
+        if payload.get("type") != "embed":
+            raise HTTPException(status_code=400, detail="Token inválido.")
+        return {
+            "dashboard_id": payload["sub"],
+            "tenant_id": payload["tenant_id"],
+            "user_ref": payload.get("user_ref"),
+            "filters": payload.get("filters", []),
+        }
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado.")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Token inválido.")
+
+
+# ---------------------------------------------------------------------------
+# G2 — Relatórios Agendados
+# ---------------------------------------------------------------------------
+
+from .scheduled_models import ScheduledReport
+from .scheduled_service import ScheduledReportService
+
+
+class ScheduledReportCreate(BaseModel):
+    report_id: uuid.UUID
+    report_name: str
+    frequency: str  # daily | weekly | monthly
+    emails: list[str]
+
+
+class ScheduledReportUpdate(BaseModel):
+    frequency: str | None = None
+    emails: list[str] | None = None
+    is_active: bool | None = None
+
+
+class ScheduledReportResponse(BaseModel):
+    id: uuid.UUID
+    report_id: uuid.UUID
+    report_name: str
+    frequency: str
+    emails: list[str]
+    is_active: bool
+    next_run: str
+    last_run: str | None
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+def _sr_to_response(sr: ScheduledReport) -> ScheduledReportResponse:
+    return ScheduledReportResponse(
+        id=sr.id,
+        report_id=sr.report_id,
+        report_name=sr.report_name,
+        frequency=sr.frequency,
+        emails=sr.emails or [],
+        is_active=sr.is_active,
+        next_run=sr.next_run.isoformat(),
+        last_run=sr.last_run.isoformat() if sr.last_run else None,
+        created_at=sr.created_at.isoformat(),
+    )
+
+
+@router.get(
+    "/scheduled",
+    response_model=list[ScheduledReportResponse],
+    summary="Lista relatórios agendados do tenant",
+)
+async def list_scheduled_reports(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    svc = ScheduledReportService(db)
+    items = await svc.list(current_user.tenant_id)
+    return [_sr_to_response(sr) for sr in items]
+
+
+@router.post(
+    "/scheduled",
+    response_model=ScheduledReportResponse,
+    status_code=201,
+    summary="Cria agendamento de relatório",
+)
+async def create_scheduled_report(
+    data: ScheduledReportCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    valid_frequencies = {"daily", "weekly", "monthly"}
+    if data.frequency not in valid_frequencies:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Frequência inválida. Use: {', '.join(valid_frequencies)}",
+        )
+    if not data.emails:
+        raise HTTPException(status_code=422, detail="Informe pelo menos um email destinatário.")
+    svc = ScheduledReportService(db)
+    sr = await svc.create(
+        tenant_id=current_user.tenant_id,
+        report_id=data.report_id,
+        report_name=data.report_name,
+        frequency=data.frequency,
+        emails=data.emails,
+    )
+    return _sr_to_response(sr)
+
+
+@router.post(
+    "/scheduled/run-due",
+    summary="Dispara envio dos relatórios agendados com next_run vencido (para testes / cron externo)",
+)
+async def run_due_scheduled_reports(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Busca todos os agendamentos ativos com next_run <= agora, envia email
+    para cada destinatário e atualiza last_run / next_run.
+    Em produção, este endpoint deve ser chamado por um cron job externo (Railway Cron / Celery Beat).
+    """
+    from app.core.email import send_admin_email
+
+    svc = ScheduledReportService(db)
+    due = await svc.get_due()
+    sent_count = 0
+    errors: list[str] = []
+
+    for sr in due:
+        dashboard_url = f"https://app.jarbis.cc/dashboards/{sr.report_id}"
+        subject = f"Relatório agendado: {sr.report_name}"
+        html_body = (
+            "<!DOCTYPE html>"
+            '<html lang="pt-BR"><head><meta charset="utf-8">'
+            f"<title>{subject}</title></head>"
+            '<body style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;'
+            'background:#f1f5f9;margin:0;padding:40px 20px;">'
+            '<div style="max-width:480px;margin:0 auto;background:white;border-radius:16px;'
+            'overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">'
+            '<div style="background:linear-gradient(135deg,#6D28D9 0%,#7C3AED 100%);padding:28px 32px;text-align:center;">'
+            '<span style="color:white;font-weight:800;font-size:20px;">jarbis</span></div>'
+            '<div style="padding:40px 32px 32px;">'
+            '<h2 style="color:#0f172a;font-size:22px;font-weight:800;margin:0 0 12px;">'
+            f"Seu relatório <b>{sr.report_name}</b> está pronto</h2>"
+            '<p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 28px;">'
+            f"Este é um envio automático agendado ({sr.frequency})."
+            " Clique abaixo para visualizar o dashboard atualizado.</p>"
+            '<div style="text-align:center;margin-bottom:28px;">'
+            f'<a href="{dashboard_url}" style="display:inline-block;'
+            "background:linear-gradient(135deg,#6D28D9 0%,#7C3AED 100%);"
+            'color:white;font-size:15px;font-weight:700;padding:16px 32px;'
+            'border-radius:12px;text-decoration:none;">'
+            "Ver Dashboard &rarr;</a></div></div>"
+            '<div style="border-top:1px solid #e2e8f0;padding:20px 32px;text-align:center;background:#f8fafc;">'
+            '<p style="color:#94a3b8;font-size:12px;margin:0;">'
+            '<a href="https://jarbis.cc" style="color:#94a3b8;text-decoration:none;">jarbis.cc</a>'
+            " &nbsp;&middot;&nbsp; &copy; 2026 Jarbis</p></div></div></body></html>"
+        )
+        for email in sr.emails:
+            try:
+                await send_admin_email(email, subject, html_body)
+                sent_count += 1
+            except Exception as exc:
+                errors.append(f"{email}: {exc}")
+        await svc.mark_sent(sr)
+
+    return {
+        "processed": len(due),
+        "emails_sent": sent_count,
+        "errors": errors,
+    }
+
+
+@router.put(
+    "/scheduled/{schedule_id}",
+    response_model=ScheduledReportResponse,
+    summary="Atualiza agendamento de relatório",
+)
+async def update_scheduled_report(
+    schedule_id: uuid.UUID,
+    data: ScheduledReportUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    if data.frequency is not None and data.frequency not in {"daily", "weekly", "monthly"}:
+        raise HTTPException(status_code=422, detail="Frequência inválida. Use: daily, weekly, monthly")
+    svc = ScheduledReportService(db)
+    sr = await svc.update(
+        schedule_id=schedule_id,
+        tenant_id=current_user.tenant_id,
+        frequency=data.frequency,
+        emails=data.emails,
+        is_active=data.is_active,
+    )
+    if not sr:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
+    return _sr_to_response(sr)
+
+
+@router.delete(
+    "/scheduled/{schedule_id}",
+    status_code=204,
+    summary="Remove agendamento de relatório",
+)
+async def delete_scheduled_report(
+    schedule_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    svc = ScheduledReportService(db)
+    deleted = await svc.delete(schedule_id, current_user.tenant_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
 
 
 # ---------------------------------------------------------------------------

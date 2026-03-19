@@ -32,3 +32,7 @@ class ReportAlert(Base):
     last_status: Mapped[str | None] = mapped_column(String(20), nullable=True)  # ok|triggered
     checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    # Canais de notificação adicionais
+    notify_email: Mapped[str | None] = mapped_column(String(500), nullable=True)  # email(s) separados por vírgula
+    notify_slack_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)  # Slack Incoming Webhook URL

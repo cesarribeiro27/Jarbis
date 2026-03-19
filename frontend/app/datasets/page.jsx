@@ -12,7 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 function ApiDatasetModal({ onClose, onCreated }) {
   const t = useTranslations('datasets')
   const toast = useToast()
-  const [form, setForm] = useState({ name: '', api_url: '', method: 'GET', headers: '', body: '', refresh_interval_minutes: '' })
+  const [form, setForm] = useState({ name: '', api_url: '', method: 'GET', headers: '', body: '', refresh_interval_minutes: '', sync_mode: 'replace' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -40,6 +40,7 @@ function ApiDatasetModal({ onClose, onCreated }) {
         name: form.name, api_url: normalizedUrl, method: form.method,
         headers, body: form.body || null,
         refresh_interval_minutes: form.refresh_interval_minutes ? parseInt(form.refresh_interval_minutes) : null,
+        sync_mode: form.sync_mode || 'replace',
       })
       onCreated(ds)
       onClose()
@@ -90,6 +91,17 @@ function ApiDatasetModal({ onClose, onCreated }) {
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.intervalLabel')}</label>
             <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Modo de sincronização</label>
+            <select
+              value={form.sync_mode || 'replace'}
+              onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="replace">Substituir (replace) — apaga e reimporta tudo</option>
+              <option value="append">Acumular (append) — adiciona novas linhas</option>
+            </select>
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}
           <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
