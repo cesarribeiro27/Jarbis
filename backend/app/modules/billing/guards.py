@@ -124,6 +124,35 @@ async def check_alert_limit(
         )
 
 
+async def check_ai_query_limit(
+    db: AsyncSession, tenant_id: uuid.UUID, plan: str
+) -> None:
+    """Lança PlanLimitError se o tenant atingiu a cota mensal de queries de IA."""
+    from datetime import timezone
+    from app.modules.reports.ai_usage_models import AIUsageLog
+
+    limits = PLANS.get(plan, PLANS["free"])
+    max_queries = limits.max_ai_queries_monthly
+    if max_queries == -1:
+        return  # ilimitado (Enterprise)
+    if max_queries == 0:
+        raise FeatureNotAvailableError(feature="ai", required_plan=PLAN_NAMES.get("equipe", "Profissional"))
+
+    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    count = await db.scalar(
+        select(func.count()).select_from(AIUsageLog).where(
+            AIUsageLog.tenant_id == tenant_id,
+            AIUsageLog.created_at >= month_start,
+        )
+    )
+    if (count or 0) >= max_queries:
+        next_plan = _next_plan(plan)
+        raise PlanLimitError(
+            f"Cota de {max_queries} consultas de IA por mês atingida no plano {PLAN_NAMES.get(plan, plan)}. "
+            f"Faça upgrade para o plano {next_plan} para continuar usando a IA."
+        )
+
+
 def _next_plan(current: str) -> str:
     order = ["free", "solo", "equipe", "ilimitado", "enterprise"]
     idx = order.index(current) if current in order else 0

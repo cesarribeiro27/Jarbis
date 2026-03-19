@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 
 /**
- * DashboardRail — Barra lateral direita de 6 ícones (Luzmo-style)
+ * DashboardRail — Barra lateral direita de 6 ícones
  * Usada em:  app/dashboards/[id]/page.jsx
  *            app/dashboards/novo/page.jsx
  *            app/admin/lab/page.jsx

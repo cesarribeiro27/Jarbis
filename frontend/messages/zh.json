@@ -128,43 +128,43 @@
       {
         "feature": "起始价格",
         "jarbis": "7天免费",
-        "luzmo": "1,000美元/月",
+        "competitor": "1,000美元/月",
         "powerbi": "10美元/用户"
       },
       {
         "feature": "中文界面",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "中文支持",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "iframe嵌入",
         "jarbis": true,
-        "luzmo": true,
+        "competitor": true,
         "powerbi": "复杂"
       },
       {
         "feature": "自然语言AI",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "几分钟完成设置",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "试用无需信用卡",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       }
     ]

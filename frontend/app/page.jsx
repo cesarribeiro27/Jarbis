@@ -626,7 +626,7 @@ export default function LandingPage() {
                         <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />Jarbis
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">Luzmo</div></th>
+                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">BI Global</div></th>
                     <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">Power BI</div></th>
                   </tr>
                 </thead>
@@ -635,7 +635,7 @@ export default function LandingPage() {
                     <tr key={row.feature} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-gray-600 font-medium whitespace-nowrap">{row.feature}</td>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.jarbis} /></td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.luzmo} /></td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.competitor} /></td>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.powerbi} /></td>
                     </tr>
                   ))}

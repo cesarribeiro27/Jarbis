@@ -128,43 +128,43 @@
       {
         "feature": "開始価格",
         "jarbis": "7日間無料",
-        "luzmo": "$1,000+/月",
+        "competitor": "$1,000+/月",
         "powerbi": "$10/ユーザー"
       },
       {
         "feature": "日本語インターフェース",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "日本語サポート",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "iframeで埋め込み",
         "jarbis": true,
-        "luzmo": true,
+        "competitor": true,
         "powerbi": "複雑"
       },
       {
         "feature": "自然言語AI",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "数分でセットアップ",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "トライアルにカード不要",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       }
     ]

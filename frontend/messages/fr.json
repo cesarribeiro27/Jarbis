@@ -128,43 +128,43 @@
       {
         "feature": "Prix de départ",
         "jarbis": "Gratuit 7 jours",
-        "luzmo": "1 000 $/mois",
+        "competitor": "1 000 $/mois",
         "powerbi": "10 $/utilisateur"
       },
       {
         "feature": "Interface en français",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Support en français",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Intégrer via iframe",
         "jarbis": true,
-        "luzmo": true,
+        "competitor": true,
         "powerbi": "Complexe"
       },
       {
         "feature": "IA en langage naturel",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Configuration en minutes",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Sans carte pour l'essai",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       }
     ]

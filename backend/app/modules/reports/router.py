@@ -37,6 +37,7 @@ from app.modules.auth.dependencies import get_current_active_user
 from app.modules.tenants.models import User
 
 from app.modules.billing.guards import (
+    check_ai_query_limit,
     check_alert_limit,
     check_dashboard_limit,
     check_dataset_limit,
@@ -504,6 +505,9 @@ class AiQueryRequest(BaseModel):
     question: str
 
 
+_AI_MODEL = "claude-haiku-4-5-20251001"
+
+
 @router.post("/ai-query", summary="Consulta dataset com linguagem natural via IA (Claude)")
 async def ai_query_endpoint(
     data: AiQueryRequest,
@@ -516,8 +520,12 @@ async def ai_query_endpoint(
 
     import anthropic as ant
 
+    from .ai_usage_models import AIUsageLog
+
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    check_feature_allowed("ai", tenant.plan if tenant else "free")
+    plan = tenant.plan if tenant else "free"
+    check_feature_allowed("ai", plan)
+    await check_ai_query_limit(db, current_user.tenant_id, plan)
 
     svc = DatasetService(db)
     ds = await svc.get(data.dataset_id, current_user.tenant_id)
@@ -532,27 +540,61 @@ async def ai_query_endpoint(
     rows = ds.rows or []
     sample = rows[:5]
 
+    # Inferir tipo de cada coluna a partir da amostra para melhorar a acurácia da IA
+    col_types: dict[str, str] = {}
+    if sample:
+        for col in columns:
+            vals = [r.get(col) for r in sample if r.get(col) is not None]
+            if vals:
+                try:
+                    [float(str(v).replace(",", ".")) for v in vals]
+                    col_types[col] = "número"
+                except (ValueError, TypeError):
+                    col_types[col] = "texto"
+            else:
+                col_types[col] = "texto"
+
+    col_desc = ", ".join(f"{c} ({col_types.get(c, 'texto')})" for c in columns)
     schema_str = (
         f"Dataset: {ds.name}\n"
-        f"Colunas: {', '.join(columns)}\n"
+        f"Colunas e tipos: {col_desc}\n"
         f"Amostra ({len(sample)} linhas):\n{json.dumps(sample, ensure_ascii=False, default=str)}"
     )
 
     system_prompt = (
-        "Você é um analista de dados. Dado o schema e amostra de um dataset, responda a pergunta do usuário "
-        "retornando SOMENTE um JSON válido (sem markdown, sem texto fora do JSON) com os campos:\n"
-        '{"label_col":"coluna para agrupar","value_col":"coluna numérica a agregar","agg":"sum|count|avg|max|min",'
-        '"filter_col":null,"filter_val":null,"answer":"resposta em português explicando o que o resultado vai mostrar"}\n'
-        "Use apenas nomes de colunas exatamente como aparecem no dataset."
+        "Você é um analista de dados especialista em BI. Dado o schema e amostra de um dataset, "
+        "responda a pergunta do usuário retornando SOMENTE um JSON válido (sem markdown, sem texto fora do JSON) com os campos:\n"
+        '{"label_col":"coluna para agrupar (deve ser do tipo texto/categoria)","value_col":"coluna numérica a agregar",'
+        '"agg":"sum|count|avg|max|min","filter_col":null,"filter_val":null,'
+        '"answer":"resposta em português claro explicando o que o gráfico vai mostrar"}\n'
+        "Regras: use apenas nomes de colunas exatamente como aparecem no dataset. "
+        "Prefira colunas do tipo 'número' para value_col e 'texto' para label_col."
     )
 
     client = ant.Anthropic(api_key=api_key)
     msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model=_AI_MODEL,
         max_tokens=512,
         system=system_prompt,
         messages=[{"role": "user", "content": f"{schema_str}\n\nPergunta: {data.question}"}],
     )
+
+    # Salvar log de uso (não bloqueia em caso de erro)
+    try:
+        usage = msg.usage
+        log = AIUsageLog(
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            dataset_id=data.dataset_id,
+            model=_AI_MODEL,
+            tokens_input=usage.input_tokens,
+            tokens_output=usage.output_tokens,
+            question=data.question[:500] if data.question else None,
+        )
+        db.add(log)
+        await db.commit()
+    except Exception:
+        pass
 
     text = msg.content[0].text.strip()
     try:
@@ -576,6 +618,48 @@ async def ai_query_endpoint(
         "data": query_data,
         "answer": answer,
         "query": {"label_col": label_col, "value_col": value_col, "agg": agg, "filter_col": filter_col, "filter_val": filter_val},
+    }
+
+
+@router.get("/ai-usage", summary="Retorna cota mensal de IA do tenant")
+async def get_ai_usage(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    import uuid as _uuid
+    from datetime import timezone
+    from sqlalchemy import func as _func, select as _sel
+    from app.modules.billing.plan_limits import PLANS
+    from .ai_usage_models import AIUsageLog
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    plan = tenant.plan if tenant else "free"
+    limits = PLANS.get(plan, PLANS["free"])
+    max_queries = limits.max_ai_queries_monthly
+
+    now = __import__("datetime").datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # primeiro dia do próximo mês
+    if now.month == 12:
+        next_month = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        next_month = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    used = 0
+    if limits.allow_ai:
+        used = await db.scalar(
+            _sel(_func.count()).select_from(AIUsageLog).where(
+                AIUsageLog.tenant_id == current_user.tenant_id,
+                AIUsageLog.created_at >= month_start,
+            )
+        ) or 0
+
+    return {
+        "used": used,
+        "limit": max_queries,       # -1 = ilimitado
+        "remaining": -1 if max_queries == -1 else max(0, max_queries - used),
+        "reset_at": next_month.isoformat(),
+        "plan": plan,
     }
 
 

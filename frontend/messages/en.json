@@ -128,43 +128,43 @@
       {
         "feature": "Starting price",
         "jarbis": "Free for 7 days",
-        "luzmo": "$1,000+/mo",
+        "competitor": "$1,000+/mo",
         "powerbi": "$10/user"
       },
       {
         "feature": "English interface",
         "jarbis": true,
-        "luzmo": true,
+        "competitor": true,
         "powerbi": true
       },
       {
         "feature": "English support",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Embed via iframe",
         "jarbis": true,
-        "luzmo": true,
+        "competitor": true,
         "powerbi": "Complex"
       },
       {
         "feature": "AI in plain language",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Setup in minutes",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "No card for trial",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       }
     ]

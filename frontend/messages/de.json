@@ -128,43 +128,43 @@
       {
         "feature": "Startpreis",
         "jarbis": "7 Tage kostenlos",
-        "luzmo": "1.000 $/Monat",
+        "competitor": "1.000 $/Monat",
         "powerbi": "10 $/Nutzer"
       },
       {
         "feature": "Deutsche Oberfläche",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Deutschsprachiger Support",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Einbetten via iframe",
         "jarbis": true,
-        "luzmo": true,
+        "competitor": true,
         "powerbi": "Komplex"
       },
       {
         "feature": "KI in natürlicher Sprache",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Einrichtung in Minuten",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       },
       {
         "feature": "Kein Karte für Test",
         "jarbis": true,
-        "luzmo": false,
+        "competitor": false,
         "powerbi": false
       }
     ]

@@ -43,7 +43,7 @@ URLs locais: Frontend `localhost:3001`, Backend `localhost:8000`, Docs `localhos
 ### Stack
 - **Backend:** FastAPI + SQLAlchemy 2.0 async (asyncpg) + PostgreSQL + Redis + Alembic
 - **Frontend:** Next.js 15 App Router + React 19 + Tailwind CSS + Recharts + React Grid Layout
-- **Docker containers:** `lumetra_backend`, `lumetra_frontend`, `lumetra_postgres`, `lumetra_redis` (nomes históricos)
+- **Docker containers:** `jarbis_backend`, `jarbis_frontend`, `jarbis_postgres`, `jarbis_redis` (nomes históricos)
 
 ### Backend — estrutura de módulos
 

@@ -112,13 +112,13 @@
     "subtitle": "A única plataforma de BI embarcado pensada para o mercado brasileiro.",
     "colFeature": "Funcionalidade",
     "rows": [
-      { "feature": "Preço inicial", "jarbis": "Grátis por 7 dias", "luzmo": "$1.000+/mês", "powerbi": "R$60/usuário" },
-      { "feature": "Interface em português", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Suporte em português", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Incorporar via iframe", "jarbis": true, "luzmo": true, "powerbi": "Complexo" },
-      { "feature": "AI Assistente", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Setup em minutos", "jarbis": true, "luzmo": false, "powerbi": false },
-      { "feature": "Sem cartão no teste", "jarbis": true, "luzmo": false, "powerbi": false }
+      { "feature": "Preço inicial", "jarbis": "Grátis por 7 dias", "competitor": "$1.000+/mês", "powerbi": "R$60/usuário" },
+      { "feature": "Interface em português", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Suporte em português", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Incorporar via iframe", "jarbis": true, "competitor": true, "powerbi": "Complexo" },
+      { "feature": "AI Assistente", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Setup em minutos", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Sem cartão no teste", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {

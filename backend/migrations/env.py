@@ -18,6 +18,7 @@ from app.database import Base
 # Importa todos os models para o Alembic detectá-los
 # IMPORTANTE: cada novo model deve ser importado aqui
 from app.modules.reports.models import Report  # noqa: F401
+from app.modules.reports.ai_usage_models import AIUsageLog  # noqa: F401
 from app.modules.tenants.models import Tenant, User  # noqa: F401
 
 config = context.config

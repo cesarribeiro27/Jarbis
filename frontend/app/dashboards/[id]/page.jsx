@@ -96,6 +96,11 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
   const historyRef = useRef(null)
+  const [aiUsage, setAiUsage] = useState(null)
+
+  useEffect(() => {
+    api.reports.aiUsage().then(setAiUsage).catch(() => {})
+  }, [])
 
   const selectedDs = datasets.find(d => d.id === datasetId)
   const numCols = Object.entries(selectedDs?.column_types || {}).filter(([, t]) => t === 'number').map(([c]) => c)
@@ -119,6 +124,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
     try {
       const result = await api.reports.aiQuery(datasetId, qText)
       setHistory(h => h.map(e => e.id === entry.id ? { ...e, answer: result.answer } : e))
+      api.reports.aiUsage().then(setAiUsage).catch(() => {})
     } catch (e) {
       setHistory(h => h.map(e => e.id === entry.id ? { ...e, error: e.message } : e))
       setError(e.message)
@@ -138,6 +144,17 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
             {t('ai.title')}
           </span>
           <div className="flex items-center gap-2">
+            {aiUsage && aiUsage.limit !== -1 && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                aiUsage.remaining === 0
+                  ? 'bg-red-50 text-red-500'
+                  : aiUsage.remaining <= 10
+                  ? 'bg-amber-50 text-amber-600'
+                  : 'bg-violet-50 text-violet-600'
+              }`}>
+                {aiUsage.remaining}/{aiUsage.limit} consultas
+              </span>
+            )}
             {history.length > 0 && (
               <button onClick={() => setHistory([])} className="text-[10px] text-gray-400 hover:text-gray-600 font-medium">{t('ai.clearHistory')}</button>
             )}
@@ -628,7 +645,7 @@ export default function DashboardDetailPage() {
   if (mode === 'edit') {
     return (
       <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f7] dark:bg-gray-950">
-        {/* Luzmo-style top bar */}
+        {/* Editor top bar */}
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-700 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm">
           {/* Left: back + title + add */}
           <button onClick={cancelEdit} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors pr-2 border-r border-gray-200 dark:border-gray-600 mr-1">
