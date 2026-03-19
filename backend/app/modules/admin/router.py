@@ -3246,7 +3246,7 @@ async def get_my_onboarding(
     is_paid = tenant and tenant.subscription_status == "active" and tenant.plan != "free"
 
     steps = [
-        {"key": "email_verified",    "label": "Verificar email",           "done": bool(user.is_verified),        "href": None},
+        {"key": "email_verified",    "label": "Verificar email",           "done": bool(user.email_verified),     "href": None},
         {"key": "first_login",       "label": "Fazer o primeiro login",     "done": user.last_login_at is not None, "href": None},
         {"key": "dashboard_created", "label": "Criar primeiro dashboard",   "done": dash_count > 0,                 "href": "/dashboards/novo"},
         {"key": "dataset_connected", "label": "Conectar um dataset",        "done": ds_count > 0,                   "href": "/datasets"},

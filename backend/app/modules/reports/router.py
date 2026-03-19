@@ -1233,8 +1233,8 @@ async def create_from_template(
     await check_dashboard_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     service = ReportService(db)
     report = await service.create(
-        ReportCreate(title=template["name"], description=template["description"]),
         current_user.tenant_id,
+        ReportCreate(title=template["name"], description=template["description"]),
     )
     report.pages = template["pages"]
     await db.commit()
