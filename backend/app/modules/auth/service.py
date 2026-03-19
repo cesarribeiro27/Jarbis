@@ -138,6 +138,14 @@ class AuthService:
         # Atualiza last_login
         user.last_login_at = datetime.now(timezone.utc)
 
+        # Registra sessão para health score
+        try:
+            from app.modules.admin.models import UserSession
+            session = UserSession(user_id=user.id, tenant_id=user.tenant_id)
+            self.db.add(session)
+        except Exception:
+            pass
+
         return self._build_auth_response(user)
 
     async def forgot_password(self, email: str, frontend_url: str) -> None:

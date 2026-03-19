@@ -41,7 +41,7 @@ from app.modules.admin.models import (
     Affiliate, AdminUser, AdminAuditLog, AffiliatePayment, ApiKey, Coupon,
     LifecycleEmailLog, MrrSnapshot, NfeDocument, NpsSurvey,
     SupportTicket, SupportTicketComment, TenantNote,
-    UserNotification,
+    UserNotification, UserSession,
 )
 from app.modules.auth.dependencies import get_current_active_user
 from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, PLANS, get_effective_limits
@@ -379,6 +379,228 @@ async def admin_metrics(
         "trial_expiring_soon": trial_expiring_soon,
         "conversion_rate": conversion_rate,
     }
+
+
+# ─── /admin/metrics/mrr-history ───────────────────────────────────────────────
+
+@router.get("/metrics/mrr-history", summary="Histórico de MRR dos últimos N dias")
+async def admin_mrr_history(
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+    days: int = Query(default=90, ge=7, le=365),
+):
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    rows = await db.execute(
+        select(MrrSnapshot)
+        .where(MrrSnapshot.created_at >= cutoff)
+        .order_by(MrrSnapshot.snapshot_date)
+    )
+    snapshots = rows.scalars().all()
+    return [
+        {
+            "date": s.snapshot_date.isoformat() if hasattr(s.snapshot_date, "isoformat") else str(s.snapshot_date),
+            "mrr": float(s.mrr),
+            "arr": float(s.arr),
+            "paying_tenants": s.paying_tenants,
+            "new_tenants": s.new_tenants,
+            "churned_tenants": s.churned_tenants,
+        }
+        for s in snapshots
+    ]
+
+
+# ─── /admin/metrics/churn-ltv ─────────────────────────────────────────────────
+
+@router.get("/metrics/churn-ltv", summary="Churn rate e LTV estimado")
+async def admin_churn_ltv(
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    PLAN_MRR = {"solo": 79.90, "starter": 79.90, "equipe": 189.90, "professional": 189.90, "ilimitado": 599.90}
+    now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Pagantes ativos
+    paying = await db.scalar(
+        select(func.count()).select_from(Tenant).where(
+            Tenant.is_active == True,  # noqa: E712
+            Tenant.subscription_status == "active",
+            Tenant.plan.in_(list(PLAN_MRR.keys())),
+        )
+    ) or 0
+
+    # Cancelamentos no mês atual
+    churned_month = await db.scalar(
+        select(func.count()).select_from(Tenant).where(
+            Tenant.canceled_at >= month_start,
+        )
+    ) or 0
+
+    # Churn rate mensal = cancelamentos / base inicio do mês
+    paying_start = paying + churned_month  # aproximação
+    churn_rate = (churned_month / paying_start * 100) if paying_start > 0 else 0.0
+
+    # MRR atual
+    paid_rows = await db.execute(
+        select(Tenant.plan, func.count().label("count"))
+        .where(
+            Tenant.is_active == True,  # noqa: E712
+            Tenant.subscription_status == "active",
+            Tenant.plan.in_(list(PLAN_MRR.keys())),
+        )
+        .group_by(Tenant.plan)
+    )
+    mrr = sum(PLAN_MRR.get(row.plan, 0) * row.count for row in paid_rows)
+
+    # ARPU = MRR / paying
+    arpu = (mrr / paying) if paying > 0 else 0.0
+
+    # LTV = ARPU / churn_rate_mensal (em meses)
+    churn_decimal = churn_rate / 100
+    ltv = (arpu / churn_decimal) if churn_decimal > 0 else 0.0
+
+    # Histórico de churn dos últimos 6 meses via MrrSnapshot
+    six_months_ago = now - timedelta(days=180)
+    churn_history_rows = await db.execute(
+        select(MrrSnapshot.snapshot_date, MrrSnapshot.churned_tenants, MrrSnapshot.paying_tenants)
+        .where(MrrSnapshot.created_at >= six_months_ago)
+        .order_by(MrrSnapshot.snapshot_date)
+    )
+    churn_history = [
+        {
+            "date": r.snapshot_date.isoformat() if hasattr(r.snapshot_date, "isoformat") else str(r.snapshot_date),
+            "churned": r.churned_tenants,
+            "paying": r.paying_tenants,
+            "churn_rate": round(r.churned_tenants / r.paying_tenants * 100, 2) if r.paying_tenants > 0 else 0.0,
+        }
+        for r in churn_history_rows
+    ]
+
+    return {
+        "mrr": round(mrr, 2),
+        "arpu": round(arpu, 2),
+        "ltv": round(ltv, 2),
+        "churn_rate_monthly_pct": round(churn_rate, 2),
+        "paying_tenants": paying,
+        "churned_this_month": churned_month,
+        "churn_history": churn_history,
+    }
+
+
+# ─── Health Score helper ───────────────────────────────────────────────────────
+
+async def _compute_health_score(tenant_id: uuid.UUID, db: AsyncSession) -> dict:
+    """
+    Calcula health score 0-100 para um tenant com base em:
+    - Último login (0-40 pts)
+    - Frequência de sessões nos últimos 30 dias (0-30 pts)
+    - Features usadas: dashboards, datasets, alertas, AI (0-20 pts)
+    - Status do plano (0-10 pts)
+    """
+    from app.modules.reports.models import Report
+    from app.modules.reports.dataset_models import ReportDataset
+    from app.modules.reports.alert_models import ReportAlert
+    from app.modules.reports.ai_usage_models import AIUsageLog
+
+    now = datetime.now(timezone.utc)
+    month_ago = now - timedelta(days=30)
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        return {"score": 0, "tier": "crítico", "details": {}}
+
+    # Último login do owner
+    owner = await db.scalar(
+        select(User).where(User.tenant_id == tenant_id, User.role == "owner")
+    )
+    last_login = owner.last_login_at if owner else None
+    days_since_login = (now - last_login).days if last_login else 999
+
+    if days_since_login <= 7:
+        login_pts = 40
+    elif days_since_login <= 14:
+        login_pts = 30
+    elif days_since_login <= 30:
+        login_pts = 15
+    else:
+        login_pts = 0
+
+    # Frequência de sessões últimos 30 dias
+    session_count = await db.scalar(
+        select(func.count()).select_from(UserSession).where(
+            UserSession.tenant_id == tenant_id,
+            UserSession.created_at >= month_ago,
+        )
+    ) or 0
+
+    if session_count >= 20:
+        session_pts = 30
+    elif session_count >= 10:
+        session_pts = 20
+    elif session_count >= 5:
+        session_pts = 10
+    elif session_count >= 1:
+        session_pts = 5
+    else:
+        session_pts = 0
+
+    # Features usadas
+    has_dashboards = (await db.scalar(select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)) or 0) > 0
+    has_datasets = (await db.scalar(select(func.count()).select_from(ReportDataset).where(ReportDataset.tenant_id == tenant_id)) or 0) > 0
+    has_alerts = (await db.scalar(select(func.count()).select_from(ReportAlert).where(ReportAlert.tenant_id == tenant_id)) or 0) > 0
+    has_ai = (await db.scalar(
+        select(func.count()).select_from(AIUsageLog).where(
+            AIUsageLog.tenant_id == tenant_id,
+            AIUsageLog.created_at >= month_ago,
+        )
+    ) or 0) > 0
+
+    feature_pts = (5 if has_dashboards else 0) + (5 if has_datasets else 0) + (5 if has_alerts else 0) + (5 if has_ai else 0)
+
+    # Status do plano
+    if tenant.subscription_status == "active" and tenant.plan not in ("free", None):
+        plan_pts = 10
+    elif tenant.trial_ends_at and tenant.trial_ends_at > now:
+        plan_pts = 5
+    elif tenant.plan == "free":
+        plan_pts = 3
+    else:
+        plan_pts = 0
+
+    score = login_pts + session_pts + feature_pts + plan_pts
+
+    if score >= 70:
+        tier = "saudável"
+    elif score >= 40:
+        tier = "em_risco"
+    else:
+        tier = "crítico"
+
+    return {
+        "score": score,
+        "tier": tier,
+        "details": {
+            "login_pts": login_pts,
+            "session_pts": session_pts,
+            "feature_pts": feature_pts,
+            "plan_pts": plan_pts,
+            "days_since_login": days_since_login if days_since_login < 999 else None,
+            "sessions_last_30d": session_count,
+            "has_dashboards": has_dashboards,
+            "has_datasets": has_datasets,
+            "has_alerts": has_alerts,
+            "has_ai": has_ai,
+        },
+    }
+
+
+@router.get("/tenants/{tenant_id}/health-score", summary="Health score de um tenant")
+async def admin_tenant_health_score(
+    tenant_id: uuid.UUID,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _compute_health_score(tenant_id, db)
 
 
 # ─── /admin/tenants ───────────────────────────────────────────────────────────
