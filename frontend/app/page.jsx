@@ -158,6 +158,16 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Preserva UTMs no sessionStorage para o signup capturar mesmo após navegação interna
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref']
+    utmKeys.forEach(key => {
+      const val = params.get(key)
+      if (val) sessionStorage.setItem(key, val)
+    })
+  }, [])
+
   const pricing = getPricing(locale)
 
   const basePrices = {

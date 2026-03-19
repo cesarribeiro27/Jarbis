@@ -55,11 +55,13 @@ function SignupForm() {
   const [utms, setUtms] = useState({})
 
   useEffect(() => {
-    const ref = searchParams.get('ref')
+    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
+    // Prioridade: URL params > sessionStorage (salvo pela homepage ao receber UTMs)
+    const ref = searchParams.get('ref') || sessionStorage.getItem('ref')
     if (ref) setRefCode(ref.toUpperCase())
     const utmParams = {}
-    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
-      const val = searchParams.get(key)
+    for (const key of utmKeys) {
+      const val = searchParams.get(key) || sessionStorage.getItem(key)
       if (val) utmParams[key] = val
     }
     if (Object.keys(utmParams).length > 0) setUtms(utmParams)
