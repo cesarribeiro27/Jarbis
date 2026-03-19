@@ -19,7 +19,7 @@ def upgrade():
     op.create_table(
         'halp_usage_logs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('tenant_id', postgresql.UUID(as_uuid=True), nullable=False, index=True),
+        sa.Column('tenant_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('plan', sa.String(50), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
