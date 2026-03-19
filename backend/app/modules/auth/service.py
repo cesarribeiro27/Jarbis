@@ -87,7 +87,8 @@ class AuthService:
 
     async def verify_email(self, email: str, code: str) -> AuthResponse:
         """Verifica o código de 6 dígitos e ativa o email do usuário."""
-        user = await self.db.scalar(select(User).where(User.email == email))
+        from sqlalchemy.orm import selectinload
+        user = await self.db.scalar(select(User).where(User.email == email).options(selectinload(User.tenant)))
         if not user:
             raise UnauthorizedError("Email não encontrado.")
 
