@@ -336,12 +336,18 @@ class DatasetService:
         self, url: str, headers: dict, data_path: str | None
     ) -> tuple[list[dict], list[str]]:
         _validate_ssrf(url)
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             resp = await client.get(url, headers=headers)
             resp.raise_for_status()
-            data = resp.json()
+            content_type = resp.headers.get("content-type", "")
+            is_csv = "text/csv" in content_type or "format=csv" in url
 
-        raw_rows = _extract_json_path(data, data_path)
-        rows = [_coerce_row(r) for r in raw_rows if isinstance(r, dict)]
+        if is_csv:
+            rows = _parse_csv(resp.content)
+        else:
+            data = resp.json()
+            raw_rows = _extract_json_path(data, data_path)
+            rows = [_coerce_row(r) for r in raw_rows if isinstance(r, dict)]
+
         columns = _detect_columns(rows)
         return rows, columns

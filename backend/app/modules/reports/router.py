@@ -522,6 +522,86 @@ async def get_dataset_columns(
 
 
 # ---------------------------------------------------------------------------
+# Dataset CRUD — rows, rename, delete column
+# ---------------------------------------------------------------------------
+
+
+class DatasetUpdateRequest(BaseModel):
+    name: str
+
+
+@router.get(
+    "/datasets/{dataset_id}/rows",
+    summary="Retorna linhas brutas do dataset com paginação",
+)
+async def get_dataset_rows(
+    dataset_id: uuid.UUID,
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = DatasetService(db)
+    ds = await service.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    rows = ds.rows or []
+    return {"rows": rows[offset:offset + limit], "total": len(rows)}
+
+
+@router.patch(
+    "/datasets/{dataset_id}",
+    response_model=DatasetSummary,
+    summary="Renomeia um dataset",
+)
+async def update_dataset(
+    dataset_id: uuid.UUID,
+    body: DatasetUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = DatasetService(db)
+    ds = await service.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    ds.name = body.name.strip()
+    await db.commit()
+    await db.refresh(ds)
+    return DatasetSummary(
+        id=ds.id, name=ds.name, type=ds.type,
+        columns=ds.columns or [], row_count=ds.row_count or 0,
+        api_url=ds.api_url,
+        last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
+    )
+
+
+@router.delete(
+    "/datasets/{dataset_id}/columns/{column_name}",
+    summary="Remove uma coluna do dataset",
+)
+async def delete_dataset_column(
+    dataset_id: uuid.UUID,
+    column_name: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from sqlalchemy.orm.attributes import flag_modified
+    service = DatasetService(db)
+    ds = await service.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    if not ds.columns or column_name not in ds.columns:
+        raise HTTPException(status_code=404, detail="Coluna não encontrada")
+    ds.rows = [{k: v for k, v in row.items() if k != column_name} for row in (ds.rows or [])]
+    ds.columns = [c for c in (ds.columns or []) if c != column_name]
+    ds.row_count = len(ds.rows)
+    flag_modified(ds, "rows")
+    flag_modified(ds, "columns")
+    await db.commit()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
 # AI — query em linguagem natural
 # ---------------------------------------------------------------------------
 

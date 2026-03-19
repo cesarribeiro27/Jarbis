@@ -126,6 +126,12 @@ export const api = {
       columns: (id) => apiFetch(`/reports/datasets/${id}/columns`),
       // Retorna (ou cria) o dataset de demonstração do tenant
       getOnboarding: () => apiFetch('/reports/onboarding-dataset'),
+      // Linhas brutas paginadas
+      rows: (id, limit = 50, offset = 0) => apiFetch(`/reports/datasets/${id}/rows?limit=${limit}&offset=${offset}`),
+      // Renomear dataset
+      update: (id, data) => apiFetch(`/reports/datasets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      // Remover coluna
+      deleteColumn: (id, col) => apiFetch(`/reports/datasets/${id}/columns/${encodeURIComponent(col)}`, { method: 'DELETE' }),
     },
     alerts: {
       list: () => apiFetch('/reports/alerts'),

@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { useTranslations, useLocale } from 'next-intl'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
-import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/ReportBuilder'
+import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel, ColumnsPanel } from '@/components/ReportBuilder'
 import DashboardRail from '@/components/DashboardRail'
 
 const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr: false })
@@ -341,26 +341,33 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
         )}
       </div>
 
-      {/* Blocos de filtro */}
+      {/* Filtros por Gráfico */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('filters.filterBlocks', { count: filterBlocks.length })}</p>
-        {filterBlocks.length === 0 ? (
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Filtros por Gráfico</p>
+        {blocks.length === 0 ? (
           <div className="text-center py-6">
             <svg className="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            <p className="text-xs text-gray-400">{t('filters.noFilterBlocks')}</p>
+            <p className="text-xs text-gray-400">Nenhum bloco no dashboard</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filterBlocks.map(block => {
-              const ds = datasets.find(d => d.id === block.dataset_id)
+          <div className="space-y-0.5">
+            {blocks.map(block => {
+              let count = 0
+              if (hasDateFilter) count += 1
+              filterBlocks.forEach(fb => {
+                if (fb.dataset_id === block.dataset_id && fb.id !== block.id) count += 1
+              })
+              const typeLabels = { bar: 'Barras', line: 'Linha', pie: 'Pizza', number: 'Número', table: 'Tabela', filter: 'Filtro', slider: 'Slider', image: 'Imagem', text: 'Texto', area: 'Área', scatter: 'Dispersão', funnel: 'Funil' }
+              const typeLabel = typeLabels[block.type] || block.type
               return (
-                <div key={block.id} className="bg-gray-50 rounded-xl border border-gray-100 p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-gray-700 truncate flex-1">{block.title}</span>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-2 shrink-0 ${block.type === 'slider' ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>{block.type === 'slider' ? t('filters.badgeSlider') : t('filters.badgeFilter')}</span>
+                <div key={block.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 cursor-default">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] text-gray-400 shrink-0">{typeLabel}</span>
+                    <span className="text-xs text-gray-700 truncate">{block.title || typeLabel}</span>
                   </div>
-                  {block.filter_col && <p className="text-[10px] text-gray-400">{t('filters.labelColumn')} <span className="font-mono">{block.filter_col}</span></p>}
-                  {ds && <p className="text-[10px] text-gray-400">{t('filters.labelDataset')} {ds.name}</p>}
+                  <span className={`text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border shrink-0 ml-2 ${count > 0 ? 'bg-violet-100 text-violet-700 border-violet-300' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+                    {count}
+                  </span>
                 </div>
               )
             })}
@@ -638,6 +645,57 @@ export default function DashboardDetailPage() {
 
   const activeBlock = blocks.find(b => b.id === selectedBlockId)
 
+  // Binding Mode: ativo quando painel "dados" está aberto
+  const bindingMode = sidePanel === 'dados' && sidebarOpen
+
+  // Filter Targeting Mode: ativo quando bloco filtro/slider está selecionado
+  const isFilterBlock = activeBlock && ['filter', 'slider'].includes(activeBlock.type)
+  const filterTargetMode = !!(isFilterBlock && selectedBlockId)
+
+  function handleAssignColumn(col, type, granularity, datasetId) {
+    if (!selectedBlockId) return
+    const block = blocks.find(b => b.id === selectedBlockId)
+    if (!block) return
+    let patch = {}
+    if (type === 'number') {
+      patch = { value_col: col }
+    } else if (type === 'date') {
+      patch = {
+        label_col: col,
+        config: { ...(block.config || {}), dim_type: 'date', granularity: granularity || 'month' },
+      }
+    } else {
+      patch = {
+        label_col: col,
+        config: { ...(block.config || {}), dim_type: 'text', granularity: null },
+      }
+    }
+    if (datasetId && !block.dataset_id) patch.dataset_id = datasetId
+    updateActiveBlock({ ...block, ...patch })
+  }
+
+  function toggleFilterTarget(filterBlockId, targetBlockId) {
+    const fb = blocks.find(b => b.id === filterBlockId)
+    if (!fb) return
+    const targets = fb.config?.target_block_ids
+    let newTargets
+    if (targets == null) {
+      const allDataIds = blocks
+        .filter(b => !['filter', 'slider'].includes(b.type) && b.id !== filterBlockId)
+        .map(b => b.id)
+        .filter(id => id !== targetBlockId)
+      newTargets = allDataIds
+    } else if (targets.includes(targetBlockId)) {
+      newTargets = targets.filter(id => id !== targetBlockId)
+    } else {
+      newTargets = [...targets, targetBlockId]
+    }
+    setBlocks(blocks.map(b => b.id === filterBlockId
+      ? { ...b, config: { ...(b.config || {}), target_block_ids: newTargets } }
+      : b
+    ))
+  }
+
   if (loading) return <AppLayout><div className="p-8 text-center text-gray-400">{t('loading')}</div></AppLayout>
   if (!report) return <AppLayout><div className="p-8 text-center text-red-500">{t('notFound')}</div></AppLayout>
 
@@ -744,7 +802,7 @@ export default function DashboardDetailPage() {
             </div>
 
 
-            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} />
+            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} />
           </div>
 
           {/* Backdrop mobile para o sidebar */}
@@ -771,7 +829,7 @@ export default function DashboardDetailPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {sidePanel === 'dados' && <DatasetPanel datasets={datasets} onDatasetsChange={setDatasets} />}
+              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} />}
               {sidePanel === 'config' && (activeBlock
                 ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} />
                 : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />
