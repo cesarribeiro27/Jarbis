@@ -17,7 +17,7 @@ from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, PLANS, get_
 # Plano mínimo para cada feature (chave = slug do plano em PLANS)
 _FEATURE_MIN_PLAN: dict[str, str] = {
     "ai": "equipe",
-    "embed": "solo",
+    "embed": "free",
     "white_label": "ilimitado",
 }
 
