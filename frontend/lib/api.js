@@ -140,6 +140,14 @@ export const api = {
       toggle: (id, isActive) => apiFetch(`/reports/alerts/${id}?is_active=${isActive}`, { method: 'PATCH' }),
       delete: (id) => apiFetch(`/reports/alerts/${id}`, { method: 'DELETE' }),
     },
+    collections: {
+      list: () => apiFetch('/reports/collections'),
+      create: (data) => apiFetch('/reports/collections', { method: 'POST', body: JSON.stringify(data) }),
+      delete: (id) => apiFetch(`/reports/collections/${id}`, { method: 'DELETE' }),
+      listReports: (id) => apiFetch(`/reports/collections/${id}/reports`),
+      addReport: (collectionId, reportId) => apiFetch(`/reports/collections/${collectionId}/reports/${reportId}`, { method: 'POST' }),
+      removeReport: (collectionId, reportId) => apiFetch(`/reports/collections/${collectionId}/reports/${reportId}`, { method: 'DELETE' }),
+    },
     aiQuery: (datasetId, question) =>
       apiFetch('/reports/ai-query', { method: 'POST', body: JSON.stringify({ dataset_id: datasetId, question }) }),
     aiUsage: () => apiFetch('/reports/ai-usage'),

@@ -107,6 +107,17 @@ class ApiDatasetCreate(BaseModel):
     def resolved_headers(self) -> dict | None:
         return self.headers or self.api_headers
 
+
+class DbDatasetCreate(BaseModel):
+    name: str
+    db_type: str  # postgresql | mysql
+    host: str
+    port: int = 5432
+    database: str
+    username: str
+    password: str
+    query: str
+
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 _CACHE_TTL = 300  # 5 minutos
@@ -412,6 +423,91 @@ async def create_api_dataset(
         last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
         refresh_interval_minutes=ds.refresh_interval_minutes,
     )
+
+
+@router.post(
+    "/datasets/database/test",
+    summary="Testa conexão com banco de dados externo",
+)
+async def test_db_connection(
+    body: DbDatasetCreate,
+    current_user=Depends(get_current_active_user),
+):
+    from .connectors.db_connector import test_connection
+    result = await test_connection(body.db_type, body.host, body.port, body.database, body.username, body.password)
+    return result
+
+
+@router.post(
+    "/datasets/database",
+    status_code=201,
+    summary="Cria dataset a partir de banco de dados externo (PostgreSQL/MySQL)",
+)
+async def create_db_dataset(
+    body: DbDatasetCreate,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
+    from .connectors.db_connector import encrypt_password, run_query
+    rows = await run_query(body.db_type, body.host, body.port, body.database, body.username, body.password, body.query)
+
+    from .dataset_service import _detect_columns, _coerce_row
+    coerced = [_coerce_row(r) for r in rows]
+    columns = _detect_columns(coerced)
+
+    ds = ReportDataset(
+        tenant_id=current_user.tenant_id,
+        name=body.name,
+        type="database",
+        rows=coerced,
+        columns=columns,
+        row_count=len(coerced),
+        db_type=body.db_type,
+        db_host=body.host,
+        db_port=body.port,
+        db_name=body.database,
+        db_username=body.username,
+        db_password_enc=encrypt_password(body.password),
+        db_query=body.query,
+    )
+    db.add(ds)
+    await db.commit()
+    await db.refresh(ds)
+    return {"id": str(ds.id), "name": ds.name, "row_count": ds.row_count, "columns": ds.columns}
+
+
+@router.post(
+    "/datasets/{dataset_id}/database/sync",
+    summary="Re-sincroniza dataset de banco de dados externo",
+)
+async def sync_db_dataset(
+    dataset_id: uuid.UUID,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy.orm.attributes import flag_modified
+    from .connectors.db_connector import decrypt_password, run_query
+    from .dataset_service import _detect_columns, _coerce_row
+
+    ds = await db.scalar(select(ReportDataset).where(
+        ReportDataset.id == dataset_id, ReportDataset.tenant_id == current_user.tenant_id
+    ))
+    if not ds or ds.type != "database":
+        raise HTTPException(status_code=404, detail="Dataset de banco não encontrado")
+
+    password = decrypt_password(ds.db_password_enc)
+    rows = await run_query(ds.db_type, ds.db_host, ds.db_port, ds.db_name, ds.db_username, password, ds.db_query)
+    coerced = [_coerce_row(r) for r in rows]
+
+    ds.rows = coerced
+    ds.columns = _detect_columns(coerced)
+    ds.row_count = len(coerced)
+    flag_modified(ds, 'rows')
+    flag_modified(ds, 'columns')
+    await db.commit()
+    return {"ok": True, "row_count": ds.row_count}
 
 
 @router.post(
@@ -1230,6 +1326,147 @@ async def delete_alert(
         raise HTTPException(status_code=404, detail="Alerta não encontrado")
     await db.delete(alert)
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Collections (pastas de dashboards) — ANTES de /{report_id} para não ser capturado
+# ---------------------------------------------------------------------------
+
+
+class CollectionCreate(BaseModel):
+    name: str
+    description: str | None = None
+    color: str = "#7c3aed"
+
+
+class CollectionResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: str | None
+    color: str | None
+    is_pinned: bool
+    created_at: datetime
+    report_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/collections", response_model=list[CollectionResponse])
+async def list_collections(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import Collection, report_collection
+    from sqlalchemy import func
+    result = await db.execute(
+        select(Collection, func.count(report_collection.c.report_id).label('cnt'))
+        .outerjoin(report_collection, Collection.id == report_collection.c.collection_id)
+        .where(Collection.tenant_id == current_user.tenant_id)
+        .group_by(Collection.id)
+        .order_by(Collection.is_pinned.desc(), Collection.created_at.desc())
+    )
+    rows = result.all()
+    return [CollectionResponse(
+        id=c.id, name=c.name, description=c.description, color=c.color,
+        is_pinned=c.is_pinned, created_at=c.created_at, report_count=cnt
+    ) for c, cnt in rows]
+
+
+@router.post("/collections", response_model=CollectionResponse, status_code=201)
+async def create_collection(
+    body: CollectionCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import Collection
+    col = Collection(tenant_id=current_user.tenant_id, **body.model_dump())
+    db.add(col)
+    await db.commit()
+    await db.refresh(col)
+    return CollectionResponse(
+        **{k: getattr(col, k) for k in ['id', 'name', 'description', 'color', 'is_pinned', 'created_at']},
+        report_count=0,
+    )
+
+
+@router.delete("/collections/{collection_id}")
+async def delete_collection(
+    collection_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import Collection
+    col = await db.scalar(
+        select(Collection).where(Collection.id == collection_id, Collection.tenant_id == current_user.tenant_id)
+    )
+    if not col:
+        raise HTTPException(status_code=404, detail="Coleção não encontrada")
+    await db.delete(col)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/collections/{collection_id}/reports/{report_id}")
+async def add_report_to_collection(
+    collection_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import report_collection
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+    await db.execute(
+        pg_insert(report_collection)
+        .values(report_id=report_id, collection_id=collection_id)
+        .on_conflict_do_nothing()
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/collections/{collection_id}/reports/{report_id}")
+async def remove_report_from_collection(
+    collection_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import report_collection
+    await db.execute(
+        report_collection.delete().where(
+            report_collection.c.collection_id == collection_id,
+            report_collection.c.report_id == report_id,
+        )
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.get("/collections/{collection_id}/reports")
+async def list_collection_reports(
+    collection_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import Collection, report_collection
+    from .models import Report
+    col = await db.scalar(
+        select(Collection).where(Collection.id == collection_id, Collection.tenant_id == current_user.tenant_id)
+    )
+    if not col:
+        raise HTTPException(status_code=404, detail="Coleção não encontrada")
+    result = await db.execute(
+        select(Report)
+        .join(report_collection, Report.id == report_collection.c.report_id)
+        .where(
+            report_collection.c.collection_id == collection_id,
+            Report.tenant_id == current_user.tenant_id,
+        )
+        .order_by(Report.updated_at.desc())
+    )
+    reports = result.scalars().all()
+    return [{"id": str(r.id), "title": r.title, "cover_image": getattr(r, 'cover_image', None)} for r in reports]
 
 
 # ---------------------------------------------------------------------------

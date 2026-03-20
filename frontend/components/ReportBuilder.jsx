@@ -51,6 +51,8 @@ const BLOCK_TYPES = [
   { type: 'heatmap',     label: 'Mapa de Calor', desc: 'Gradiente em grade' },
   { type: 'waterfall',   label: 'Cascata',       desc: 'Contribuições acumuladas' },
   { type: 'radar',       label: 'Radar',         desc: 'Comparação multidimensional' },
+  { type: 'pivot',       label: 'Tabela Pivot', desc: 'Agrupamento por 2 dimensões', category: 'chart' },
+  { type: 'ai_summary',  label: 'Resumo AI',   desc: 'Resumo inteligente dos dados', category: 'ai' },
   { type: 'text',        label: 'Texto',       desc: 'Comentários' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
@@ -108,6 +110,21 @@ const TYPE_ICONS = {
       <line x1="12" y1="3" x2="12" y2="21" opacity="0.4"/>
       <line x1="3" y1="8" x2="21" y2="16" opacity="0.4"/>
       <line x1="3" y1="16" x2="21" y2="8" opacity="0.4"/>
+    </svg>
+  ),
+  pivot: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="2" width="8" height="5" rx="1"/>
+      <rect x="12" y="2" width="5" height="5" rx="1"/>
+      <rect x="2" y="9" width="8" height="4" rx="1" fill="currentColor" opacity="0.2"/>
+      <rect x="12" y="9" width="5" height="4" rx="1"/>
+      <rect x="2" y="15" width="8" height="4" rx="1" fill="currentColor" opacity="0.2"/>
+      <rect x="12" y="15" width="5" height="4" rx="1"/>
+    </svg>
+  ),
+  ai_summary: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
     </svg>
   ),
 }
@@ -223,16 +240,41 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
   const [error, setError] = useState(null)
 
   const req = buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, drillFilters)
-  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken })
+  const pivotCfgKey = block.type === 'pivot' ? JSON.stringify({ rc: block.config?.row_col, cc: block.config?.col_col, vc: block.config?.value_col }) : null
+  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken, pk: pivotCfgKey })
 
   useEffect(() => {
-    if (['text', 'filter', 'slider', 'image'].includes(block.type)) return
+    if (['text', 'filter', 'slider', 'image', 'ai_summary'].includes(block.type)) return
     if (!isUUID(block.dataset_id)) { setData(block.static_data || null); return }
-    if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
+    // For pivot, require at least row_col and value_col configured
+    if (block.type === 'pivot') {
+      const cfg = block.config || {}
+      const rowCol = cfg.row_col || block.label_col
+      const valCol = cfg.value_col || block.value_col
+      if (!rowCol || !valCol) { setData(block.static_data || null); return }
+    } else {
+      if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
+    }
     setLoading(true); setError(null)
+    // Pivot fetches raw rows (agg=none) with all relevant columns
+    const effectiveReq = block.type === 'pivot' ? (() => {
+      const cfg = block.config || {}
+      const rowCol = cfg.row_col || block.label_col
+      const colCol = cfg.col_col
+      const valCol = cfg.value_col || block.value_col
+      const dims = [{ column: rowCol, type: 'text' }]
+      if (colCol) dims.push({ column: colCol, type: 'text' })
+      const pivotReq = {
+        dimensions: dims,
+        metrics: [{ column: valCol, aggregation: 'none' }],
+        filters: req.filters || [],
+      }
+      if (req.date_range) pivotReq.date_range = req.date_range
+      return pivotReq
+    })() : req
     const queryFn = shareToken
-      ? api.reports.publicQueryV2(shareToken, block.dataset_id, req)
-      : api.reports.datasets.queryV2(block.dataset_id, req)
+      ? api.reports.publicQueryV2(shareToken, block.dataset_id, effectiveReq)
+      : api.reports.datasets.queryV2(block.dataset_id, effectiveReq)
     queryFn
       .then(result => setData(result?.data || result || []))
       .catch(e => setError(e.message))
@@ -542,6 +584,65 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick, vs }
   )
 }
 
+function AISummaryBlock({ block, readOnly }) {
+  const cfg = block.config || {}
+  const [summary, setSummary] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [generated, setGenerated] = useState(false)
+
+  async function generateSummary() {
+    if (!cfg.dataset_id && !block.dataset_id) return
+    const dsId = cfg.dataset_id || block.dataset_id
+    setLoading(true)
+    try {
+      const question = cfg.prompt || 'Resuma os principais insights desses dados em 3 bullets concisos'
+      const data = await api.reports.aiQuery(dsId, question)
+      setSummary(data.answer || data.text || '')
+      setGenerated(true)
+    } catch (e) {
+      setSummary('Erro ao gerar resumo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const dsId = cfg.dataset_id || block.dataset_id
+    if (dsId && !generated && !loading) generateSummary()
+  }, [cfg.dataset_id, block.dataset_id])
+
+  const dsId = cfg.dataset_id || block.dataset_id
+
+  return (
+    <div className="h-full flex flex-col p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">✨ Resumo AI</span>
+        {!readOnly && (
+          <button onClick={generateSummary} disabled={loading} className="text-xs text-gray-400 hover:text-purple-600 ml-auto">
+            {loading ? '⏳' : '↻ Atualizar'}
+          </button>
+        )}
+      </div>
+      {loading && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {!loading && summary && (
+        <div className="flex-1 overflow-auto text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{summary}</div>
+      )}
+      {!loading && !summary && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-gray-400">
+          <p className="text-sm">Configure um dataset e clique para gerar</p>
+          <button onClick={generateSummary} disabled={!dsId} className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
+            Gerar resumo
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
   const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active (legacy single-level)
@@ -571,7 +672,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   const { data, loading, error } = useBlockData(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, shareToken, drillFilters)
   const activeCrossVal = drilldown ? null : crossFilters[block.dataset_id]?.val
   const hasDrilldown = !!block.config?.drilldown_col
-  const canExport = data && data.length > 0 && !['text','filter','slider','image'].includes(block.type)
+  const canExport = data && data.length > 0 && !['text','filter','slider','image','ai_summary'].includes(block.type)
 
   if (block.type === 'text') {
     return <textarea className="w-full h-full text-sm resize-none bg-transparent outline-none" style={{ color: block.config?.text_color || '#4b5563' }} placeholder="Escreva um comentário..." value={block.config?.text || ''} readOnly={readOnly} onChange={e => !readOnly && onTextChange(e.target.value)} />
@@ -601,6 +702,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         style={{ objectFit: block.config?.object_fit || 'contain' }}
       />
     )
+  }
+
+  if (block.type === 'ai_summary') {
+    return <AISummaryBlock block={block} readOnly={readOnly} />
   }
 
   const isSampleData = block.static_data && !block.dataset_id
@@ -1314,6 +1419,91 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     )
   }
 
+  if (block.type === 'pivot') {
+    const rowCol = config.row_col || block.label_col
+    const colCol = config.col_col
+    const valCol = config.value_col || block.value_col
+    const agg = config.agg || block.agg || 'sum'
+
+    if (!rowCol || !colCol || !valCol || !data?.length) {
+      return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Configure linha, coluna e valor</div>
+    }
+
+    const chartData = data
+    const rows = [...new Set(chartData.map(d => String(d[rowCol] ?? '')))]
+    const cols = [...new Set(chartData.map(d => String(d[colCol] ?? '')))]
+
+    // Build value map: row × col → [values]
+    const groups = {}
+    for (const d of chartData) {
+      const r = String(d[rowCol] ?? '')
+      const c = String(d[colCol] ?? '')
+      const v = parseFloat(d[valCol] ?? 0) || 0
+      const k = `${r}|||${c}`
+      if (!groups[k]) groups[k] = []
+      groups[k].push(v)
+    }
+
+    function aggregatePivot(values) {
+      if (!values?.length) return '—'
+      if (agg === 'sum') return values.reduce((a, b) => a + b, 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+      if (agg === 'avg') return (values.reduce((a, b) => a + b, 0) / values.length).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+      if (agg === 'count') return values.length
+      if (agg === 'max') return Math.max(...values)
+      if (agg === 'min') return Math.min(...values)
+      return values[0]
+    }
+
+    const rowTotals = rows.map(r => {
+      const vals = cols.flatMap(c => groups[`${r}|||${c}`] || [])
+      return aggregatePivot(vals)
+    })
+    const colTotals = cols.map(c => {
+      const vals = rows.flatMap(r => groups[`${r}|||${c}`] || [])
+      return aggregatePivot(vals)
+    })
+
+    return (
+      <div className="overflow-auto h-full text-xs">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="border border-gray-200 bg-gray-50 p-1.5 text-left font-semibold text-gray-600 min-w-[80px]">{rowCol}</th>
+              {cols.map(c => (
+                <th key={c} className="border border-gray-200 bg-gray-50 p-1.5 text-right font-semibold text-gray-600 min-w-[60px] truncate max-w-[100px]">{c}</th>
+              ))}
+              <th className="border border-gray-200 bg-purple-50 p-1.5 text-right font-bold text-purple-700">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, ri) => (
+              <tr key={r} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="border border-gray-200 p-1.5 font-medium text-gray-700 truncate max-w-[120px]">{r}</td>
+                {cols.map(c => (
+                  <td key={c} className="border border-gray-200 p-1.5 text-right text-gray-800">
+                    {aggregatePivot(groups[`${r}|||${c}`])}
+                  </td>
+                ))}
+                <td className="border border-gray-200 bg-purple-50 p-1.5 text-right font-semibold text-purple-800">{rowTotals[ri]}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="bg-gray-100 font-bold">
+              <td className="border border-gray-200 p-1.5 text-gray-700">Total</td>
+              {colTotals.map((t, i) => (
+                <td key={i} className="border border-gray-200 p-1.5 text-right text-gray-800">{t}</td>
+              ))}
+              <td className="border border-gray-200 bg-purple-100 p-1.5 text-right text-purple-900">
+                {aggregatePivot(Object.values(groups).flat())}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    )
+  }
+
   return null
 }
 
@@ -1404,7 +1594,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const columns = selectedDataset?.columns || []
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
   const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
-  const hasData = !['text', 'filter', 'image', 'slider'].includes(block.type)
+  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary'].includes(block.type)
   const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked', 'heatmap', 'waterfall', 'radar'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
@@ -1701,6 +1891,87 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             </select>
           </div>
           <p className="text-[10px] text-gray-400">A coluna de valor é definida na seção Dados (Métrica)</p>
+        </ConfigSection>
+      )}
+
+      {/* PIVOT TABLE — configuração */}
+      {block.type === 'pivot' && selectedDataset && (
+        <ConfigSection title="Tabela Pivot">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Dimensão de linha</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.row_col || ''}
+              onChange={e => updConfig('row_col', e.target.value || null)}
+            >
+              <option value="">— selecionar —</option>
+              {columns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Dimensão de coluna</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.col_col || ''}
+              onChange={e => updConfig('col_col', e.target.value || null)}
+            >
+              <option value="">— selecionar —</option>
+              {columns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Métrica (valor)</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.value_col || ''}
+              onChange={e => updConfig('value_col', e.target.value || null)}
+            >
+              <option value="">— selecionar —</option>
+              {columns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Agregação</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.agg || 'sum'}
+              onChange={e => updConfig('agg', e.target.value)}
+            >
+              <option value="sum">Soma</option>
+              <option value="count">Contagem</option>
+              <option value="avg">Média</option>
+              <option value="max">Máximo</option>
+              <option value="min">Mínimo</option>
+            </select>
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* AI SUMMARY — configuração */}
+      {block.type === 'ai_summary' && (
+        <ConfigSection title="Resumo AI">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Dataset a resumir</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.dataset_id || block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}), dataset_id: e.target.value || null } })}
+            >
+              <option value="">— selecionar —</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Prompt personalizado (opcional)</label>
+            <textarea
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
+              rows={3}
+              placeholder="Resuma os principais insights desses dados em 3 bullets concisos"
+              value={block.config?.prompt || ''}
+              onChange={e => updConfig('prompt', e.target.value)}
+            />
+            <p className="text-[10px] text-gray-400 mt-0.5">Deixe em branco para usar o prompt padrão</p>
+          </div>
         </ConfigSection>
       )}
 

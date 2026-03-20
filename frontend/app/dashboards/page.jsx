@@ -182,6 +182,99 @@ function ImageCropperModal({ onSave, onClose }) {
   )
 }
 
+const COLLECTION_COLORS = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#db2777', '#0891b2']
+
+function NewCollectionModal({ onClose, onCreate }) {
+  const [name, setName] = useState('')
+  const [color, setColor] = useState('#7c3aed')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setSaving(true)
+    try {
+      await onCreate(name.trim(), color)
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Nova pasta</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome</label>
+            <input
+              autoFocus
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Ex: Marketing, Financeiro..."
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 dark:text-gray-200 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-2 block">Cor</label>
+            <div className="flex gap-2">
+              {COLLECTION_COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 py-2 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="flex-1 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? 'Criando...' : 'Criar pasta'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function AddToCollectionPicker({ collections, reportId, onAdd, onClose }) {
+  return (
+    <div className="absolute right-0 top-full mt-1 z-40 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1" onClick={e => e.stopPropagation()}>
+      {collections.length === 0 ? (
+        <p className="px-4 py-3 text-xs text-gray-400">Nenhuma pasta criada ainda.</p>
+      ) : (
+        collections.map(col => (
+          <button
+            key={col.id}
+            onClick={() => { onAdd(reportId, col.id); onClose() }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+          >
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: col.color || '#7c3aed' }} />
+            <span className="truncate">{col.name}</span>
+          </button>
+        ))
+      )}
+    </div>
+  )
+}
+
 export default function DashboardsPage() {
   const router = useRouter()
   const toast = useToast()
@@ -194,13 +287,63 @@ export default function DashboardsPage() {
   const [search, setSearch] = useState('')
   const [cropTargetId, setCropTargetId] = useState(null)
 
-  useEffect(() => { fetchReports() }, [])
+  // Collections state
+  const [collections, setCollections] = useState([])
+  const [activeCollection, setActiveCollection] = useState(null)
+  const [collectionReportIds, setCollectionReportIds] = useState(null)
+  const [showNewCollection, setShowNewCollection] = useState(false)
+  const [addToCollPicker, setAddToCollPicker] = useState(null) // reportId with picker open
+
+  useEffect(() => {
+    fetchReports()
+    fetchCollections()
+  }, [])
+
+  useEffect(() => {
+    if (activeCollection) {
+      api.reports.collections.listReports(activeCollection)
+        .then(data => setCollectionReportIds((data || []).map(r => r.id)))
+        .catch(() => setCollectionReportIds([]))
+    } else {
+      setCollectionReportIds(null)
+    }
+  }, [activeCollection])
 
   function fetchReports() {
     api.reports.list()
       .then(data => setReports(data || []))
       .catch(() => toast(t('toast.loadError'), 'error'))
       .finally(() => setLoading(false))
+  }
+
+  function fetchCollections() {
+    api.reports.collections.list()
+      .then(data => setCollections(data || []))
+      .catch(() => {})
+  }
+
+  async function handleCreateCollection(name, color) {
+    try {
+      await api.reports.collections.create({ name, color })
+      await fetchCollections()
+    } catch (err) {
+      toast(err.message || 'Erro ao criar pasta', 'error')
+      throw err
+    }
+  }
+
+  async function handleAddToCollection(reportId, collectionId) {
+    try {
+      await api.reports.collections.addReport(collectionId, reportId)
+      await fetchCollections()
+      if (activeCollection === collectionId) {
+        const data = await api.reports.collections.listReports(collectionId)
+        setCollectionReportIds((data || []).map(r => r.id))
+      }
+      toast('Dashboard adicionado à pasta', 'success')
+    } catch (err) {
+      toast(err.message || 'Erro ao adicionar à pasta', 'error')
+    }
   }
 
   async function handleDelete(id) {

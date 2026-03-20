@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import DateTime, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -41,6 +41,15 @@ class ReportDataset(Base):
     api_headers: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     api_data_path: Mapped[str | None] = mapped_column(String(200), nullable=True,
                                                        comment="Caminho no JSON, ex: data.items")
+
+    # Config de banco de dados externo (apenas quando type == 'database')
+    db_type: Mapped[str | None] = mapped_column(String(20), nullable=True)        # postgresql | mysql
+    db_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    db_port: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    db_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    db_username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    db_password_enc: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    db_query: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     is_demo: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=False)
 

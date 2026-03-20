@@ -113,6 +113,252 @@ function ApiDatasetModal({ onClose, onCreated }) {
   )
 }
 
+function DbDatasetModal({ onClose, onCreated }) {
+  const toast = useToast()
+  const [form, setForm] = useState({
+    name: '',
+    db_type: 'postgresql',
+    host: '',
+    port: 5432,
+    database: '',
+    username: '',
+    password: '',
+    query: 'SELECT * FROM tabela LIMIT 1000',
+  })
+  const [loading, setLoading] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [error, setError] = useState(null)
+  const [testResult, setTestResult] = useState(null)
+
+  function handleDbTypeChange(db_type) {
+    setForm(f => ({ ...f, db_type, port: db_type === 'mysql' ? 3306 : 5432 }))
+    setTestResult(null)
+  }
+
+  async function handleTest(e) {
+    e.preventDefault()
+    setTesting(true)
+    setError(null)
+    setTestResult(null)
+    try {
+      const token = localStorage.getItem('jarbis_token')
+      const resp = await fetch(`${API_URL}/reports/datasets/database/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: form.name || 'test',
+          db_type: form.db_type,
+          host: form.host,
+          port: Number(form.port),
+          database: form.database,
+          username: form.username,
+          password: form.password,
+          query: form.query,
+        }),
+      })
+      const result = await resp.json()
+      setTestResult(result)
+    } catch (e) {
+      setTestResult({ ok: false, error: e.message })
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  async function handleSave(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const token = localStorage.getItem('jarbis_token')
+      const resp = await fetch(`${API_URL}/reports/datasets/database`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: form.name,
+          db_type: form.db_type,
+          host: form.host,
+          port: Number(form.port),
+          database: form.database,
+          username: form.username,
+          password: form.password,
+          query: form.query,
+        }),
+      })
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({ detail: 'Erro ao salvar' }))
+        throw new Error(e.detail || 'Erro ao salvar dataset')
+      }
+      const ds = await resp.json()
+      onCreated(ds)
+      onClose()
+      toast('Dataset de banco criado com sucesso!', 'success')
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputCls = "w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+          <div>
+            <h2 className="font-semibold text-gray-800 dark:text-gray-200">Conectar banco de dados</h2>
+            <p className="text-xs text-gray-400 mt-0.5">PostgreSQL ou MySQL externo</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <form className="p-6 flex flex-col gap-4">
+          {/* Tipo */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Tipo de banco</label>
+            <select value={form.db_type} onChange={e => handleDbTypeChange(e.target.value)} className={inputCls}>
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+            </select>
+          </div>
+
+          {/* Nome do dataset */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome do dataset</label>
+            <input
+              required
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Ex: Vendas Produção"
+              className={inputCls}
+              autoFocus
+            />
+          </div>
+
+          {/* Host + Porta */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Host</label>
+              <input
+                required
+                value={form.host}
+                onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
+                placeholder="db.exemplo.com"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Porta</label>
+              <input
+                required
+                type="number"
+                value={form.port}
+                onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {/* Nome do banco */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome do banco</label>
+            <input
+              required
+              value={form.database}
+              onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
+              placeholder="meu_banco"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Usuário + Senha */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Usuário</label>
+              <input
+                required
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                placeholder="postgres"
+                className={inputCls}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Senha</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                placeholder="••••••••"
+                className={inputCls}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
+          {/* Query SQL */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Query SQL</label>
+            <textarea
+              required
+              value={form.query}
+              onChange={e => setForm(f => ({ ...f, query: e.target.value }))}
+              placeholder="SELECT * FROM tabela LIMIT 1000"
+              rows={4}
+              className={`${inputCls} font-mono resize-none`}
+            />
+            <p className="text-[11px] text-gray-400 mt-1">Apenas queries SELECT são permitidas. LIMIT será adicionado automaticamente se ausente.</p>
+          </div>
+
+          {/* Resultado do teste */}
+          {testResult && (
+            <div className={`rounded-lg px-3 py-2 text-sm flex items-center gap-2 ${testResult.ok ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'}`}>
+              {testResult.ok ? (
+                <>
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Conexão bem-sucedida!
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  {testResult.error}
+                </>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>
+          )}
+
+          {/* Botões */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={handleTest}
+              disabled={testing || !form.host || !form.database || !form.username}
+              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              {testing ? 'Testando...' : 'Testar conexão'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading || !form.name || !form.host || !form.database || !form.username || !form.query}
+              className="flex-1 px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Salvando...' : 'Salvar dataset'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function DatasetsPage() {
   const t = useTranslations('datasets')
   const locale = useLocale()
@@ -122,6 +368,7 @@ export default function DatasetsPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [showApiModal, setShowApiModal] = useState(false)
+  const [showDbModal, setShowDbModal] = useState(false)
   const [syncingId, setSyncingId] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -212,6 +459,26 @@ export default function DatasetsPage() {
       toast(t('toast.syncSuccess'), 'success')
     } catch (err) {
       toast(err.message || t('toast.syncError'), 'error')
+    } finally { setSyncingId(null) }
+  }
+
+  async function handleDbSync(id) {
+    setSyncingId(id)
+    try {
+      const token = localStorage.getItem('jarbis_token')
+      const resp = await fetch(`${API_URL}/reports/datasets/${id}/database/sync`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({ detail: 'Erro ao sincronizar' }))
+        throw new Error(e.detail || 'Erro ao sincronizar')
+      }
+      const result = await resp.json()
+      setDatasets(prev => prev.map(d => d.id === id ? { ...d, row_count: result.row_count } : d))
+      toast(`Dados atualizados — ${result.row_count?.toLocaleString(locale) || 0} linhas`, 'success')
+    } catch (err) {
+      toast(err.message || 'Erro ao sincronizar banco', 'error')
     } finally { setSyncingId(null) }
   }
 
@@ -310,12 +577,18 @@ export default function DatasetsPage() {
             <p className="font-semibold text-gray-800 mb-2">{dragOver ? t('dropRelease') : t('empty.title')}</p>
             <p className="text-sm text-gray-400 mb-1">{t('empty.desc')}</p>
             <p className="text-xs text-gray-300 mb-6">{t('empty.hint')}</p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
               <button onClick={() => fileRef.current?.click()} className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
                 {t('uploadBtn2')}
               </button>
               <button onClick={() => setShowApiModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
                 {t('connectBtn')}
+              </button>
+              <button onClick={() => setShowDbModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+                Conectar banco de dados
               </button>
             </div>
           </div>
@@ -361,6 +634,15 @@ export default function DatasetsPage() {
                     </svg>
                     Conectar API
                   </button>
+                  <button
+                    onClick={() => { setShowNewMenu(false); setShowDbModal(true) }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                    </svg>
+                    Conectar banco de dados
+                  </button>
                 </div>
               )}
             </div>
@@ -384,9 +666,11 @@ export default function DatasetsPage() {
                   </div>
 
                   {/* Ícone */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50' : 'bg-violet-50'}`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50' : ds.type === 'database' ? 'bg-emerald-50' : 'bg-violet-50'}`}>
                     {ds.type === 'api' ? (
                       <svg className="w-4.5 h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    ) : ds.type === 'database' ? (
+                      <svg className="w-4.5 h-4.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
                     ) : (
                       <svg className="w-4.5 h-4.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     )}
@@ -401,8 +685,8 @@ export default function DatasetsPage() {
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500">{formatRows(ds.row_count)}</span>
                       {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} {t('columns')}</span>}
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 text-blue-600' : 'bg-violet-50 text-violet-600'}`}>
-                        {ds.type === 'api' ? t('typeApi') : t('typeFile')}
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 text-blue-600' : ds.type === 'database' ? 'bg-emerald-50 text-emerald-700' : 'bg-violet-50 text-violet-600'}`}>
+                        {ds.type === 'api' ? t('typeApi') : ds.type === 'database' ? 'DB' : t('typeFile')}
                       </span>
                     </div>
                   </div>
@@ -415,6 +699,18 @@ export default function DatasetsPage() {
                         disabled={syncingId === ds.id}
                         title={t('refreshBtn')}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-50"
+                      >
+                        <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                      </button>
+                    )}
+                    {ds.type === 'database' && (
+                      <button
+                        onClick={() => handleDbSync(ds.id)}
+                        disabled={syncingId === ds.id}
+                        title="Re-executar query e atualizar dados"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
                       >
                         <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -451,6 +747,7 @@ export default function DatasetsPage() {
       </div>
 
       {showApiModal && <ApiDatasetModal onClose={() => setShowApiModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
+      {showDbModal && <DbDatasetModal onClose={() => setShowDbModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
     </AppLayout>
   )
 }
