@@ -4203,10 +4203,21 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
           <p className="text-sm font-semibold text-violet-600">Solte para criar um bloco com <span className="font-bold">{draggedColumn.col}</span></p>
         </>
       ) : (
-        <>
-          <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
-          <p className="text-sm text-gray-400">{t('builder.emptyHint')}</p>
-        </>
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-3 opacity-40">
+            <div className="flex flex-col gap-1">
+              <div className="w-16 h-2.5 rounded bg-gray-300" />
+              <div className="w-12 h-2.5 rounded bg-gray-300" />
+              <div className="w-14 h-2.5 rounded bg-gray-300" />
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            <div className="w-20 h-12 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-gray-400">Arraste uma coluna para começar</p>
+          <p className="text-xs text-gray-300">ou clique no <span className="font-semibold text-gray-400">+</span> ao lado de qualquer coluna</p>
+        </div>
       )}
     </div>
   )

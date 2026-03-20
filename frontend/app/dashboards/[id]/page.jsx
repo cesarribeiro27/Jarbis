@@ -509,7 +509,7 @@ function CommentsPanel({ blocks, onBlocksChange }) {
 }
 
 // ─── Left Data Tray — painel esquerdo de datasets/colunas no modo de edição ──
-function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets }) {
+function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets, onQuickAdd }) {
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [expandedDatasets, setExpandedDatasets] = useState(() => new Set())
@@ -613,6 +613,16 @@ function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets }) {
                           {colType === 'number' ? '#' : colType === 'date' ? '~' : 'A'}
                         </span>
                         <span className="text-xs text-gray-600 dark:text-gray-400 truncate group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{col}</span>
+                        {onQuickAdd && (
+                          <button
+                            draggable={false}
+                            onClick={e => { e.stopPropagation(); onQuickAdd(col, colType, ds.id) }}
+                            title={`Criar bloco com "${col}"`}
+                            className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center rounded text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-opacity"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -979,11 +989,12 @@ export default function DashboardDetailPage() {
   function handleDropColumn(blockId, slot, { col, colType, datasetId }) {
     // Caso especial: arrastar para canvas vazio → cria bloco automaticamente
     if (blockId === '__create__') {
-      const suggestedType = colType === 'number' ? 'kpi' : 'bar'
+      const suggestedType = colType === 'number' ? 'kpi' : colType === 'date' ? 'line' : 'table'
       const newB = newBlock(suggestedType, BLOCK_TYPES)
       const patch = {
         dataset_id: datasetId,
         ...(colType === 'number' ? { value_col: col } : { label_col: col }),
+        ...(colType === 'date' ? { config: { dim_type: 'date', granularity: 'month' } } : {}),
       }
       setBlocks(prev => [...prev, { ...newB, ...patch }])
       setSelectedBlockId(newB.id)
@@ -1167,6 +1178,7 @@ export default function DashboardDetailPage() {
             onDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })}
             onDragEnd={() => setDraggedColumn(null)}
             onManageDatasets={() => { setSidePanel('dados'); setSidebarOpen(true) }}
+            onQuickAdd={(col, colType, datasetId) => handleDropColumn('__create__', 'auto', { col, colType, datasetId })}
           />
 
           <div className="flex-1 overflow-auto p-3 sm:p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
