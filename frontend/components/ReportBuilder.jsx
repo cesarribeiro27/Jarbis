@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import GridLayout, { noCompactor } from 'react-grid-layout'
 import {
@@ -11,7 +11,7 @@ import {
   RadialBarChart, RadialBar,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, Legend, LabelList,
+  ReferenceLine, Legend, LabelList, Brush,
 } from 'recharts'
 import 'react-grid-layout/css/styles.css'
 import { api } from '@/lib/api'
@@ -55,6 +55,10 @@ const BLOCK_TYPES = [
   { type: 'ai_summary',  label: 'Resumo AI',   desc: 'Resumo inteligente dos dados', category: 'ai' },
   { type: 'histogram',   label: 'Histograma',  desc: 'Distribuição de frequência' },
   { type: 'bullet',      label: 'Bullet',      desc: 'Valor vs meta' },
+  { type: 'gantt',       label: 'Gantt',       desc: 'Linha do tempo de tarefas', category: 'chart' },
+  { type: 'sankey',      label: 'Sankey',      desc: 'Fluxo entre categorias', category: 'chart' },
+  { type: 'candlestick', label: 'Candlestick', desc: 'OHLC financeiro', category: 'chart' },
+  { type: 'boxplot',     label: 'Box Plot',    desc: 'Distribuição estatística', category: 'chart' },
   { type: 'text',        label: 'Texto',       desc: 'Comentários' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
@@ -145,6 +149,41 @@ const TYPE_ICONS = {
       <rect x="2" y="13" width="20" height="5" rx="1" fill="currentColor" opacity="0.15" stroke="none" />
       <rect x="2" y="13" width="10" height="5" rx="1" fill="currentColor" opacity="0.6" stroke="none" />
       <line x1="14" y1="11" x2="14" y2="20" strokeWidth="2" />
+    </svg>
+  ),
+  gantt: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <rect x="2" y="4" width="8" height="3" rx="1" fill="currentColor" opacity={0.7}/>
+      <rect x="6" y="9" width="10" height="3" rx="1" fill="currentColor" opacity={0.8}/>
+      <rect x="10" y="14" width="10" height="3" rx="1" fill="currentColor" opacity={0.9}/>
+      <line x1="2" y1="2" x2="2" y2="22" strokeWidth={1} opacity={0.3}/>
+    </svg>
+  ),
+  sankey: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M2 6h5v4H2z" fill="currentColor" opacity={0.6}/>
+      <path d="M17 4h5v8h-5z" fill="currentColor" opacity={0.8}/>
+      <path d="M7 7 Q12 7 17 6" strokeWidth={3} opacity={0.5}/>
+      <path d="M7 9 Q12 12 17 10" strokeWidth={2} opacity={0.4}/>
+      <path d="M2 14h5v4H2z" fill="currentColor" opacity={0.6}/>
+    </svg>
+  ),
+  candlestick: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <line x1="6" y1="3" x2="6" y2="21"/>
+      <rect x="4" y="7" width="4" height="8" fill="#16a34a"/>
+      <line x1="14" y1="4" x2="14" y2="20"/>
+      <rect x="12" y="10" width="4" height="7" fill="#dc2626"/>
+    </svg>
+  ),
+  boxplot: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <rect x="6" y="7" width="12" height="10" rx="1"/>
+      <line x1="12" y1="4" x2="12" y2="7"/>
+      <line x1="12" y1="17" x2="12" y2="20"/>
+      <line x1="6" y1="12" x2="18" y2="12"/>
+      <line x1="9" y1="4" x2="15" y2="4"/>
+      <line x1="9" y1="20" x2="15" y2="20"/>
     </svg>
   ),
 }
@@ -261,7 +300,8 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
 
   const req = buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, drillFilters)
   const pivotCfgKey = block.type === 'pivot' ? JSON.stringify({ rc: block.config?.row_col, cc: block.config?.col_col, vc: block.config?.value_col }) : null
-  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken, pk: pivotCfgKey })
+  const ganttCfgKey = block.type === 'gantt' ? JSON.stringify({ tc: block.config?.task_col, sc: block.config?.start_col, ec: block.config?.end_col, gc: block.config?.group_col }) : null
+  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken, pk: pivotCfgKey, gk: ganttCfgKey })
 
   useEffect(() => {
     if (['text', 'filter', 'slider', 'image', 'ai_summary'].includes(block.type)) return
@@ -272,6 +312,18 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       const rowCol = cfg.row_col || block.label_col
       const valCol = cfg.value_col || block.value_col
       if (!rowCol || !valCol) { setData(block.static_data || null); return }
+    } else if (block.type === 'gantt') {
+      const cfg = block.config || {}
+      if (!cfg.task_col || !cfg.start_col || !cfg.end_col) { setData(block.static_data || null); return }
+    } else if (block.type === 'sankey') {
+      const cfg = block.config || {}
+      if (!cfg.source_col || !cfg.target_col || !cfg.value_col) { setData(block.static_data || null); return }
+    } else if (block.type === 'candlestick') {
+      const cfg = block.config || {}
+      if (!cfg.date_col || !cfg.open_col || !cfg.high_col || !cfg.low_col || !cfg.close_col) { setData(block.static_data || null); return }
+    } else if (block.type === 'boxplot') {
+      const cfg = block.config || {}
+      if (!cfg.value_col) { setData(block.static_data || null); return }
     } else {
       if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
     }
@@ -291,6 +343,40 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       }
       if (req.date_range) pivotReq.date_range = req.date_range
       return pivotReq
+    })() : block.type === 'gantt' ? (() => {
+      const cfg = block.config || {}
+      // Use all relevant cols as dimensions so their original string values are preserved
+      const dims = [
+        { column: cfg.task_col, type: 'text' },
+        { column: cfg.start_col, type: 'text' },
+        { column: cfg.end_col, type: 'text' },
+      ]
+      if (cfg.group_col) dims.push({ column: cfg.group_col, type: 'text' })
+      const ganttReq = {
+        dimensions: dims,
+        metrics: [{ column: '__count__', aggregation: 'count' }],
+        filters: req.filters || [],
+      }
+      if (req.date_range) ganttReq.date_range = req.date_range
+      return ganttReq
+    })() : block.type === 'sankey' ? (() => {
+      const cfg = block.config || {}
+      return {
+        dimensions: [{ column: cfg.source_col, type: 'text' }, { column: cfg.target_col, type: 'text' }],
+        metrics: [{ column: cfg.value_col, aggregation: 'sum' }],
+        filters: req.filters || [],
+      }
+    })() : block.type === 'candlestick' ? (() => {
+      const cfg = block.config || {}
+      return {
+        dimensions: [{ column: cfg.date_col, type: 'text' }, { column: cfg.open_col, type: 'number' }, { column: cfg.high_col, type: 'number' }, { column: cfg.low_col, type: 'number' }, { column: cfg.close_col, type: 'number' }],
+        metrics: [{ column: '__count__', aggregation: 'count' }],
+        filters: req.filters || [],
+      }
+    })() : block.type === 'boxplot' ? (() => {
+      const cfg = block.config || {}
+      const bpDims = cfg.group_col ? [{ column: cfg.group_col, type: 'text' }, { column: cfg.value_col, type: 'number' }] : [{ column: cfg.value_col, type: 'number' }]
+      return { dimensions: bpDims, metrics: [{ column: '__count__', aggregation: 'count' }], filters: req.filters || [] }
     })() : req
     const queryFn = shareToken
       ? api.reports.publicQueryV2(shareToken, block.dataset_id, effectiveReq)
@@ -729,7 +815,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   const isSampleData = block.static_data && !block.dataset_id
-  if (!isSampleData && !['pivot'].includes(block.type) && (!block.dataset_id || !block.label_col || !block.value_col)) {
+  if (!isSampleData && !['pivot', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type) && (!block.dataset_id || !block.label_col || !block.value_col)) {
     const msg = !block.dataset_id
       ? 'Selecione um dataset'
       : !block.label_col
@@ -792,6 +878,16 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     }
     return true
   }
+
+  const handleCustomEvent = useCallback((eventName, label, value) => {
+    if (!eventName) return
+    try {
+      window.parent.postMessage(
+        { type: eventName, label, value, reportId: block.id },
+        '*'
+      )
+    } catch {}
+  }, [block.id])
 
   const handleClick = (label) => {
     // click_url takes priority if set
@@ -886,7 +982,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel) }}>
+          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
             <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
@@ -898,6 +994,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+            )}
+            {config.show_brush && (
+              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
             )}
           </BarChart>
         </ResponsiveContainer>
@@ -923,6 +1022,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
+            {config.show_brush && (
+              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+            )}
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -934,7 +1036,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
             <defs>
               <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.25} />
@@ -960,6 +1062,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+            )}
+            {config.show_brush && (
+              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
             )}
           </AreaChart>
         </ResponsiveContainer>
@@ -995,9 +1100,12 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 {config.reference_value != null && config.reference_value !== '' && (
                   <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
                 )}
+                {config.show_brush && (
+                  <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+                )}
               </AreaChart>
             ) : (
-              <LineChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+              <LineChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
@@ -1008,6 +1116,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
                 {config.reference_value != null && config.reference_value !== '' && (
                   <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
+                )}
+                {config.show_brush && (
+                  <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
                 )}
               </LineChart>
             )}
@@ -1040,7 +1151,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 const y = pcy + radius * Math.sin(-midAngle * RADIAN)
                 return percent > 0.03 ? <text x={x} y={y} textAnchor={x > pcx ? 'start' : 'end'} dominantBaseline="central" style={{ fontSize: 9, fill: '#374151' }}>{`${(percent * 100).toFixed(0)}%`}</text> : null
               } : null}
-              onClick={entry => handleClick(entry.label)}
+              onClick={entry => { handleClick(entry.label); if (config.custom_event) handleCustomEvent(config.custom_event, entry.name, entry.value) }}
               style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}
             >
               {displayData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} onClick={() => { if (config.click_url) handleChartClickUrl(d.label) }} />)}
@@ -1597,6 +1708,255 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     )
   }
 
+  if (block.type === 'gantt') {
+    const rows = displayData.slice(0, 20);
+    if (!rows.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>;
+
+    const parseDate = (v) => {
+      if (!v) return null;
+      const d = new Date(v);
+      return isNaN(d) ? null : d;
+    };
+
+    const tasks = rows
+      .map(r => ({
+        task: r.label || r[config.task_col] || '?',
+        group: r[config.group_col] || '',
+        start: parseDate(r[config.start_col]),
+        end: parseDate(r[config.end_col]),
+      }))
+      .filter(t => t.start && t.end);
+
+    if (!tasks.length) return <div className="text-gray-400 text-sm p-4">Configure task_col, start_col e end_col com datas válidas.</div>;
+
+    const minDate = new Date(Math.min(...tasks.map(t => t.start)));
+    const maxDate = new Date(Math.max(...tasks.map(t => t.end)));
+    const totalMs = maxDate - minDate || 1;
+
+    const GANTT_COLORS = ['#7c3aed','#2563eb','#16a34a','#d97706','#dc2626','#0891b2','#7c3aed','#9333ea'];
+
+    return (
+      <div className="flex flex-col h-full overflow-auto p-3">
+        {/* Header com datas */}
+        <div className="flex mb-1 text-xs text-gray-400 pl-32">
+          <span>{minDate.toLocaleDateString('pt-BR')}</span>
+          <span className="ml-auto">{maxDate.toLocaleDateString('pt-BR')}</span>
+        </div>
+        {tasks.map((t, i) => {
+          const leftPct = ((t.start - minDate) / totalMs) * 100;
+          const widthPct = Math.max(((t.end - t.start) / totalMs) * 100, 2);
+          const ganttColor = GANTT_COLORS[i % GANTT_COLORS.length];
+          return (
+            <div key={i} className="flex items-center mb-1.5 gap-2">
+              <div className="w-28 flex-shrink-0 text-xs text-gray-600 truncate text-right pr-2" title={t.task}>
+                {t.task}
+              </div>
+              <div className="flex-1 relative h-5 bg-gray-100 rounded overflow-hidden">
+                <div
+                  className="absolute top-0 h-full rounded text-white text-[10px] flex items-center px-1 overflow-hidden"
+                  style={{
+                    left: `${leftPct}%`,
+                    width: `${widthPct}%`,
+                    backgroundColor: ganttColor,
+                    minWidth: '4px',
+                  }}
+                  title={`${t.start.toLocaleDateString('pt-BR')} → ${t.end.toLocaleDateString('pt-BR')}`}
+                >
+                  {widthPct > 8 && t.group}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (block.type === 'sankey') {
+    const rows = displayData
+    if (!rows.length || !cfg.source_col || !cfg.target_col || !cfg.value_col) {
+      return <div className="text-gray-400 text-sm p-4">Configure source_col, target_col e value_col</div>
+    }
+    const links = rows.map(r => ({
+      source: String(r[cfg.source_col]),
+      target: String(r[cfg.target_col]),
+      value: parseFloat(r[cfg.value_col]) || 0,
+    })).filter(l => l.value > 0)
+    const nodeNames = [...new Set([...links.map(l => l.source), ...links.map(l => l.target)])]
+    const nodeTotals = {}
+    nodeNames.forEach(n => { nodeTotals[n] = 0 })
+    links.forEach(l => {
+      nodeTotals[l.source] = (nodeTotals[l.source] || 0) + l.value
+      nodeTotals[l.target] = (nodeTotals[l.target] || 0) + l.value
+    })
+    const skSources = [...new Set(links.map(l => l.source))]
+    const skTargets = [...new Set(links.map(l => l.target))]
+    const W = 400, H = 280, pad = 16, nodeW = 16
+    const leftX = pad + 40, rightX = W - pad - nodeW - 40
+    const leftNodes = skSources.map(n => ({ name: n, x: leftX, total: nodeTotals[n] }))
+    const rightNodes = skTargets.map(n => ({ name: n, x: rightX, total: nodeTotals[n] }))
+    const maxTotal = Math.max(...[...leftNodes, ...rightNodes].map(n => n.total)) || 1
+    const scaleH = v => Math.max((v / maxTotal) * (H - pad * 2 * (leftNodes.length || 1)), 8)
+    let leftY = pad
+    leftNodes.forEach(n => { n.y = leftY; n.h = scaleH(n.total); leftY += n.h + 8 })
+    let rightY = pad
+    rightNodes.forEach(n => { n.y = rightY; n.h = scaleH(n.total); rightY += n.h + 8 })
+    const SK_COLORS = ['#7c3aed','#2563eb','#16a34a','#d97706','#dc2626','#0891b2']
+    const leftOffsets = Object.fromEntries(leftNodes.map(n => [n.name, n.y]))
+    const rightOffsets = Object.fromEntries(rightNodes.map(n => [n.name, n.y]))
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        {links.map((l, i) => {
+          const src = leftNodes.find(n => n.name === l.source)
+          const tgt = rightNodes.find(n => n.name === l.target)
+          if (!src || !tgt) return null
+          const linkH = scaleH(l.value)
+          const sy = leftOffsets[l.source]
+          const ty = rightOffsets[l.target]
+          leftOffsets[l.source] += linkH
+          rightOffsets[l.target] += linkH
+          const skColor = SK_COLORS[skSources.indexOf(l.source) % SK_COLORS.length]
+          return (
+            <path key={i} d={`M${leftX + nodeW},${sy} C${leftX + 80},${sy} ${rightX - 80},${ty} ${rightX},${ty} L${rightX},${ty + linkH} C${rightX - 80},${ty + linkH} ${leftX + 80},${sy + linkH} ${leftX + nodeW},${sy + linkH} Z`} fill={skColor} opacity={0.35} />
+          )
+        })}
+        {leftNodes.map((n, i) => (
+          <g key={n.name}>
+            <rect x={leftX} y={n.y} width={nodeW} height={n.h} fill={SK_COLORS[i % SK_COLORS.length]} rx={2}/>
+            <text x={leftX - 4} y={n.y + n.h / 2} textAnchor="end" fontSize={9} dominantBaseline="middle" fill="#374151">{n.name}</text>
+          </g>
+        ))}
+        {rightNodes.map((n, i) => (
+          <g key={n.name}>
+            <rect x={rightX} y={n.y} width={nodeW} height={n.h} fill={SK_COLORS[(skSources.length + i) % SK_COLORS.length]} rx={2}/>
+            <text x={rightX + nodeW + 4} y={n.y + n.h / 2} textAnchor="start" fontSize={9} dominantBaseline="middle" fill="#374151">{n.name}</text>
+          </g>
+        ))}
+      </svg>
+    )
+  }
+
+  if (block.type === 'candlestick') {
+    const rows = displayData.slice(0, 60)
+    if (!rows.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>
+    const toNum = v => parseFloat(v) || 0
+    const candles = rows.map(r => ({
+      date: r[cfg.date_col] || '',
+      open: toNum(r[cfg.open_col]),
+      high: toNum(r[cfg.high_col]),
+      low: toNum(r[cfg.low_col]),
+      close: toNum(r[cfg.close_col]),
+    }))
+    const allVals = candles.flatMap(c => [c.high, c.low]).filter(v => v > 0)
+    if (!allVals.length) return <div className="text-gray-400 text-sm p-4">Configure as colunas OHLC.</div>
+    const cdMinV = Math.min(...allVals), cdMaxV = Math.max(...allVals)
+    const cdRange = cdMaxV - cdMinV || 1
+    const W = 400, H = 240, padT = 16, padB = 24, padL = 40, padR = 8
+    const chartH = H - padT - padB
+    const chartW = W - padL - padR
+    const candleW = Math.max(Math.floor(chartW / candles.length) - 2, 2)
+    const toY = v => padT + chartH - ((v - cdMinV) / cdRange) * chartH
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        {[0, 0.5, 1].map(p => {
+          const v = cdMinV + p * cdRange
+          const y = toY(v)
+          return (
+            <g key={p}>
+              <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e5e7eb" strokeWidth={0.5}/>
+              <text x={padL - 4} y={y} textAnchor="end" fontSize={8} dominantBaseline="middle" fill="#9ca3af">
+                {v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(1)}
+              </text>
+            </g>
+          )
+        })}
+        {candles.map((c, i) => {
+          const x = padL + (i / candles.length) * chartW + candleW / 2
+          const isUp = c.close >= c.open
+          const cdColor = isUp ? '#16a34a' : '#dc2626'
+          const bodyTop = toY(Math.max(c.open, c.close))
+          const bodyBot = toY(Math.min(c.open, c.close))
+          const bodyH = Math.max(bodyBot - bodyTop, 1)
+          return (
+            <g key={i}>
+              <line x1={x} y1={toY(c.high)} x2={x} y2={toY(c.low)} stroke={cdColor} strokeWidth={1}/>
+              <rect x={x - candleW/2} y={bodyTop} width={candleW} height={bodyH} fill={cdColor} opacity={0.85}/>
+            </g>
+          )
+        })}
+        {candles.filter((_, i) => i % Math.max(Math.floor(candles.length / 5), 1) === 0).map((c, i) => (
+          <text key={i} x={padL + (candles.indexOf(c) / candles.length) * chartW + candleW/2} y={H - 4} textAnchor="middle" fontSize={8} fill="#9ca3af">
+            {String(c.date).slice(0, 10)}
+          </text>
+        ))}
+      </svg>
+    )
+  }
+
+  if (block.type === 'boxplot') {
+    const rows = displayData
+    if (!rows.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>
+    const bpGroups = {}
+    rows.forEach(r => {
+      const g = cfg.group_col ? String(r[cfg.group_col]) : 'Todos'
+      const v = parseFloat(r[cfg.value_col])
+      if (!isNaN(v)) {
+        if (!bpGroups[g]) bpGroups[g] = []
+        bpGroups[g].push(v)
+      }
+    })
+    const calcStats = vals => {
+      const sorted = [...vals].sort((a, b) => a - b)
+      const q = p => {
+        const idx = p * (sorted.length - 1)
+        const lo = Math.floor(idx), hi = Math.ceil(idx)
+        return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)
+      }
+      return { min: sorted[0], q1: q(0.25), median: q(0.5), q3: q(0.75), max: sorted[sorted.length - 1] }
+    }
+    const groupNames = Object.keys(bpGroups).slice(0, 8)
+    const stats = groupNames.map(g => ({ name: g, ...calcStats(bpGroups[g]) }))
+    const allBpVals = stats.flatMap(s => [s.min, s.max])
+    const bpMinV = Math.min(...allBpVals), bpMaxV = Math.max(...allBpVals)
+    const bpRange = bpMaxV - bpMinV || 1
+    const W = 400, H = 260, padT = 16, padB = 32, padL = 48, padR = 16
+    const chartH = H - padT - padB
+    const chartW = W - padL - padR
+    const colW = chartW / groupNames.length
+    const boxW = Math.min(colW * 0.5, 40)
+    const toY = v => padT + chartH - ((v - bpMinV) / bpRange) * chartH
+    const BP_COLORS = ['#7c3aed','#2563eb','#16a34a','#d97706','#dc2626','#0891b2','#9333ea','#059669']
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        {[0, 0.5, 1].map(p => {
+          const v = bpMinV + p * bpRange
+          return (
+            <g key={p}>
+              <line x1={padL} y1={toY(v)} x2={W - padR} y2={toY(v)} stroke="#e5e7eb" strokeWidth={0.5}/>
+              <text x={padL - 4} y={toY(v)} textAnchor="end" fontSize={8} dominantBaseline="middle" fill="#9ca3af">
+                {v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(1)}
+              </text>
+            </g>
+          )
+        })}
+        {stats.map((s, i) => {
+          const cx = padL + (i + 0.5) * colW
+          const bpColor = BP_COLORS[i % BP_COLORS.length]
+          return (
+            <g key={s.name}>
+              <line x1={cx} y1={toY(s.min)} x2={cx} y2={toY(s.max)} stroke={bpColor} strokeWidth={1} strokeDasharray="3 2"/>
+              <line x1={cx - boxW/3} y1={toY(s.min)} x2={cx + boxW/3} y2={toY(s.min)} stroke={bpColor} strokeWidth={1.5}/>
+              <line x1={cx - boxW/3} y1={toY(s.max)} x2={cx + boxW/3} y2={toY(s.max)} stroke={bpColor} strokeWidth={1.5}/>
+              <rect x={cx - boxW/2} y={toY(s.q3)} width={boxW} height={Math.max(toY(s.q1) - toY(s.q3), 1)} fill={bpColor} opacity={0.25} stroke={bpColor} strokeWidth={1.5} rx={2}/>
+              <line x1={cx - boxW/2} y1={toY(s.median)} x2={cx + boxW/2} y2={toY(s.median)} stroke={bpColor} strokeWidth={2}/>
+              <text x={cx} y={H - padB + 12} textAnchor="middle" fontSize={9} fill="#374151">{s.name}</text>
+            </g>
+          )
+        })}
+      </svg>
+    )
+  }
+
   return null
 }
 
@@ -1687,7 +2047,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const columns = selectedDataset?.columns || []
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
   const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
-  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary', 'histogram', 'bullet'].includes(block.type)
+  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary', 'histogram', 'bullet', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type)
   const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked', 'heatmap', 'waterfall', 'radar'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
@@ -2491,6 +2851,18 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               <span className="text-xs text-gray-600">Gradiente sob a linha</span>
             </label>
           )}
+          {/* Brush filter — line, area, bar, bar_h */}
+          {['line', 'area', 'bar', 'bar_h'].includes(block.type) && (
+            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer mt-2">
+              <input
+                type="checkbox"
+                checked={block.config?.show_brush || false}
+                onChange={e => onChange({ ...block, config: { ...(block.config || {}), show_brush: e.target.checked } })}
+                className="rounded"
+              />
+              Brush filter (seleção de intervalo)
+            </label>
+          )}
         </ConfigSection>
       )}
 
@@ -2615,6 +2987,20 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
                 className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
               />
               <p className="text-xs text-gray-400 mt-0.5">Use {"{label}"} para inserir o valor clicado</p>
+            </div>
+          )}
+          {/* N28 — Custom Event (embed postMessage) */}
+          {['bar', 'bar_h', 'line', 'area', 'pie', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'funnel', 'map', 'waterfall', 'radar', 'bar_stacked', 'area_stacked', 'heatmap', 'table'].includes(block.type) && (
+            <div className="mt-2">
+              <label className="block text-xs text-gray-500 mb-1">Custom Event (embed)</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded px-2 py-0.5 text-xs"
+                placeholder="ex: dashboard:click"
+                value={block.config?.custom_event || ''}
+                onChange={e => updConfig('custom_event', e.target.value)}
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5">Envia window.postMessage ao clicar em um ponto do gráfico.</p>
             </div>
           )}
         </ConfigSection>
@@ -2854,6 +3240,114 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           {(block.config.value_mappings || []).length === 0 && (
             <p className="text-[10px] text-gray-400">Nenhum mapeamento configurado. Clique em + Adicionar.</p>
           )}
+        </ConfigSection>
+      )}
+
+      {/* GANTT — configuração */}
+      {block.type === 'gantt' && (
+        <ConfigSection title="Gantt">
+          <div className="mb-2">
+            <label className="block text-xs text-gray-500 mb-1">Dataset</label>
+            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}), dataset_id: e.target.value } })}>
+              <option value="">— selecionar dataset —</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {columns.length > 0 && (
+            <>
+              {[['task_col','Coluna de tarefa'],['start_col','Data início'],['end_col','Data fim'],['group_col','Grupo (opcional)']].map(([field, label]) => (
+                <div key={field} className="mb-2">
+                  <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                  <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    value={block.config?.[field] || ''}
+                    onChange={e => onChange({ ...block, config: { ...(block.config || {}), [field]: e.target.value } })}>
+                    <option value="">— selecionar —</option>
+                    {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              ))}
+            </>
+          )}
+        </ConfigSection>
+      )}
+
+      {/* SANKEY — configuração */}
+      {block.type === 'sankey' && (
+        <ConfigSection title="Sankey">
+          <div className="mb-2">
+            <label className="block text-xs text-gray-500 mb-1">Dataset</label>
+            <select className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}), dataset_id: e.target.value } })}>
+              <option value="">Selecione...</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {columns.length > 0 && [['source_col','Origem'],['target_col','Destino'],['value_col','Valor']].map(([field, label]) => (
+            <div key={field} className="mb-2">
+              <label className="block text-xs text-gray-500 mb-1">{label}</label>
+              <select className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                value={block.config?.[field] || ''}
+                onChange={e => onChange({ ...block, config: { ...(block.config || {}), [field]: e.target.value } })}>
+                <option value="">Selecione...</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          ))}
+        </ConfigSection>
+      )}
+
+      {/* CANDLESTICK — configuração */}
+      {block.type === 'candlestick' && (
+        <ConfigSection title="Candlestick (OHLC)">
+          <div className="mb-2">
+            <label className="block text-xs text-gray-500 mb-1">Dataset</label>
+            <select className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}), dataset_id: e.target.value } })}>
+              <option value="">Selecione...</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {columns.length > 0 && [['date_col','Data'],['open_col','Abertura'],['high_col','Máxima'],['low_col','Mínima'],['close_col','Fechamento']].map(([field, label]) => (
+            <div key={field} className="mb-2">
+              <label className="block text-xs text-gray-500 mb-1">{label}</label>
+              <select className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                value={block.config?.[field] || ''}
+                onChange={e => onChange({ ...block, config: { ...(block.config || {}), [field]: e.target.value } })}>
+                <option value="">Selecione...</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          ))}
+        </ConfigSection>
+      )}
+
+      {/* BOXPLOT — configuração */}
+      {block.type === 'boxplot' && (
+        <ConfigSection title="Box Plot">
+          <div className="mb-2">
+            <label className="block text-xs text-gray-500 mb-1">Dataset</label>
+            <select className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}), dataset_id: e.target.value } })}>
+              <option value="">Selecione...</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {columns.length > 0 && [['group_col','Agrupamento (opcional)'],['value_col','Coluna de valores']].map(([field, label]) => (
+            <div key={field} className="mb-2">
+              <label className="block text-xs text-gray-500 mb-1">{label}</label>
+              <select className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                value={block.config?.[field] || ''}
+                onChange={e => onChange({ ...block, config: { ...(block.config || {}), [field]: e.target.value } })}>
+                <option value="">Selecione...</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          ))}
         </ConfigSection>
       )}
 
