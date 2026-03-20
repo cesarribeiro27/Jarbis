@@ -2341,143 +2341,104 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         </ConfigSection>
       )}
 
-      {/* DADOS — for chart/table blocks */}
+      {/* DADOS — for chart/table blocks — modelo Looker Studio */}
       {hasData && (
         <ConfigSection title={t('block.sectionData')}>
-          {/* Dataset selector */}
+
+          {/* 1. Fonte de dados */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('block.labelDataSource')}</label>
-            <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400" value={block.dataset_id || ''} onChange={e => {
-              const newVal = e.target.value || null
-              const newDs = newVal ? datasets.find(d => d.id === newVal) : null
-              const updates = { ...block, dataset_id: newVal, label_col: null, value_col: null, config: { ...(block.config || {}), dim_type: null, granularity: null } }
-              // Auto-fill cols using column_types if available
-              if (newDs && newDs.columns && newDs.columns.length > 0) {
-                const dsColTypes = newDs.column_types || {}
-                const textCol = newDs.columns.find(c => dsColTypes[c] !== 'number')
-                if (textCol) updates.label_col = textCol
-                const numCol = newDs.columns.find(c => dsColTypes[c] === 'number')
-                if (numCol) { updates.value_col = numCol; updates.agg = 'sum' }
-              }
-              onChange(updates)
-            }}>
-              <option value="">{t('block.placeholderDataset')}</option>
-              {datasets.map(d => <option key={d.id} value={d.id}>{d.name} ({d.row_count?.toLocaleString()} linhas)</option>)}
+            <label className="block text-[11px] font-semibold text-gray-500 mb-1">Fonte de dados</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.dataset_id || ''}
+              onChange={e => {
+                const newVal = e.target.value || null
+                const newDs = newVal ? datasets.find(d => d.id === newVal) : null
+                const updates = { ...block, dataset_id: newVal, label_col: null, value_col: null, config: { ...(block.config || {}), dim_type: null, granularity: null } }
+                if (newDs?.columns?.length > 0) {
+                  const dsColTypes = newDs.column_types || {}
+                  const textCol = newDs.columns.find(c => dsColTypes[c] !== 'number')
+                  if (textCol) updates.label_col = textCol
+                  const numCol = newDs.columns.find(c => dsColTypes[c] === 'number')
+                  if (numCol) { updates.value_col = numCol; updates.agg = 'sum' }
+                }
+                onChange(updates)
+              }}
+            >
+              <option value="">— Selecione uma fonte —</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}{d.row_count ? ` (${d.row_count.toLocaleString()} linhas)` : ''}</option>)}
             </select>
-            {datasets.length === 0 && <p className="text-xs text-amber-600 mt-1">{t('block.noDatasets')}</p>}
+            {datasets.length === 0 && <p className="text-xs text-amber-600 mt-1">Nenhum dado conectado ainda.</p>}
           </div>
 
-          {selectedDataset && (() => {
-            // autoAssign: click on a column chip → assign to the right slot
-            function autoAssignColumn(col) {
-              const type = colTypes[col] || 'text'
-              if (type === 'number') {
-                onChange({ ...block, value_col: col })
-              } else {
-                selectLabelCol(col)
-              }
-            }
-
-            const dimTypeIcon = { text: 'Aa', number: '#', date: '📅' }
-
-            return (
-              <>
-                {/* Available columns — clickable chips */}
+          {/* 2. Dimensão + 3. Métrica — só aparecem quando tem dataset */}
+          {selectedDataset && (
+            <>
+              {/* Dimensão */}
+              {block.type !== 'table' && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Colunas disponíveis</label>
-                  <div className="flex flex-wrap gap-1">
-                    {columns.map(col => {
-                      const type = colTypes[col] || 'text'
-                      const badge = dimTypeIcon[type] || 'Aa'
-                      const isUsedDim = col === block.label_col
-                      const isUsedMetric = col === block.value_col
-                      return (
-                        <button
-                          key={col}
-                          onClick={() => autoAssignColumn(col)}
-                          title={`${type} — clique para usar como ${type === 'number' ? 'métrica' : 'dimensão'}`}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] font-medium transition-all ${
-                            isUsedDim
-                              ? 'bg-violet-100 border-violet-300 text-violet-700'
-                              : isUsedMetric
-                              ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                              : 'bg-gray-50 border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-600 hover:text-violet-700'
-                          }`}
-                        >
-                          <span className="text-gray-400 text-[10px]">{badge}</span>
-                          <span className="truncate max-w-[80px]">{col}</span>
+                  <label className="block text-[11px] font-semibold text-gray-500 mb-1">
+                    Dimensão <span className="font-normal text-gray-400">(agrupar por)</span>
+                  </label>
+                  <select
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    value={block.label_col || ''}
+                    onChange={e => selectLabelCol(e.target.value || '')}
+                  >
+                    <option value="">— Selecione —</option>
+                    {dimColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  {isDimDate && (
+                    <div className="flex gap-1 mt-1.5">
+                      {[{ v: 'day', l: 'Dia' }, { v: 'week', l: 'Semana' }, { v: 'month', l: 'Mês' }, { v: 'quarter', l: 'Trimestre' }, { v: 'year', l: 'Ano' }].map(g => (
+                        <button key={g.v} onClick={() => updConfig('granularity', g.v)}
+                          className={`flex-1 py-0.5 rounded border text-[10px] font-semibold transition-all ${(block.config?.granularity || 'month') === g.v ? 'border-violet-500 bg-violet-100 text-violet-700' : 'border-gray-200 text-gray-400 hover:border-violet-300'}`}>
+                          {g.l}
                         </button>
-                      )
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {/* Slots: Dimension + Metric */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Dimension slot */}
-                  <div className="rounded-xl border-2 border-dashed border-gray-200 p-2 min-h-[64px] flex flex-col gap-1.5 bg-gray-50/50">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21l-4-4m0 0l4-4m-4 4h14a2 2 0 000-4H3" /></svg>
-                      Dimensão
-                    </span>
-                    {block.label_col ? (
-                      <div className="flex items-center justify-between bg-violet-50 border border-violet-200 rounded-lg px-2 py-1">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <span className="text-[10px] text-violet-400">{dimTypeIcon[colTypes[block.label_col]] || 'Aa'}</span>
-                          <span className="text-[11px] font-semibold text-violet-700 truncate">{block.label_col}</span>
-                        </div>
-                        <button onClick={() => selectLabelCol('')} className="text-violet-300 hover:text-red-400 ml-1 shrink-0 text-xs leading-none">×</button>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-gray-300 italic">nenhuma</span>
-                    )}
-                    {/* Granularity — only when dim is date */}
-                    {isDimDate && (
-                      <div className="flex gap-0.5 flex-wrap">
-                        {[{ v: 'day', l: 'D' }, { v: 'week', l: 'S' }, { v: 'month', l: 'M' }, { v: 'quarter', l: 'T' }, { v: 'year', l: 'A' }].map(g => (
-                          <button key={g.v} onClick={() => updConfig('granularity', g.v)}
-                            title={{ day: 'Dia', week: 'Semana', month: 'Mês', quarter: 'Trimestre', year: 'Ano' }[g.v]}
-                            className={`px-1.5 py-0.5 rounded border text-[9px] font-bold transition-all ${(block.config?.granularity || 'month') === g.v ? 'border-violet-500 bg-violet-100 text-violet-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}>
-                            {g.l}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Metric slot */}
-                  <div className="rounded-xl border-2 border-dashed border-gray-200 p-2 min-h-[64px] flex flex-col gap-1.5 bg-gray-50/50">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                      Métrica
-                    </span>
-                    {block.value_col ? (
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1">
-                          <div className="flex items-center gap-1 min-w-0">
-                            <span className="text-[10px] text-emerald-400">#</span>
-                            <span className="text-[11px] font-semibold text-emerald-700 truncate">{block.value_col}</span>
-                          </div>
-                          <button onClick={() => upd('value_col', null)} className="text-emerald-300 hover:text-red-400 ml-1 shrink-0 text-xs leading-none">×</button>
-                        </div>
-                        <select className="w-full border border-gray-200 rounded px-1.5 py-0.5 text-[10px] bg-white focus:outline-none focus:ring-1 focus:ring-violet-300" value={block.agg || 'sum'} onChange={e => upd('agg', e.target.value)}>
-                          {AGG_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-[10px] text-gray-300 italic">nenhuma</span>
-                        <button
-                          onClick={() => upd('value_col', '__count__')}
-                          className="text-[9px] text-violet-400 hover:text-violet-600 text-left font-medium"
-                        >+ usar contagem</button>
-                      </>
+              {/* Métrica */}
+              {block.type !== 'table' && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-500 mb-1">
+                    Métrica <span className="font-normal text-gray-400">(o que medir)</span>
+                  </label>
+                  <div className="flex gap-1.5">
+                    <select
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      value={block.value_col || ''}
+                      onChange={e => upd('value_col', e.target.value || null)}
+                    >
+                      <option value="">— Selecione —</option>
+                      <option value="__count__">Contagem de linhas</option>
+                      {metricColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    {block.value_col && block.value_col !== '__count__' && (
+                      <select
+                        className="w-20 border border-gray-200 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                        value={block.agg || 'sum'}
+                        onChange={e => upd('agg', e.target.value)}
+                      >
+                        {AGG_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
                     )}
                   </div>
                 </div>
-              </>
-            )
-          })()}
+              )}
+
+              {/* Para tabela: apenas informa que mostra todos os dados */}
+              {block.type === 'table' && (
+                <div className="bg-violet-50 border border-violet-100 rounded-lg px-3 py-2.5">
+                  <p className="text-xs text-violet-700 font-medium">Tabela de dados completa</p>
+                  <p className="text-[11px] text-violet-500 mt-0.5">Exibe todas as linhas e colunas da fonte selecionada.</p>
+                </div>
+              )}
+            </>
+          )}
         </ConfigSection>
       )}
 
