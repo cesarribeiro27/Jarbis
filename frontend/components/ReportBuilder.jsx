@@ -815,6 +815,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   const hasDrilldown = !!block.config?.drilldown_col
   const canExport = data && data.length > 0 && !['text','filter','slider','image','ai_summary'].includes(block.type)
 
+  // Deve ficar ANTES de qualquer return condicional — Regra dos Hooks
+  const handleCustomEvent = useCallback((eventName, label, value) => {
+    if (!eventName) return
+    try {
+      window.parent.postMessage(
+        { type: eventName, label, value, reportId: block.id },
+        '*'
+      )
+    } catch {}
+  }, [block.id])
+
   if (block.type === 'text') {
     return <textarea className="w-full h-full text-sm resize-none bg-transparent outline-none" style={{ color: block.config?.text_color || '#4b5563' }} placeholder="Escreva um comentário..." value={block.config?.text || ''} readOnly={readOnly} onChange={e => !readOnly && onTextChange(e.target.value)} />
   }
@@ -925,16 +936,6 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     }
     return true
   }
-
-  const handleCustomEvent = useCallback((eventName, label, value) => {
-    if (!eventName) return
-    try {
-      window.parent.postMessage(
-        { type: eventName, label, value, reportId: block.id },
-        '*'
-      )
-    } catch {}
-  }, [block.id])
 
   const handleClick = (label) => {
     // click_url takes priority if set
