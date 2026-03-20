@@ -53,6 +53,8 @@ const BLOCK_TYPES = [
   { type: 'radar',       label: 'Radar',         desc: 'Comparação multidimensional' },
   { type: 'pivot',       label: 'Tabela Pivot', desc: 'Agrupamento por 2 dimensões', category: 'chart' },
   { type: 'ai_summary',  label: 'Resumo AI',   desc: 'Resumo inteligente dos dados', category: 'ai' },
+  { type: 'histogram',   label: 'Histograma',  desc: 'Distribuição de frequência' },
+  { type: 'bullet',      label: 'Bullet',      desc: 'Valor vs meta' },
   { type: 'text',        label: 'Texto',       desc: 'Comentários' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
@@ -125,6 +127,24 @@ const TYPE_ICONS = {
   ai_summary: (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+    </svg>
+  ),
+  histogram: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="14" width="4" height="7" rx="0.5" />
+      <rect x="7" y="10" width="4" height="11" rx="0.5" />
+      <rect x="12" y="6" width="4" height="15" rx="0.5" />
+      <rect x="17" y="9" width="4" height="12" rx="0.5" />
+    </svg>
+  ),
+  bullet: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="5" width="20" height="5" rx="1" fill="currentColor" opacity="0.15" stroke="none" />
+      <rect x="2" y="5" width="13" height="5" rx="1" fill="currentColor" opacity="0.6" stroke="none" />
+      <line x1="16" y1="3" x2="16" y2="12" strokeWidth="2" />
+      <rect x="2" y="13" width="20" height="5" rx="1" fill="currentColor" opacity="0.15" stroke="none" />
+      <rect x="2" y="13" width="10" height="5" rx="1" fill="currentColor" opacity="0.6" stroke="none" />
+      <line x1="14" y1="11" x2="14" y2="20" strokeWidth="2" />
     </svg>
   ),
 }
@@ -747,6 +767,20 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     ? config.colors.split(',').map(c => c.trim()).filter(Boolean)
     : COLORS
 
+  // N24 — Mapeamento de valores: aplica value_mappings sobre os dados antes de renderizar
+  function applyMappings(rows, mappings) {
+    if (!mappings || !mappings.length) return rows
+    return rows.map(row => {
+      const newRow = { ...row }
+      for (const [key, val] of Object.entries(newRow)) {
+        const match = mappings.find(m => String(m.from) === String(val))
+        if (match) newRow[key] = match.to
+      }
+      return newRow
+    })
+  }
+  const displayData = applyMappings(data, config.value_mappings)
+
   function handleChartClickUrl(label) {
     const clickUrl = block.config?.click_url
     if (!clickUrl) return false
@@ -801,7 +835,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   ) : null
 
   if (block.type === 'kpi') {
-    const total = data.reduce((s, d) => s + (d.value || 0), 0)
+    const total = displayData.reduce((s, d) => s + (d.value || 0), 0)
     const accentColor = config.accent_color || '#6366f1'
     let valueColor = accentColor
     if (config.threshold_warn != null && config.threshold_warn !== '' && total < parseFloat(config.threshold_warn)) valueColor = '#ef4444'
@@ -839,7 +873,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   const topN = config.top_n ? parseInt(config.top_n) : null
   const sortBy = config.sort_by // 'asc' | 'desc' | undefined (keep original)
   const processedData = (() => {
-    let d = [...data]
+    let d = [...displayData]
     if (sortBy === 'desc') d.sort((a, b) => (b.value || 0) - (a.value || 0))
     else if (sortBy === 'asc') d.sort((a, b) => (a.value || 0) - (b.value || 0))
     if (topN) d = d.slice(0, topN)
@@ -900,7 +934,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
             <defs>
               <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.25} />
@@ -943,7 +977,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
             {showGrad ? (
-              <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+              <AreaChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
                 <defs>
                   <linearGradient id={`linegrad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={color} stopOpacity={0.18} />
@@ -963,7 +997,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 )}
               </AreaChart>
             ) : (
-              <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+              <LineChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
@@ -996,7 +1030,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data} dataKey="value" nameKey="label"
+              data={displayData} dataKey="value" nameKey="label"
               cx="50%" cy={pieCY} outerRadius={pieOuter} innerRadius={pieInner}
               labelLine={false}
               label={config.show_labels ? ({ cx: pcx, cy: pcy, midAngle, outerRadius: pr, percent }) => {
@@ -1009,7 +1043,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               onClick={entry => handleClick(entry.label)}
               style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}
             >
-              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} onClick={() => { if (config.click_url) handleChartClickUrl(d.label) }} />)}
+              {displayData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} onClick={() => { if (config.click_url) handleChartClickUrl(d.label) }} />)}
             </Pie>
             <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => [fmt(v, format, config), '']} />
             {showLegend && <Legend
@@ -1026,7 +1060,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'scatter') {
-    const scatterData = data.map(d => ({ x: parseFloat(d.label) || 0, y: d.value }))
+    const scatterData = displayData.map(d => ({ x: parseFloat(d.label) || 0, y: d.value }))
     return (
       <div className="flex flex-col h-full">
         <div style={{ flex: 1 }}>
@@ -1049,7 +1083,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+          <ComposedChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
             <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
@@ -1064,7 +1098,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   )
 
   if (block.type === 'bubble') {
-    const bubbleData = data.map(d => ({ x: parseFloat(d.label) || 0, y: d.value, z: Math.abs(d.value) || 1 }))
+    const bubbleData = displayData.map(d => ({ x: parseFloat(d.label) || 0, y: d.value, z: Math.abs(d.value) || 1 }))
     return (
       <div className="flex flex-col h-full">
         <div style={{ flex: 1 }}>
@@ -1086,7 +1120,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'treemap') {
-    const treeData = data.map((d, i) => ({ name: d.label, size: Math.abs(d.value) || 1, fill: palette[i % palette.length] }))
+    const treeData = displayData.map((d, i) => ({ name: d.label, size: Math.abs(d.value) || 1, fill: palette[i % palette.length] }))
     return (
       <div className="flex flex-col h-full">
         {DrillChip}
@@ -1109,7 +1143,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'gauge') {
-    const total = data.reduce((s, d) => s + (d.value || 0), 0)
+    const total = displayData.reduce((s, d) => s + (d.value || 0), 0)
     const maxVal = parseFloat(config.gauge_max) || 100
     const minVal = parseFloat(config.gauge_min) || 0
     const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1) * 100
@@ -1128,7 +1162,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'speedometer') {
-    const total = data.reduce((s, d) => s + (d.value || 0), 0)
+    const total = displayData.reduce((s, d) => s + (d.value || 0), 0)
     const maxVal = parseFloat(config.gauge_max) || 100
     const minVal = parseFloat(config.gauge_min) || 0
     const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1)
@@ -1154,13 +1188,13 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'funnel') {
-    if (!data || data.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.noData}</div>
-    const maxVal = Math.max(...data.map(d => d.value || 0), 1)
+    if (!displayData || displayData.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.noData}</div>
+    const maxVal = Math.max(...displayData.map(d => d.value || 0), 1)
     return (
       <div className="flex flex-col h-full gap-1 py-1 overflow-hidden">
-        {data.map((d, i) => {
+        {displayData.map((d, i) => {
           const pct = d.value / maxVal
-          const convPct = i > 0 && data[i - 1]?.value > 0 ? Math.round((d.value / data[i - 1].value) * 100) : null
+          const convPct = i > 0 && displayData[i - 1]?.value > 0 ? Math.round((d.value / displayData[i - 1].value) * 100) : null
           const c = palette[i % palette.length]
           const leftPad = ((1 - pct) * 28).toFixed(1)
           return (
@@ -1180,9 +1214,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'map') {
-    if (!data || data.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.noData}</div>
+    if (!displayData || displayData.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.noData}</div>
     const byUF = {}
-    data.forEach(d => { byUF[String(d.label).toUpperCase()] = d.value })
+    displayData.forEach(d => { byUF[String(d.label).toUpperCase()] = d.value })
     const vals = Object.values(byUF).filter(v => v != null && !isNaN(v))
     const minV = vals.length ? Math.min(...vals) : 0
     const maxV = vals.length ? Math.max(...vals) : 1
@@ -1227,17 +1261,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'table') {
-    return <TableBlock block={block} data={data} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} vs={vs} />
+    return <TableBlock block={block} data={displayData} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} vs={vs} />
   }
 
   if (block.type === 'heatmap') {
     const rowCol = cfg.row_col || block.label_col
     const colCol = cfg.col_col
     const valCol = cfg.value_col || block.value_col
-    if (!rowCol || !colCol || !valCol || !data?.length) {
+    if (!rowCol || !colCol || !valCol || !displayData?.length) {
       return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Configure linha, coluna e valor</div>
     }
-    const chartData = data
+    const chartData = displayData
     const rows = [...new Set(chartData.map(d => String(d[rowCol] ?? '')))]
     const cols = [...new Set(chartData.map(d => String(d[colCol] ?? '')))]
     const valueMap = {}
@@ -1339,7 +1373,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'radar') {
-    const radarData = data.map(d => ({ subject: String(d.label ?? ''), value: d.value ?? 0 }))
+    const radarData = displayData.map(d => ({ subject: String(d.label ?? ''), value: d.value ?? 0 }))
     return (
       <div className="flex flex-col h-full">
         <div style={{ flex: 1 }}>
@@ -1368,7 +1402,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     }
     // pivot: label_col → { label, [seriesValue]: sumOfValueCol }
     const pivotMap = {}
-    for (const row of data) {
+    for (const row of displayData) {
       const label = String(row.label ?? '')
       const series = String(row[seriesCol] ?? row.series ?? '')
       const val = parseFloat(row.value ?? 0) || 0
@@ -1376,7 +1410,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       pivotMap[label][series] = (pivotMap[label][series] || 0) + val
     }
     const pivotData = Object.values(pivotMap)
-    const seriesValues = [...new Set(data.map(r => String(r[seriesCol] ?? r.series ?? '')))]
+    const seriesValues = [...new Set(displayData.map(r => String(r[seriesCol] ?? r.series ?? '')))]
 
     if (block.type === 'bar_stacked') return (
       <div className="flex flex-col h-full">
@@ -1425,11 +1459,11 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const valCol = config.value_col || block.value_col
     const agg = config.agg || block.agg || 'sum'
 
-    if (!rowCol || !colCol || !valCol || !data?.length) {
+    if (!rowCol || !colCol || !valCol || !displayData?.length) {
       return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Configure linha, coluna e valor</div>
     }
 
-    const chartData = data
+    const chartData = displayData
     const rows = [...new Set(chartData.map(d => String(d[rowCol] ?? '')))]
     const cols = [...new Set(chartData.map(d => String(d[colCol] ?? '')))]
 
@@ -1500,6 +1534,65 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             </tr>
           </tfoot>
         </table>
+      </div>
+    )
+  }
+
+  if (block.type === 'histogram') {
+    const vals = data.map(r => parseFloat(r[cfg.value_col])).filter(v => !isNaN(v))
+    if (!vals.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>
+    const min = Math.min(...vals), max = Math.max(...vals)
+    const bins = cfg.bins || 10
+    const width = (max - min) / bins || 1
+    const buckets = Array.from({ length: bins }, (_, i) => ({
+      range: `${(min + i * width).toFixed(1)}–${(min + (i + 1) * width).toFixed(1)}`,
+      count: vals.filter(v => v >= min + i * width && v < min + (i + 1) * width).length,
+    }))
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={buckets}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="range" tick={{ fontSize: 10 }} />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="count" fill={cfg.color || '#7c3aed'} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  if (block.type === 'bullet') {
+    const rows = data.slice(0, 8)
+    return (
+      <div className="flex flex-col gap-3 p-3 h-full overflow-auto">
+        {rows.map((row, i) => {
+          const label = row[cfg.label_col] || `Item ${i + 1}`
+          const value = parseFloat(row[cfg.value_col]) || 0
+          const target = parseFloat(row[cfg.target_col]) || 0
+          const maxVal = parseFloat(row[cfg.max_col]) || Math.max(value, target) * 1.2 || 100
+          const valuePct = Math.min((value / maxVal) * 100, 100)
+          const targetPct = Math.min((target / maxVal) * 100, 100)
+          const isOk = value >= target
+          return (
+            <div key={i}>
+              <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <span className="font-medium">{label}</span>
+                <span>{value.toLocaleString('pt-BR')} / meta {target.toLocaleString('pt-BR')}</span>
+              </div>
+              <div className="relative h-6 bg-gray-200 rounded overflow-hidden">
+                <div className="absolute inset-0 bg-gray-100" />
+                <div
+                  className="absolute left-0 top-1 bottom-1 rounded"
+                  style={{ width: `${valuePct}%`, backgroundColor: isOk ? '#16a34a' : '#dc2626' }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-gray-800"
+                  style={{ left: `${targetPct}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -1594,7 +1687,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const columns = selectedDataset?.columns || []
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
   const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
-  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary'].includes(block.type)
+  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary', 'histogram', 'bullet'].includes(block.type)
   const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked', 'heatmap', 'waterfall', 'radar'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
@@ -1985,6 +2078,110 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
             />
             <p className="text-[10px] text-gray-400 mt-0.5">Deixe em branco para usar o prompt padrão</p>
           </div>
+        </ConfigSection>
+      )}
+
+      {/* HISTOGRAM — configuração */}
+      {block.type === 'histogram' && (
+        <ConfigSection title="Histograma">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}) } })}
+            >
+              <option value="">— selecionar dataset —</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {selectedDataset && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna de valor</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value={block.config?.value_col || ''}
+                onChange={e => updConfig('value_col', e.target.value || null)}
+              >
+                <option value="">— selecionar —</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Número de bins: {block.config?.bins || 10}</label>
+            <input
+              type="range"
+              min="5"
+              max="50"
+              value={block.config?.bins || 10}
+              onChange={e => updConfig('bins', parseInt(e.target.value, 10))}
+              className="w-full accent-violet-600"
+            />
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* BULLET CHART — configuração */}
+      {block.type === 'bullet' && (
+        <ConfigSection title="Bullet Chart">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}) } })}
+            >
+              <option value="">— selecionar dataset —</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {selectedDataset && (<>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna de label</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value={block.config?.label_col || ''}
+                onChange={e => updConfig('label_col', e.target.value || null)}
+              >
+                <option value="">— selecionar —</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna de valor</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value={block.config?.value_col || ''}
+                onChange={e => updConfig('value_col', e.target.value || null)}
+              >
+                <option value="">— selecionar —</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna de meta</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value={block.config?.target_col || ''}
+                onChange={e => updConfig('target_col', e.target.value || null)}
+              >
+                <option value="">— selecionar —</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Coluna de máximo (opcional)</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                value={block.config?.max_col || ''}
+                onChange={e => updConfig('max_col', e.target.value || null)}
+              >
+                <option value="">— automático —</option>
+                {columns.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </>)}
         </ConfigSection>
       )}
 
@@ -2597,6 +2794,69 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         <p className="text-[10px] text-gray-400">{t('block.hintLockPosition')}</p>
       </ConfigSection>
 
+      {/* MAPEAMENTO DE VALORES */}
+      {hasData && (
+        <ConfigSection title="Mapeamento de valores" defaultOpen={false}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-gray-400">Mapear valores brutos para labels com cor</span>
+            <button
+              onClick={() => {
+                const mappings = [...(block.config.value_mappings || []), { from: '', to: '', color: '#7c3aed' }];
+                onChange({ ...block, config: { ...block.config, value_mappings: mappings } });
+              }}
+              className="text-xs text-purple-600 hover:text-purple-800"
+            >+ Adicionar</button>
+          </div>
+          {(block.config.value_mappings || []).map((m, i) => (
+            <div key={i} className="flex gap-1 mb-1 items-center">
+              <input
+                type="text"
+                placeholder="De"
+                value={m.from}
+                onChange={e => {
+                  const mappings = [...(block.config.value_mappings || [])];
+                  mappings[i] = { ...mappings[i], from: e.target.value };
+                  onChange({ ...block, config: { ...block.config, value_mappings: mappings } });
+                }}
+                className="flex-1 border border-gray-300 rounded px-2 py-0.5 text-xs"
+              />
+              <span className="text-gray-400 text-xs">→</span>
+              <input
+                type="text"
+                placeholder="Para"
+                value={m.to}
+                onChange={e => {
+                  const mappings = [...(block.config.value_mappings || [])];
+                  mappings[i] = { ...mappings[i], to: e.target.value };
+                  onChange({ ...block, config: { ...block.config, value_mappings: mappings } });
+                }}
+                className="flex-1 border border-gray-300 rounded px-2 py-0.5 text-xs"
+              />
+              <input
+                type="color"
+                value={m.color || '#7c3aed'}
+                onChange={e => {
+                  const mappings = [...(block.config.value_mappings || [])];
+                  mappings[i] = { ...mappings[i], color: e.target.value };
+                  onChange({ ...block, config: { ...block.config, value_mappings: mappings } });
+                }}
+                className="w-8 h-6 border border-gray-300 rounded cursor-pointer p-0"
+              />
+              <button
+                onClick={() => {
+                  const mappings = (block.config.value_mappings || []).filter((_, j) => j !== i);
+                  onChange({ ...block, config: { ...block.config, value_mappings: mappings } });
+                }}
+                className="text-red-400 hover:text-red-600 text-xs"
+              >✕</button>
+            </div>
+          ))}
+          {(block.config.value_mappings || []).length === 0 && (
+            <p className="text-[10px] text-gray-400">Nenhum mapeamento configurado. Clique em + Adicionar.</p>
+          )}
+        </ConfigSection>
+      )}
+
       {/* ID DO BLOCO */}
       <ConfigSection title={t('block.sectionBlockId')} defaultOpen={false}>
         <div className="flex items-center gap-1">
@@ -2747,6 +3007,47 @@ export function CanvasConfigPanel({ config, onChange }) {
           <option value="ja">🇯🇵 日本語</option>
         </select>
         <p className="text-[10px] text-gray-400 mt-1">{t('canvas.publicLangHint')}</p>
+      </div>
+
+      {/* Fuso horário */}
+      <div className="border-t border-gray-100 pt-4">
+        <label className="block text-xs font-medium text-gray-700 mb-2">Fuso horário</label>
+        <select
+          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+          value={config.timezone || 'America/Sao_Paulo'}
+          onChange={e => upd('timezone', e.target.value)}
+        >
+          <option value="America/Sao_Paulo">América/São Paulo (BRT)</option>
+          <option value="America/Manaus">América/Manaus (AMT)</option>
+          <option value="America/Belem">América/Belém (BRT)</option>
+          <option value="America/Fortaleza">América/Fortaleza (BRT)</option>
+          <option value="America/Recife">América/Recife (BRT)</option>
+          <option value="America/Bahia">América/Bahia (BRT)</option>
+          <option value="America/Cuiaba">América/Cuiabá (AMT)</option>
+          <option value="America/Porto_Velho">América/Porto Velho (AMT)</option>
+          <option value="America/Boa_Vista">América/Boa Vista (AMT)</option>
+          <option value="America/Rio_Branco">América/Rio Branco (ACT)</option>
+          <option value="America/Noronha">América/Noronha (FNT)</option>
+          <option value="UTC">UTC</option>
+          <option value="America/New_York">América/Nova York (EST)</option>
+          <option value="America/Chicago">América/Chicago (CST)</option>
+          <option value="America/Los_Angeles">América/Los Angeles (PST)</option>
+          <option value="Europe/London">Europa/Londres (GMT)</option>
+          <option value="Europe/Lisbon">Europa/Lisboa (WET)</option>
+          <option value="Europe/Madrid">Europa/Madri (CET)</option>
+        </select>
+      </div>
+
+      {/* CSS Customizado */}
+      <div className="border-t border-gray-100 pt-4">
+        <label className="block text-xs font-medium text-gray-700 mb-1">CSS Customizado</label>
+        <textarea
+          className="w-full text-xs font-mono border border-gray-300 rounded p-2 h-32 resize-none"
+          placeholder=".block-container { border-radius: 12px; } .recharts-text { font-family: 'Inter'; }"
+          value={config.custom_css || ''}
+          onChange={e => upd('custom_css', e.target.value)}
+        />
+        <p className="text-xs text-gray-400 mt-1">CSS aplicado globalmente ao canvas deste dashboard.</p>
       </div>
     </div>
   )

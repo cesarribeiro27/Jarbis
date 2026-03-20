@@ -49,6 +49,7 @@ from app.modules.tenants.models import Tenant
 
 from .dataset_models import ReportDataset
 from .dataset_service import DatasetService
+from .query_log_models import QueryLog
 from .schemas import (
     ReportCreate,
     ReportResponse,
@@ -295,6 +296,41 @@ async def public_query_dataset(
         return JSONResponse(content=result, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
     finally:
         await redis.aclose()
+
+
+# ---------------------------------------------------------------------------
+# Query Logs
+# ---------------------------------------------------------------------------
+
+
+@router.get("/query-logs")
+async def list_query_logs(
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    result = await db.execute(
+        select(QueryLog)
+        .where(QueryLog.tenant_id == user.tenant_id)
+        .order_by(QueryLog.created_at.desc())
+        .limit(limit)
+    )
+    logs = result.scalars().all()
+    return [
+        {
+            "id": l.id,
+            "dataset_id": str(l.dataset_id) if l.dataset_id else None,
+            "dataset_name": l.dataset_name,
+            "query_type": l.query_type,
+            "duration_ms": l.duration_ms,
+            "rows_returned": l.rows_returned,
+            "status": l.status,
+            "error_msg": l.error_msg,
+            "cached": l.cached,
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+        }
+        for l in logs
+    ]
 
 
 # ---------------------------------------------------------------------------

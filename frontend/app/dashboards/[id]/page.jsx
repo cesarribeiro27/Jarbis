@@ -846,6 +846,9 @@ export default function DashboardDetailPage() {
   if (mode === 'edit') {
     return (
       <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f7] dark:bg-gray-950">
+        {canvasConfig?.custom_css && (
+          <style dangerouslySetInnerHTML={{ __html: canvasConfig.custom_css }} />
+        )}
         {/* Editor top bar */}
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-700 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm">
           {/* Left: back + title + add */}
@@ -1077,6 +1080,9 @@ export default function DashboardDetailPage() {
   // VIEW MODE
   return (
     <AppLayout>
+      {canvasConfig?.custom_css && (
+        <style dangerouslySetInnerHTML={{ __html: canvasConfig.custom_css }} />
+      )}
       {nearLimit && (
         <div className="px-6 py-2.5 text-sm font-medium flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border-b border-amber-100 relative">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
