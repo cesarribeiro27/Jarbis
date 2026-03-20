@@ -1,8 +1,10 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 async function apiFetch(path, options = {}) {
+  const { _noSuborg, ...fetchOptions } = options
+  options = fetchOptions
   const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-  const suborgId = typeof window !== 'undefined' ? localStorage.getItem('jarbis_suborg_id') : null
+  const suborgId = !_noSuborg && typeof window !== 'undefined' ? localStorage.getItem('jarbis_suborg_id') : null
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -133,8 +135,8 @@ export const api = {
         apiFetch(`/reports/datasets/${id}/query`, { method: 'POST', body: JSON.stringify(req) }),
       // Colunas com tipos detectados automaticamente
       columns: (id) => apiFetch(`/reports/datasets/${id}/columns`),
-      // Retorna (ou cria) o dataset de demonstração do tenant
-      getOnboarding: () => apiFetch('/reports/onboarding-dataset'),
+      // Retorna (ou cria) o dataset de demonstração do tenant (sem contexto de sub-org)
+      getOnboarding: () => apiFetch('/reports/onboarding-dataset', { _noSuborg: true }),
       // Linhas brutas paginadas
       rows: (id, limit = 50, offset = 0) => apiFetch(`/reports/datasets/${id}/rows?limit=${limit}&offset=${offset}`),
       // Renomear dataset

@@ -622,12 +622,6 @@ function TemplateGallery({ onSelect }) {
                   {/* Illustrated preview */}
                   <div className={`w-full h-32 bg-gradient-to-br ${gradientClass} overflow-hidden relative`}>
                     {preview}
-                    {/* Icon top-right corner */}
-                    {tpl.icon && (
-                      <div className="absolute top-2 left-2 text-base leading-none select-none pointer-events-none drop-shadow-sm">
-                        {tpl.icon}
-                      </div>
-                    )}
                     {/* Badges */}
                     {tpl.badges && tpl.badges.length > 0 && (
                       <div className="absolute top-2 right-2 flex gap-1">
