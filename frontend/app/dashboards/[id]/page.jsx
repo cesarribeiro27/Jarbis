@@ -998,7 +998,7 @@ export default function DashboardDetailPage() {
         ...(colType === 'number' ? { value_col: col } : { label_col: col }),
         ...(colType === 'date' ? { config: { dim_type: 'date', granularity: 'month' } } : {}),
       }
-      setBlocks(prev => [...prev, { ...newB, ...patch }])
+      setBlocks([...blocks, { ...newB, ...patch }])
       setSelectedBlockId(newB.id)
       setDraggedColumn(null)
       return
