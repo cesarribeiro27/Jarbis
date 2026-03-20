@@ -91,19 +91,6 @@ class Tenant(Base):
 
     # Relacionamentos
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")
-    sub_orgs: Mapped[list["Tenant"]] = relationship(
-        "Tenant",
-        primaryjoin="Tenant.parent_tenant_id == Tenant.id",
-        foreign_keys="[Tenant.parent_tenant_id]",
-        back_populates="parent_org",
-    )
-    parent_org: Mapped["Tenant | None"] = relationship(
-        "Tenant",
-        primaryjoin="Tenant.parent_tenant_id == Tenant.id",
-        foreign_keys="[Tenant.parent_tenant_id]",
-        back_populates="sub_orgs",
-        remote_side="Tenant.id",
-    )
 
     @property
     def trial_days_remaining(self) -> int | None:
