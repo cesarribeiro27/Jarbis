@@ -9,24 +9,73 @@ import { useTranslations, useLocale } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+function ExcelSheetPickerModal({ sheets, onConfirm, onClose }) {
+  const [selected, setSelected] = useState(sheets[0] || '')
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Selecionar aba do Excel</h2>
+        <p className="text-xs text-gray-400 mb-4">O arquivo contém {sheets.length} abas. Escolha qual importar.</p>
+        <select
+          value={selected}
+          onChange={e => setSelected(e.target.value)}
+          className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 mb-4"
+        >
+          {sheets.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+          <button onClick={() => onConfirm(selected)} className="flex-1 bg-violet-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-violet-700">Importar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ApiDatasetModal({ onClose, onCreated }) {
   const t = useTranslations('datasets')
   const toast = useToast()
   const [form, setForm] = useState({ name: '', api_url: '', method: 'GET', headers: '', body: '', refresh_interval_minutes: '', sync_mode: 'replace' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [sheets, setSheets] = useState([])
+  const [selectedSheet, setSelectedSheet] = useState('')
+  const [sheetsLoading, setSheetsLoading] = useState(false)
 
-  function normalizeUrl(url) {
+  function normalizeUrl(url, sheet) {
     const m = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
     if (!m) return url
     const id = m[1]
+    if (sheet) {
+      return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&sheet=${encodeURIComponent(sheet)}`
+    }
     const gidM = url.match(/[#&?]gid=(\d+)/)
     const gid = gidM ? gidM[1] : '0'
     return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
   }
 
+  function handleUrlChange(url) {
+    setForm(f => ({ ...f, api_url: url }))
+    setSheets([])
+    setSelectedSheet('')
+  }
+
+  async function fetchSheets() {
+    setSheetsLoading(true)
+    setError(null)
+    try {
+      const result = await api.reports.datasets.fetchGoogleSheets(form.api_url)
+      setSheets(result.sheets || [])
+      if (result.sheets?.length > 0) setSelectedSheet(result.sheets[0])
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSheetsLoading(false)
+    }
+  }
+
   const isGoogleSheets = form.api_url.includes('docs.google.com/spreadsheets')
-  const normalizedUrl = isGoogleSheets ? normalizeUrl(form.api_url) : form.api_url
+  const normalizedUrl = isGoogleSheets ? normalizeUrl(form.api_url, selectedSheet) : form.api_url
 
   async function submit(e) {
     e.preventDefault()
@@ -69,12 +118,22 @@ function ApiDatasetModal({ onClose, onCreated }) {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.urlLabel')}</label>
-              <input required type="url" value={form.api_url} onChange={e => setForm(f => ({ ...f, api_url: e.target.value }))} placeholder={t('modal.urlPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <input required type="url" value={form.api_url} onChange={e => handleUrlChange(e.target.value)} placeholder={t('modal.urlPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
               {isGoogleSheets && (
-                <p className="mt-1 text-[11px] text-violet-600 flex items-center gap-1">
-                  <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Google Sheets detectado — será convertido para CSV automaticamente
-                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-[11px] text-violet-600 flex items-center gap-1">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Google Sheets detectado
+                  </p>
+                  <button type="button" onClick={fetchSheets} disabled={sheetsLoading} className="text-[11px] text-violet-600 underline hover:text-violet-800 disabled:opacity-50">
+                    {sheetsLoading ? 'Buscando...' : 'Buscar abas'}
+                  </button>
+                </div>
+              )}
+              {sheets.length > 0 && (
+                <select value={selectedSheet} onChange={e => setSelectedSheet(e.target.value)} className="mt-2 w-full border border-violet-200 dark:border-violet-700 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                  {sheets.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               )}
             </div>
             <div>
@@ -472,6 +531,7 @@ export default function DatasetsPage() {
   const [selected, setSelected] = useState(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [showNewMenu, setShowNewMenu] = useState(false)
+  const [excelSheetPicker, setExcelSheetPicker] = useState(null) // { file, sheets }
   const fileRef = useRef()
   const newMenuRef = useRef()
 
@@ -518,7 +578,7 @@ export default function DatasetsPage() {
     !search || d.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  async function handleUpload(file) {
+  async function handleUpload(file, sheetName) {
     if (!file) return
     const ext = file.name.split('.').pop().toLowerCase()
     if (!['csv', 'xlsx', 'xls'].includes(ext)) {
@@ -529,22 +589,34 @@ export default function DatasetsPage() {
       toast(t('toast.fileTooLarge'), 'error')
       return
     }
+    // Para Excel com múltiplas abas, mostrar picker antes de fazer upload
+    if (['xlsx', 'xls'].includes(ext) && sheetName === undefined) {
+      try {
+        const fd = new FormData(); fd.append('file', file)
+        const result = await api.reports.datasets.getExcelSheets(fd)
+        if (result.sheets && result.sheets.length > 1) {
+          setExcelSheetPicker({ file, sheets: result.sheets })
+          return
+        }
+      } catch { /* falha silenciosa — faz upload direto */ }
+    }
     setUploading(true)
     const formData = new FormData()
     formData.append('file', file)
+    if (sheetName) formData.append('sheet_name', sheetName)
     try {
-      const response = await fetch(`${API_URL}/reports/datasets/upload`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      })
-      if (!response.ok) { const e = await response.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
-      const ds = await response.json()
+      const ds = await api.reports.datasets.upload(formData)
       setDatasets(prev => [ds, ...prev])
       toast(t('toast.uploadSuccess', { name: ds.name, rows: ds.row_count?.toLocaleString(locale) || 0 }), 'success')
     } catch (err) {
       toast(err.message || t('toast.uploadError'), 'error')
     } finally { setUploading(false) }
+  }
+
+  async function handleExcelSheetConfirm(sheetName) {
+    const { file } = excelSheetPicker
+    setExcelSheetPicker(null)
+    await handleUpload(file, sheetName)
   }
 
   async function handleSync(id) {
@@ -856,6 +928,13 @@ export default function DatasetsPage() {
       {showApiModal && <ApiDatasetModal onClose={() => setShowApiModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
       {showDbModal && <DbDatasetModal onClose={() => setShowDbModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
       {showGaModal && <GADatasetModal onClose={() => setShowGaModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
+      {excelSheetPicker && (
+        <ExcelSheetPickerModal
+          sheets={excelSheetPicker.sheets}
+          onConfirm={handleExcelSheetConfirm}
+          onClose={() => setExcelSheetPicker(null)}
+        />
+      )}
     </AppLayout>
   )
 }

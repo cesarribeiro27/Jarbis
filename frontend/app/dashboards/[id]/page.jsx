@@ -277,7 +277,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
   )
 }
 
-function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterChange }) {
+function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterChange, filterSummary = {}, onClearDatasetFilters }) {
   const t = useTranslations('dashboardEditor')
   const filterBlocks = blocks.filter(b => b.type === 'filter' || b.type === 'slider')
   const hasDateFilter = !!(globalDateFilter.dateFrom || globalDateFilter.dateTo)
@@ -381,22 +381,29 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
         ) : (
           <div className="space-y-0.5">
             {blocks.map(block => {
-              let count = 0
-              if (hasDateFilter) count += 1
-              filterBlocks.forEach(fb => {
-                if (fb.dataset_id === block.dataset_id && fb.id !== block.id) count += 1
-              })
+              const nonDateCount = filterSummary[block.dataset_id] || 0
+              const count = nonDateCount + (hasDateFilter && block.dataset_id ? 1 : 0)
               const typeLabels = { bar: 'Barras', line: 'Linha', pie: 'Pizza', number: 'Número', table: 'Tabela', filter: 'Filtro', slider: 'Slider', image: 'Imagem', text: 'Texto', area: 'Área', scatter: 'Dispersão', funnel: 'Funil' }
               const typeLabel = typeLabels[block.type] || block.type
               return (
-                <div key={block.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 cursor-default">
+                <div
+                  key={block.id}
+                  onClick={() => nonDateCount > 0 && onClearDatasetFilters?.(block.dataset_id)}
+                  className={`flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors ${nonDateCount > 0 ? 'cursor-pointer hover:bg-red-50 border border-transparent hover:border-red-100' : 'cursor-default hover:bg-gray-50 border border-transparent'}`}
+                  title={nonDateCount > 0 ? 'Clique para limpar filtros ativos deste gráfico' : undefined}
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-[10px] text-gray-400 shrink-0">{typeLabel}</span>
-                    <span className="text-xs text-gray-700 truncate">{block.title || typeLabel}</span>
+                    <span className={`text-xs truncate ${nonDateCount > 0 ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>{block.title || typeLabel}</span>
                   </div>
-                  <span className={`text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border shrink-0 ml-2 ${count > 0 ? 'bg-violet-100 text-violet-700 border-violet-300' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
-                    {count}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    {nonDateCount > 0 && (
+                      <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    )}
+                    <span className={`text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border ${count > 0 ? 'bg-violet-100 text-violet-700 border-violet-300' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+                      {count}
+                    </span>
+                  </div>
                 </div>
               )
             })}
@@ -671,12 +678,18 @@ export default function DashboardDetailPage() {
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [canvasConfig, setCanvasConfig] = useState({ bgColor: '', sheetBgColor: '' })
   const [globalDateFilter, setGlobalDateFilter] = useState({ dateCol: '', dateFrom: '', dateTo: '' })
+  const [filterSummary, setFilterSummary] = useState({})
+  const [filterResetTrigger, setFilterResetTrigger] = useState(null)
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [nearLimit, setNearLimit] = useState(false)
   const [draggedColumn, setDraggedColumn] = useState(null) // { col, colType, datasetId }
   const [exportingPDF, setExportingPDF] = useState(false)
   const addMenuRef = useRef()
+
+  function clearDatasetFilters(datasetId) {
+    setFilterResetTrigger({ datasetId, ts: Date.now() })
+  }
 
   useEffect(() => {
     Promise.all([api.reports.get(id), api.reports.datasets.list()])
@@ -1174,7 +1187,7 @@ export default function DashboardDetailPage() {
             </div>
 
 
-            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} draggedColumn={draggedColumn} onDropColumn={handleDropColumn} />
+            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} draggedColumn={draggedColumn} onDropColumn={handleDropColumn} onFiltersChange={setFilterSummary} filterResetTrigger={filterResetTrigger} />
           </div>
 
           {/* Backdrop mobile para o sidebar */}
@@ -1212,6 +1225,8 @@ export default function DashboardDetailPage() {
                   datasets={datasets}
                   globalDateFilter={globalDateFilter}
                   onGlobalDateFilterChange={setGlobalDateFilter}
+                  filterSummary={filterSummary}
+                  onClearDatasetFilters={clearDatasetFilters}
                 />
               )}
               {sidePanel === 'comentarios' && (

@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
@@ -412,6 +412,59 @@ async def get_onboarding_dataset(
     )
 
 
+@router.get(
+    "/datasets/google-sheets-sheets",
+    summary="Lista abas de uma planilha Google Sheets pública",
+)
+async def get_google_sheets_sheets(
+    url: str = Query(..., description="URL pública do Google Sheets"),
+    current_user: User = Depends(get_current_active_user),
+):
+    import re
+    m = re.search(r"spreadsheets/d/([a-zA-Z0-9_-]+)", url)
+    if not m:
+        raise HTTPException(status_code=400, detail="URL do Google Sheets inválida")
+    spreadsheet_id = m.group(1)
+    export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
+            resp = await client.get(export_url)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Não foi possível baixar a planilha. Verifique se está pública.")
+        import io
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(resp.content), read_only=True)
+        sheets = wb.sheetnames
+        wb.close()
+        return {"sheets": sheets}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler planilha: {e}")
+
+
+@router.post(
+    "/datasets/excel-sheets",
+    summary="Lista abas de um arquivo Excel sem criar dataset",
+)
+async def get_excel_sheets(
+    file: Annotated[UploadFile, File()],
+    current_user: User = Depends(get_current_active_user),
+):
+    content = await file.read()
+    if len(content) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 20 MB)")
+    try:
+        import io
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True)
+        sheets = wb.sheetnames
+        wb.close()
+        return {"sheets": sheets}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
+
+
 @router.post(
     "/datasets/upload",
     response_model=DatasetSummary,
@@ -420,6 +473,7 @@ async def get_onboarding_dataset(
 )
 async def upload_dataset(
     file: Annotated[UploadFile, File()],
+    sheet_name: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
     effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
@@ -432,7 +486,7 @@ async def upload_dataset(
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 20 MB)")
     name = filename.rsplit(".", 1)[0] if "." in filename else filename
     service = DatasetService(db)
-    ds = await service.create_from_file(effective_tenant_id, name, filename, content)
+    ds = await service.create_from_file(effective_tenant_id, name, filename, content, sheet_name=sheet_name)
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,

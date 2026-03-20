@@ -113,16 +113,33 @@ export const api = {
     data: (source, params = {}) => apiFetch(`/reports/data/${source}?${buildQS(params)}`),
     datasets: {
       list: () => apiFetch('/reports/datasets'),
-      upload: (formData) =>
-        fetch(`${API_URL}/reports/datasets/upload`, {
+      upload: (formData) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+        return fetch(`${API_URL}/reports/datasets/upload`, {
           method: 'POST',
           credentials: 'include',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: formData,
         }).then(async (r) => {
           if (r.status === 401) { localStorage.removeItem('jarbis_user'); window.location.href = '/login'; return }
           if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
           return r.json()
-        }),
+        })
+      },
+      fetchGoogleSheets: (url) =>
+        apiFetch(`/reports/datasets/google-sheets-sheets?url=${encodeURIComponent(url)}`),
+      getExcelSheets: (formData) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+        return fetch(`${API_URL}/reports/datasets/excel-sheets`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: formData,
+        }).then(async (r) => {
+          if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }
+          return r.json()
+        })
+      },
       createApi: (data) => apiFetch('/reports/datasets/api', { method: 'POST', body: JSON.stringify(data) }),
       sync: (id) => apiFetch(`/reports/datasets/${id}/sync`, { method: 'POST' }),
       setSchedule: (id, intervalMinutes) => apiFetch(`/reports/datasets/${id}/schedule`, { method: 'PATCH', body: JSON.stringify({ refresh_interval_minutes: intervalMinutes }) }),

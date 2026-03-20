@@ -134,9 +134,9 @@ def _parse_csv(content: bytes) -> list[dict]:
     return [_coerce_row(dict(row)) for row in reader]
 
 
-def _parse_excel(content: bytes) -> list[dict]:
+def _parse_excel(content: bytes, sheet_name: str | None = None) -> list[dict]:
     wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-    ws = wb.active
+    ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
     rows = list(ws.iter_rows(values_only=True))
     if not rows:
         return []
@@ -241,10 +241,11 @@ class DatasetService:
         name: str,
         filename: str,
         content: bytes,
+        sheet_name: str | None = None,
     ) -> ReportDataset:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if ext in ("xlsx", "xls"):
-            rows = _parse_excel(content)
+            rows = _parse_excel(content, sheet_name=sheet_name)
             ds_type = "excel"
         else:
             rows = _parse_csv(content)

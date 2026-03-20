@@ -3636,18 +3636,74 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
   const [error, setError] = useState(null)
   const [syncing, setSyncing] = useState(null)
   const [scheduleSaving, setScheduleSaving] = useState(null)
+  const [sheets, setSheets] = useState([])
+  const [selectedSheet, setSelectedSheet] = useState('')
+  const [sheetsLoading, setSheetsLoading] = useState(false)
+  const [excelSheetPicker, setExcelSheetPicker] = useState(null)
   const fileRef = useRef()
+
+  const isGoogleSheets = apiForm.api_url.includes('docs.google.com/spreadsheets')
+
+  function handleApiUrlChange(url) {
+    setApiForm(f => ({ ...f, api_url: url }))
+    setSheets([])
+    setSelectedSheet('')
+  }
+
+  async function fetchSheets() {
+    setSheetsLoading(true); setError(null)
+    try {
+      const result = await api.reports.datasets.fetchGoogleSheets(apiForm.api_url)
+      setSheets(result.sheets || [])
+      if (result.sheets?.length > 0) setSelectedSheet(result.sheets[0])
+    } catch (e) { setError(e.message) }
+    finally { setSheetsLoading(false) }
+  }
+
+  function normalizeApiUrl(url, sheet) {
+    const m = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
+    if (!m) return url
+    const id = m[1]
+    if (sheet) return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&sheet=${encodeURIComponent(sheet)}`
+    const gidM = url.match(/[#&?]gid=(\d+)/)
+    const gid = gidM ? gidM[1] : '0'
+    return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
+  }
 
   async function handleUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (['xlsx', 'xls'].includes(ext)) {
+      try {
+        const fd = new FormData(); fd.append('file', file)
+        const result = await api.reports.datasets.getExcelSheets(fd)
+        if (result.sheets && result.sheets.length > 1) {
+          setExcelSheetPicker({ file, sheets: result.sheets })
+          if (fileRef.current) fileRef.current.value = ''
+          return
+        }
+      } catch { /* fallthrough */ }
+    }
+    await doUpload(file, null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  async function doUpload(file, sheetName) {
     setUploading(true); setError(null)
     try {
       const fd = new FormData(); fd.append('file', file)
+      if (sheetName) fd.append('sheet_name', sheetName)
       const ds = await api.reports.datasets.upload(fd)
       onDatasetsChange([ds, ...datasets])
     } catch (err) { setError(err.message) }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
+    finally { setUploading(false) }
+  }
+
+  async function handleExcelSheetConfirm(sheetName) {
+    const { file } = excelSheetPicker
+    setExcelSheetPicker(null)
+    await doUpload(file, sheetName)
   }
 
   async function handleApiCreate(e) {
@@ -3657,9 +3713,11 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
       if (apiForm.api_headers.trim()) {
         try { headers = JSON.parse(apiForm.api_headers) } catch { throw new Error('Headers inválidos — use JSON: {"Authorization":"Bearer <token>"}') }
       }
-      const ds = await api.reports.datasets.createApi({ name: apiForm.name, api_url: apiForm.api_url, api_headers: headers, api_data_path: apiForm.api_data_path || null })
+      const resolvedUrl = isGoogleSheets ? normalizeApiUrl(apiForm.api_url, selectedSheet) : apiForm.api_url
+      const ds = await api.reports.datasets.createApi({ name: apiForm.name, api_url: resolvedUrl, api_headers: headers, api_data_path: apiForm.api_data_path || null })
       onDatasetsChange([ds, ...datasets])
       setApiForm({ name: '', api_url: '', api_headers: '', api_data_path: '' })
+      setSheets([]); setSelectedSheet('')
     } catch (err) { setError(err.message) }
     finally { setApiSaving(false) }
   }
@@ -3781,7 +3839,20 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('dataset.apiUrl')}</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder={t('dataset.apiUrlPlaceholder')} value={apiForm.api_url} onChange={e => setApiForm(f => ({ ...f, api_url: e.target.value }))} required />
+              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder={t('dataset.apiUrlPlaceholder')} value={apiForm.api_url} onChange={e => handleApiUrlChange(e.target.value)} required />
+              {isGoogleSheets && (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-[10px] text-violet-600">Google Sheets detectado</span>
+                  <button type="button" onClick={fetchSheets} disabled={sheetsLoading} className="text-[10px] text-violet-600 underline hover:text-violet-800 disabled:opacity-50">
+                    {sheetsLoading ? 'Buscando...' : 'Buscar abas'}
+                  </button>
+                </div>
+              )}
+              {sheets.length > 0 && (
+                <select value={selectedSheet} onChange={e => setSelectedSheet(e.target.value)} className="mt-1.5 w-full border border-violet-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400">
+                  {sheets.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('dataset.apiHeaders')}</label>
@@ -3796,7 +3867,32 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
           </form>
         )}
       </div>
+
+      {excelSheetPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setExcelSheetPicker(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h2 className="font-semibold text-gray-800 mb-1">Selecionar aba do Excel</h2>
+            <p className="text-xs text-gray-400 mb-4">O arquivo tem {excelSheetPicker.sheets.length} abas. Escolha qual importar.</p>
+            <ExcelSheetPickerInline sheets={excelSheetPicker.sheets} onConfirm={handleExcelSheetConfirm} onClose={() => setExcelSheetPicker(null)} />
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function ExcelSheetPickerInline({ sheets, onConfirm, onClose }) {
+  const [selected, setSelected] = useState(sheets[0] || '')
+  return (
+    <>
+      <select value={selected} onChange={e => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 mb-4">
+        {sheets.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+      <div className="flex gap-2">
+        <button onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+        <button onClick={() => onConfirm(selected)} className="flex-1 bg-violet-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-violet-700">Importar</button>
+      </div>
+    </>
   )
 }
 
@@ -3982,7 +4078,7 @@ function BlockDropZones({ block, draggedColumn, onDrop }) {
   )
 }
 
-export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null }) {
+export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null, onFiltersChange = null, filterResetTrigger = null }) {
   const t = useTranslations('dashboardEditor')
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
@@ -4002,6 +4098,29 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
     observer.observe(sheetRef.current)
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (!onFiltersChange) return
+    const summary = {}
+    const allIds = new Set([...Object.keys(crossFilters), ...Object.keys(activeFilters), ...Object.keys(rangeFilters)])
+    allIds.forEach(dsId => {
+      let count = 0
+      if (crossFilters[dsId]) count += 1
+      const af = activeFilters[dsId] || {}
+      count += Object.values(af).filter(v => v !== null && v !== undefined && v !== '').length
+      if (rangeFilters[dsId]) count += 1
+      if (count > 0) summary[dsId] = count
+    })
+    onFiltersChange(summary)
+  }, [crossFilters, activeFilters, rangeFilters])
+
+  useEffect(() => {
+    if (!filterResetTrigger?.datasetId) return
+    const dsId = filterResetTrigger.datasetId
+    setCrossFilters(prev => { const n = { ...prev }; delete n[dsId]; return n })
+    setActiveFilters(prev => { const n = { ...prev }; delete n[dsId]; return n })
+    setRangeFilters(prev => { const n = { ...prev }; delete n[dsId]; return n })
+  }, [filterResetTrigger])
 
   function handleFilterChange(datasetId, col, val) {
     setActiveFilters(prev => {
