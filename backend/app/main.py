@@ -21,6 +21,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.billing.router import router as billing_router
 from app.modules.reports.router import router as reports_router
 from app.modules.support.router import router as support_router
+from app.modules.tenants.suborg_router import router as suborg_router
 
 
 async def _refresh_loop():
@@ -58,6 +59,17 @@ async def _refresh_loop():
                         if ds.type == "api" and ds.api_url:
                             await svc.sync_api(ds.id, ds.tenant_id)
                         ds.next_refresh_at = now + timedelta(minutes=ds.refresh_interval_minutes)
+                        # Invalida Warp após sync automático
+                        try:
+                            from app.core.cache import get_redis as _get_redis
+                            _redis = _get_redis()
+                            from app.modules.reports.warp_cache import warp_invalidate as _warp_invalidate
+                            try:
+                                await _warp_invalidate(_redis, str(ds.id))
+                            finally:
+                                await _redis.aclose()
+                        except Exception:
+                            pass
                     except Exception:
                         ds.next_refresh_at = now + timedelta(minutes=5)
                 if datasets:
@@ -231,6 +243,7 @@ app.include_router(auth_router)
 app.include_router(billing_router)
 app.include_router(reports_router)
 app.include_router(support_router)
+app.include_router(suborg_router)
 
 
 @app.get("/health", tags=["Sistema"])

@@ -75,6 +75,15 @@ class Tenant(Base):
     custom_logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="URL da logo customizada do tenant")
     primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True, comment="Cor primária hex: #7c3aed")
 
+    # ── Sub-organizações ─────────────────────────────────────────────────────
+    parent_tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    is_suborg: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
@@ -82,6 +91,19 @@ class Tenant(Base):
 
     # Relacionamentos
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")
+    sub_orgs: Mapped[list["Tenant"]] = relationship(
+        "Tenant",
+        primaryjoin="Tenant.parent_tenant_id == Tenant.id",
+        foreign_keys="[Tenant.parent_tenant_id]",
+        back_populates="parent_org",
+    )
+    parent_org: Mapped["Tenant | None"] = relationship(
+        "Tenant",
+        primaryjoin="Tenant.parent_tenant_id == Tenant.id",
+        foreign_keys="[Tenant.parent_tenant_id]",
+        back_populates="sub_orgs",
+        remote_side="Tenant.id",
+    )
 
     @property
     def trial_days_remaining(self) -> int | None:

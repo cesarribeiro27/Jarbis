@@ -7,6 +7,17 @@ Formato: `vMAJOR.MINOR.PATCH`
 
 ---
 
+## v01.07.00 — 2026-03-20
+
+### Sprint 10 — Sub-organizações e Warp Cache
+
+- **N27**: Sub-organizações (multi-tenant enterprise) — tenants do plano Ilimitado podem criar sub-orgs filhas, alternar contexto com banner visual, gerenciar via `/configuracoes/sub-orgs`
+- **N29**: Warp Cache (aceleração de queries) — rows de datasets pré-computadas em Redis (TTL=1h), 3 camadas de cache: query-specific → Warp rows → PostgreSQL; badge "Warp ativo" no detalhe do dataset
+- **Fix**: Login com credenciais erradas agora exibe mensagem de erro em vez de fazer loop silencioso (401 em rotas de auth não redireciona mais para /login)
+- **Fix UX**: dark mode corrigido nas telas de templates, datasets e detalhe de dataset
+
+---
+
 ## v01.06.03 — 2026-03-20
 
 ### Fixes UX

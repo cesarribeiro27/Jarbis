@@ -2,9 +2,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 async function apiFetch(path, options = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+  const suborgId = typeof window !== 'undefined' ? localStorage.getItem('jarbis_suborg_id') : null
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(suborgId ? { 'X-Suborg-ID': suborgId } : {}),
     ...options.headers,
   }
 
@@ -139,6 +141,8 @@ export const api = {
       update: (id, data) => apiFetch(`/reports/datasets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       // Remover coluna
       deleteColumn: (id, col) => apiFetch(`/reports/datasets/${id}/columns/${encodeURIComponent(col)}`, { method: 'DELETE' }),
+      // Status do cache Warp
+      warpStatus: (id) => apiFetch(`/reports/datasets/${id}/warp-status`),
     },
     alerts: {
       list: () => apiFetch('/reports/alerts'),
@@ -167,6 +171,15 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(req),
       }).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.detail || 'Erro') })),
+  },
+
+  suborgs: {
+    list: () => apiFetch('/tenants/sub-orgs'),
+    create: (data) => apiFetch('/tenants/sub-orgs', { method: 'POST', body: JSON.stringify(data) }),
+    get: (id) => apiFetch(`/tenants/sub-orgs/${id}`),
+    update: (id, data) => apiFetch(`/tenants/sub-orgs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id) => apiFetch(`/tenants/sub-orgs/${id}`, { method: 'DELETE' }),
+    switch: (id) => apiFetch(`/tenants/sub-orgs/${id}/switch`, { method: 'POST' }),
   },
 
   billing: {

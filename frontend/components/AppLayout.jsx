@@ -117,6 +117,12 @@ const NAV_ADMIN_KEYS = [
       <polyline points="10 9 9 9 8 9" />
     </svg>
   )},
+  { href: '/configuracoes/sub-orgs', label: 'Sub-orgs', Icon: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2"/>
+      <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+    </svg>
+  )},
   { href: '/configuracoes',           key: 'settings', Icon: Icons.Settings },
 ]
 
@@ -290,11 +296,16 @@ export default function AppLayout({ children }) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [suborgContext, setSuborgContext] = useState(null)
 
   useEffect(() => {
     const impBy = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_by') : null
     const impTenant = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_tenant') : null
     if (impBy) setImpersonation({ email: impBy, tenant: impTenant })
+
+    const suborgId = typeof window !== 'undefined' ? localStorage.getItem('jarbis_suborg_id') : null
+    const suborgName = typeof window !== 'undefined' ? localStorage.getItem('jarbis_suborg_name') : null
+    if (suborgId) setSuborgContext({ id: suborgId, name: suborgName })
 
     // NPS: mostrar após 30 dias se não respondeu
     try {
@@ -347,6 +358,13 @@ export default function AppLayout({ children }) {
     localStorage.removeItem('jarbis_impersonated_tenant')
     window.close()
     router.push('/admin/tenants')
+  }
+
+  function exitSuborgContext() {
+    localStorage.removeItem('jarbis_suborg_id')
+    localStorage.removeItem('jarbis_suborg_name')
+    setSuborgContext(null)
+    router.push('/dashboard')
   }
 
   useEffect(() => {
@@ -517,6 +535,22 @@ export default function AppLayout({ children }) {
               className="ml-2 px-3 py-1 bg-amber-700/60 hover:bg-amber-700 rounded-lg text-xs font-bold transition-colors"
             >
               Encerrar sessão
+            </button>
+          </div>
+        )}
+
+        {/* Banner de sub-org ativa */}
+        {suborgContext && (
+          <div className="px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-3 flex-shrink-0 bg-violet-600/90 text-violet-50 border-b border-violet-500">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+            </svg>
+            <span>Gerenciando: <strong>{suborgContext.name}</strong></span>
+            <button
+              onClick={exitSuborgContext}
+              className="ml-2 px-3 py-1 bg-violet-500/60 hover:bg-violet-500 rounded-lg text-xs font-bold transition-colors"
+            >
+              Voltar ao contexto principal
             </button>
           </div>
         )}

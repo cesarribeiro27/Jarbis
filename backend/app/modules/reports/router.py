@@ -35,7 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import cache_get, cache_set, get_redis
 from app.database import get_db
-from app.modules.auth.dependencies import get_current_active_user
+from app.modules.auth.dependencies import get_current_active_user, get_effective_tenant_id
 from app.modules.tenants.models import User
 
 from app.modules.billing.guards import (
@@ -50,6 +50,7 @@ from app.modules.tenants.models import Tenant
 from .dataset_models import ReportDataset
 from .dataset_service import DatasetService
 from .query_log_models import QueryLog
+from .warp_cache import warp_get_rows, warp_set_rows, warp_invalidate, warp_status as _warp_status
 from .schemas import (
     ReportCreate,
     ReportResponse,
@@ -270,11 +271,6 @@ async def public_query_dataset(
     if not report:
         raise HTTPException(status_code=404, detail="Link inválido ou expirado")
 
-    dataset_service = DatasetService(db)
-    ds = await dataset_service.get(dataset_id, report.tenant_id)
-    if not ds:
-        raise HTTPException(status_code=404, detail="Dataset não encontrado")
-
     query_params = {
         "label_col": label_col, "value_col": value_col, "agg": agg,
         "filter_col": filter_col, "filter_val": filter_val,
@@ -287,9 +283,21 @@ async def public_query_dataset(
         version = await _get_dataset_version(redis, str(dataset_id))
         cache_key = _make_cache_key(str(dataset_id), query_params, version)
 
+        # 1. Check query cache (sem DB)
         cached = await cache_get(redis, cache_key)
         if cached is not None:
             return JSONResponse(content=cached, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
+
+        # 2. Full DB load (popula Warp para próximas queries)
+        dataset_service = DatasetService(db)
+        ds = await dataset_service.get(dataset_id, report.tenant_id)
+        if not ds:
+            raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+        from .dataset_service import _apply_computed_columns
+        computed = getattr(ds, 'computed_columns', None) or []
+        warp_rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
+        await warp_set_rows(redis, str(dataset_id), warp_rows)
 
         result = dataset_service.query(ds, label_col, value_col, agg, filter_col, filter_val, date_col, date_from, date_to)
         await cache_set(redis, cache_key, result, ttl=_CACHE_TTL)
@@ -543,6 +551,18 @@ async def sync_db_dataset(
     flag_modified(ds, 'rows')
     flag_modified(ds, 'columns')
     await db.commit()
+
+    # Invalida Warp + versão de cache após sincronização
+    try:
+        redis = get_redis()
+        try:
+            await warp_invalidate(redis, str(dataset_id))
+            await _bump_dataset_version(redis, str(dataset_id))
+        finally:
+            await redis.aclose()
+    except Exception:
+        pass
+
     return {"ok": True, "row_count": ds.row_count}
 
 
@@ -564,10 +584,11 @@ async def sync_dataset(
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado ou não é do tipo API")
 
-    # Invalida cache de queries deste dataset incrementando sua versão
+    # Invalida Warp + cache de queries deste dataset incrementando sua versão
     try:
         redis = get_redis()
         try:
+            await warp_invalidate(redis, str(dataset_id))
             await _bump_dataset_version(redis, str(dataset_id))
         finally:
             await redis.aclose()
@@ -640,17 +661,13 @@ async def query_dataset(
     date_to: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
-    service = DatasetService(db)
-    ds = await service.get(dataset_id, current_user.tenant_id)
-    if not ds:
-        raise HTTPException(status_code=404, detail="Dataset não encontrado")
-
     query_params = {
         "label_col": label_col, "value_col": value_col, "agg": agg,
         "filter_col": filter_col, "filter_val": filter_val,
         "date_col": date_col, "date_from": date_from, "date_to": date_to,
-        "tenant_id": str(current_user.tenant_id),
+        "tenant_id": str(effective_tenant_id),
     }
 
     redis = get_redis()
@@ -658,9 +675,22 @@ async def query_dataset(
         version = await _get_dataset_version(redis, str(dataset_id))
         cache_key = _make_cache_key(str(dataset_id), query_params, version)
 
+        # 1. Check query cache (sem DB)
         cached = await cache_get(redis, cache_key)
         if cached is not None:
             return cached
+
+        # 2. Carrega dataset do DB
+        service = DatasetService(db)
+        ds = await service.get(dataset_id, effective_tenant_id)
+        if not ds:
+            raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+        # 3. Popula Warp com rows pré-computadas (inclui computed_columns)
+        from .dataset_service import _apply_computed_columns
+        computed = getattr(ds, 'computed_columns', None) or []
+        warp_rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
+        await warp_set_rows(redis, str(dataset_id), warp_rows)
 
         result = service.query(ds, label_col, value_col, agg, filter_col, filter_val, date_col, date_from, date_to)
         await cache_set(redis, cache_key, result, ttl=_CACHE_TTL)
@@ -686,33 +716,78 @@ async def query_dataset_v2(
     req: QueryRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
     """
     Motor de query v2. Aceita dimensões, métricas, filtros, date_range,
     ordenação e limite. Retorna dados normalizados para qualquer visualização.
     """
     from .query_engine import execute_query
-    service = DatasetService(db)
-    ds = await service.get(dataset_id, current_user.tenant_id)
-    if not ds:
-        raise HTTPException(status_code=404, detail="Dataset não encontrado")
-
-    query_params = {**req.model_dump(), "tenant_id": str(current_user.tenant_id)}
+    query_params = {**req.model_dump(), "tenant_id": str(effective_tenant_id)}
 
     redis = get_redis()
     try:
         version = await _get_dataset_version(redis, str(dataset_id))
         cache_key = _make_cache_key(str(dataset_id), query_params, version)
 
+        # 1. Check query cache (sem DB)
         cached = await cache_get(redis, cache_key)
         if cached is not None:
             return cached
 
-        result = execute_query(ds.rows or [], req)
+        # 2. Check Warp rows (evita ler JSONB pesado do DB)
+        warp_rows = await warp_get_rows(redis, str(dataset_id))
+        if warp_rows is not None:
+            # Valida dataset sem carregar rows (lightweight)
+            ds_exists = await db.scalar(
+                select(ReportDataset.id).where(
+                    ReportDataset.id == dataset_id,
+                    ReportDataset.tenant_id == effective_tenant_id,
+                )
+            )
+            if ds_exists:
+                result = execute_query(warp_rows, req)
+                result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+                await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+                return result
+
+        # 3. Full DB load (popula Warp para próximas queries)
+        service = DatasetService(db)
+        ds = await service.get(dataset_id, effective_tenant_id)
+        if not ds:
+            raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+        from .dataset_service import _apply_computed_columns
+        computed = getattr(ds, 'computed_columns', None) or []
+        rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
+        await warp_set_rows(redis, str(dataset_id), rows)
+
+        result = execute_query(rows, req)
         # QueryResult is a Pydantic model — serialize before storing
         result_dict = result.model_dump() if hasattr(result, "model_dump") else result
         await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
         return result
+    finally:
+        await redis.aclose()
+
+
+@router.get(
+    "/datasets/{dataset_id}/warp-status",
+    summary="Status do cache Warp para o dataset",
+)
+async def get_warp_status(
+    dataset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = DatasetService(db)
+    ds = await service.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+    redis = get_redis()
+    try:
+        status = await _warp_status(redis, str(dataset_id))
+        return status
     finally:
         await redis.aclose()
 
@@ -733,10 +808,6 @@ async def public_query_dataset_v2(
     report = await report_service.get_public_no_increment(token)
     if not report:
         raise HTTPException(status_code=404, detail="Link inválido ou expirado")
-    dataset_service = DatasetService(db)
-    ds = await dataset_service.get(dataset_id, report.tenant_id)
-    if not ds:
-        raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
     query_params = {**req.model_dump(), "tenant_id": str(report.tenant_id)}
 
@@ -745,11 +816,42 @@ async def public_query_dataset_v2(
         version = await _get_dataset_version(redis, str(dataset_id))
         cache_key = _make_cache_key(str(dataset_id), query_params, version)
 
+        # 1. Check query cache (sem DB)
         cached = await cache_get(redis, cache_key)
         if cached is not None:
             return JSONResponse(content=cached, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
 
-        result = execute_query(ds.rows or [], req)
+        # 2. Check Warp rows (evita ler JSONB pesado do DB)
+        warp_rows = await warp_get_rows(redis, str(dataset_id))
+        if warp_rows is not None:
+            # Valida dataset sem carregar rows (lightweight)
+            ds_exists = await db.scalar(
+                select(ReportDataset.id).where(
+                    ReportDataset.id == dataset_id,
+                    ReportDataset.tenant_id == report.tenant_id,
+                )
+            )
+            if ds_exists:
+                result = execute_query(warp_rows, req)
+                result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+                await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+                return JSONResponse(
+                    content=result_dict,
+                    headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"},
+                )
+
+        # 3. Full DB load (popula Warp para próximas queries)
+        dataset_service = DatasetService(db)
+        ds = await dataset_service.get(dataset_id, report.tenant_id)
+        if not ds:
+            raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+        from .dataset_service import _apply_computed_columns
+        computed = getattr(ds, 'computed_columns', None) or []
+        rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
+        await warp_set_rows(redis, str(dataset_id), rows)
+
+        result = execute_query(rows, req)
         result_dict = result.model_dump() if hasattr(result, "model_dump") else result
         await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
         return JSONResponse(

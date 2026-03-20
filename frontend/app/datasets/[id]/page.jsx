@@ -153,6 +153,7 @@ export default function DatasetDetailPage() {
   const [editingName, setEditingName] = useState(false)
   const [nameValue, setNameValue] = useState('')
   const [showDetails, setShowDetails] = useState(false)
+  const [warpStatus, setWarpStatus] = useState(null)
 
   // Carrega metadados + histogramas
   useEffect(() => {
@@ -182,6 +183,14 @@ export default function DatasetDetailPage() {
       })
       .catch(() => toast('Erro ao carregar dataset', 'error'))
       .finally(() => setLoading(false))
+  }, [id])
+
+  // Verifica status do Warp cache ao montar
+  useEffect(() => {
+    if (!id) return
+    api.reports.datasets.warpStatus(id)
+      .then(data => setWarpStatus(data))
+      .catch(() => {})
   }, [id])
 
   // Carrega linhas ao mudar de página
@@ -355,6 +364,17 @@ export default function DatasetDetailPage() {
             <span className="text-xs text-gray-400">{dataset.columns?.length || 0} colunas</span>
             <span className="text-gray-200 dark:text-gray-700">·</span>
             <span className="text-xs text-gray-400">{typeLabel}</span>
+            {warpStatus?.cached && (
+              <>
+                <span className="text-gray-200 dark:text-gray-700">·</span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700">
+                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3"/>
+                  </svg>
+                  Warp ativo
+                </span>
+              </>
+            )}
           </div>
         </div>
 
