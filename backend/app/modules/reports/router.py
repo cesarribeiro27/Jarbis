@@ -354,9 +354,21 @@ async def list_query_logs(
 async def list_datasets(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
     service = DatasetService(db)
-    datasets = await service.list(current_user.tenant_id)
+    # Se em contexto de sub-org, une datasets da sub-org + datasets do tenant raiz (compartilhados)
+    if effective_tenant_id != current_user.tenant_id:
+        suborg_datasets = await service.list(effective_tenant_id)
+        root_datasets = await service.list(current_user.tenant_id)
+        seen = set()
+        datasets = []
+        for ds in suborg_datasets + root_datasets:
+            if ds.id not in seen:
+                seen.add(ds.id)
+                datasets.append(ds)
+    else:
+        datasets = await service.list(current_user.tenant_id)
     from .query_engine import detect_column_types
     return [
         DatasetSummary(
@@ -410,6 +422,7 @@ async def upload_dataset(
     file: Annotated[UploadFile, File()],
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
@@ -419,7 +432,7 @@ async def upload_dataset(
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 20 MB)")
     name = filename.rsplit(".", 1)[0] if "." in filename else filename
     service = DatasetService(db)
-    ds = await service.create_from_file(current_user.tenant_id, name, filename, content)
+    ds = await service.create_from_file(effective_tenant_id, name, filename, content)
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
@@ -436,13 +449,14 @@ async def create_api_dataset(
     body: ApiDatasetCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     service = DatasetService(db)
     try:
         ds = await service.create_from_api(
-            current_user.tenant_id,
+            effective_tenant_id,
             body.name,
             body.api_url,
             body.resolved_headers,
@@ -680,9 +694,11 @@ async def query_dataset(
         if cached is not None:
             return cached
 
-        # 2. Carrega dataset do DB
+        # 2. Carrega dataset do DB (fallback para tenant raiz se suborg não tiver o dataset)
         service = DatasetService(db)
         ds = await service.get(dataset_id, effective_tenant_id)
+        if not ds and effective_tenant_id != current_user.tenant_id:
+            ds = await service.get(dataset_id, current_user.tenant_id)
         if not ds:
             raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
@@ -738,11 +754,13 @@ async def query_dataset_v2(
         # 2. Check Warp rows (evita ler JSONB pesado do DB)
         warp_rows = await warp_get_rows(redis, str(dataset_id))
         if warp_rows is not None:
-            # Valida dataset sem carregar rows (lightweight)
+            # Valida dataset sem carregar rows (lightweight); fallback para tenant raiz se suborg não tiver
             ds_exists = await db.scalar(
                 select(ReportDataset.id).where(
                     ReportDataset.id == dataset_id,
-                    ReportDataset.tenant_id == effective_tenant_id,
+                    ReportDataset.tenant_id.in_(
+                        [effective_tenant_id, current_user.tenant_id]
+                    ),
                 )
             )
             if ds_exists:
@@ -751,9 +769,11 @@ async def query_dataset_v2(
                 await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
                 return result
 
-        # 3. Full DB load (popula Warp para próximas queries)
+        # 3. Full DB load (popula Warp para próximas queries); fallback para tenant raiz
         service = DatasetService(db)
         ds = await service.get(dataset_id, effective_tenant_id)
+        if not ds and effective_tenant_id != current_user.tenant_id:
+            ds = await service.get(dataset_id, current_user.tenant_id)
         if not ds:
             raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
