@@ -113,14 +113,9 @@ function PlanosContent() {
   }, [])
 
   async function handleUpgrade(plan) {
-    const priceId = PRICE_IDS[plan.key]
-    if (!priceId) {
-      toast(t('toast.noPayment'), 'warn')
-      return
-    }
     setUpgrading(plan.key)
     try {
-      const data = await api.billing.checkout(priceId)
+      const data = await api.billing.checkoutByPlan(plan.key)
       window.location.href = data.checkout_url
     } catch (err) {
       toast(err.message || t('toast.checkoutError'), 'error')

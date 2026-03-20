@@ -24,6 +24,38 @@ class CheckoutRequest(BaseModel):
     price_id: str
 
 
+class CheckoutByPlanRequest(BaseModel):
+    plan: str  # solo | equipe | ilimitado
+
+
+@router.post("/checkout/plan", summary="Cria sessão de checkout por nome do plano")
+async def create_checkout_by_plan(
+    data: CheckoutByPlanRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Pagamentos não configurados. Entre em contato com o suporte.")
+
+    plan_map = {
+        "solo":      settings.stripe_price_solo,
+        "equipe":    settings.stripe_price_equipe,
+        "ilimitado": settings.stripe_price_ilimitado,
+        "starter":   settings.stripe_price_starter,
+        "professional": settings.stripe_price_pro,
+    }
+    price_id = plan_map.get(data.plan, "")
+    if not price_id:
+        raise HTTPException(status_code=400, detail=f"Plano '{data.plan}' não configurado. Verifique as variáveis de ambiente do Stripe.")
+
+    try:
+        svc = BillingService(db)
+        url = await svc.create_checkout_session(current_user.tenant_id, current_user.email, price_id)
+        return {"checkout_url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/checkout", summary="Cria sessão de checkout Stripe")
 async def create_checkout(
     data: CheckoutRequest,
