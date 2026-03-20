@@ -15,13 +15,20 @@ async function apiFetch(path, options = {}) {
   })
 
   if (response.status === 401) {
-    if (typeof window !== 'undefined') {
+    // Em rotas de auth (login/signup/verify) o 401 significa credenciais erradas —
+    // não redirecionar, apenas lançar o erro para o formulário exibir a mensagem.
+    const isAuthRoute = path.startsWith('/auth/login') || path.startsWith('/auth/signup') || path.startsWith('/auth/verify-email') || path.startsWith('/auth/resend')
+    if (!isAuthRoute && typeof window !== 'undefined') {
       localStorage.removeItem('jarbis_user')
       localStorage.removeItem('jarbis_trial_days')
       localStorage.removeItem('jarbis_token')
       window.location.href = '/login'
+      return
     }
-    return
+    const errorData = await response.json().catch(() => ({}))
+    const detail = errorData.detail
+    const message = typeof detail === 'string' ? detail : 'Credenciais inválidas'
+    throw new Error(message)
   }
 
   if (response.status === 402 || response.status === 403) {
