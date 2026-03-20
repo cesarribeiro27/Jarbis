@@ -1,14 +1,14 @@
 """add notify_email and notify_slack_url to alerts
 
 Revision ID: b2c3d4e5f6g7
-Revises: a1b2c3d4e5f6
+Revises: za2b3c4d5e6f
 Create Date: 2026-03-19 18:05:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = 'b2c3d4e5f6g7'
-down_revision = 'a1b2c3d4e5f6'
+down_revision = 'za2b3c4d5e6f'
 branch_labels = None
 depends_on = None
 

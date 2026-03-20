@@ -1,6 +1,6 @@
 """add sync_mode and computed_columns to datasets
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: za2b3c4d5e6f
 Revises: z0a1b2c3d4e5
 Create Date: 2026-03-19 18:00:00.000000
 """
@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'a1b2c3d4e5f6'
+revision = 'za2b3c4d5e6f'
 down_revision = 'z0a1b2c3d4e5'
 branch_labels = None
 depends_on = None
