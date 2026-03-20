@@ -943,6 +943,19 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     )
   }
 
+  // Table em modo bruto — não depende de data agregada, busca direto do /rows
+  if (block.type === 'table') {
+    if (!effectiveDatasetId) return (
+      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
+        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M10 6v12M6 6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+        <p className="text-[10px] text-gray-400 font-medium">Clique em <strong>Editar</strong> e selecione um dataset</p>
+      </div>
+    )
+    if (!block.label_col || !block.value_col) {
+      return <RawTableBlock datasetId={effectiveDatasetId} columns={block.config?.raw_columns || []} readOnly={readOnly} />
+    }
+  }
+
   if (loading) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.loading}</div>
   if (error) {
     const isNotFound = error.includes('not found') || error.includes('não encontrado') || error === 'Erro desconhecido' || error.includes('404')

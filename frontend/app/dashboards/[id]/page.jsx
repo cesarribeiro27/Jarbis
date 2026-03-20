@@ -563,72 +563,105 @@ function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets, onQu
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar coluna..."
-              className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 dark:focus:ring-violet-800"
+              placeholder="Buscar..."
+              className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
             />
           </div>
 
-          {/* Lista */}
+          {/* Lista organizada por tipo */}
           <div className="flex-1 overflow-y-auto pb-2 min-h-0">
             {grouped.length === 0 && (
               <div className="px-3 py-6 text-center">
                 <svg className="w-7 h-7 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7m-9 4v4m0 0H8m3 0h3M9 7V3m6 4V3" /></svg>
-                <p className="text-xs text-gray-400 mb-3">Nenhum dataset ainda</p>
+                <p className="text-xs text-gray-400 mb-3">Nenhum dado ainda</p>
                 <button onClick={onManageDatasets} className="text-xs text-violet-600 hover:text-violet-700 font-semibold">+ Adicionar dados</button>
               </div>
             )}
-            {grouped.map(ds => (
-              <div key={ds.id} className="mb-0.5">
-                <button
-                  onClick={() => toggleDataset(ds.id)}
-                  className="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-                >
-                  <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform duration-150 ${expandedDatasets.has(ds.id) ? '' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 truncate flex-1 text-left">{ds.name}</span>
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600 shrink-0">{ds.filteredCols.length}</span>
-                </button>
+            {grouped.map(ds => {
+              const metricas = ds.filteredCols.filter(c => c.colType === 'number')
+              const datas = ds.filteredCols.filter(c => c.colType === 'date')
+              const dimensoes = ds.filteredCols.filter(c => c.colType === 'text')
 
-                {expandedDatasets.has(ds.id) && (
-                  <div className="pl-1 pb-1">
-                    {ds.filteredCols.map(({ col, colType }) => (
-                      <div
-                        key={col}
-                        draggable
-                        onDragStart={e => {
-                          e.dataTransfer.effectAllowed = 'copy'
-                          e.dataTransfer.setData('text/plain', JSON.stringify({ col, colType, datasetId: ds.id }))
-                          onDragStart(col, colType, ds.id)
-                        }}
-                        onDragEnd={onDragEnd}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg mx-1 cursor-grab active:cursor-grabbing hover:bg-violet-50 dark:hover:bg-violet-900/20 group transition-colors"
+              function ColRow({ col, colType }) {
+                return (
+                  <div
+                    key={col}
+                    draggable
+                    onDragStart={e => {
+                      e.dataTransfer.effectAllowed = 'copy'
+                      e.dataTransfer.setData('text/plain', JSON.stringify({ col, colType, datasetId: ds.id }))
+                      onDragStart(col, colType, ds.id)
+                    }}
+                    onDragEnd={onDragEnd}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg mx-1 cursor-grab active:cursor-grabbing hover:bg-violet-50 dark:hover:bg-violet-900/20 group transition-colors"
+                  >
+                    <span className="text-[9px] select-none text-gray-300 group-hover:text-violet-300 shrink-0">⠿</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate group-hover:text-violet-700 transition-colors flex-1">{col}</span>
+                    {onQuickAdd && (
+                      <button
+                        draggable={false}
+                        onClick={e => { e.stopPropagation(); onQuickAdd(col, colType, ds.id) }}
+                        title={`Adicionar "${col}" ao dashboard`}
+                        className="shrink-0 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded bg-violet-100 text-violet-600 hover:bg-violet-600 hover:text-white transition-all"
                       >
-                        <span className="text-[9px] select-none text-gray-200 dark:text-gray-600 group-hover:text-violet-300 shrink-0">⠿</span>
-                        <span className={`text-[9px] font-bold px-1 py-0.5 rounded shrink-0 ${
-                          colType === 'number' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500'
-                          : colType === 'date' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                        }`}>
-                          {colType === 'number' ? '#' : colType === 'date' ? '~' : 'A'}
-                        </span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 truncate group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{col}</span>
-                        {onQuickAdd && (
-                          <button
-                            draggable={false}
-                            onClick={e => { e.stopPropagation(); onQuickAdd(col, colType, ds.id) }}
-                            title={`Criar bloco com "${col}"`}
-                            className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center rounded text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-opacity"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                )
+              }
+
+              return (
+                <div key={ds.id} className="mb-3">
+                  {/* Header do dataset + botão ver todos os dados */}
+                  <div className="flex items-center justify-between px-2 pt-2 pb-1">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate">{ds.name}</span>
+                    {onQuickAdd && (
+                      <button
+                        onClick={() => onQuickAdd('*', 'text', ds.id)}
+                        title="Ver todos os dados em uma tabela"
+                        className="text-[9px] text-violet-500 hover:text-violet-700 font-semibold shrink-0 ml-1 hover:underline"
+                      >
+                        Ver dados
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Métricas (números) */}
+                  {metricas.length > 0 && (
+                    <div className="mb-1">
+                      <div className="flex items-center gap-1 px-3 py-0.5">
+                        <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Métricas</span>
+                        <span className="text-[9px] text-gray-300">({metricas.length})</span>
+                      </div>
+                      {metricas.map(({ col, colType }) => <ColRow key={col} col={col} colType={colType} />)}
+                    </div>
+                  )}
+
+                  {/* Datas */}
+                  {datas.length > 0 && (
+                    <div className="mb-1">
+                      <div className="flex items-center gap-1 px-3 py-0.5">
+                        <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">Datas</span>
+                        <span className="text-[9px] text-gray-300">({datas.length})</span>
+                      </div>
+                      {datas.map(({ col, colType }) => <ColRow key={col} col={col} colType={colType} />)}
+                    </div>
+                  )}
+
+                  {/* Dimensões (texto) */}
+                  {dimensoes.length > 0 && (
+                    <div className="mb-1">
+                      <div className="flex items-center gap-1 px-3 py-0.5">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Dimensões</span>
+                        <span className="text-[9px] text-gray-300">({dimensoes.length})</span>
+                      </div>
+                      {dimensoes.map(({ col, colType }) => <ColRow key={col} col={col} colType={colType} />)}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           {/* Rodapé */}
@@ -987,6 +1020,14 @@ export default function DashboardDetailPage() {
   }
 
   function handleDropColumn(blockId, slot, { col, colType, datasetId }) {
+    // Caso especial: "Ver dados" — cria tabela bruta sem configuração de colunas
+    if (blockId === '__create__' && col === '*') {
+      const newB = newBlock('table', BLOCK_TYPES)
+      setBlocks([...blocks, { ...newB, dataset_id: datasetId, w: 8, h: 5 }])
+      setSelectedBlockId(newB.id)
+      setDraggedColumn(null)
+      return
+    }
     // Caso especial: arrastar para canvas vazio → cria bloco automaticamente
     if (blockId === '__create__') {
       const suggestedType = colType === 'number' ? 'kpi' : colType === 'date' ? 'line' : 'table'
@@ -996,7 +1037,7 @@ export default function DashboardDetailPage() {
         ...(colType === 'number' ? { value_col: col } : { label_col: col }),
         ...(colType === 'date' ? { config: { dim_type: 'date', granularity: 'month' } } : {}),
       }
-      setBlocks(prev => [...prev, { ...newB, ...patch }])
+      setBlocks([...blocks, { ...newB, ...patch }])
       setSelectedBlockId(newB.id)
       setDraggedColumn(null)
       return
