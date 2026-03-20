@@ -16,6 +16,67 @@ import {
 import 'react-grid-layout/css/styles.css'
 import { api } from '@/lib/api'
 
+// ─── Raw Table Block — mostra linhas brutas do dataset sem precisar configurar colunas ───
+function RawTableBlock({ datasetId, columns = [], readOnly }) {
+  const [rows, setRows] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const limit = 50
+
+  useEffect(() => {
+    if (!datasetId) return
+    setLoading(true)
+    api.reports.datasets.rows(datasetId, limit, page * limit)
+      .then(res => { setRows(res.rows || []); setTotal(res.total || 0) })
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false))
+  }, [datasetId, page])
+
+  if (loading) return <div className="flex items-center justify-center h-full text-xs text-gray-400">Carregando dados...</div>
+  if (!rows || rows.length === 0) return <div className="flex items-center justify-center h-full text-xs text-gray-300">Sem dados no dataset</div>
+
+  const cols = columns.length > 0 ? columns : Object.keys(rows[0] || {})
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="overflow-auto flex-1">
+        <table className="min-w-full text-xs border-separate border-spacing-0">
+          <thead className="sticky top-0 z-10">
+            <tr>
+              {cols.map(col => (
+                <th key={col} className="px-3 py-2 text-left font-semibold text-[11px] text-gray-500 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider whitespace-nowrap">
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
+                {cols.map(col => (
+                  <td key={col} className="px-3 py-1.5 text-gray-700 border-b border-gray-100 whitespace-nowrap max-w-[200px] truncate">
+                    {row[col] == null ? <span className="text-gray-300">—</span> : String(row[col])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {total > limit && (
+        <div className="flex items-center justify-between px-3 py-1.5 border-t border-gray-100 bg-gray-50/80 shrink-0">
+          <span className="text-[10px] text-gray-400">{page * limit + 1}–{Math.min((page + 1) * limit, total)} de {total}</span>
+          <div className="flex gap-1">
+            <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="px-2 py-0.5 text-[10px] rounded border border-gray-200 disabled:opacity-30 hover:bg-violet-50 hover:text-violet-600 transition-colors">‹</button>
+            <button disabled={(page + 1) * limit >= total} onClick={() => setPage(p => p + 1)} className="px-2 py-0.5 text-[10px] rounded border border-gray-200 disabled:opacity-30 hover:bg-violet-50 hover:text-violet-600 transition-colors">›</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const COLORS = ['#6366f1', '#10b981', '#0ea5e9', '#f43f5e', '#f59e0b', '#8b5cf6']
 const COLORS_SOFT = ['#e0e7ff', '#d1fae5', '#e0f2fe', '#ffe4e6', '#fef3c7', '#ede9fe']
 
@@ -1430,6 +1491,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'table') {
+    if (!effectiveDatasetId) return (
+      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
+        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M10 6v12M6 6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+        <p className="text-[10px] text-gray-400 font-medium">Clique em <strong>Editar</strong> e selecione um dataset</p>
+      </div>
+    )
+    // Modo bruto: dataset definido mas sem dimensão+métrica → mostra linhas brutas imediatamente
+    if (!block.label_col || !block.value_col) {
+      const cols = block.config?.raw_columns || []
+      return <RawTableBlock datasetId={effectiveDatasetId} columns={cols} readOnly={readOnly} />
+    }
     return <TableBlock block={block} data={displayData} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} vs={vs} />
   }
 
