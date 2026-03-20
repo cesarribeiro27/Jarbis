@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import { api } from '@/lib/api'
 import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/ReportBuilder'
 import DashboardRail from '@/components/DashboardRail'
+import AppLayout from '@/components/AppLayout'
 import { TEMPLATES } from '@/lib/templates'
 
 const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr: false })
@@ -548,21 +549,9 @@ function TemplateGallery({ onSelect }) {
   })
 
   return (
-    <div className="min-h-screen bg-[#f8f7fc] flex flex-col">
-      {/* Top nav bar */}
-      <div className="bg-white border-b border-gray-100 px-6 h-[60px] flex items-center gap-3 shrink-0 shadow-sm">
-        <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center shadow-sm shadow-violet-200">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="white"/>
-          </svg>
-        </div>
-        <span className="text-gray-900 font-black text-[15px] tracking-tight">Jarbis</span>
-        <span className="text-gray-300 text-sm">·</span>
-        <span className="text-gray-500 text-sm">{t('gallery.nav')}</span>
-      </div>
-
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto px-6 sm:px-10 py-10">
+    <AppLayout>
+      <div className="overflow-auto">
+        <div className="max-w-6xl mx-auto px-6 sm:px-10 py-8">
 
           {/* Hero header */}
           <div className="mb-8 text-center">
@@ -685,7 +674,7 @@ function TemplateGallery({ onSelect }) {
           )}
         </div>
       </div>
-    </div>
+    </AppLayout>
   )
 }
 
