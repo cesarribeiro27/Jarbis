@@ -519,6 +519,8 @@ export default function DashboardDetailPage() {
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState('view')
   const [pages, setPages] = useState([])
+  const [showVersions, setShowVersions] = useState(false)
+  const [versions, setVersions] = useState([])
   const [activePageId, setActivePageId] = useState(null)
   // Undo/Redo history for pages state in edit mode
   const [pagesHistory, setPagesHistory] = useState([])
@@ -654,6 +656,33 @@ export default function DashboardDetailPage() {
 
   function cancelEdit() { setMode('view'); setSelectedBlockId(null); setSidebarOpen(false); setSidePanel(null) }
 
+  async function loadVersions() {
+    try {
+      const data = await api.fetch(`/reports/${id}/versions`)
+      setVersions(data || [])
+      setShowVersions(true)
+    } catch (err) { console.error(err) }
+  }
+
+  async function saveVersion() {
+    try {
+      await api.fetch(`/reports/${id}/versions`, { method: 'POST' })
+    } catch (err) { console.error(err) }
+  }
+
+  async function restoreVersion(versionId) {
+    if (!confirm('Restaurar esta versão? As mudanças atuais serão perdidas.')) return
+    try {
+      await api.fetch(`/reports/${id}/versions/${versionId}/restore`, { method: 'POST' })
+      const r = await api.reports.get(id)
+      setReport(r)
+      const rawPs = (r.pages && r.pages.length > 0) ? r.pages : [{ id: 'page_1', title: '', blocks: r.blocks || [] }]
+      const ps = rawPs.map(p => ({ ...p, title: normalizePageTitle(p.title) }))
+      setPages(ps)
+      setShowVersions(false)
+    } catch (err) { console.error(err) }
+  }
+
   function addPage() {
     const newId = `page_${Date.now()}`
     setPages(prev => [...prev, { id: newId, title: '', blocks: [] }])
@@ -687,6 +716,7 @@ export default function DashboardDetailPage() {
     try {
       const cleanPages = pages.map(p => ({ ...p, blocks: sanitizeBlocks(p.blocks || []) }))
       const updated = await api.reports.update(id, { title: editTitle, description: editDescription || null, blocks: cleanPages[0]?.blocks || [], pages: cleanPages, language: canvasConfig.language || 'pt-BR' })
+      await saveVersion()
       setReport(updated); setMode('view')
     } catch (err) { console.error(err) }
     finally { setSaving(false) }
@@ -877,6 +907,15 @@ export default function DashboardDetailPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" /></svg>
           </button>
 
+          <button
+            onClick={loadVersions}
+            title="Histórico de versões"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors border border-gray-200 hover:border-violet-300"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span className="hidden sm:inline">Versões</span>
+          </button>
+
           {/* Dashboard title in center */}
           <div className="flex-1 flex justify-center min-w-0 px-4">
             <input
@@ -1004,6 +1043,33 @@ export default function DashboardDetailPage() {
           />
         </div>
         {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} />}
+
+        {showVersions && (
+          <div className="fixed inset-0 z-50 flex">
+            <div className="flex-1" onClick={() => setShowVersions(false)} />
+            <div className="w-80 bg-white shadow-2xl border-l flex flex-col">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900">Histórico de versões</h2>
+                <button onClick={() => setShowVersions(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {versions.length === 0 && <p className="text-sm text-gray-400 text-center mt-8">Nenhuma versão salva ainda.<br/>Edite e salve para criar snapshots.</p>}
+                {versions.map(v => (
+                  <div key={v.id} className="border rounded-lg p-3 hover:border-purple-300 transition-colors">
+                    <p className="text-sm font-medium text-gray-800">{v.label || v.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{new Date(v.created_at).toLocaleString('pt-BR')}</p>
+                    <button
+                      onClick={() => restoreVersion(v.id)}
+                      className="mt-2 text-xs text-purple-600 hover:underline"
+                    >
+                      Restaurar esta versão →
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

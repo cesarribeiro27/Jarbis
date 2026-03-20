@@ -1781,8 +1781,113 @@ async def decode_embed_token(token: str):
 # G2 — Relatórios Agendados
 # ---------------------------------------------------------------------------
 
+from .models import Report
 from .scheduled_models import ScheduledReport
 from .scheduled_service import ScheduledReportService
+
+
+# ---------------------------------------------------------------------------
+# N7 — Version History for dashboards
+# ---------------------------------------------------------------------------
+
+
+class VersionResponse(BaseModel):
+    id: uuid.UUID
+    report_id: uuid.UUID
+    title: str
+    label: str | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/{report_id}/versions", response_model=list[VersionResponse])
+async def list_versions(
+    report_id: uuid.UUID,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .version_models import ReportVersion
+    result = await db.execute(
+        select(ReportVersion)
+        .where(ReportVersion.report_id == report_id, ReportVersion.tenant_id == current_user.tenant_id)
+        .order_by(ReportVersion.created_at.desc())
+        .limit(20)
+    )
+    return result.scalars().all()
+
+
+@router.post("/{report_id}/versions")
+async def save_version(
+    report_id: uuid.UUID,
+    label: str | None = Query(None),
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .version_models import ReportVersion
+    # Get current report pages
+    result = await db.execute(
+        select(Report).where(Report.id == report_id, Report.tenant_id == current_user.tenant_id)
+    )
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado.")
+
+    version = ReportVersion(
+        report_id=report_id,
+        tenant_id=current_user.tenant_id,
+        pages=report.pages or [],
+        title=report.title,
+        label=label,
+    )
+    db.add(version)
+
+    # Keep only last 20 versions
+    old = await db.execute(
+        select(ReportVersion)
+        .where(ReportVersion.report_id == report_id, ReportVersion.tenant_id == current_user.tenant_id)
+        .order_by(ReportVersion.created_at.desc())
+        .offset(20)
+    )
+    for v in old.scalars().all():
+        await db.delete(v)
+
+    await db.commit()
+    await db.refresh(version)
+    return {"id": str(version.id), "created_at": version.created_at.isoformat()}
+
+
+@router.post("/{report_id}/versions/{version_id}/restore")
+async def restore_version(
+    report_id: uuid.UUID,
+    version_id: uuid.UUID,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .version_models import ReportVersion
+    from sqlalchemy.orm.attributes import flag_modified
+
+    version = await db.scalar(
+        select(ReportVersion).where(
+            ReportVersion.id == version_id,
+            ReportVersion.report_id == report_id,
+            ReportVersion.tenant_id == current_user.tenant_id,
+        )
+    )
+    if not version:
+        raise HTTPException(status_code=404, detail="Versão não encontrada.")
+
+    report = await db.scalar(
+        select(Report).where(Report.id == report_id, Report.tenant_id == current_user.tenant_id)
+    )
+    if not report:
+        raise HTTPException(status_code=404)
+
+    report.pages = version.pages
+    flag_modified(report, 'pages')
+    await db.commit()
+    return {"ok": True}
 
 
 class ScheduledReportCreate(BaseModel):

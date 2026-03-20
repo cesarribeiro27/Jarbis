@@ -9,6 +9,7 @@ import {
   ScatterChart, Scatter, ZAxis,
   ComposedChart, Treemap,
   RadialBarChart, RadialBar,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend, LabelList,
 } from 'recharts'
@@ -47,6 +48,9 @@ const BLOCK_TYPES = [
   { type: 'map',         label: 'Mapa BR',     desc: 'Mapa por estado' },
   { type: 'bar_stacked', label: 'Barras Emp.', desc: 'Barras empilhadas' },
   { type: 'area_stacked',label: 'Área Emp.',   desc: 'Área empilhada' },
+  { type: 'heatmap',     label: 'Mapa de Calor', desc: 'Gradiente em grade' },
+  { type: 'waterfall',   label: 'Cascata',       desc: 'Contribuições acumuladas' },
+  { type: 'radar',       label: 'Radar',         desc: 'Comparação multidimensional' },
   { type: 'text',        label: 'Texto',       desc: 'Comentários' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
@@ -75,6 +79,37 @@ const TYPE_ICONS = {
   map:         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>,
   bar_stacked: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="14" width="4" height="7" rx="1" strokeWidth={1.5}/><rect x="3" y="9" width="4" height="5" rx="0" strokeWidth={1.5}/><rect x="10" y="10" width="4" height="11" rx="1" strokeWidth={1.5}/><rect x="10" y="5" width="4" height="5" rx="0" strokeWidth={1.5}/><rect x="17" y="12" width="4" height="9" rx="1" strokeWidth={1.5}/><rect x="17" y="7" width="4" height="5" rx="0" strokeWidth={1.5}/></svg>,
   area_stacked: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 18l4-6 4 3 4-7 4 4v6H3z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13l4-4 4 2 4-5 4 3" opacity=".5"/></svg>,
+  heatmap: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="3" y="3" width="4" height="4" fill="currentColor" opacity="0.9"/>
+      <rect x="9" y="3" width="4" height="4" fill="currentColor" opacity="0.4"/>
+      <rect x="15" y="3" width="4" height="4" fill="currentColor" opacity="0.7"/>
+      <rect x="3" y="9" width="4" height="4" fill="currentColor" opacity="0.5"/>
+      <rect x="9" y="9" width="4" height="4" fill="currentColor" opacity="1"/>
+      <rect x="15" y="9" width="4" height="4" fill="currentColor" opacity="0.3"/>
+      <rect x="3" y="15" width="4" height="4" fill="currentColor" opacity="0.6"/>
+      <rect x="9" y="15" width="4" height="4" fill="currentColor" opacity="0.2"/>
+      <rect x="15" y="15" width="4" height="4" fill="currentColor" opacity="0.8"/>
+    </svg>
+  ),
+  waterfall: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="10" width="4" height="10" fill="#6d28d9" stroke="none"/>
+      <rect x="7" y="6" width="4" height="4" fill="#059669" stroke="none"/>
+      <rect x="12" y="4" width="4" height="6" fill="#059669" stroke="none"/>
+      <rect x="17" y="8" width="4" height="2" fill="#dc2626" stroke="none"/>
+      <line x1="2" y1="10" x2="24" y2="10" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2"/>
+    </svg>
+  ),
+  radar: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <polygon points="12,3 21,8 21,16 12,21 3,16 3,8" strokeLinejoin="round"/>
+      <polygon points="12,7 17,10 17,14 12,17 7,14 7,10" strokeLinejoin="round" opacity="0.6"/>
+      <line x1="12" y1="3" x2="12" y2="21" opacity="0.4"/>
+      <line x1="3" y1="8" x2="21" y2="16" opacity="0.4"/>
+      <line x1="3" y1="16" x2="21" y2="8" opacity="0.4"/>
+    </svg>
+  ),
 }
 
 
@@ -382,6 +417,29 @@ function downloadCSV(data, title) {
   URL.revokeObjectURL(url)
 }
 
+function downloadXLSX(data, title) {
+  if (!data || data.length === 0) return
+  const cols = Object.keys(data[0])
+  const rows = [cols, ...data.map(row => cols.map(c => row[c] ?? ''))]
+  const xmlRows = rows.map(row =>
+    `<Row>${row.map(cell => `<Cell><Data ss:Type="${typeof cell === 'number' ? 'Number' : 'String'}">${String(cell).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</Data></Cell>`).join('')}</Row>`
+  ).join('\n')
+  const xml = `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Worksheet ss:Name="Dados">
+    <Table>${xmlRows}</Table>
+  </Worksheet>
+</Workbook>`
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.download = `${title || 'dados'}.xls`
+  a.href = url
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 async function downloadPNG(blockId, title) {
   const el = document.querySelector(`[data-block-id="${blockId}"]`)
   if (!el) return
@@ -584,7 +642,21 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     ? config.colors.split(',').map(c => c.trim()).filter(Boolean)
     : COLORS
 
+  function handleChartClickUrl(label) {
+    const clickUrl = block.config?.click_url
+    if (!clickUrl) return false
+    const url = clickUrl.replace('{label}', encodeURIComponent(label))
+    if (url.startsWith('http')) {
+      window.open(url, '_blank')
+    } else {
+      window.location.href = url
+    }
+    return true
+  }
+
   const handleClick = (label) => {
+    // click_url takes priority if set
+    if (handleChartClickUrl(label)) return
     // G11 multi-level drill takes priority over legacy drilldown and cross-filter
     if (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) {
       handleDrillDown(label)
@@ -675,7 +747,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: 8, bottom: 32 }}>
+          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel) }}>
             <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
@@ -699,7 +771,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: config.show_data_labels ? 48 : 24, left: 40, bottom: 4 }}>
+          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: config.show_data_labels ? 48 : 24, left: 40, bottom: 4 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel) }}>
             <CartesianGrid horizontal={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
             <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} />
@@ -832,7 +904,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               onClick={entry => handleClick(entry.label)}
               style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}
             >
-              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+              {data.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} onClick={() => { if (config.click_url) handleChartClickUrl(d.label) }} />)}
             </Pie>
             <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => [fmt(v, format, config), '']} />
             {showLegend && <Legend
@@ -1053,6 +1125,133 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return <TableBlock block={block} data={data} config={config} format={format} getOpacity={getOpacity} handleClick={handleClick} vs={vs} />
   }
 
+  if (block.type === 'heatmap') {
+    const rowCol = cfg.row_col || block.label_col
+    const colCol = cfg.col_col
+    const valCol = cfg.value_col || block.value_col
+    if (!rowCol || !colCol || !valCol || !data?.length) {
+      return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Configure linha, coluna e valor</div>
+    }
+    const chartData = data
+    const rows = [...new Set(chartData.map(d => String(d[rowCol] ?? '')))]
+    const cols = [...new Set(chartData.map(d => String(d[colCol] ?? '')))]
+    const valueMap = {}
+    for (const d of chartData) {
+      valueMap[`${d[rowCol]}|${d[colCol]}`] = parseFloat(d[valCol] ?? d.value ?? 0) || 0
+    }
+    const allVals = Object.values(valueMap)
+    const maxVal = Math.max(...allVals, 1)
+    const minVal = Math.min(...allVals, 0)
+    const baseColor = cfg.color || '#7c3aed'
+    const r = parseInt(baseColor.slice(1, 3), 16)
+    const g = parseInt(baseColor.slice(3, 5), 16)
+    const b = parseInt(baseColor.slice(5, 7), 16)
+    const cellW = Math.max(24, Math.floor(200 / Math.max(cols.length, 1)))
+    const cellH = 28
+    return (
+      <div className="overflow-auto h-full">
+        <div className="inline-block min-w-full">
+          <div className="flex" style={{ marginLeft: 60 }}>
+            {cols.map(c => (
+              <div key={c} className="text-xs text-gray-500 text-center truncate" style={{ width: cellW, flexShrink: 0 }}>{c}</div>
+            ))}
+          </div>
+          {rows.map(row => (
+            <div key={row} className="flex items-center">
+              <div className="text-xs text-gray-500 truncate" style={{ width: 56, flexShrink: 0 }}>{row}</div>
+              {cols.map(col => {
+                const v = valueMap[`${row}|${col}`] ?? 0
+                const intensity = maxVal === minVal ? 0.5 : (v - minVal) / (maxVal - minVal)
+                return (
+                  <div
+                    key={col}
+                    title={`${row} × ${col}: ${v}`}
+                    onClick={() => handleClick(row)}
+                    style={{
+                      width: cellW,
+                      height: cellH,
+                      flexShrink: 0,
+                      backgroundColor: `rgba(${r},${g},${b},${0.1 + intensity * 0.9})`,
+                      margin: 1,
+                      borderRadius: 2,
+                      cursor: cfg.click_url ? 'pointer' : 'default',
+                    }}
+                  />
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.type === 'waterfall') {
+    const chartData = processedData
+    let running = 0
+    const waterfallData = chartData.map((d, i) => {
+      const val = d.value ?? 0
+      const base = i === 0 ? 0 : running
+      running += (chartData[i - 1]?.value ?? 0)
+      const isPositive = val >= 0
+      return {
+        label: d.label,
+        base: Math.min(base, base + val),
+        value: Math.abs(val),
+        isPositive,
+        rawVal: val,
+      }
+    })
+    return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={waterfallData} barSize={32} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: cfg.click_url ? 'pointer' : 'default' }}
+              onClick={d => { if (d?.activePayload?.[0]?.payload?.label) handleClick(d.activePayload[0].payload.label) }}>
+              <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                formatter={(value, name, props) => {
+                  if (name === 'base') return null
+                  const raw = props.payload?.rawVal ?? 0
+                  return [fmt(raw, format, config), '']
+                }}
+              />
+              <Bar dataKey="base" stackId="wf" fill="transparent" legendType="none" />
+              <Bar dataKey="value" stackId="wf" radius={[3, 3, 0, 0]} legendType="none">
+                {waterfallData.map((entry, i) => (
+                  <Cell key={i} fill={entry.isPositive ? '#059669' : '#dc2626'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
+  }
+
+  if (block.type === 'radar') {
+    const radarData = data.map(d => ({ subject: String(d.label ?? ''), value: d.value ?? 0 }))
+    return (
+      <div className="flex flex-col h-full">
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={radarData}>
+              <PolarGrid />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
+              <PolarRadiusAxis tick={{ fontSize: 9 }} />
+              <Radar dataKey="value" stroke={color} fill={color} fillOpacity={0.3} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
+  }
+
   if (block.type === 'bar_stacked' || block.type === 'area_stacked') {
     const seriesCol = config.series_col
     if (!seriesCol) {
@@ -1206,7 +1405,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
   const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
   const hasData = !['text', 'filter', 'image', 'slider'].includes(block.type)
-  const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked'].includes(block.type)
+  const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked', 'heatmap', 'waterfall', 'radar'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
   const COL_TYPE_BADGE = { text: 'Aa', number: '#', date: '📅' }
@@ -1476,6 +1675,35 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         </ConfigSection>
       )}
 
+      {/* HEATMAP — colunas de linha e coluna */}
+      {block.type === 'heatmap' && selectedDataset && (
+        <ConfigSection title="Mapa de Calor">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Coluna de Linha</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.row_col || ''}
+              onChange={e => updConfig('row_col', e.target.value || null)}
+            >
+              <option value="">— selecionar —</option>
+              {columns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Coluna de Coluna</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.config?.col_col || ''}
+              onChange={e => updConfig('col_col', e.target.value || null)}
+            >
+              <option value="">— selecionar —</option>
+              {columns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <p className="text-[10px] text-gray-400">A coluna de valor é definida na seção Dados (Métrica)</p>
+        </ConfigSection>
+      )}
+
       {/* VISUAL */}
       {hasVisual && (
         <ConfigSection title={t('block.sectionVisual')}>
@@ -1584,6 +1812,9 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               </div>
               <ColorPicker label={t('block.labelArcColor')} value={block.config?.color || ''} onChange={v => updConfig('color', v)} />
             </>
+          )}
+          {['heatmap', 'radar'].includes(block.type) && (
+            <ColorPicker label="Cor principal" value={block.config?.color || ''} onChange={v => updConfig('color', v)} />
           )}
           {['bar', 'bar_h', 'area', 'line', 'scatter', 'combo', 'gauge', 'speedometer'].includes(block.type) && !['gauge', 'speedometer'].includes(block.type) && (
             <div>
@@ -1890,6 +2121,20 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               </label>
               <p className="text-[10px] text-gray-400">{t('block.hintCrossFilter')}</p>
             </>
+          )}
+          {/* Ação ao clicar — URL */}
+          {['bar', 'bar_h', 'line', 'area', 'pie', 'heatmap', 'waterfall', 'radar', 'table', 'treemap', 'funnel', 'map'].includes(block.type) && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Ação ao clicar</label>
+              <input
+                type="text"
+                value={block.config?.click_url || ''}
+                onChange={e => updConfig('click_url', e.target.value)}
+                placeholder="https://... ou /dashboards/{label}"
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-0.5">Use {"{label}"} para inserir o valor clicado</p>
+            </div>
           )}
         </ConfigSection>
       )}
@@ -2832,19 +3077,34 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </button>
                 {block.dataset_id && block.label_col && block.value_col && !['text','filter','slider','image'].includes(block.type) && (
-                  <button
-                    title="Exportar dados como CSV"
-                    onClick={async e => {
-                      e.stopPropagation()
-                      try {
-                        const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
-                        downloadCSV(rows, block.title)
-                      } catch {}
-                    }}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11h6" /></svg>
-                  </button>
+                  <>
+                    <button
+                      title="Exportar dados como CSV"
+                      onClick={async e => {
+                        e.stopPropagation()
+                        try {
+                          const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
+                          downloadCSV(rows, block.title)
+                        } catch {}
+                      }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11h6" /></svg>
+                    </button>
+                    <button
+                      title="Exportar dados como XLS"
+                      onClick={async e => {
+                        e.stopPropagation()
+                        try {
+                          const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
+                          downloadXLSX(rows, block.title)
+                        } catch {}
+                      }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-[9px] font-bold"
+                    >
+                      XLS
+                    </button>
+                  </>
                 )}
                 <div className="h-px bg-gray-100 mx-1" />
                 <button
