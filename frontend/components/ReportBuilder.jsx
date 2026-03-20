@@ -343,6 +343,8 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
     } else if (block.type === 'gantt') {
       const cfg = block.config || {}
       if (!cfg.task_col || !cfg.start_col || !cfg.end_col) { setData(block.static_data || null); return }
+    } else if (block.type === 'table') {
+      if (!block.label_col || !block.value_col) { setData(null); return }
     } else if (block.type === 'sankey') {
       const cfg = block.config || {}
       if (!cfg.source_col || !cfg.target_col || !cfg.value_col) { setData(block.static_data || null); return }
@@ -862,20 +864,20 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
 
   const effectiveDatasetId = (block.dataset_id && block.dataset_id !== '__onboarding__') ? block.dataset_id : null
   const isSampleData = block.static_data && !effectiveDatasetId
-  if (!isSampleData && !['pivot', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type) && (!effectiveDatasetId || !block.label_col || !block.value_col)) {
+  if (!isSampleData && !['pivot', 'gantt', 'sankey', 'candlestick', 'boxplot', 'table'].includes(block.type) && (!effectiveDatasetId || !block.label_col || !block.value_col)) {
     const msg = !block.dataset_id
-      ? 'Selecione um dataset'
+      ? 'Arraste um dataset aqui'
       : !block.label_col
-      ? 'Configure a dimensão'
-      : 'Configure a métrica'
+      ? 'Arraste uma coluna de dimensão (A)'
+      : 'Arraste uma coluna numérica (#)'
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-1.5 px-3 text-center select-none">
+      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
         <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <ellipse cx="12" cy="5" rx="9" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
         </svg>
-        <p className="text-[10px] text-gray-300 leading-snug">{msg}</p>
-        <p className="text-[9px] text-gray-200">clique em ⊞ para configurar</p>
+        <p className="text-[10px] text-gray-400 font-medium leading-snug">{msg}</p>
+        <p className="text-[9px] text-gray-300">ou clique em <strong>Editar</strong> para configurar</p>
       </div>
     )
   }
@@ -894,13 +896,21 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return <div className="flex items-center justify-center h-full text-xs text-red-400 px-2 text-center">{error}</div>
   }
   if (!data || data.length === 0) return (
-    <div className="flex flex-col items-center justify-center h-full gap-2">
+    <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center">
       {drilldown && (
         <button onClick={() => setDrilldown(null)} className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200 transition-colors">
           ← {drilldown.val}
         </button>
       )}
-      <span className="text-xs text-gray-300">{vs.noData}</span>
+      {block.type === 'table' && block.label_col && !block.value_col ? (
+        <>
+          <svg className="w-6 h-6 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M10 6v12M6 6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+          <p className="text-[10px] text-gray-400 font-medium">Arraste uma coluna <span className="font-bold text-blue-400">#</span> para a tabela</p>
+          <p className="text-[9px] text-gray-300">ou clique em <strong>Editar</strong> para configurar</p>
+        </>
+      ) : (
+        <span className="text-xs text-gray-300">{vs.noData}</span>
+      )}
     </div>
   )
 
@@ -4383,88 +4393,36 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               />
             </div>
 
-            {/* Floating toolbar — modern pill outside-right */}
-            {!readOnly && (
+            {/* Floating toolbar — 3 ações claras abaixo do bloco selecionado */}
+            {!readOnly && isSelected && (
               <div
-                className={`absolute left-full top-2 ml-2 flex flex-col gap-0.5 p-1 bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-150 ${isSelected ? 'opacity-100 translate-x-0' : 'opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0'}`}
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 flex flex-row items-center gap-0.5 px-1 py-1 bg-white border border-gray-200 rounded-xl shadow-[0_4px_16px_rgba(109,40,217,0.12)] z-50"
                 onClick={e => e.stopPropagation()}
               >
                 <button
-                  title={t('builder.tooltipData')}
+                  title="Editar bloco"
                   onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'config') }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-700 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V7zM4 15a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <span className="text-[9px] font-semibold leading-none">Editar</span>
                 </button>
                 <button
-                  title={t('builder.tooltipConfig')}
-                  onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'config') }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
-                </button>
-                <button
-                  title={t('builder.tooltipClone')}
+                  title="Duplicar bloco"
                   onClick={() => cloneBlock()}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-700 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  <span className="text-[9px] font-semibold leading-none">Duplicar</span>
                 </button>
+                <div className="w-px h-8 bg-gray-100" />
                 <button
-                  title={block.config?.locked ? t('builder.tooltipUnlockPos') : t('builder.tooltipLockPos')}
-                  onClick={() => onChange(blocks.map(b => b.id === block.id ? { ...b, config: { ...(b.config || {}), locked: !b.config?.locked } } : b))}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${block.config?.locked ? 'bg-amber-50 text-amber-500 hover:bg-amber-100' : 'text-gray-500 hover:bg-violet-50 hover:text-violet-600'}`}
-                >
-                  {block.config?.locked
-                    ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                    : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                  }
-                </button>
-                <div className="h-px bg-gray-100 mx-1" />
-                <button
-                  title="Exportar como PNG"
-                  onClick={() => downloadPNG(block.id, block.title)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                </button>
-                {block.dataset_id && block.label_col && block.value_col && !['text','filter','slider','image'].includes(block.type) && (
-                  <>
-                    <button
-                      title="Exportar dados como CSV"
-                      onClick={async e => {
-                        e.stopPropagation()
-                        try {
-                          const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
-                          downloadCSV(rows, block.title)
-                        } catch {}
-                      }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11h6" /></svg>
-                    </button>
-                    <button
-                      title="Exportar dados como XLS"
-                      onClick={async e => {
-                        e.stopPropagation()
-                        try {
-                          const rows = await api.reports.datasets.query(block.dataset_id, block.label_col, block.value_col, block.agg || 'sum')
-                          downloadXLSX(rows, block.title)
-                        } catch {}
-                      }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-[9px] font-bold"
-                    >
-                      XLS
-                    </button>
-                  </>
-                )}
-                <div className="h-px bg-gray-100 mx-1" />
-                <button
-                  title={t('builder.tooltipDelete')}
+                  title="Excluir bloco"
                   onClick={() => onChange(blocks.filter(b => b.id !== block.id))}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <span className="text-[9px] font-semibold leading-none">Excluir</span>
                 </button>
               </div>
             )}
