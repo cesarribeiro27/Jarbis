@@ -501,6 +501,135 @@ function CommentsPanel({ blocks, onBlocksChange }) {
   )
 }
 
+// ─── Left Data Tray — painel esquerdo de datasets/colunas no modo de edição ──
+function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets }) {
+  const [search, setSearch] = useState('')
+  const [collapsed, setCollapsed] = useState(false)
+  const [expandedDatasets, setExpandedDatasets] = useState(() => new Set())
+
+  const grouped = datasets.map(ds => ({
+    ...ds,
+    filteredCols: (ds.columns || [])
+      .filter(col => !search || col.toLowerCase().includes(search.toLowerCase()))
+      .map(col => ({
+        col,
+        colType: ds.column_types?.[col] === 'number' ? 'number'
+          : ds.column_types?.[col] === 'date' ? 'date' : 'text',
+      }))
+  })).filter(ds => ds.filteredCols.length > 0 || !search)
+
+  // Expande automaticamente o primeiro dataset
+  useEffect(() => {
+    if (datasets.length > 0 && expandedDatasets.size === 0) {
+      setExpandedDatasets(new Set([datasets[0].id]))
+    }
+  }, [datasets]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggleDataset(id) {
+    setExpandedDatasets(prev => {
+      const s = new Set(prev)
+      s.has(id) ? s.delete(id) : s.add(id)
+      return s
+    })
+  }
+
+  return (
+    <div className={`shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col transition-all duration-200 ${collapsed ? 'w-10' : 'w-56'} hidden sm:flex`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-2 py-2.5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        {!collapsed && <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest pl-1">Dados</span>}
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className="ml-auto p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 shrink-0"
+          title={collapsed ? 'Expandir painel de dados' : 'Recolher painel de dados'}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'} />
+          </svg>
+        </button>
+      </div>
+
+      {!collapsed && (
+        <>
+          {/* Busca */}
+          <div className="px-2 py-2 shrink-0">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar coluna..."
+              className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 dark:focus:ring-violet-800"
+            />
+          </div>
+
+          {/* Lista */}
+          <div className="flex-1 overflow-y-auto pb-2 min-h-0">
+            {grouped.length === 0 && (
+              <div className="px-3 py-6 text-center">
+                <svg className="w-7 h-7 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7m-9 4v4m0 0H8m3 0h3M9 7V3m6 4V3" /></svg>
+                <p className="text-xs text-gray-400 mb-3">Nenhum dataset ainda</p>
+                <button onClick={onManageDatasets} className="text-xs text-violet-600 hover:text-violet-700 font-semibold">+ Adicionar dados</button>
+              </div>
+            )}
+            {grouped.map(ds => (
+              <div key={ds.id} className="mb-0.5">
+                <button
+                  onClick={() => toggleDataset(ds.id)}
+                  className="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+                >
+                  <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform duration-150 ${expandedDatasets.has(ds.id) ? '' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 truncate flex-1 text-left">{ds.name}</span>
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600 shrink-0">{ds.filteredCols.length}</span>
+                </button>
+
+                {expandedDatasets.has(ds.id) && (
+                  <div className="pl-1 pb-1">
+                    {ds.filteredCols.map(({ col, colType }) => (
+                      <div
+                        key={col}
+                        draggable
+                        onDragStart={e => {
+                          e.dataTransfer.effectAllowed = 'copy'
+                          e.dataTransfer.setData('text/plain', JSON.stringify({ col, colType, datasetId: ds.id }))
+                          onDragStart(col, colType, ds.id)
+                        }}
+                        onDragEnd={onDragEnd}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg mx-1 cursor-grab active:cursor-grabbing hover:bg-violet-50 dark:hover:bg-violet-900/20 group transition-colors"
+                      >
+                        <span className="text-[9px] select-none text-gray-200 dark:text-gray-600 group-hover:text-violet-300 shrink-0">⠿</span>
+                        <span className={`text-[9px] font-bold px-1 py-0.5 rounded shrink-0 ${
+                          colType === 'number' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500'
+                          : colType === 'date' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                        }`}>
+                          {colType === 'number' ? '#' : colType === 'date' ? '~' : 'A'}
+                        </span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 truncate group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Rodapé */}
+          <div className="border-t border-gray-100 dark:border-gray-800 px-2 py-2 shrink-0">
+            <button
+              onClick={onManageDatasets}
+              className="w-full flex items-center justify-center gap-1.5 text-[10px] text-violet-600 hover:text-violet-700 font-semibold py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Gerenciar dados
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardDetailPage() {
   const { id } = useParams()
   const router = useRouter()
@@ -545,6 +674,7 @@ export default function DashboardDetailPage() {
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [nearLimit, setNearLimit] = useState(false)
+  const [draggedColumn, setDraggedColumn] = useState(null) // { col, colType, datasetId }
   const [exportingPDF, setExportingPDF] = useState(false)
   const addMenuRef = useRef()
 
@@ -817,6 +947,39 @@ export default function DashboardDetailPage() {
     updateActiveBlock({ ...block, ...patch })
   }
 
+  function handleDropColumn(blockId, slot, { col, colType, datasetId }) {
+    // Caso especial: arrastar para canvas vazio → cria bloco automaticamente
+    if (blockId === '__create__') {
+      const suggestedType = colType === 'number' ? 'kpi' : 'bar'
+      const newB = newBlock(suggestedType, BLOCK_TYPES)
+      const patch = {
+        dataset_id: datasetId,
+        ...(colType === 'number' ? { value_col: col } : { label_col: col }),
+      }
+      setBlocks(prev => [...prev, { ...newB, ...patch }])
+      setSelectedBlockId(newB.id)
+      setDraggedColumn(null)
+      return
+    }
+    const block = blocks.find(b => b.id === blockId)
+    if (!block) return
+    let patch = {}
+    if (slot === 'value_col') {
+      patch.value_col = col
+    } else {
+      patch.label_col = col
+      patch.config = {
+        ...(block.config || {}),
+        dim_type: colType === 'date' ? 'date' : 'text',
+        granularity: colType === 'date' ? 'month' : null,
+      }
+    }
+    if (datasetId && !block.dataset_id) patch.dataset_id = datasetId
+    setSelectedBlockId(blockId)
+    updateActiveBlock({ ...block, ...patch })
+    setDraggedColumn(null)
+  }
+
   function toggleFilterTarget(filterBlockId, targetBlockId) {
     const fb = blocks.find(b => b.id === filterBlockId)
     if (!fb) return
@@ -969,6 +1132,14 @@ export default function DashboardDetailPage() {
         )}
 
         <div className="flex-1 flex overflow-hidden relative">
+          {/* Left Data Tray — painel de datasets/colunas (drag-and-drop) */}
+          <LeftDataTray
+            datasets={datasets}
+            onDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })}
+            onDragEnd={() => setDraggedColumn(null)}
+            onManageDatasets={() => { setSidePanel('dados'); setSidebarOpen(true) }}
+          />
+
           <div className="flex-1 overflow-auto p-3 sm:p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
             <div className="flex items-center gap-1 mb-4 flex-wrap" onClick={e => e.stopPropagation()}>
               {pages.map((page, pageIdx) => (
@@ -987,7 +1158,7 @@ export default function DashboardDetailPage() {
             </div>
 
 
-            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} />
+            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} draggedColumn={draggedColumn} onDropColumn={handleDropColumn} />
           </div>
 
           {/* Backdrop mobile para o sidebar */}

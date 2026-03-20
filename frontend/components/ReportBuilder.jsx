@@ -65,6 +65,34 @@ const BLOCK_TYPES = [
   { type: 'image',       label: 'Imagem',      desc: 'Foto ou logo' },
 ]
 
+// ─── Drop Zone Config — define os slots de dados por tipo de bloco ───────────
+// Usado pelo LeftDataTray (drag de colunas para blocos no canvas)
+const DROP_ZONE_CONFIG = {
+  bar:          [{ slot: 'label_col', label: 'Dimensão (X)', accepts: ['text','date'] }, { slot: 'value_col', label: 'Métrica (Y)',  accepts: ['number'] }],
+  bar_h:        [{ slot: 'label_col', label: 'Dimensão (Y)', accepts: ['text','date'] }, { slot: 'value_col', label: 'Métrica (X)',  accepts: ['number'] }],
+  line:         [{ slot: 'label_col', label: 'Eixo X',        accepts: ['text','date'] }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  area:         [{ slot: 'label_col', label: 'Eixo X',        accepts: ['text','date'] }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  bar_stacked:  [{ slot: 'label_col', label: 'Dimensão',      accepts: ['text','date'] }, { slot: 'value_col', label: 'Métrica',       accepts: ['number'] }],
+  area_stacked: [{ slot: 'label_col', label: 'Dimensão',      accepts: ['text','date'] }, { slot: 'value_col', label: 'Métrica',       accepts: ['number'] }],
+  pie:          [{ slot: 'label_col', label: 'Categoria',     accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  combo:        [{ slot: 'label_col', label: 'Eixo X',        accepts: ['text','date'] }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  scatter:      [{ slot: 'label_col', label: 'Eixo X',        accepts: ['number']      }, { slot: 'value_col', label: 'Eixo Y',        accepts: ['number'] }],
+  bubble:       [{ slot: 'label_col', label: 'Eixo X',        accepts: ['number']      }, { slot: 'value_col', label: 'Eixo Y',        accepts: ['number'] }],
+  treemap:      [{ slot: 'label_col', label: 'Categoria',     accepts: ['text']        }, { slot: 'value_col', label: 'Tamanho',       accepts: ['number'] }],
+  funnel:       [{ slot: 'label_col', label: 'Etapa',         accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  radar:        [{ slot: 'label_col', label: 'Dimensão',      accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  waterfall:    [{ slot: 'label_col', label: 'Etapa',         accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  heatmap:      [{ slot: 'label_col', label: 'Linha',         accepts: ['text']        }, { slot: 'value_col', label: 'Coluna',        accepts: ['text','number'] }],
+  kpi:          [{ slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  gauge:        [{ slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  speedometer:  [{ slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  bullet:       [{ slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  histogram:    [{ slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  table:        [{ slot: 'label_col', label: 'Dimensão',      accepts: ['text','date'] }, { slot: 'value_col', label: 'Métrica',       accepts: ['number'] }],
+  map:          [{ slot: 'label_col', label: 'UF',            accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
+  // text, filter, slider, image, gantt, sankey, candlestick, boxplot, pivot, ai_summary — sem drop zones
+}
+
 const TYPE_ICONS = {
   kpi:     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>,
   bar:     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
@@ -2063,9 +2091,29 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
   const COL_TYPE_BADGE = { text: 'Aa', number: '#', date: '📅' }
+  const [configTab, setConfigTab] = useState(() => block.dataset_id ? 'visual' : 'dados')
+
+  // Reseta para aba "dados" quando muda o bloco sem dados
+  useEffect(() => {
+    if (!block.dataset_id) setConfigTab('dados')
+  }, [block.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="divide-y divide-gray-100">
+    <div>
+      {/* Abas: Dados | Visual | Avançado */}
+      <div className="flex border-b border-gray-100 dark:border-gray-800 -mx-4 px-4 mb-0 shrink-0">
+        {[{k:'dados',l:'Dados'},{k:'visual',l:'Visual'},{k:'avancado',l:'Avançado'}].map(tab => (
+          <button key={tab.k} onClick={() => setConfigTab(tab.k)}
+            className={`px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+              configTab === tab.k
+                ? 'border-violet-500 text-violet-700 dark:text-violet-400'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}>{tab.l}</button>
+        ))}
+      </div>
+
+      {/* ABA: DADOS */}
+      {configTab === 'dados' && <div className="divide-y divide-gray-100 dark:divide-gray-800">
 
       {/* GERAL */}
       <ConfigSection title={t('block.sectionGeneral')}>
@@ -2556,6 +2604,11 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         </ConfigSection>
       )}
 
+      </div>}{/* fim aba dados */}
+
+      {/* ABA: VISUAL */}
+      {configTab === 'visual' && <div className="divide-y divide-gray-100 dark:divide-gray-800">
+
       {/* VISUAL */}
       {hasVisual && (
         <ConfigSection title={t('block.sectionVisual')}>
@@ -2731,6 +2784,11 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           )}
         </ConfigSection>
       )}
+
+      </div>}{/* fim aba visual */}
+
+      {/* ABA: AVANÇADO */}
+      {configTab === 'avancado' && <div className="divide-y divide-gray-100 dark:divide-gray-800">
 
       {/* APARÊNCIA */}
       <ConfigSection title={t('block.sectionAppearance')} defaultOpen={false}>
@@ -3377,6 +3435,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         <p className="text-[10px] text-gray-400">{t('block.hintBlockId')}</p>
       </ConfigSection>
 
+      </div>}{/* fim aba avancado */}
     </div>
   )
 }
@@ -3869,7 +3928,43 @@ export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, o
   )
 }
 
-export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null }) {
+// ─── BlockDropZones — overlays de drop exibidos durante drag de coluna ───────
+function BlockDropZones({ block, draggedColumn, onDrop }) {
+  if (!draggedColumn) return null
+  const zones = DROP_ZONE_CONFIG[block.type]
+  if (!zones) return null
+  return (
+    <div className="absolute inset-0 z-30 flex gap-1.5 p-2 pointer-events-none rounded-[inherit]">
+      {zones.map(zone => {
+        const compatible = zone.accepts.some(a => {
+          if (a === 'number') return draggedColumn.colType === 'number'
+          if (a === 'date')   return draggedColumn.colType === 'date'
+          if (a === 'text')   return ['text', 'date'].includes(draggedColumn.colType)
+          return false
+        })
+        const currentVal = block[zone.slot]
+        return (
+          <div
+            key={zone.slot}
+            className={`flex-1 flex flex-col items-center justify-center rounded-xl border-2 border-dashed pointer-events-auto transition-all duration-100 select-none
+              ${compatible
+                ? 'border-violet-400 bg-violet-50/95 dark:bg-violet-900/80 text-violet-700 dark:text-violet-300 cursor-copy hover:bg-violet-100/95 hover:border-violet-500 scale-[0.98]'
+                : 'border-gray-200 bg-white/80 dark:bg-gray-800/80 text-gray-300 cursor-not-allowed opacity-50'}`}
+            onDragOver={e => { if (compatible) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' } }}
+            onDrop={e => { e.preventDefault(); if (compatible) onDrop(block.id, zone.slot, draggedColumn) }}
+          >
+            <span className="text-[10px] font-bold text-center leading-tight px-1">{zone.label}</span>
+            {currentVal && (
+              <span className="text-[9px] text-violet-400 mt-0.5 truncate max-w-full px-1 font-medium">↳ {currentVal}</span>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null }) {
   const t = useTranslations('dashboardEditor')
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
@@ -3954,9 +4049,28 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   }
 
   if (blocks.length === 0) return (
-    <div style={sheetStyle} ref={sheetRef} className="report-canvas flex flex-col items-center justify-center gap-3 py-24 text-center">
-      <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
-      <p className="text-sm text-gray-400">{t('builder.emptyHint')}</p>
+    <div
+      style={sheetStyle}
+      ref={sheetRef}
+      className={`report-canvas flex flex-col items-center justify-center gap-3 py-24 text-center transition-colors duration-150 ${draggedColumn ? 'ring-2 ring-violet-300 ring-inset' : ''}`}
+      onDragOver={e => { if (draggedColumn) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' } }}
+      onDrop={e => {
+        e.preventDefault()
+        if (!draggedColumn || !onDropColumn) return
+        onDropColumn('__create__', 'auto', draggedColumn)
+      }}
+    >
+      {draggedColumn ? (
+        <>
+          <svg className="w-10 h-10 text-violet-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+          <p className="text-sm font-semibold text-violet-600">Solte para criar um bloco com <span className="font-bold">{draggedColumn.col}</span></p>
+        </>
+      ) : (
+        <>
+          <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
+          <p className="text-sm text-gray-400">{t('builder.emptyHint')}</p>
+        </>
+      )}
     </div>
   )
 
@@ -4227,6 +4341,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                   <span className="bg-emerald-100 text-emerald-600 text-[9px] rounded px-1.5 py-0.5 font-semibold border border-dashed border-emerald-300">+ métrica</span>
                 )}
               </div>
+            )}
+            {/* Drag-and-Drop Column Zones — exibido durante drag de coluna do LeftDataTray */}
+            {!readOnly && draggedColumn && (
+              <BlockDropZones block={block} draggedColumn={draggedColumn} onDrop={onDropColumn} />
             )}
             {/* Filter Targeting Overlay */}
             {filterTargetMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && (() => {
