@@ -11,11 +11,11 @@ RUN apt-get update && apt-get install -y \
 # Instala uv (gerenciador de pacotes Python moderno e rápido)
 RUN pip install uv
 
-# Copia arquivos de dependências
-COPY requirements.txt pyproject.toml ./
+# Copia arquivo de dependências
+COPY pyproject.toml ./
 
-# Instala dependências do projeto
-RUN uv pip install --system -r requirements.txt
+# Instala dependências via pyproject.toml (uv lê [project.dependencies] diretamente)
+RUN uv pip install --system -r pyproject.toml
 
 # Copia o código
 COPY . .
