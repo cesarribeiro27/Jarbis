@@ -411,7 +411,14 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       : api.reports.datasets.queryV2(block.dataset_id, effectiveReq)
     queryFn
       .then(result => setData(result?.data || result || []))
-      .catch(e => setError(e.message))
+      .catch(e => {
+        // Se o bloco tem static_data, sempre usa como fallback silencioso quando a query falha
+        if (block.static_data) {
+          setData(block.static_data)
+        } else {
+          setError(e.message)
+        }
+      })
       .finally(() => setLoading(false))
   }, [key, block.type])
 
@@ -842,8 +849,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return <AISummaryBlock block={block} readOnly={readOnly} />
   }
 
-  const isSampleData = block.static_data && !block.dataset_id
-  if (!isSampleData && !['pivot', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type) && (!block.dataset_id || !block.label_col || !block.value_col)) {
+  const effectiveDatasetId = (block.dataset_id && block.dataset_id !== '__onboarding__') ? block.dataset_id : null
+  const isSampleData = block.static_data && !effectiveDatasetId
+  if (!isSampleData && !['pivot', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type) && (!effectiveDatasetId || !block.label_col || !block.value_col)) {
     const msg = !block.dataset_id
       ? 'Selecione um dataset'
       : !block.label_col
@@ -3791,7 +3799,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
   )
 }
 
-export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, onDatasetsChange }) {
+export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, onDatasetsChange, onColumnDragStart, onColumnDragEnd }) {
   const [tab, setTab] = useState('colunas')
   const [search, setSearch] = useState('')
   const [expandedDates, setExpandedDates] = useState(new Set())
@@ -3857,7 +3865,16 @@ export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, o
 
                     return (
                       <div key={col}>
-                        <div className="group flex items-center gap-1 rounded-lg hover:bg-violet-50 transition-colors">
+                        <div
+                          className={`group flex items-center gap-1 rounded-lg hover:bg-violet-50 transition-colors ${onColumnDragStart ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          draggable={!!onColumnDragStart}
+                          onDragStart={onColumnDragStart ? e => {
+                            e.dataTransfer.effectAllowed = 'copy'
+                            e.dataTransfer.setData('text/plain', JSON.stringify({ col, colType: type, datasetId: ds.id }))
+                            onColumnDragStart(col, type, ds.id)
+                          } : undefined}
+                          onDragEnd={onColumnDragEnd || undefined}
+                        >
                           <button
                             onClick={() => {
                               if (isDate) {

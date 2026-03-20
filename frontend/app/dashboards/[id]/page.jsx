@@ -683,11 +683,27 @@ export default function DashboardDetailPage() {
       .then(([r, ds]) => {
         setReport(r); setDatasets(ds)
         const rawPs = (r.pages && r.pages.length > 0) ? r.pages : [{ id: 'page_1', title: '', blocks: r.blocks || [] }]
-        const ps = rawPs.map(p => ({ ...p, title: normalizePageTitle(p.title) }))
+        // Resolve o placeholder '__onboarding__' para o UUID real do dataset demo do tenant
+        const onboardingDs = ds.find(d => d.is_demo)
+        const ps = rawPs.map(p => ({
+          ...p,
+          title: normalizePageTitle(p.title),
+          blocks: (p.blocks || []).map(b =>
+            b.dataset_id === '__onboarding__' && onboardingDs
+              ? { ...b, dataset_id: onboardingDs.id }
+              : b
+          ),
+        }))
         setPages(ps); setActivePageId(ps[0].id)
         if (r.language) setCanvasConfig(prev => ({ ...prev, language: r.language }))
       })
-      .catch(console.error)
+      .catch(err => {
+        if (err.message?.toLowerCase().includes('não encontrado') || err.message?.toLowerCase().includes('not found')) {
+          router.replace('/dashboards')
+        } else {
+          console.error(err)
+        }
+      })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -943,7 +959,7 @@ export default function DashboardDetailPage() {
         config: { ...(block.config || {}), dim_type: 'text', granularity: null },
       }
     }
-    if (datasetId && !block.dataset_id) patch.dataset_id = datasetId
+    if (datasetId && (!block.dataset_id || block.dataset_id === '__onboarding__')) patch.dataset_id = datasetId
     updateActiveBlock({ ...block, ...patch })
   }
 
@@ -974,7 +990,7 @@ export default function DashboardDetailPage() {
         granularity: colType === 'date' ? 'month' : null,
       }
     }
-    if (datasetId && !block.dataset_id) patch.dataset_id = datasetId
+    if (datasetId && (!block.dataset_id || block.dataset_id === '__onboarding__')) patch.dataset_id = datasetId
     setSelectedBlockId(blockId)
     updateActiveBlock({ ...block, ...patch })
     setDraggedColumn(null)
@@ -1185,7 +1201,7 @@ export default function DashboardDetailPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} />}
+              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} />}
               {sidePanel === 'config' && (activeBlock
                 ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} />
                 : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />
