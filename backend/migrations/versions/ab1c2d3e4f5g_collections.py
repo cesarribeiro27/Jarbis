@@ -1,7 +1,7 @@
 """add collections and report_collections tables
 
 Revision ID: ab1c2d3e4f5g
-Revises: e5f6g7h8i9j0
+Revises: za2b3c4d5e6f
 Create Date: 2026-03-20 12:00:00.000000
 """
 from alembic import op

@@ -709,7 +709,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   const isSampleData = block.static_data && !block.dataset_id
-  if (!isSampleData && (!block.dataset_id || !block.label_col || !block.value_col)) {
+  if (!isSampleData && !['pivot'].includes(block.type) && (!block.dataset_id || !block.label_col || !block.value_col)) {
     const msg = !block.dataset_id
       ? 'Selecione um dataset'
       : !block.label_col
@@ -1895,8 +1895,20 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
       )}
 
       {/* PIVOT TABLE — configuração */}
-      {block.type === 'pivot' && selectedDataset && (
+      {block.type === 'pivot' && (
         <ConfigSection title="Tabela Pivot">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Fonte de dados</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+              value={block.dataset_id || ''}
+              onChange={e => onChange({ ...block, dataset_id: e.target.value || null, config: { ...(block.config || {}) } })}
+            >
+              <option value="">— selecionar dataset —</option>
+              {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          {selectedDataset && (<>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Dimensão de linha</label>
             <select
@@ -1944,6 +1956,7 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               <option value="min">Mínimo</option>
             </select>
           </div>
+          </>)}
         </ConfigSection>
       )}
 
