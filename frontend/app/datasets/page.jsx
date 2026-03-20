@@ -627,7 +627,7 @@ export default function DatasetsPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar datasets..."
-              className="pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl w-full max-w-sm focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white shadow-sm"
+              className="pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl w-full max-w-sm focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm"
             />
           </div>
         )}
@@ -652,13 +652,13 @@ export default function DatasetsPage() {
 
         {loading && (
           <div className="flex flex-col gap-3">
-            {[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-gray-100 h-20 animate-pulse" />)}
+            {[1,2,3].map(i => <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 h-20 animate-pulse" />)}
           </div>
         )}
 
         {!loading && datasets.length === 0 && (
           <div
-            className={`bg-white rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${dragOver ? 'border-violet-400 bg-violet-50' : 'border-gray-200'}`}
+            className={`bg-white dark:bg-gray-800/50 rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${dragOver ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'border-gray-200 dark:border-gray-600'}`}
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
@@ -670,9 +670,9 @@ export default function DatasetsPage() {
                 <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
               </svg>
             </div>
-            <p className="font-semibold text-gray-800 mb-2">{dragOver ? t('dropRelease') : t('empty.title')}</p>
-            <p className="text-sm text-gray-400 mb-1">{t('empty.desc')}</p>
-            <p className="text-xs text-gray-300 mb-6">{t('empty.hint')}</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{dragOver ? t('dropRelease') : t('empty.title')}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-1">{t('empty.desc')}</p>
+            <p className="text-xs text-gray-300 dark:text-gray-600 mb-6">{t('empty.hint')}</p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <button onClick={() => fileRef.current?.click()} className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
                 {t('uploadBtn2')}
@@ -705,20 +705,20 @@ export default function DatasetsPage() {
             <div ref={newMenuRef} className="relative">
               <div
                 onClick={() => setShowNewMenu(v => !v)}
-                className="bg-white border-2 border-dashed border-violet-200 hover:border-violet-400 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-all group"
+                className="bg-white dark:bg-gray-800 border-2 border-dashed border-violet-200 dark:border-violet-800 hover:border-violet-400 dark:hover:border-violet-500 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-all group"
               >
                 <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-violet-700 transition-colors">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/>
                   </svg>
                 </div>
-                <span className="font-semibold text-gray-400 group-hover:text-violet-600 transition-colors text-sm">Novo dataset</span>
+                <span className="font-semibold text-gray-400 dark:text-gray-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors text-sm">Novo dataset</span>
               </div>
               {showNewMenu && (
-                <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-gray-100 rounded-xl shadow-lg w-52 py-1">
+                <div className="absolute left-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg w-52 py-1">
                   <button
                     onClick={() => { setShowNewMenu(false); fileRef.current?.click() }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
@@ -727,7 +727,7 @@ export default function DatasetsPage() {
                   </button>
                   <button
                     onClick={() => { setShowNewMenu(false); setShowApiModal(true) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -736,7 +736,7 @@ export default function DatasetsPage() {
                   </button>
                   <button
                     onClick={() => { setShowNewMenu(false); setShowDbModal(true) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
@@ -745,7 +745,7 @@ export default function DatasetsPage() {
                   </button>
                   <button
                     onClick={() => { setShowNewMenu(false); setShowGaModal(true) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <span className="text-base leading-none">📊</span>
                     Google Analytics
@@ -758,7 +758,7 @@ export default function DatasetsPage() {
             {filtered.map(ds => (
               <div
                 key={ds.id}
-                className={`bg-white rounded-2xl border transition-all group ${selected.has(ds.id) ? 'border-violet-300 bg-violet-50/30' : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'}`}
+                className={`bg-white dark:bg-gray-800 rounded-2xl border transition-all group ${selected.has(ds.id) ? 'border-violet-300 bg-violet-50/30 dark:bg-violet-900/20' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm'}`}
               >
                 <div className="flex items-center gap-3 p-4 sm:p-4">
                   {/* Checkbox */}
@@ -786,7 +786,7 @@ export default function DatasetsPage() {
                   {/* Info — clique navega para detalhe */}
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/datasets/${ds.id}`)}>
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900 truncate text-sm hover:text-violet-700 transition-colors">{ds.name}</p>
+                      <p className="font-bold text-gray-900 dark:text-gray-100 truncate text-sm hover:text-violet-700 dark:hover:text-violet-400 transition-colors">{ds.name}</p>
                       {ds.is_demo && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 shrink-0">DEMO</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -845,7 +845,7 @@ export default function DatasetsPage() {
 
             {/* Drop zone */}
             <div
-              className={`border-2 border-dashed rounded-2xl py-4 text-center text-sm transition-all ${dragOver ? 'border-violet-400 bg-violet-50 text-violet-600' : 'border-gray-100 text-gray-300'}`}
+              className={`border-2 border-dashed rounded-2xl py-4 text-center text-sm transition-all ${dragOver ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400' : 'border-gray-100 dark:border-gray-700 text-gray-300 dark:text-gray-600'}`}
             >
               {dragOver ? t('dropRelease') : t('dropHint')}
             </div>

@@ -555,8 +555,8 @@ function TemplateGallery({ onSelect }) {
 
           {/* Hero header */}
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Escolha um ponto de partida</h1>
-            <p className="text-sm text-gray-500 mb-6">Selecione um template ou comece em branco</p>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-gray-100 mb-2 tracking-tight">Escolha um ponto de partida</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Selecione um template ou comece em branco</p>
             <div className="relative max-w-sm mx-auto">
               <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               <input
@@ -564,7 +564,7 @@ function TemplateGallery({ onSelect }) {
                 placeholder={t('gallery.searchPlaceholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent shadow-sm"
               />
             </div>
           </div>
@@ -578,7 +578,7 @@ function TemplateGallery({ onSelect }) {
                 className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all duration-150 ${
                   activeCategory === cat.value
                     ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-violet-300 hover:text-violet-600'
+                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-violet-300 dark:hover:border-violet-500 hover:text-violet-600 dark:hover:text-violet-400'
                 }`}
               >
                 {cat.label}
@@ -598,16 +598,16 @@ function TemplateGallery({ onSelect }) {
                   <button
                     key={tpl.id}
                     onClick={() => onSelect(tpl)}
-                    className="group text-left bg-white border-2 border-dashed border-gray-200 rounded-2xl overflow-hidden hover:border-violet-400 hover:shadow-md hover:shadow-violet-100 transition-all duration-200 flex flex-col"
+                    className="group text-left bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-2xl overflow-hidden hover:border-violet-400 hover:shadow-md hover:shadow-violet-100 transition-all duration-200 flex flex-col"
                   >
-                    <div className="w-full h-32 flex flex-col items-center justify-center gap-2 bg-gray-50 group-hover:bg-violet-50 transition-colors">
+                    <div className="w-full h-32 flex flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-gray-700 group-hover:bg-violet-50 dark:group-hover:bg-violet-900/30 transition-colors">
                       <div className="w-10 h-10 rounded-xl border-2 border-dashed border-gray-300 group-hover:border-violet-400 flex items-center justify-center transition-colors">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" className="group-hover:stroke-violet-500 transition-colors"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                       </div>
                     </div>
                     <div className="p-4">
-                      <p className="font-bold text-gray-800 group-hover:text-violet-700 transition-colors text-sm mb-1">Em branco</p>
-                      <p className="text-xs text-gray-400">Comece do zero</p>
+                      <p className="font-bold text-gray-800 dark:text-gray-100 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors text-sm mb-1">Em branco</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Comece do zero</p>
                     </div>
                   </button>
                 )
@@ -617,7 +617,7 @@ function TemplateGallery({ onSelect }) {
                 <button
                   key={tpl.id}
                   onClick={() => onSelect(tpl)}
-                  className="group text-left bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 hover:-translate-y-0.5 transition-all duration-200"
+                  className="group text-left bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-violet-300 dark:hover:border-violet-500 hover:shadow-lg hover:shadow-violet-100 hover:-translate-y-0.5 transition-all duration-200"
                 >
                   {/* Illustrated preview */}
                   <div className={`w-full h-32 bg-gradient-to-br ${gradientClass} overflow-hidden relative`}>
@@ -647,17 +647,17 @@ function TemplateGallery({ onSelect }) {
                   {/* Card info */}
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="font-bold text-gray-900 group-hover:text-violet-700 transition-colors text-sm leading-tight">{tpl.title}</p>
+                      <p className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors text-sm leading-tight">{tpl.title}</p>
                     </div>
-                    <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed mb-3">{tpl.description}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1 leading-relaxed mb-3">{tpl.description}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex flex-wrap gap-1">
                         {(tpl.tags || []).slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">{tag}</span>
+                          <span key={tag} className="text-[9px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full font-medium">{tag}</span>
                         ))}
                       </div>
                       {tpl.blocks?.length > 0 && (
-                        <span className="text-[10px] text-gray-300 font-medium">{t('gallery.blocksCount', { n: tpl.blocks.length })}</span>
+                        <span className="text-[10px] text-gray-300 dark:text-gray-600 font-medium">{t('gallery.blocksCount', { n: tpl.blocks.length })}</span>
                       )}
                     </div>
                   </div>

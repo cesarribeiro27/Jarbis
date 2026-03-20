@@ -39,7 +39,7 @@ function ColTypeIcon({ type }) {
 // Mini histograma de barras
 function MiniHistogram({ data }) {
   if (!data || data.length === 0) {
-    return <div className="h-8 flex items-end gap-0.5 px-1">{[...Array(6)].map((_, i) => <div key={i} className="flex-1 bg-gray-100 rounded-sm h-2" />)}</div>
+    return <div className="h-8 flex items-end gap-0.5 px-1">{[...Array(6)].map((_, i) => <div key={i} className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-sm h-2" />)}</div>
   }
   const max = Math.max(...data.map(d => d.value || 0), 1)
   return (
@@ -72,14 +72,14 @@ function RenameColumnModal({ colName, onClose, onRename }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-80 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold text-gray-900 mb-4">Renomear coluna</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-80 p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4">Renomear coluna</h3>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <input
             autoFocus
             value={value}
             onChange={e => setValue(e.target.value)}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
@@ -110,21 +110,21 @@ function ColMenu({ colName, onRename, onDelete, onCopy }) {
     <div ref={ref} className="relative">
       <button
         onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
-        className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        className="w-5 h-5 flex items-center justify-center rounded text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
         </svg>
       </button>
       {open && (
-        <div className="absolute right-0 top-6 z-30 bg-white border border-gray-100 rounded-xl shadow-lg w-44 py-1 text-sm">
-          <button onClick={() => { setOpen(false); onRename() }} className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700">
+        <div className="absolute right-0 top-6 z-30 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg w-44 py-1 text-sm">
+          <button onClick={() => { setOpen(false); onRename() }} className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             Renomear coluna
           </button>
-          <button onClick={() => { setOpen(false); onCopy() }} className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700">
+          <button onClick={() => { setOpen(false); onCopy() }} className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
             Copiar nome
           </button>
-          <div className="border-t border-gray-100 my-1" />
+          <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
           <button onClick={() => { setOpen(false); onDelete() }} className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-500">
             Remover coluna
           </button>
@@ -284,14 +284,14 @@ export default function DatasetDetailPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full min-h-screen bg-[#FAFAF8]">
+      <div className="flex flex-col h-full min-h-screen bg-[#FAFAF8] dark:bg-gray-900">
 
         {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-6 py-4">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4">
           <div className="flex items-center gap-3 mb-1">
             <button
               onClick={() => router.push('/datasets')}
-              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
@@ -323,13 +323,13 @@ export default function DatasetDetailPage() {
                     value={nameValue}
                     onChange={e => setNameValue(e.target.value)}
                     onBlur={handleRenameDataset}
-                    className="text-xl font-bold border-b-2 border-violet-400 bg-transparent outline-none text-gray-900 min-w-0"
+                    className="text-xl font-bold border-b-2 border-violet-400 bg-transparent outline-none text-gray-900 dark:text-gray-100 min-w-0"
                   />
                 </form>
               ) : (
                 <button
                   onClick={() => setEditingName(true)}
-                  className="text-xl font-bold text-gray-900 hover:text-violet-700 transition-colors text-left truncate"
+                  className="text-xl font-bold text-gray-900 dark:text-gray-100 hover:text-violet-700 dark:hover:text-violet-400 transition-colors text-left truncate"
                   title="Clique para renomear"
                 >
                   {dataset.name}
@@ -341,7 +341,7 @@ export default function DatasetDetailPage() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setShowDetails(v => !v)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors ${showDetails ? 'bg-violet-50 border-violet-200 text-violet-700' : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors ${showDetails ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-400' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
               >
                 Detalhes
               </button>
@@ -351,9 +351,9 @@ export default function DatasetDetailPage() {
           {/* Metadados */}
           <div className="flex items-center gap-3 mt-2 ml-[52px]">
             <span className="text-xs text-gray-400">{total.toLocaleString('pt-BR')} registros</span>
-            <span className="text-gray-200">·</span>
+            <span className="text-gray-200 dark:text-gray-700">·</span>
             <span className="text-xs text-gray-400">{dataset.columns?.length || 0} colunas</span>
-            <span className="text-gray-200">·</span>
+            <span className="text-gray-200 dark:text-gray-700">·</span>
             <span className="text-xs text-gray-400">{typeLabel}</span>
           </div>
         </div>
@@ -362,7 +362,7 @@ export default function DatasetDetailPage() {
           {/* Tabela principal */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Barra de busca de colunas */}
-            <div className="bg-white border-b border-gray-100 px-6 py-3">
+            <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-3">
               <div className="relative max-w-sm">
                 <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
@@ -371,7 +371,7 @@ export default function DatasetDetailPage() {
                   value={globalSearch}
                   onChange={e => setGlobalSearch(e.target.value)}
                   placeholder="Buscar colunas..."
-                  className="pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-violet-300 bg-gray-50"
+                  className="pl-9 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-violet-300 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -379,15 +379,15 @@ export default function DatasetDetailPage() {
             {/* Tabela */}
             <div className="flex-1 overflow-auto">
               <table className="w-full text-sm border-collapse">
-                <thead className="sticky top-0 z-10 bg-white">
+                <thead className="sticky top-0 z-10 bg-white dark:bg-gray-900">
                   {/* Row 1: headers */}
                   <tr>
                     {visibleCols.map(col => (
-                      <th key={col.name} className="border-b border-r border-gray-100 text-left px-3 py-2 font-medium text-gray-700 whitespace-nowrap min-w-[140px] max-w-[240px]">
+                      <th key={col.name} className="border-b border-r border-gray-100 dark:border-gray-700 text-left px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[140px] max-w-[240px] bg-white dark:bg-gray-900">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <ColTypeIcon type={col.type} />
-                            <span className="truncate text-xs font-semibold text-gray-700">{col.label || col.name}</span>
+                            <span className="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">{col.label || col.name}</span>
                           </div>
                           <ColMenu
                             colName={col.name}
@@ -400,22 +400,22 @@ export default function DatasetDetailPage() {
                     ))}
                   </tr>
                   {/* Row 2: histogramas */}
-                  <tr className="bg-gray-50/70">
+                  <tr className="bg-gray-50/70 dark:bg-gray-800/50">
                     {visibleCols.map(col => (
-                      <td key={col.name} className="border-b border-r border-gray-100 px-0 py-0">
+                      <td key={col.name} className="border-b border-r border-gray-100 dark:border-gray-700 px-0 py-0">
                         <MiniHistogram data={histograms[col.name]} />
                       </td>
                     ))}
                   </tr>
                   {/* Row 3: busca por coluna */}
-                  <tr className="bg-white">
+                  <tr className="bg-white dark:bg-gray-900">
                     {visibleCols.map(col => (
-                      <td key={col.name} className="border-b border-r border-gray-100 px-2 py-1">
+                      <td key={col.name} className="border-b border-r border-gray-100 dark:border-gray-700 px-2 py-1">
                         <input
                           value={colSearch[col.name] || ''}
                           onChange={e => setColSearch(prev => ({ ...prev, [col.name]: e.target.value }))}
                           placeholder="Buscar..."
-                          className="w-full text-xs border border-gray-150 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-violet-300 bg-gray-50 placeholder-gray-300"
+                          className="w-full text-xs border border-gray-150 dark:border-gray-600 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-violet-300 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-600"
                         />
                       </td>
                     ))}
@@ -436,11 +436,11 @@ export default function DatasetDetailPage() {
                     </tr>
                   ) : (
                     filteredRows.map((row, i) => (
-                      <tr key={i} className="hover:bg-violet-50/30 transition-colors">
+                      <tr key={i} className="hover:bg-violet-50/30 dark:hover:bg-violet-900/20 transition-colors">
                         {visibleCols.map(col => (
-                          <td key={col.name} className="border-b border-r border-gray-50 px-3 py-2 text-xs text-gray-700 max-w-[240px]">
+                          <td key={col.name} className="border-b border-r border-gray-50 dark:border-gray-800 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[240px]">
                             <span className="block truncate" title={String(row[col.name] ?? '')}>
-                              {row[col.name] !== null && row[col.name] !== undefined ? String(row[col.name]) : <span className="text-gray-300">—</span>}
+                              {row[col.name] !== null && row[col.name] !== undefined ? String(row[col.name]) : <span className="text-gray-300 dark:text-gray-600">—</span>}
                             </span>
                           </td>
                         ))}
@@ -452,7 +452,7 @@ export default function DatasetDetailPage() {
             </div>
 
             {/* Paginação */}
-            <div className="bg-white border-t border-gray-100 px-6 py-3 flex items-center justify-between text-xs text-gray-400 shrink-0">
+            <div className="bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 px-6 py-3 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 shrink-0">
               <span>
                 {total === 0 ? 'Nenhuma linha' : `Mostrando ${from.toLocaleString('pt-BR')}–${showing.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} linhas`}
               </span>
@@ -461,7 +461,7 @@ export default function DatasetDetailPage() {
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="px-3 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     ← Anterior
                   </button>
@@ -469,7 +469,7 @@ export default function DatasetDetailPage() {
                   <button
                     onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
-                    className="px-3 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Próxima →
                   </button>
@@ -480,25 +480,25 @@ export default function DatasetDetailPage() {
 
           {/* Painel de Detalhes (lateral) */}
           {showDetails && (
-            <div className="w-72 bg-white border-l border-gray-100 flex flex-col overflow-y-auto shrink-0">
-              <div className="px-4 py-4 border-b border-gray-100">
-                <h3 className="font-bold text-sm text-gray-800">Detalhes do Dataset</h3>
+            <div className="w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 flex flex-col overflow-y-auto shrink-0">
+              <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+                <h3 className="font-bold text-sm text-gray-800 dark:text-gray-100">Detalhes do Dataset</h3>
               </div>
               <div className="px-4 py-4 flex flex-col gap-4 text-sm">
                 <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Informações</p>
                   <div className="flex flex-col gap-1.5">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Registros</span>
-                      <span className="font-semibold text-gray-800">{total.toLocaleString('pt-BR')}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Registros</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-100">{total.toLocaleString('pt-BR')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Colunas</span>
-                      <span className="font-semibold text-gray-800">{dataset.columns?.length || 0}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Colunas</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-100">{dataset.columns?.length || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Tipo</span>
-                      <span className="font-semibold text-gray-800">{typeLabel}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Tipo</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-100">{typeLabel}</span>
                     </div>
                   </div>
                 </div>
@@ -509,7 +509,7 @@ export default function DatasetDetailPage() {
                     {(dataset.columns || []).map(col => (
                       <div key={col.name} className="flex items-center gap-2 py-1">
                         <ColTypeIcon type={col.type} />
-                        <span className="text-xs text-gray-700 truncate">{col.label || col.name}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{col.label || col.name}</span>
                       </div>
                     ))}
                   </div>
@@ -532,9 +532,9 @@ export default function DatasetDetailPage() {
       {/* Confirmação de exclusão de coluna */}
       {deletingCol && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-80 p-6">
-            <h3 className="font-bold text-gray-900 mb-2">Remover coluna?</h3>
-            <p className="text-sm text-gray-500 mb-5">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-80 p-6">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-2">Remover coluna?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
               A coluna <strong>{deletingCol}</strong> será removida permanentemente de todos os registros do dataset.
             </p>
             <div className="flex gap-2 justify-end">
