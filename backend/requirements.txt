@@ -66,3 +66,4 @@ anthropic
 stripe>=10.0.0
 simpleeval>=0.9.13
 aiomysql>=0.2.0
+twilio>=9.0.0

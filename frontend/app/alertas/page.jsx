@@ -18,7 +18,7 @@ function StatusBadge({ status }) {
 
 function CreateModal({ datasets, onClose, onCreated }) {
   const t = useTranslations('alerts')
-  const [form, setForm] = useState({ name: '', dataset_id: datasets[0]?.id || '', value_col: '', agg: 'sum', operator: 'lt', threshold: '', filter_col: '', filter_val: '', notify_email: '', notify_slack_url: '' })
+  const [form, setForm] = useState({ name: '', dataset_id: datasets[0]?.id || '', value_col: '', agg: 'sum', operator: 'lt', threshold: '', filter_col: '', filter_val: '', notify_email: '', notify_slack_url: '', notify_sms: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -34,6 +34,7 @@ function CreateModal({ datasets, onClose, onCreated }) {
         agg: form.agg, operator: form.operator, threshold: parseFloat(form.threshold),
         filter_col: form.filter_col || null, filter_val: form.filter_val || null,
         notify_email: form.notify_email || null, notify_slack_url: form.notify_slack_url || null,
+        notify_sms: form.notify_sms || null,
       })
       onCreated(alert); onClose()
     } catch (e) { setError(e.message) }
@@ -107,6 +108,19 @@ function CreateModal({ datasets, onClose, onCreated }) {
                 placeholder="https://hooks.slack.com/services/..."
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                SMS (telefones separados por vírgula)
+              </label>
+              <input
+                type="text"
+                value={form.notify_sms || ''}
+                onChange={e => setForm(f => ({ ...f, notify_sms: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                placeholder="+5511999999999, +5521888888888"
+              />
+              <p className="text-xs text-gray-400 mt-1">Requer configuração do Twilio no servidor.</p>
             </div>
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}

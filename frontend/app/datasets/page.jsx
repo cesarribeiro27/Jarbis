@@ -113,6 +113,101 @@ function ApiDatasetModal({ onClose, onCreated }) {
   )
 }
 
+function GADatasetModal({ onClose, onCreated }) {
+  const toast = useToast()
+  const [form, setForm] = useState({
+    name: 'Google Analytics',
+    property_id: '',
+    api_key: '',
+    date_range_days: 30,
+    dimensions: 'date,sessionDefaultChannelGrouping,country',
+    metrics: 'sessions,activeUsers,bounceRate',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const ds = await api.fetch('/reports/datasets/google-analytics', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...form,
+          dimensions: form.dimensions.split(',').map(s => s.trim()).filter(Boolean),
+          metrics: form.metrics.split(',').map(s => s.trim()).filter(Boolean),
+          date_range_days: parseInt(form.date_range_days),
+        }),
+      })
+      onCreated(ds)
+      onClose()
+      toast('Dataset do Google Analytics criado com sucesso!', 'success')
+    } catch (e) {
+      setError(e.message || 'Erro ao conectar ao Google Analytics.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <span>📊</span> Conectar Google Analytics
+        </h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Nome do dataset</label>
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Property ID (GA4)</label>
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              placeholder="ex: 123456789"
+              value={form.property_id} onChange={e => setForm(f => ({...f, property_id: e.target.value}))} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">API Key do Google Cloud</label>
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              type="password" placeholder="AIza..."
+              value={form.api_key} onChange={e => setForm(f => ({...f, api_key: e.target.value}))} />
+            <p className="text-xs text-gray-400 mt-0.5">Google Cloud Console → APIs → Analytics Data API → Credentials</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Dimensões (separadas por vírgula)</label>
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              value={form.dimensions} onChange={e => setForm(f => ({...f, dimensions: e.target.value}))} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Métricas (separadas por vírgula)</label>
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              value={form.metrics} onChange={e => setForm(f => ({...f, metrics: e.target.value}))} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Período (dias)</label>
+            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={form.date_range_days} onChange={e => setForm(f => ({...f, date_range_days: e.target.value}))}>
+              <option value={7}>Últimos 7 dias</option>
+              <option value={30}>Últimos 30 dias</option>
+              <option value={90}>Últimos 90 dias</option>
+              <option value={365}>Último ano</option>
+            </select>
+          </div>
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="flex-1 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-50">Cancelar</button>
+          <button onClick={handleSubmit} disabled={loading || !form.property_id || !form.api_key}
+            className="flex-1 bg-purple-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-purple-700 disabled:opacity-50">
+            {loading ? 'Conectando...' : 'Importar dados'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DbDatasetModal({ onClose, onCreated }) {
   const toast = useToast()
   const [form, setForm] = useState({
@@ -369,6 +464,7 @@ export default function DatasetsPage() {
   const [uploading, setUploading] = useState(false)
   const [showApiModal, setShowApiModal] = useState(false)
   const [showDbModal, setShowDbModal] = useState(false)
+  const [showGaModal, setShowGaModal] = useState(false)
   const [syncingId, setSyncingId] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -590,6 +686,10 @@ export default function DatasetsPage() {
                 </svg>
                 Conectar banco de dados
               </button>
+              <button onClick={() => setShowGaModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <span className="text-base leading-none">📊</span>
+                Google Analytics
+              </button>
             </div>
           </div>
         )}
@@ -642,6 +742,13 @@ export default function DatasetsPage() {
                       <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
                     </svg>
                     Conectar banco de dados
+                  </button>
+                  <button
+                    onClick={() => { setShowNewMenu(false); setShowGaModal(true) }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <span className="text-base leading-none">📊</span>
+                    Google Analytics
                   </button>
                 </div>
               )}
@@ -748,6 +855,7 @@ export default function DatasetsPage() {
 
       {showApiModal && <ApiDatasetModal onClose={() => setShowApiModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
       {showDbModal && <DbDatasetModal onClose={() => setShowDbModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
+      {showGaModal && <GADatasetModal onClose={() => setShowGaModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
     </AppLayout>
   )
 }

@@ -36,3 +36,4 @@ class ReportAlert(Base):
     # Canais de notificação adicionais
     notify_email: Mapped[str | None] = mapped_column(String(500), nullable=True)  # email(s) separados por vírgula
     notify_slack_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)  # Slack Incoming Webhook URL
+    notify_sms: Mapped[str | None] = mapped_column(String(500), nullable=True)  # telefone(s) separados por vírgula

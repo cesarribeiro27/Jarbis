@@ -1,0 +1,24 @@
+{
+  "name": "@jarbis/react-embed",
+  "version": "0.1.0",
+  "description": "Embed Jarbis dashboards in any React application",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.tsx --format cjs,esm --dts --external react",
+    "dev": "tsup src/index.tsx --format cjs,esm --dts --watch --external react"
+  },
+  "keywords": ["jarbis", "embed", "dashboard", "bi", "react"],
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

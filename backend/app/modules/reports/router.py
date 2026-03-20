@@ -1152,6 +1152,7 @@ class AlertCreate(BaseModel):
     filter_val: str | None = None
     notify_email: str | None = None
     notify_slack_url: str | None = None
+    notify_sms: str | None = None
 
 
 class AlertResponse(BaseModel):
@@ -1171,6 +1172,7 @@ class AlertResponse(BaseModel):
     created_at: str
     notify_email: str | None = None
     notify_slack_url: str | None = None
+    notify_sms: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -1196,6 +1198,25 @@ async def _send_alert_notifications(alert: ReportAlert, value: float) -> None:
                 await client.post(alert.notify_slack_url, json={"text": msg})
         except Exception as e:
             print(f"[ALERT SLACK] Falha: {e}")
+
+    # SMS via Twilio
+    if alert.notify_sms:
+        try:
+            import os
+            from twilio.rest import Client as TwilioClient
+            from app.config import settings as _settings
+            twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+            twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
+            twilio_from = os.environ.get("TWILIO_FROM_NUMBER")
+            if twilio_sid and twilio_token and twilio_from:
+                tw = TwilioClient(twilio_sid, twilio_token)
+                sms_body = f"🚨 Alerta Jarbis: {alert.name}\nCondição atingida no dashboard.\nAcesse: {_settings.frontend_url}"
+                for phone in (alert.notify_sms or "").split(","):
+                    phone = phone.strip()
+                    if phone:
+                        tw.messages.create(body=sms_body, from_=twilio_from, to=phone)
+        except Exception as e:
+            print(f"[SMS] Erro: {e}")
 
 
 def _eval_alert(alert: ReportAlert, current_value: float) -> str:
@@ -1260,6 +1281,7 @@ async def create_alert(
         filter_val=data.filter_val,
         notify_email=data.notify_email,
         notify_slack_url=data.notify_slack_url,
+        notify_sms=data.notify_sms,
     )
     db.add(alert)
     await db.flush()
@@ -2048,6 +2070,60 @@ async def decode_embed_token(token: str):
         raise HTTPException(status_code=401, detail="Token expirado.")
     except Exception:
         raise HTTPException(status_code=400, detail="Token inválido.")
+
+
+# ---------------------------------------------------------------------------
+# N30 — Google Analytics Connector
+# ---------------------------------------------------------------------------
+
+from app.modules.reports.connectors.ga_connector import fetch_ga_report
+
+
+class GADatasetCreate(BaseModel):
+    name: str
+    property_id: str
+    api_key: str
+    dimensions: list[str] = ["date", "sessionDefaultChannelGrouping"]
+    metrics: list[str] = ["sessions", "activeUsers", "bounceRate"]
+    date_range_days: int = 30
+
+
+@router.post("/datasets/google-analytics", status_code=201)
+async def create_ga_dataset(
+    body: GADatasetCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """Create a dataset from Google Analytics Data API."""
+    try:
+        rows = await fetch_ga_report(
+            property_id=body.property_id,
+            api_secret=body.api_key,
+            dimensions=body.dimensions,
+            metrics=body.metrics,
+            date_range_days=body.date_range_days,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao buscar dados do GA: {str(e)}")
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="Nenhum dado retornado. Verifique Property ID e API Key.")
+
+    columns = list(rows[0].keys()) if rows else []
+    dataset = ReportDataset(
+        id=uuid.uuid4(),
+        tenant_id=user.tenant_id,
+        name=body.name,
+        type="api",
+        api_url=f"https://analyticsdata.googleapis.com/v1beta/properties/{body.property_id}:runReport",
+        rows=rows,
+        columns=columns,
+        row_count=len(rows),
+        sync_mode="replace",
+    )
+    db.add(dataset)
+    await db.commit()
+    return {"id": str(dataset.id), "name": dataset.name, "row_count": len(rows), "columns": columns}
 
 
 # ---------------------------------------------------------------------------
