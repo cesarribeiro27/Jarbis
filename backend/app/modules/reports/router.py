@@ -842,17 +842,6 @@ async def query_dataset_v2(
         try:
             result = execute_query(rows, req)
             result_dict = result.model_dump() if hasattr(result, "model_dump") else result
-            # Sanitizar NaN/Inf antes de serializar (causa 500 no JSON encoder)
-            import math
-            def _sanitize(obj):
-                if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
-                    return 0.0
-                if isinstance(obj, dict):
-                    return {k: _sanitize(v) for k, v in obj.items()}
-                if isinstance(obj, list):
-                    return [_sanitize(v) for v in obj]
-                return obj
-            result_dict = _sanitize(result_dict)
             await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
             return result_dict
         except Exception as exc:
