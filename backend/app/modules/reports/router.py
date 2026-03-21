@@ -1823,47 +1823,56 @@ async def generate_dashboard_endpoint(
 
     system_prompt = (
         "Você é um especialista sênior em Business Intelligence e análise de dados para empresas brasileiras.\n"
-        "Analise o schema do dataset e gere um dashboard coeso, profissional e informativo.\n\n"
+        "Analise o schema do dataset e gere um dashboard coeso, profissional e visualmente rico.\n\n"
         "RETORNE SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON):\n"
         '[\n'
-        '  {"type":"kpi","title":"Título","value_col":"coluna","agg":"sum","label_col":null,'
-        '"layout":{"w":3,"h":2}},\n'
-        '  {"type":"line","title":"Título","label_col":"coluna_data","value_col":"coluna","agg":"sum",'
-        '"layout":{"w":6,"h":4}},\n'
+        '  {"type":"kpi","title":"Título","value_col":"coluna","agg":"sum","label_col":null,"layout":{"w":3,"h":2}},\n'
+        '  {"type":"line","title":"Título","label_col":"coluna_data","value_col":"coluna","agg":"sum","layout":{"w":6,"h":4}},\n'
+        '  {"type":"scatter","title":"Título","label_col":"coluna_num_eixoX","value_col":"coluna_num_eixoY","layout":{"w":6,"h":4}},\n'
         '  ...\n'
         ']\n\n'
-        "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie\n\n"
+        "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie, scatter\n\n"
         "TAMANHOS DE LAYOUT por tipo (siga rigorosamente):\n"
-        "  kpi    → w=3, h=2  (máx 4 por linha, ocupam linha 1)\n"
-        "  line   → w=6, h=4  (evolução temporal — para colunas de data)\n"
-        "  area   → w=6, h=4  (área acumulada — para séries temporais)\n"
-        "  bar    → w=6, h=4  (ranking de categorias)\n"
-        "  bar_h  → w=6, h=4  (preferir se nomes forem longos ou muitas categorias)\n"
-        "  pie    → w=4, h=4  (composição, máx 8 fatias)\n\n"
+        "  kpi     → w=3, h=2  (máx 4 por linha, ocupam linha 1)\n"
+        "  line    → w=6, h=4  (evolução temporal — OBRIGATÓRIO se houver coluna de data)\n"
+        "  area    → w=6, h=4  (área acumulada — alternativa ao line para cumulativos)\n"
+        "  bar     → w=6, h=4  (ranking de categorias com nomes curtos)\n"
+        "  bar_h   → w=6, h=4  (barras horizontais — PREFERIR se nomes longos ou >8 categorias)\n"
+        "  pie     → w=4, h=4  (composição — máx 6 fatias, usar quando há 2–6 categorias claras)\n"
+        "  scatter → w=6, h=4  (dispersão/bolha — usar quando há 2+ métricas numéricas por entidade)\n\n"
+        "QUANDO USAR SCATTER (gráfico de dispersão):\n"
+        "  • Há 2 métricas numéricas interessantes que podem ter correlação\n"
+        "  • Exemplo: Receita (X) × Margem (Y) — revela a relação entre volume e rentabilidade\n"
+        "  • label_col = coluna numérica para eixo X, value_col = coluna numérica para eixo Y\n"
+        "  • Ambas devem ser colunas ★ INTERESSANTE\n\n"
         "REGRAS OBRIGATÓRIAS:\n"
         "1. Use APENAS colunas marcadas ★ INTERESSANTE para métricas de KPI/gráfico\n"
         "2. Ignore completamente colunas marcadas '— zero/irrelevante' ou 'MUITOS NULOS'\n"
         "3. kpi: label_col=null, value_col=coluna_numero_INTERESSANTE\n"
-        "4. Gráficos: label_col=texto_ou_data, value_col=numero_INTERESSANTE\n"
+        "4. Gráficos bar/line/area/pie: label_col=texto_ou_data, value_col=numero_INTERESSANTE\n"
         "5. Nomes de colunas EXATAMENTE como no dataset (case-sensitive)\n"
         "6. Títulos em português, objetivos, máx 35 caracteres\n"
-        "7. Cada bloco deve responder UMA pergunta de negócio específica\n"
-        "8. Se uma coluna tem nulos>70%, NÃO a use como métrica — os valores serão imprecisos\n\n"
-        "ESTRUTURA RECOMENDADA DO DASHBOARD:\n"
-        "  • Linha 1: 3-4 KPIs com as métricas de maior relevância\n"
-        "  • Linha 2: gráfico de linha/área com evolução temporal (se houver data)\n"
-        "  • Linha 3+: bar de ranking (top dimensões) + pie de composição\n\n"
+        "7. Cada bloco responde UMA pergunta de negócio específica\n"
+        "8. Colunas com nulos>70%: NÃO usar como métrica\n"
+        "9. NÃO repetir o mesmo par label_col+value_col em dois gráficos\n\n"
+        "ESTRUTURA RECOMENDADA (8–12 blocos):\n"
+        "  • Linha 1: 3–4 KPIs (métricas principais)\n"
+        "  • Linha 2: line/area (evolução temporal) + pie OU bar_h (composição)\n"
+        "  • Linha 3: bar (top N por categoria) + scatter SE houver 2 métricas por entidade\n"
+        "  • Linha 4+: outros ângulos de análise (ticket médio, margem, concentração)\n\n"
         f"{domain_section}"
-        "REGRAS ADICIONAIS PARA QUALIDADE:\n"
-        "  • Alíquotas e percentuais: use agg=avg, NUNCA sum\n"
-        "  • Colunas de status/flag (SIM/NAO, P/C): use para filtros ou pie de composição\n"
-        "  • Se houver coluna de data, SEMPRE inclua um gráfico de evolução temporal"
+        "REGRAS DE QUALIDADE:\n"
+        "  • Alíquotas, percentuais, taxas: agg=avg, NUNCA sum\n"
+        "  • Prefira bar_h para listas longas (clientes, produtos, CNPJs)\n"
+        "  • Use scatter quando o insight é 'quais X têm mais A e mais B ao mesmo tempo'\n"
+        "  • Evite pie quando há mais de 6 categorias — prefira bar_h\n"
+        "  • Se houver coluna de data, SEMPRE gere ao menos um gráfico temporal"
     )
 
     client = ant.Anthropic(api_key=api_key)
     msg = client.messages.create(
         model=_AI_MODEL_GENERATE,
-        max_tokens=2048,
+        max_tokens=4096,
         system=system_prompt,
         messages=[{"role": "user", "content": f"{schema_str}{objetivo_str}\n\nGere o dashboard JSON:"}],
     )

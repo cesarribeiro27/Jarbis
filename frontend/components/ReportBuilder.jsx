@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslations, useLocale } from 'next-intl'
 import GridLayout, { noCompactor } from 'react-grid-layout'
 import {
@@ -722,7 +723,9 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
   const [customDays, setCustomDays] = useState('')
   const [calYear,  setCalYear]  = useState(new Date().getFullYear())
   const [calMonth, setCalMonth] = useState(new Date().getMonth())
-  const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const dropdownRef = useRef(null)
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
 
   const from = globalDateFilter?.dateFrom || ''
   const to   = globalDateFilter?.dateTo   || ''
@@ -731,9 +734,22 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
     if (open) { setTempFrom(from); setTempTo(to) }
   }, [open]) // eslint-disable-line
 
+  // Position the portal dropdown below the trigger button
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropPos({ top: rect.bottom + 4, left: rect.left })
+    }
+  }, [open])
+
   useEffect(() => {
     if (!open) return
-    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const handler = e => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target)
+      ) setOpen(false)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
@@ -769,10 +785,111 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
     <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure a coluna de data</div>
   )
 
+  const picker = (
+    <div
+      ref={dropdownRef}
+      style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999, minWidth: 560 }}
+      className="bg-white border border-gray-200 rounded-xl shadow-2xl flex overflow-hidden"
+    >
+      {/* Shortcuts list */}
+      <div className="w-44 border-r border-gray-100 py-2 shrink-0">
+        {DATE_SHORTCUTS.map(s => (
+          <button
+            key={s.key}
+            onClick={() => handleShortcut(s.key)}
+            className={`w-full text-left px-4 py-1.5 text-sm transition-colors ${
+              activeKey === s.key ? 'text-violet-600 bg-violet-50 font-medium' : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+        <div className="px-4 pt-2 mt-1 border-t border-gray-100">
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number" min="1"
+              value={customDays}
+              onChange={e => setCustomDays(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && customDays) {
+                  const n = parseInt(customDays)
+                  if (n > 0) {
+                    const today = new Date()
+                    const past = new Date(today); past.setDate(today.getDate() - n)
+                    applyRange(past.toISOString().slice(0, 10), today.toISOString().slice(0, 10))
+                  }
+                }
+              }}
+              className="w-12 border border-gray-200 rounded px-1.5 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-violet-400"
+              placeholder="30"
+            />
+            <span className="text-xs text-gray-500">dias até hoje</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar area */}
+      <div className="p-4 flex-1">
+        <div className="flex items-end gap-2 mb-3">
+          <div className="flex-1">
+            <label className="text-[10px] text-gray-400 block mb-0.5">Data de início *</label>
+            <input type="date" value={tempFrom}
+              onChange={e => setTempFrom(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+            />
+          </div>
+          <span className="text-gray-400 pb-1.5">—</span>
+          <div className="flex-1">
+            <label className="text-[10px] text-gray-400 block mb-0.5">Data de término</label>
+            <input type="date" value={tempTo}
+              onChange={e => setTempTo(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) } else setCalMonth(m => m - 1) }}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <div className="flex gap-10">
+            <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[prevMonth]} {prevYear}</span>
+            <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[calMonth]} {calYear}</span>
+          </div>
+          <button
+            onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) } else setCalMonth(m => m + 1) }}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6" onMouseLeave={() => setHovering('')}>
+          <_MiniCalendar year={prevYear} month={prevMonth} from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
+          <_MiniCalendar year={calYear}  month={calMonth}  from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
+        </div>
+
+        <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+          <button onClick={() => setOpen(false)} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+          <button
+            onClick={() => applyRange(tempFrom, tempTo)}
+            disabled={!tempFrom && !tempTo}
+            className="px-4 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium disabled:opacity-40"
+          >
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
-    <div ref={ref} className="relative h-full flex items-center">
-      {/* Collapsed trigger */}
+    <div className="h-full flex items-center">
       <button
+        ref={triggerRef}
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-violet-400 transition-all text-sm text-gray-700 w-full shadow-sm"
       >
@@ -784,113 +901,7 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
         </svg>
       </button>
-
-      {/* Picker dropdown */}
-      {open && (
-        <div className="absolute top-full left-0 z-[200] mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl flex overflow-hidden" style={{ minWidth: 560 }}>
-          {/* Shortcuts list */}
-          <div className="w-44 border-r border-gray-100 py-2 shrink-0">
-            {DATE_SHORTCUTS.map(s => (
-              <button
-                key={s.key}
-                onClick={() => handleShortcut(s.key)}
-                className={`w-full text-left px-4 py-1.5 text-sm transition-colors ${
-                  activeKey === s.key
-                    ? 'text-violet-600 bg-violet-50 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-            {/* Custom N days */}
-            <div className="px-4 pt-2 mt-1 border-t border-gray-100">
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="number" min="1"
-                  value={customDays}
-                  onChange={e => setCustomDays(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && customDays) {
-                      const n = parseInt(customDays)
-                      if (n > 0) {
-                        const today = new Date()
-                        const past = new Date(today); past.setDate(today.getDate() - n)
-                        applyRange(past.toISOString().slice(0, 10), today.toISOString().slice(0, 10))
-                      }
-                    }
-                  }}
-                  className="w-12 border border-gray-200 rounded px-1.5 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-violet-400"
-                  placeholder="30"
-                />
-                <span className="text-xs text-gray-500">dias até hoje</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Calendar area */}
-          <div className="p-4 flex-1">
-            {/* Date inputs */}
-            <div className="flex items-end gap-2 mb-3">
-              <div className="flex-1">
-                <label className="text-[10px] text-gray-400 block mb-0.5">Data de início *</label>
-                <input type="date" value={tempFrom}
-                  onChange={e => setTempFrom(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
-                />
-              </div>
-              <span className="text-gray-400 pb-1.5">—</span>
-              <div className="flex-1">
-                <label className="text-[10px] text-gray-400 block mb-0.5">Data de térm...</label>
-                <input type="date" value={tempTo}
-                  onChange={e => setTempTo(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
-                />
-              </div>
-            </div>
-
-            {/* Month nav */}
-            <div className="flex items-center justify-between mb-2">
-              <button
-                onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) } else setCalMonth(m => m - 1) }}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-              </button>
-              <div className="flex gap-10">
-                <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[prevMonth]} {prevYear}</span>
-                <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[calMonth]} {calYear}</span>
-              </div>
-              <button
-                onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) } else setCalMonth(m => m + 1) }}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-              </button>
-            </div>
-
-            {/* Two-month calendar */}
-            <div className="grid grid-cols-2 gap-6"
-              onMouseLeave={() => setHovering('')}
-            >
-              <_MiniCalendar year={prevYear} month={prevMonth} from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
-              <_MiniCalendar year={calYear}  month={calMonth}  from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
-            </div>
-
-            {/* Apply / Cancel */}
-            <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
-              <button onClick={() => setOpen(false)} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-              <button
-                onClick={() => applyRange(tempFrom, tempTo)}
-                disabled={!tempFrom && !tempTo}
-                className="px-4 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium disabled:opacity-40"
-              >
-                Aplicar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {open && typeof document !== 'undefined' && createPortal(picker, document.body)}
     </div>
   )
 }
