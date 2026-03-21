@@ -189,13 +189,29 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
         return
       }
 
-      onAddBlocks(mapped)
-      if (result.suggested_date_col && onSetDateCol) {
-        onSetDateCol(result.suggested_date_col)
+      // Se a IA detectou coluna de data, adiciona bloco de filtro de data no canvas
+      const allBlocks = [...mapped]
+      if (result.suggested_date_col) {
+        const alreadyHasDateFilter = mapped.some(b => b.type === 'filter' && b.filter_col === result.suggested_date_col)
+        if (!alreadyHasDateFilter) {
+          allBlocks.unshift({
+            id: crypto.randomUUID(),
+            type: 'filter',
+            title: 'Filtro de Período',
+            dataset_id: datasetId,
+            filter_col: result.suggested_date_col,
+            filter_label: 'Período',
+            config: { filter_type: 'date_range' },
+            layout: { x: 0, y: 0, w: 4, h: 2 },
+          })
+        }
+        if (onSetDateCol) onSetDateCol(result.suggested_date_col)
         if (onShowDateFilter) onShowDateFilter(true)
       }
+
+      onAddBlocks(allBlocks)
       setGenResult({
-        count: mapped.length,
+        count: allBlocks.length,
         kpis: mapped.filter(b => b.type === 'kpi').length,
         charts: mapped.filter(b => b.type !== 'kpi').length,
         domain_name: result.domain_name,
