@@ -717,9 +717,12 @@ export default function DashboardsPage() {
               </button>
               {collections.map(col => (
                 <div key={col.id} className="relative group">
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => { setActiveCollection(activeCollection === col.id ? null : col.id); setCollectionMenu(null) }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${activeCollection === col.id ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                    onKeyDown={e => e.key === 'Enter' && setActiveCollection(activeCollection === col.id ? null : col.id)}
+                    className={`w-full cursor-pointer px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${activeCollection === col.id ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                   >
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: col.color || '#7c3aed' }} />
                     <span className="truncate flex-1">{col.name}</span>
@@ -730,7 +733,7 @@ export default function DashboardsPage() {
                     >
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                     </button>
-                  </button>
+                  </div>
                   {collectionMenu === col.id && (
                     <div className="absolute left-0 top-full mt-0.5 z-50 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1" onClick={e => e.stopPropagation()}>
                       <button
