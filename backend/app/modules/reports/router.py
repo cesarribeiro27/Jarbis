@@ -1831,20 +1831,21 @@ async def generate_dashboard_endpoint(
         '  {"type":"scatter","title":"Título","label_col":"coluna_num_eixoX","value_col":"coluna_num_eixoY","layout":{"w":6,"h":4}},\n'
         '  ...\n'
         ']\n\n'
-        "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie, scatter\n\n"
+        "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie, bubble\n\n"
         "TAMANHOS DE LAYOUT por tipo (siga rigorosamente):\n"
-        "  kpi     → w=3, h=2  (máx 4 por linha, ocupam linha 1)\n"
-        "  line    → w=6, h=4  (evolução temporal — OBRIGATÓRIO se houver coluna de data)\n"
-        "  area    → w=6, h=4  (área acumulada — alternativa ao line para cumulativos)\n"
-        "  bar     → w=6, h=4  (ranking de categorias com nomes curtos)\n"
-        "  bar_h   → w=6, h=4  (barras horizontais — PREFERIR se nomes longos ou >8 categorias)\n"
-        "  pie     → w=4, h=4  (composição — máx 6 fatias, usar quando há 2–6 categorias claras)\n"
-        "  scatter → w=6, h=4  (dispersão/bolha — usar quando há 2+ métricas numéricas por entidade)\n\n"
-        "QUANDO USAR SCATTER (gráfico de dispersão):\n"
-        "  • Há 2 métricas numéricas interessantes que podem ter correlação\n"
-        "  • Exemplo: Receita (X) × Margem (Y) — revela a relação entre volume e rentabilidade\n"
-        "  • label_col = coluna numérica para eixo X, value_col = coluna numérica para eixo Y\n"
-        "  • Ambas devem ser colunas ★ INTERESSANTE\n\n"
+        "  kpi    → w=3, h=2  (máx 4 por linha)\n"
+        "  line   → w=6, h=4  (evolução temporal — OBRIGATÓRIO se houver coluna de data)\n"
+        "  area   → w=6, h=4  (área acumulada — para séries cumulativas ou de crescimento)\n"
+        "  bar    → w=6, h=4  (barras verticais — nomes curtos, até 8 categorias)\n"
+        "  bar_h  → w=6, h=4  (barras horizontais — PREFERIR se nomes longos ou >8 categorias)\n"
+        "  pie    → w=4, h=4  (pizza — máx 6 fatias, usar quando há 2–6 categorias de composição)\n"
+        "  bubble → w=6, h=4  (bolhas empacotadas — PREFERIR quando há dimensão textual + métrica)\n\n"
+        "QUANDO USAR BUBBLE (packed bubble chart — visualmente mais bonito):\n"
+        "  • Há uma dimensão textual (cliente, produto, categoria) com 5–30 valores únicos + uma métrica\n"
+        "  • Exemplo: Cliente × Receita → cada bolha = um cliente, tamanho = receita\n"
+        "  • label_col = coluna de TEXTO (nome), value_col = coluna NUMÉRICA ★ INTERESSANTE\n"
+        "  • PREFERIR bubble a pie quando há mais de 6 categorias\n"
+        "  • PREFERIR bubble a bar_h quando o objetivo é impacto visual\n\n"
         "REGRAS OBRIGATÓRIAS:\n"
         "1. Use APENAS colunas marcadas ★ INTERESSANTE para métricas de KPI/gráfico\n"
         "2. Ignore completamente colunas marcadas '— zero/irrelevante' ou 'MUITOS NULOS'\n"
@@ -1865,8 +1866,10 @@ async def generate_dashboard_endpoint(
         "  • Alíquotas, percentuais, taxas: agg=avg, NUNCA sum\n"
         "  • Prefira bar_h para listas longas (clientes, produtos, CNPJs)\n"
         "  • Use scatter quando o insight é 'quais X têm mais A e mais B ao mesmo tempo'\n"
-        "  • Evite pie quando há mais de 6 categorias — prefira bar_h\n"
-        "  • Se houver coluna de data, SEMPRE gere ao menos um gráfico temporal"
+        "  • Evite pie quando há mais de 6 categorias — prefira bubble\n"
+        "  • Use bar_h para listas longas com comparação precisa (ex: top 10 por valor)\n"
+        "  • Use bubble para comparação visual por proporção (ex: clientes por receita)\n"
+        "  • Se houver coluna de data, SEMPRE gere ao menos um gráfico line ou area"
     )
 
     client = ant.Anthropic(api_key=api_key)
@@ -1908,12 +1911,13 @@ async def generate_dashboard_endpoint(
 
     # ── Defaults de layout e id por tipo ─────────────────────────────────────
     _layout_defaults = {
-        "kpi": {"w": 3, "h": 2},
-        "line": {"w": 6, "h": 4},
-        "area": {"w": 6, "h": 4},
-        "bar": {"w": 6, "h": 4},
-        "bar_h": {"w": 6, "h": 4},
-        "pie": {"w": 4, "h": 4},
+        "kpi":    {"w": 3, "h": 2},
+        "line":   {"w": 6, "h": 4},
+        "area":   {"w": 6, "h": 4},
+        "bar":    {"w": 6, "h": 4},
+        "bar_h":  {"w": 6, "h": 4},
+        "pie":    {"w": 4, "h": 4},
+        "bubble": {"w": 6, "h": 4},
     }
     for b in blocks:
         b["dataset_id"] = str(data.dataset_id)

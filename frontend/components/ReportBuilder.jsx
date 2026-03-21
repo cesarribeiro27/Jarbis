@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { pack as d3pack, hierarchy as d3hierarchy } from 'd3-hierarchy'
 import { useTranslations, useLocale } from 'next-intl'
 import GridLayout, { noCompactor } from 'react-grid-layout'
 import {
@@ -139,7 +140,7 @@ const DROP_ZONE_CONFIG = {
   pie:          [{ slot: 'label_col', label: 'Categoria',     accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
   combo:        [{ slot: 'label_col', label: 'Eixo X',        accepts: ['text','date'] }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
   scatter:      [{ slot: 'label_col', label: 'Eixo X',        accepts: ['number']      }, { slot: 'value_col', label: 'Eixo Y',        accepts: ['number'] }],
-  bubble:       [{ slot: 'label_col', label: 'Eixo X',        accepts: ['number']      }, { slot: 'value_col', label: 'Eixo Y',        accepts: ['number'] }],
+  bubble:       [{ slot: 'label_col', label: 'Categoria',     accepts: ['text']        }, { slot: 'value_col', label: 'Tamanho',       accepts: ['number'] }],
   treemap:      [{ slot: 'label_col', label: 'Categoria',     accepts: ['text']        }, { slot: 'value_col', label: 'Tamanho',       accepts: ['number'] }],
   funnel:       [{ slot: 'label_col', label: 'Etapa',         accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
   radar:        [{ slot: 'label_col', label: 'Dimensão',      accepts: ['text']        }, { slot: 'value_col', label: 'Valor',         accepts: ['number'] }],
@@ -1142,6 +1143,99 @@ function AISummaryBlock({ block, readOnly }) {
   )
 }
 
+// ─── Packed Bubble Chart ─────────────────────────────────────────────────────
+function BubblePackChart({ data, palette, fmt, format, config }) {
+  const containerRef = useRef(null)
+  const [size, setSize] = useState({ w: 400, h: 300 })
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const observer = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect
+      setSize({ w: Math.max(width, 80), h: Math.max(height, 80) })
+    })
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  const circles = useMemo(() => {
+    if (!data.length) return []
+    const { w, h } = size
+    const pad = Math.min(w, h) * 0.02
+    try {
+      const root = d3hierarchy({ children: data })
+        .sum(d => Math.abs(d.value) || 0.001)
+        .sort((a, b) => b.value - a.value)
+      d3pack().size([w - pad * 2, h - pad * 2]).padding(3)(root)
+      return root.leaves().map(leaf => ({
+        x: leaf.x + pad,
+        y: leaf.y + pad,
+        r: leaf.r,
+        label: String(leaf.data.label ?? ''),
+        value: leaf.data.value,
+      }))
+    } catch { return [] }
+  }, [data, size])
+
+  function truncText(text, maxChars) {
+    return text.length > maxChars ? text.slice(0, maxChars - 1) + '…' : text
+  }
+
+  function fmtVal(v) {
+    if (typeof v !== 'number') return String(v ?? '')
+    const a = Math.abs(v)
+    if (a >= 1e9) return (v / 1e9).toFixed(1) + 'B'
+    if (a >= 1e6) return (v / 1e6).toFixed(1) + 'M'
+    if (a >= 1e3) return (v / 1e3).toFixed(0) + 'K'
+    return v.toLocaleString('pt-BR')
+  }
+
+  return (
+    <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+      <svg width={size.w} height={size.h} style={{ display: 'block' }}>
+        {circles.map((c, i) => {
+          const color = palette[i % palette.length]
+          const fs = Math.max(8, Math.min(13, c.r * 0.32))
+          const fsVal = Math.max(7, fs * 0.82)
+          const showLabel = c.r > 18
+          const showValue = c.r > 28
+          const maxChars = Math.max(3, Math.floor(c.r * 1.6 / fs))
+          return (
+            <g key={i} transform={`translate(${c.x},${c.y})`}>
+              <circle r={c.r} fill={color} opacity={0.88} />
+              <circle r={c.r} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={1} />
+              {showLabel && (
+                <text
+                  textAnchor="middle"
+                  dy={showValue ? `-${fsVal * 0.6}px` : '0.35em'}
+                  fontSize={fs}
+                  fontWeight="700"
+                  fill="white"
+                  style={{ pointerEvents: 'none', userSelect: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+                >
+                  {truncText(c.label, maxChars)}
+                </text>
+              )}
+              {showValue && (
+                <text
+                  textAnchor="middle"
+                  dy={`${fs * 0.7}px`}
+                  fontSize={fsVal}
+                  fontWeight="500"
+                  fill="rgba(255,255,255,0.9)"
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                  {fmtVal(c.value)}
+                </text>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
 function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, onGlobalDateFilterChange, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
   const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active (legacy single-level)
@@ -1660,25 +1754,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   )
 
   if (block.type === 'bubble') {
-    const bubbleData = displayData.map(d => ({ x: parseFloat(d.label) || 0, y: d.value, z: Math.abs(d.value) || 1 }))
-    return (
-      <div className="flex flex-col h-full">
-        <div style={{ flex: 1 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
-              <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
-              <XAxis dataKey="x" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.label_col} axisLine={false} tickLine={false} />
-              <YAxis dataKey="y" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.value_col} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
-              <ZAxis dataKey="z" range={[40, 600]} />
-              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} cursor={{ strokeDasharray: '3 3' }} formatter={v => fmt(v, format, config)} />
-              <Scatter data={bubbleData}>
-                {bubbleData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={0.72} />)}
-              </Scatter>
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    )
+    return <BubblePackChart data={displayData} palette={palette} fmt={fmt} format={format} config={config} />
   }
 
   if (block.type === 'treemap') {
