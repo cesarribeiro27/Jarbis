@@ -792,41 +792,45 @@ async def query_dataset_v2(
     Motor de query v2. Aceita dimensões, métricas, filtros, date_range,
     ordenação e limite. Retorna dados normalizados para qualquer visualização.
     """
+    import logging as _logging
     from .query_engine import execute_query
     query_params = {**req.model_dump(), "tenant_id": str(effective_tenant_id)}
 
     redis = get_redis()
+    cache_key = None
     try:
-        version = await _get_dataset_version(redis, str(dataset_id))
-        cache_key = _make_cache_key(str(dataset_id), query_params, version)
+        # Redis opcional — se indisponível, segue direto para DB
+        try:
+            version = await _get_dataset_version(redis, str(dataset_id))
+            cache_key = _make_cache_key(str(dataset_id), query_params, version)
 
-        # 1. Check query cache (sem DB)
-        cached = await cache_get(redis, cache_key)
-        if cached is not None:
-            return cached
+            # 1. Check query cache (sem DB)
+            cached = await cache_get(redis, cache_key)
+            if cached is not None:
+                return cached
 
-        # 2. Check Warp rows (evita ler JSONB pesado do DB)
-        warp_rows = await warp_get_rows(redis, str(dataset_id))
-        if warp_rows is not None:
-            # Valida dataset sem carregar rows (lightweight); fallback para tenant raiz se suborg não tiver
-            ds_exists = await db.scalar(
-                select(ReportDataset.id).where(
-                    ReportDataset.id == dataset_id,
-                    ReportDataset.tenant_id.in_(
-                        [effective_tenant_id, current_user.tenant_id]
-                    ),
+            # 2. Check Warp rows (evita ler JSONB pesado do DB)
+            warp_rows = await warp_get_rows(redis, str(dataset_id))
+            if warp_rows is not None:
+                ds_exists = await db.scalar(
+                    select(ReportDataset.id).where(
+                        ReportDataset.id == dataset_id,
+                        ReportDataset.tenant_id.in_(
+                            [effective_tenant_id, current_user.tenant_id]
+                        ),
+                    )
                 )
-            )
-            if ds_exists:
-                try:
-                    result = execute_query(warp_rows, req)
-                    result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
-                    await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
-                    return result_dict
-                except Exception as exc:
-                    import logging
-                    logging.getLogger(__name__).error("execute_query (warp) failed: %s", exc, exc_info=True)
-                    return {"data": [], "total_rows": 0, "columns": [], "compare_data": None}
+                if ds_exists:
+                    try:
+                        result = execute_query(warp_rows, req)
+                        result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
+                        await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+                        return result_dict
+                    except Exception as exc:
+                        _logging.getLogger(__name__).error("execute_query (warp) failed: %s", exc, exc_info=True)
+                        return {"data": [], "total_rows": 0, "columns": [], "compare_data": None}
+        except Exception as redis_exc:
+            _logging.getLogger(__name__).warning("Redis unavailable, falling back to DB: %s", redis_exc)
 
         # 3. Full DB load (popula Warp para próximas queries); fallback para tenant raiz
         service = DatasetService(db)
@@ -847,11 +851,11 @@ async def query_dataset_v2(
         try:
             result = execute_query(rows, req)
             result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
-            await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+            if cache_key:
+                await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
             return result_dict
         except Exception as exc:
-            import logging
-            logging.getLogger(__name__).error("execute_query failed: %s", exc, exc_info=True)
+            _logging.getLogger(__name__).error("execute_query failed: %s", exc, exc_info=True)
             return {"data": [], "total_rows": 0, "columns": [], "compare_data": None}
     finally:
         await redis.aclose()
@@ -889,6 +893,7 @@ async def public_query_dataset_v2(
     req: QueryRequest,
     db: AsyncSession = Depends(get_db),
 ):
+    import logging as _logging
     from .query_engine import execute_query
     report_service = ReportService(db)
     report = await report_service.get_public_no_increment(token)
@@ -898,33 +903,37 @@ async def public_query_dataset_v2(
     query_params = {**req.model_dump(), "tenant_id": str(report.tenant_id)}
 
     redis = get_redis()
+    cache_key = None
     try:
-        version = await _get_dataset_version(redis, str(dataset_id))
-        cache_key = _make_cache_key(str(dataset_id), query_params, version)
+        # Redis opcional — se indisponível, segue direto para DB
+        try:
+            version = await _get_dataset_version(redis, str(dataset_id))
+            cache_key = _make_cache_key(str(dataset_id), query_params, version)
 
-        # 1. Check query cache (sem DB)
-        cached = await cache_get(redis, cache_key)
-        if cached is not None:
-            return JSONResponse(content=cached, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
+            # 1. Check query cache (sem DB)
+            cached = await cache_get(redis, cache_key)
+            if cached is not None:
+                return JSONResponse(content=cached, headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"})
 
-        # 2. Check Warp rows (evita ler JSONB pesado do DB)
-        warp_rows = await warp_get_rows(redis, str(dataset_id))
-        if warp_rows is not None:
-            # Valida dataset sem carregar rows (lightweight)
-            ds_exists = await db.scalar(
-                select(ReportDataset.id).where(
-                    ReportDataset.id == dataset_id,
-                    ReportDataset.tenant_id == report.tenant_id,
+            # 2. Check Warp rows (evita ler JSONB pesado do DB)
+            warp_rows = await warp_get_rows(redis, str(dataset_id))
+            if warp_rows is not None:
+                ds_exists = await db.scalar(
+                    select(ReportDataset.id).where(
+                        ReportDataset.id == dataset_id,
+                        ReportDataset.tenant_id == report.tenant_id,
+                    )
                 )
-            )
-            if ds_exists:
-                result = execute_query(warp_rows, req)
-                result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
-                await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
-                return JSONResponse(
-                    content=result_dict,
-                    headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"},
-                )
+                if ds_exists:
+                    result = execute_query(warp_rows, req)
+                    result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
+                    await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+                    return JSONResponse(
+                        content=result_dict,
+                        headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"},
+                    )
+        except Exception as redis_exc:
+            _logging.getLogger(__name__).warning("Redis unavailable (public query), falling back to DB: %s", redis_exc)
 
         # 3. Full DB load (popula Warp para próximas queries)
         dataset_service = DatasetService(db)
@@ -935,11 +944,15 @@ async def public_query_dataset_v2(
         from .dataset_service import _apply_computed_columns
         computed = getattr(ds, 'computed_columns', None) or []
         rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
-        await warp_set_rows(redis, str(dataset_id), rows)
+        try:
+            await warp_set_rows(redis, str(dataset_id), rows)
+        except Exception:
+            pass
 
         result = execute_query(rows, req)
         result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
-        await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+        if cache_key:
+            await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
         return JSONResponse(
             content=result_dict,
             headers={"Cache-Control": f"public, max-age={_CACHE_TTL}"},
