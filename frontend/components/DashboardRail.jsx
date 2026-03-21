@@ -20,6 +20,7 @@ export default function DashboardRail({
   setSidebarOpen,
   setSidePanel,
   setShowAiPanel,
+  onAutoLayout,
 }) {
   const t = useTranslations('dashboardEditor')
 
@@ -78,6 +79,14 @@ export default function DashboardRail({
       active: false,
       disabled: false,
       onClick: () => setShowAiPanel && setShowAiPanel(true),
+    },
+    {
+      id: 'auto', label: 'Organizar',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h10M4 18h6" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 14l2 2 4-4" /></svg>,
+      badge: null,
+      active: false,
+      disabled: !onAutoLayout,
+      onClick: () => onAutoLayout && onAutoLayout(),
     },
   ]
 

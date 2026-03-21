@@ -1423,6 +1423,44 @@ export default function DashboardDetailPage() {
     })
   }
 
+  function handleAutoLayout() {
+    if (!blocks.length) return
+    // Tamanhos padrão por tipo
+    const SIZE = {
+      filter:  b => b.config?.date_mode ? { w: 4, h: 2 } : { w: 3, h: 4 },
+      kpi:     () => ({ w: 3, h: 2 }),
+      line:    () => ({ w: 6, h: 4 }),
+      area:    () => ({ w: 6, h: 4 }),
+      bar:     () => ({ w: 6, h: 4 }),
+      bar_h:   () => ({ w: 6, h: 4 }),
+      scatter: () => ({ w: 6, h: 4 }),
+      bubble:  () => ({ w: 6, h: 4 }),
+      pie:     () => ({ w: 4, h: 4 }),
+      combo:   () => ({ w: 6, h: 4 }),
+      table:   () => ({ w: 12, h: 5 }),
+      text:    () => ({ w: 6, h: 3 }),
+      image:   () => ({ w: 4, h: 4 }),
+      treemap: () => ({ w: 6, h: 4 }),
+      gauge:   () => ({ w: 3, h: 3 }),
+      slider:  () => ({ w: 3, h: 2 }),
+    }
+    // Ordenar: filtros → KPIs → gráficos → tabela → outros
+    const ORDER = { filter: 0, slider: 0, kpi: 1, line: 2, area: 2, bar: 2, bar_h: 2, scatter: 2, bubble: 2, pie: 3, combo: 2, treemap: 3, gauge: 3, table: 4, text: 5, image: 5 }
+    const sorted = [...blocks].sort((a, b) => (ORDER[a.type] ?? 6) - (ORDER[b.type] ?? 6))
+
+    // Posicionamento simples: pack left-to-right, quebra linha quando não cabe
+    let curX = 0, curY = 0, rowH = 0
+    const laid = sorted.map(b => {
+      const { w, h } = (SIZE[b.type] ? SIZE[b.type](b) : { w: 6, h: 4 })
+      if (curX + w > 12) { curY += rowH; curX = 0; rowH = 0 }
+      const layout = { x: curX, y: curY, w, h }
+      curX += w
+      rowH = Math.max(rowH, h)
+      return { ...b, layout }
+    })
+    setBlocks(laid)
+  }
+
   // Dataset primário (mais blocos apontam para ele)
   const primaryDatasetId = useMemo(() => {
     const count = {}
@@ -2010,6 +2048,7 @@ export default function DashboardDetailPage() {
             setSidebarOpen={setSidebarOpen}
             setSidePanel={setSidePanel}
             setShowAiPanel={setShowAiPanel}
+            onAutoLayout={handleAutoLayout}
           />
         </div>
         {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
