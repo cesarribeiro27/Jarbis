@@ -98,12 +98,15 @@ def _parse_date(v: Any) -> date | None:
 
 
 def _to_float(v: Any) -> float:
+    import math
     if v is None:
         return 0.0
     if isinstance(v, (int, float)):
-        return float(v)
+        f = float(v)
+        return 0.0 if math.isnan(f) or math.isinf(f) else f
     try:
-        return float(str(v).strip().replace(",", ".").replace(" ", ""))
+        f = float(str(v).strip().replace(",", ".").replace(" ", ""))
+        return 0.0 if math.isnan(f) or math.isinf(f) else f
     except (ValueError, TypeError):
         return 0.0
 

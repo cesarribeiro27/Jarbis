@@ -479,6 +479,7 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
         if (block.static_data) {
           setData(block.static_data)
         } else {
+          console.error('[ReportBuilder] query error', block.type, block.dataset_id, block.label_col, block.value_col, '→', e.message)
           setError(e.message)
         }
       })

@@ -87,7 +87,7 @@ function newBlock(type, blockTypes) {
   }
 }
 
-function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
+function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
   const [datasetId, setDatasetId] = useState(datasets[0]?.id || '')
@@ -97,6 +97,9 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
   const [history, setHistory] = useState([])
   const historyRef = useRef(null)
   const [aiUsage, setAiUsage] = useState(null)
+  const [genError, setGenError] = useState(null)
+  const [genSuccess, setGenSuccess] = useState(null)
+  const [showGenSection, setShowGenSection] = useState(false)
 
   useEffect(() => {
     api.reports.aiUsage().then(setAiUsage).catch(() => {})
@@ -113,6 +116,72 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
     t('ai.suggCategories'),
     t('ai.suggAnomalies'),
   ].filter(Boolean).slice(0, 4)
+
+  function generateFullDashboard() {
+    if (!datasetId || !selectedDs) return
+    setGenError(null); setGenSuccess(null)
+
+    const types = selectedDs.column_types || {}
+    const allCols = selectedDs.columns || []
+
+    // Padrões de nomes que indicam código/ID/flag, não métrica financeira
+    const CODE_PATTERN = /^(nº|n°|num|nro|cod|código|tipo|indicador|índice|index|id|serie|número do end|complemento|bairro|cep|inscrição|rps|municipio|pais|estado|uf|opção|opcao|simples|iss retido|retencao|retenção|discriminação)/i
+
+    const allNumCols = allCols.filter(c => types[c] === 'number')
+    const dateCols = allCols.filter(c => types[c] === 'date')
+    const txtCols = allCols.filter(c => types[c] !== 'number' && types[c] !== 'date')
+
+    // Preferir colunas numéricas que parecem métricas reais (não códigos)
+    const metricCols = allNumCols.filter(c => !CODE_PATTERN.test(c))
+    const numCols = metricCols.length > 0 ? metricCols : allNumCols
+
+    // Preferir colunas de texto que são categorias úteis (não endereços etc.)
+    const ADDR_PATTERN = /^(endereço|complemento|bairro|cep|logradouro|municipio|cidade|estado|uf|pais|inscricao|inscrição)/i
+    const catCols = txtCols.filter(c => !ADDR_PATTERN.test(c))
+    const dimCols = catCols.length > 0 ? catCols : txtCols
+
+    if (numCols.length === 0 && dimCols.length === 0) {
+      setGenError('Dataset não tem colunas numéricas ou de texto suficientes para gerar cards.')
+      return
+    }
+
+    const generated = []
+    const mainMetric = numCols[0] || null
+    const mainDim = dimCols[0] || null
+    const kpiDim = mainDim  // KPI precisa de label_col para fazer a query
+
+    // KPIs — até 4 métricas
+    if (mainDim) {
+      numCols.slice(0, 4).forEach(col => {
+        generated.push({ type: 'kpi', title: col, value_col: col, label_col: kpiDim, agg: 'sum', dataset_id: datasetId })
+      })
+    }
+
+    // Gráfico de linha temporal (se houver data + métrica)
+    if (dateCols.length > 0 && mainMetric) {
+      generated.push({ type: 'line', title: `${mainMetric} ao longo do tempo`, label_col: dateCols[0], value_col: mainMetric, agg: 'sum', dataset_id: datasetId })
+    }
+
+    // Gráfico de barras — categoria + métrica
+    if (mainDim && mainMetric) {
+      generated.push({ type: 'bar', title: `${mainMetric} por ${mainDim}`, label_col: mainDim, value_col: mainMetric, agg: 'sum', dataset_id: datasetId })
+    }
+
+    // Gráfico de pizza — segunda categoria (se houver)
+    if (dimCols.length > 1 && mainMetric) {
+      generated.push({ type: 'pie', title: `Distribuição por ${dimCols[1]}`, label_col: dimCols[1], value_col: mainMetric, agg: 'sum', dataset_id: datasetId })
+    } else if (dimCols.length === 1 && numCols.length > 1) {
+      generated.push({ type: 'pie', title: `${numCols[1]} por ${mainDim}`, label_col: mainDim, value_col: numCols[1], agg: 'sum', dataset_id: datasetId })
+    }
+
+    // Tabela geral
+    generated.push({ type: 'table', title: selectedDs.name, label_col: null, value_col: null, dataset_id: datasetId })
+
+    onAddBlocks(generated)
+    setGenSuccess(`${generated.length} blocos criados!`)
+    setShowGenSection(false)
+    setTimeout(onClose, 1000)
+  }
 
   async function ask(q) {
     const qText = q || question.trim()
@@ -171,6 +240,38 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock }) {
             </div>
           ) : (
             <div className="p-5 flex flex-col gap-4">
+
+              {/* Gerar dashboard completo */}
+              {onAddBlocks && (
+                <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
+                  <button
+                    onClick={() => setShowGenSection(s => !s)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold text-violet-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                      Gerar dashboard automaticamente
+                    </span>
+                    <svg className={`w-4 h-4 text-violet-400 transition-transform ${showGenSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  {showGenSection && (
+                    <div className="px-4 pb-4 flex flex-col gap-3 border-t border-violet-100 pt-3">
+                      <p className="text-xs text-violet-600">Analisa as colunas do dataset e cria automaticamente os cards mais relevantes — KPIs, gráficos e tabela.</p>
+                      {genError && <p className="text-xs text-red-500">{genError}</p>}
+                      {genSuccess && <p className="text-xs text-green-600 font-medium">{genSuccess}</p>}
+                      <button
+                        onClick={generateFullDashboard}
+                        disabled={!datasetId}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-lg disabled:opacity-40 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Gerar dashboard
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Dataset selector */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('ai.datasetLabel')}</label>
@@ -920,6 +1021,24 @@ export default function DashboardDetailPage() {
     setSidePanel('config'); setSidebarOpen(true)
   }
 
+  function addMultipleBlocks(newBlocks) {
+    if (!newBlocks?.length) return
+    // Layout automático: KPIs ficam em linha de 3 col cada (4 por linha), gráficos 6 col (2 por linha)
+    let curX = 0, curY = 0, rowH = 0
+    const withLayout = newBlocks.map((b) => {
+      const isKpi = b.type === 'kpi'
+      const w = isKpi ? 3 : 6
+      const h = isKpi ? 3 : 4
+      if (curX + w > 12) { curY += rowH; curX = 0; rowH = 0 }
+      const layout = { x: curX, y: curY, w, h }
+      curX += w
+      rowH = Math.max(rowH, h)
+      return { id: crypto.randomUUID(), ...b, layout }
+    })
+    setBlocks([...blocks, ...withLayout])
+    setSelectedBlockId(withLayout[0]?.id || null)
+  }
+
   async function exportPDF() {
     const canvas = document.querySelector('.report-canvas')
     if (!canvas) return
@@ -1261,7 +1380,7 @@ export default function DashboardDetailPage() {
             setShowAiPanel={setShowAiPanel}
           />
         </div>
-        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} />}
+        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} />}
 
         {showVersions && (
           <div className="fixed inset-0 z-50 flex">

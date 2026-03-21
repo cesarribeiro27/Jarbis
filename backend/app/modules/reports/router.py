@@ -836,11 +836,26 @@ async def query_dataset_v2(
         rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
         await warp_set_rows(redis, str(dataset_id), rows)
 
-        result = execute_query(rows, req)
-        # QueryResult is a Pydantic model — serialize before storing
-        result_dict = result.model_dump() if hasattr(result, "model_dump") else result
-        await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
-        return result
+        try:
+            result = execute_query(rows, req)
+            result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+            # Sanitizar NaN/Inf antes de serializar (causa 500 no JSON encoder)
+            import math
+            def _sanitize(obj):
+                if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+                    return 0.0
+                if isinstance(obj, dict):
+                    return {k: _sanitize(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [_sanitize(v) for v in obj]
+                return obj
+            result_dict = _sanitize(result_dict)
+            await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+            return result_dict
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error("execute_query failed: %s", exc, exc_info=True)
+            return {"data": [], "total_rows": 0, "columns": [], "compare_data": None}
     finally:
         await redis.aclose()
 
@@ -1262,6 +1277,140 @@ async def ai_query_endpoint(
         "query": {"label_col": label_col, "value_col": value_col, "agg": agg, "filter_col": filter_col, "filter_val": filter_val},
         **chart_suggestion,
     }
+
+
+class GenerateDashboardRequest(BaseModel):
+    dataset_id: uuid.UUID
+    objetivo: str | None = None
+
+
+@router.post("/generate-dashboard", summary="Gera blocos de dashboard automaticamente com IA")
+async def generate_dashboard_endpoint(
+    data: GenerateDashboardRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    import json
+    import os
+    import re
+
+    import anthropic as ant
+
+    from .ai_usage_models import AIUsageLog
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    plan = tenant.plan if tenant else "free"
+    check_feature_allowed("ai", plan)
+    await check_ai_query_limit(db, current_user.tenant_id, plan)
+
+    svc = DatasetService(db)
+    ds = await svc.get(data.dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key or api_key == "your_key_here":
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
+
+    columns = ds.columns or []
+    rows = ds.rows or []
+    sample = rows[:10]
+
+    # Inferir tipo de cada coluna
+    col_types: dict[str, str] = {}
+    if sample:
+        for col in columns:
+            vals = [r.get(col) for r in sample if r.get(col) is not None]
+            if vals:
+                try:
+                    [float(str(v).replace(",", ".")) for v in vals]
+                    col_types[col] = "numero"
+                except (ValueError, TypeError):
+                    # Detectar datas
+                    import re as _re
+                    sample_val = str(vals[0])
+                    if _re.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}", sample_val):
+                        col_types[col] = "data"
+                    else:
+                        col_types[col] = "texto"
+            else:
+                col_types[col] = "texto"
+
+    num_cols = [c for c, t in col_types.items() if t == "numero"]
+    txt_cols = [c for c, t in col_types.items() if t == "texto"]
+    date_cols = [c for c, t in col_types.items() if t == "data"]
+
+    col_desc = ", ".join(f"{c}({col_types.get(c,'texto')})" for c in columns)
+    schema_str = (
+        f"Dataset: {ds.name}\n"
+        f"Colunas: {col_desc}\n"
+        f"Amostra ({len(sample)} linhas):\n{json.dumps(sample[:5], ensure_ascii=False, default=str)}"
+    )
+
+    objetivo_str = f"\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
+
+    system_prompt = (
+        "Você é um especialista em BI e visualização de dados. "
+        "Dado o schema de um dataset, gere entre 4 e 8 blocos de dashboard que sejam informativos e variados.\n"
+        "Retorne SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON) no formato:\n"
+        '[\n'
+        '  {"type":"kpi","title":"Título do card","value_col":"coluna_numerica","agg":"sum","label_col":null},\n'
+        '  {"type":"bar","title":"Título do gráfico","label_col":"coluna_texto","value_col":"coluna_numerica","agg":"sum"},\n'
+        '  ...\n'
+        ']\n'
+        "Tipos disponíveis: kpi, bar, line, pie, area, table\n"
+        "Regras:\n"
+        "- kpi: use value_col=coluna numérica, label_col=null, agg=sum/avg/count\n"
+        "- bar/line/area/pie: use label_col=coluna de texto/categoria, value_col=coluna numérica\n"
+        "- table: use label_col=null, value_col=null (mostra todas as linhas)\n"
+        "- Use nomes de colunas EXATAMENTE como no dataset\n"
+        "- Gere blocos variados: pelo menos 1 kpi, 1 bar, 1 pie ou line\n"
+        "- Títulos em português, curtos e descritivos\n"
+        "- Se houver coluna de data, use em line/area para mostrar evolução temporal"
+    )
+
+    client = ant.Anthropic(api_key=api_key)
+    msg = client.messages.create(
+        model=_AI_MODEL,
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": "user", "content": f"{schema_str}{objetivo_str}\n\nGere o dashboard:"}],
+    )
+
+    # Log de uso
+    try:
+        usage = msg.usage
+        log = AIUsageLog(
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            dataset_id=data.dataset_id,
+            model=_AI_MODEL,
+            tokens_input=usage.input_tokens,
+            tokens_output=usage.output_tokens,
+            question=f"[generate-dashboard] {data.objetivo or ''}",
+        )
+        db.add(log)
+        await db.commit()
+    except Exception:
+        pass
+
+    text = msg.content[0].text.strip()
+    try:
+        blocks = json.loads(text)
+    except json.JSONDecodeError:
+        m = re.search(r"\[.*\]", text, re.DOTALL)
+        if not m:
+            raise HTTPException(status_code=500, detail="IA não retornou JSON válido.")
+        blocks = json.loads(m.group())
+
+    if not isinstance(blocks, list):
+        raise HTTPException(status_code=500, detail="IA retornou formato inválido.")
+
+    # Injetar dataset_id em cada bloco
+    for b in blocks:
+        b["dataset_id"] = str(data.dataset_id)
+
+    return {"blocks": blocks, "dataset_name": ds.name}
 
 
 @router.get("/ai-usage", summary="Retorna cota mensal de IA do tenant")
