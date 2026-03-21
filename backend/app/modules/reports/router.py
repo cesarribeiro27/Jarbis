@@ -2286,6 +2286,32 @@ async def create_collection(
     )
 
 
+@router.patch("/collections/{collection_id}")
+async def update_collection(
+    collection_id: uuid.UUID,
+    body: CollectionCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from .collection_models import Collection
+    col = await db.scalar(
+        select(Collection).where(Collection.id == collection_id, Collection.tenant_id == current_user.tenant_id)
+    )
+    if not col:
+        raise HTTPException(status_code=404, detail="Coleção não encontrada")
+    col.name = body.name
+    if body.color:
+        col.color = body.color
+    if body.description is not None:
+        col.description = body.description
+    await db.commit()
+    await db.refresh(col)
+    return CollectionResponse(
+        **{k: getattr(col, k) for k in ['id', 'name', 'description', 'color', 'is_pinned', 'created_at']},
+        report_count=0,
+    )
+
+
 @router.delete("/collections/{collection_id}")
 async def delete_collection(
     collection_id: uuid.UUID,

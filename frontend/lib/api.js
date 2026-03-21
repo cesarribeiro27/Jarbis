@@ -181,6 +181,7 @@ export const api = {
     collections: {
       list: () => apiFetch('/reports/collections'),
       create: (data) => apiFetch('/reports/collections', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id, data) => apiFetch(`/reports/collections/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       delete: (id) => apiFetch(`/reports/collections/${id}`, { method: 'DELETE' }),
       listReports: (id) => apiFetch(`/reports/collections/${id}/reports`),
       addReport: (collectionId, reportId) => apiFetch(`/reports/collections/${collectionId}/reports/${reportId}`, { method: 'POST' }),

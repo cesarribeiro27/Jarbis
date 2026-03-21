@@ -396,9 +396,10 @@ function AiCreateModal({ onClose }) {
 
 const COLLECTION_COLORS = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#db2777', '#0891b2']
 
-function NewCollectionModal({ onClose, onCreate }) {
-  const [name, setName] = useState('')
-  const [color, setColor] = useState('#7c3aed')
+function CollectionModal({ onClose, onSave, initial }) {
+  const editing = !!initial
+  const [name, setName] = useState(initial?.name || '')
+  const [color, setColor] = useState(initial?.color || '#7c3aed')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e) {
@@ -406,7 +407,7 @@ function NewCollectionModal({ onClose, onCreate }) {
     if (!name.trim()) return
     setSaving(true)
     try {
-      await onCreate(name.trim(), color)
+      await onSave(name.trim(), color)
       onClose()
     } finally {
       setSaving(false)
@@ -417,7 +418,7 @@ function NewCollectionModal({ onClose, onCreate }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Nova pasta</span>
+          <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{editing ? 'Editar pasta' : 'Nova pasta'}</span>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
@@ -457,7 +458,7 @@ function NewCollectionModal({ onClose, onCreate }) {
               disabled={saving || !name.trim()}
               className="flex-1 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors disabled:opacity-50"
             >
-              {saving ? 'Criando...' : 'Criar pasta'}
+              {saving ? (editing ? 'Salvando...' : 'Criando...') : (editing ? 'Salvar' : 'Criar pasta')}
             </button>
           </div>
         </form>
@@ -504,6 +505,8 @@ export default function DashboardsPage() {
   const [activeCollection, setActiveCollection] = useState(null)
   const [collectionReportIds, setCollectionReportIds] = useState(null)
   const [showNewCollection, setShowNewCollection] = useState(false)
+  const [editingCollection, setEditingCollection] = useState(null) // { id, name, color }
+  const [collectionMenu, setCollectionMenu] = useState(null) // collection id with menu open
   const [addToCollPicker, setAddToCollPicker] = useState(null) // reportId with picker open
   const [showAiCreate, setShowAiCreate] = useState(false)
 
@@ -542,6 +545,44 @@ export default function DashboardsPage() {
     } catch (err) {
       toast(err.message || 'Erro ao criar pasta', 'error')
       throw err
+    }
+  }
+
+  async function handleUpdateCollection(name, color) {
+    if (!editingCollection) return
+    try {
+      await api.reports.collections.update(editingCollection.id, { name, color })
+      await fetchCollections()
+      toast('Pasta atualizada', 'success')
+    } catch (err) {
+      toast(err.message || 'Erro ao atualizar pasta', 'error')
+      throw err
+    }
+  }
+
+  async function handleDeleteCollection(id) {
+    try {
+      await api.reports.collections.delete(id)
+      setCollections(prev => prev.filter(c => c.id !== id))
+      if (activeCollection === id) setActiveCollection(null)
+      setCollectionMenu(null)
+      toast('Pasta excluída', 'success')
+    } catch (err) {
+      toast(err.message || 'Erro ao excluir pasta', 'error')
+    }
+  }
+
+  async function handleRemoveFromCollection(reportId, collectionId) {
+    try {
+      await api.reports.collections.removeReport(collectionId, reportId)
+      await fetchCollections()
+      if (activeCollection === collectionId) {
+        const data = await api.reports.collections.listReports(collectionId)
+        setCollectionReportIds((data || []).map(r => r.id))
+      }
+      toast('Dashboard removido da pasta', 'success')
+    } catch (err) {
+      toast(err.message || 'Erro ao remover da pasta', 'error')
     }
   }
 
@@ -663,7 +704,7 @@ export default function DashboardsPage() {
 
         <div className="flex gap-6">
           {/* Collections sidebar */}
-          <div className="w-48 flex-shrink-0">
+          <div className="w-48 flex-shrink-0" onClick={() => setCollectionMenu(null)}>
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-2">Pastas</p>
             <div className="space-y-0.5">
               <button
@@ -675,15 +716,40 @@ export default function DashboardsPage() {
                 <span className="ml-auto text-xs text-gray-400">{reports.length}</span>
               </button>
               {collections.map(col => (
-                <button
-                  key={col.id}
-                  onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${activeCollection === col.id ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: col.color || '#7c3aed' }} />
-                  <span className="truncate">{col.name}</span>
-                  <span className="ml-auto text-xs text-gray-400">{col.report_count}</span>
-                </button>
+                <div key={col.id} className="relative group">
+                  <button
+                    onClick={() => { setActiveCollection(activeCollection === col.id ? null : col.id); setCollectionMenu(null) }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${activeCollection === col.id ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: col.color || '#7c3aed' }} />
+                    <span className="truncate flex-1">{col.name}</span>
+                    <span className="text-xs text-gray-400 group-hover:hidden">{col.report_count}</span>
+                    <button
+                      onClick={e => { e.stopPropagation(); setCollectionMenu(collectionMenu === col.id ? null : col.id) }}
+                      className="hidden group-hover:flex w-5 h-5 items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 shrink-0"
+                    >
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                    </button>
+                  </button>
+                  {collectionMenu === col.id && (
+                    <div className="absolute left-0 top-full mt-0.5 z-50 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => { setEditingCollection(col); setCollectionMenu(null) }}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                      >
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        Renomear
+                      </button>
+                      <button
+                        onClick={() => { if (confirm(`Excluir pasta "${col.name}"? Os dashboards não serão excluídos.`)) handleDeleteCollection(col.id) }}
+                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Excluir pasta
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
               <button
                 onClick={() => setShowNewCollection(true)}
@@ -848,24 +914,34 @@ export default function DashboardsPage() {
                               {t('menu.removeCover')}
                             </button>
                           )}
-                          {/* Adicionar à pasta */}
-                          <div className="relative">
+                          {/* Pasta: adicionar ou remover */}
+                          {activeCollection && collectionReportIds?.includes(r.id) ? (
                             <button
-                              onClick={e => { e.stopPropagation(); setAddToCollPicker(addToCollPicker === r.id ? null : r.id) }}
+                              onClick={() => { handleRemoveFromCollection(r.id, activeCollection); setMenuOpen(null) }}
                               className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                             >
-                              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>
-                              Adicionar à pasta
+                              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6" /></svg>
+                              Remover da pasta
                             </button>
-                            {addToCollPicker === r.id && (
-                              <AddToCollectionPicker
-                                collections={collections}
-                                reportId={r.id}
-                                onAdd={handleAddToCollection}
-                                onClose={() => setAddToCollPicker(null)}
-                              />
-                            )}
-                          </div>
+                          ) : (
+                            <div className="relative">
+                              <button
+                                onClick={e => { e.stopPropagation(); setAddToCollPicker(addToCollPicker === r.id ? null : r.id) }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                              >
+                                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>
+                                Adicionar à pasta
+                              </button>
+                              {addToCollPicker === r.id && (
+                                <AddToCollectionPicker
+                                  collections={collections}
+                                  reportId={r.id}
+                                  onAdd={handleAddToCollection}
+                                  onClose={() => setAddToCollPicker(null)}
+                                />
+                              )}
+                            </div>
+                          )}
                           <button onClick={() => handleShare(r.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
                             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                             {t('menu.copyLink')}
@@ -930,11 +1006,18 @@ export default function DashboardsPage() {
 
       {showAiCreate && <AiCreateModal onClose={() => setShowAiCreate(false)} />}
 
-      {/* New Collection modal */}
+      {/* Collection modals */}
       {showNewCollection && (
-        <NewCollectionModal
+        <CollectionModal
           onClose={() => setShowNewCollection(false)}
-          onCreate={handleCreateCollection}
+          onSave={handleCreateCollection}
+        />
+      )}
+      {editingCollection && (
+        <CollectionModal
+          initial={editingCollection}
+          onClose={() => setEditingCollection(null)}
+          onSave={handleUpdateCollection}
         />
       )}
     </AppLayout>
