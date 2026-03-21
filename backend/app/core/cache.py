@@ -34,8 +34,20 @@ async def cache_get(redis: Redis, key: str) -> Any | None:
     return json.loads(value)
 
 
+def _sanitize_for_json(obj: Any) -> Any:
+    """Remove NaN/Inf floats recursivamente — json.dumps não aceita esses valores."""
+    import math
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
+
+
 async def cache_set(redis: Redis, key: str, value: Any, ttl: int = 300) -> None:
-    await redis.set(key, json.dumps(value, default=str), ex=ttl)
+    await redis.set(key, json.dumps(_sanitize_for_json(value), default=str), ex=ttl)
 
 
 async def cache_delete(redis: Redis, key: str) -> None:

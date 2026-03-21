@@ -834,7 +834,10 @@ async def query_dataset_v2(
         from .dataset_service import _apply_computed_columns
         computed = getattr(ds, 'computed_columns', None) or []
         rows = _apply_computed_columns(ds.rows or [], computed) if computed else (ds.rows or [])
-        await warp_set_rows(redis, str(dataset_id), rows)
+        try:
+            await warp_set_rows(redis, str(dataset_id), rows)
+        except Exception:
+            pass  # Cache failure não deve derrubar a query
 
         try:
             result = execute_query(rows, req)
