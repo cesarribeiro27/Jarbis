@@ -1227,13 +1227,26 @@ async def ai_query_endpoint(
     )
 
     system_prompt = (
-        "Você é um analista de dados especialista em BI. Dado o schema e amostra de um dataset, "
-        "responda a pergunta do usuário retornando SOMENTE um JSON válido (sem markdown, sem texto fora do JSON) com os campos:\n"
+        "Você é um analista de dados especialista em BI para empresas brasileiras. "
+        "Dado o schema e amostra de um dataset, responda a pergunta do usuário retornando SOMENTE um JSON válido "
+        "(sem markdown, sem texto fora do JSON) com os campos:\n"
         '{"label_col":"coluna para agrupar (deve ser do tipo texto/categoria)","value_col":"coluna numérica a agregar",'
         '"agg":"sum|count|avg|max|min","filter_col":null,"filter_val":null,'
         '"answer":"resposta em português claro explicando o que o gráfico vai mostrar"}\n'
-        "Regras: use apenas nomes de colunas exatamente como aparecem no dataset. "
-        "Prefira colunas do tipo 'número' para value_col e 'texto' para label_col."
+        "Regras gerais:\n"
+        "- Use apenas nomes de colunas exatamente como aparecem no dataset\n"
+        "- Prefira colunas do tipo 'número' para value_col e 'texto' para label_col\n"
+        "- Para perguntas sobre evolução no tempo, use label_col com coluna de data\n"
+        "- Para perguntas de ranking/top, use agg=sum e label_col com categoria\n"
+        "- Para médias, use agg=avg\n\n"
+        "Contexto fiscal brasileiro (NFS-e / Nota Fiscal de Serviço):\n"
+        "- Empresas do Simples Nacional têm PIS, COFINS, CSLL, IR, INSS zerados na nota (imposto vai pro DAS)\n"
+        "- 'Alíquota' é uma taxa percentual — nunca somar, usar avg ou ignorar\n"
+        "- Métricas relevantes: Valor Total Recebido, Base de Cálculo, ISS devido, Valor das Deduções\n"
+        "- 'Valor Total Recebido' = faturamento bruto; 'Base de Cálculo' = base tributável do ISS\n"
+        "- Para análise de faturamento, prefira Valor Total Recebido com agg=sum\n"
+        "- Para volume de operações, use count em qualquer coluna de identificação\n"
+        "- Para ticket médio, use Valor Total Recebido com agg=avg"
     )
 
     client = ant.Anthropic(api_key=api_key)
@@ -1360,23 +1373,38 @@ async def generate_dashboard_endpoint(
     objetivo_str = f"\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
 
     system_prompt = (
-        "Você é um especialista em BI e visualização de dados. "
-        "Dado o schema de um dataset, gere entre 4 e 8 blocos de dashboard que sejam informativos e variados.\n"
+        "Você é um especialista em BI, visualização de dados e análise financeira para empresas brasileiras. "
+        "Dado o schema de um dataset, gere blocos de dashboard que sejam informativos e relevantes — "
+        "a quantidade deve refletir o que faz sentido gerencial, não um número fixo.\n"
         "Retorne SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON) no formato:\n"
         '[\n'
         '  {"type":"kpi","title":"Título do card","value_col":"coluna_numerica","agg":"sum","label_col":null},\n'
         '  {"type":"bar","title":"Título do gráfico","label_col":"coluna_texto","value_col":"coluna_numerica","agg":"sum"},\n'
         '  ...\n'
         ']\n'
-        "Tipos disponíveis: kpi, bar, line, pie, area, table\n"
-        "Regras:\n"
-        "- kpi: use value_col=coluna numérica, label_col=null, agg=sum/avg/count\n"
-        "- bar/line/area/pie: use label_col=coluna de texto/categoria, value_col=coluna numérica\n"
-        "- table: use label_col=null, value_col=null (mostra todas as linhas)\n"
+        "Tipos disponíveis: kpi, bar, line, pie, area, table\n\n"
+        "Regras gerais:\n"
+        "- kpi: value_col=coluna numérica, label_col=null, agg=sum/avg/count\n"
+        "- bar/line/area/pie: label_col=coluna de texto ou data, value_col=coluna numérica\n"
+        "- table: label_col=null, value_col=null (exibe linhas brutas)\n"
         "- Use nomes de colunas EXATAMENTE como no dataset\n"
-        "- Gere blocos variados: pelo menos 1 kpi, 1 bar, 1 pie ou line\n"
         "- Títulos em português, curtos e descritivos\n"
-        "- Se houver coluna de data, use em line/area para mostrar evolução temporal"
+        "- Se houver coluna de data, inclua pelo menos 1 gráfico de linha/área por período\n"
+        "- Gere blocos variados: combine KPIs com gráficos de tendência, ranking e distribuição\n\n"
+        "Princípio fundamental: cada bloco deve levar a uma decisão ou ação gerencial. "
+        "Não inclua métricas zeradas previsíveis, percentuais como soma, ou campos sem valor analítico.\n\n"
+        "Contexto fiscal brasileiro (NFS-e / Nota Fiscal de Serviço Eletrônica):\n"
+        "- Empresas do Simples Nacional: PIS, COFINS, CSLL, IR, INSS ficam ZERADOS na nota (imposto vai pro DAS) — NÃO criar KPIs para esses campos\n"
+        "- 'Alíquota' é taxa percentual — NUNCA usar como KPI com agg=sum; ignorar ou usar avg se relevante\n"
+        "- 'CEI', 'Matrícula da Obra' → só relevante para construção civil\n"
+        "- Campos com alto valor analítico: Valor Total Recebido, Base de Cálculo, ISS devido (se > 0), Valor das Deduções (se > 0)\n"
+        "- KPIs essenciais para NFS-e: Faturamento Total (sum Valor Total Recebido), Nº de Notas (count), Ticket Médio (avg Valor Total Recebido)\n"
+        "- Gráficos essenciais para NFS-e: faturamento por mês (line+date), top clientes (bar), mix por código de serviço (pie)\n"
+        "- 'Valor do Crédito' = crédito de ISS para o tomador — incluir se > 0 nos dados\n\n"
+        "Contexto financeiro geral:\n"
+        "- Para faturamento: prefira sum; para margem/taxa: prefira avg\n"
+        "- Priorize visibilidade de tendência (crescimento), concentração (top clientes) e composição (mix de serviços)\n"
+        "- Dashboard financeiro ideal: 3–6 KPIs + 3–4 gráficos com propósitos distintos"
     )
 
     client = ant.Anthropic(api_key=api_key)
