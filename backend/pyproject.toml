@@ -27,7 +27,7 @@ dependencies = [
     # Autenticação
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=3.2.0",
+    "bcrypt>=3.2.0,<4.0.0",
 
     # Cache e rate limit
     "redis>=5.0.0",
