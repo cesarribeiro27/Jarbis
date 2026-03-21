@@ -416,6 +416,8 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
     } else if (block.type === 'boxplot') {
       const cfg = block.config || {}
       if (!cfg.value_col) { setData(block.static_data || null); return }
+    } else if (['kpi', 'gauge', 'speedometer', 'bullet'].includes(block.type)) {
+      if (!block.value_col) { setData(block.static_data || null); return }
     } else {
       if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
     }
