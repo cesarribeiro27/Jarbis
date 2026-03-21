@@ -1309,35 +1309,6 @@ export default function DashboardDetailPage() {
   const [exportingPDF, setExportingPDF] = useState(false)
   const addMenuRef = useRef()
 
-  // Dataset primário (mais blocos apontam para ele)
-  const primaryDatasetId = useMemo(() => {
-    const count = {}
-    blocks.forEach(b => { if (b.dataset_id) count[b.dataset_id] = (count[b.dataset_id] || 0) + 1 })
-    return Object.entries(count).sort((a, b) => b[1] - a[1])[0]?.[0] || datasets[0]?.id || null
-  }, [blocks, datasets])
-
-  // Colunas do dataset primário que nenhum bloco usa
-  const unusedCols = useMemo(() => {
-    if (!primaryDatasetId || !datasets.length) return []
-    const ds = datasets.find(d => d.id === primaryDatasetId)
-    if (!ds?.columns?.length) return []
-    const used = new Set(blocks.flatMap(b => [b.label_col, b.value_col, b.filter_col].filter(Boolean)))
-    return ds.columns.filter(c => !used.has(c))
-  }, [primaryDatasetId, datasets, blocks])
-
-  // Blocos com colunas que não existem mais no dataset
-  const brokenBlockIds = useMemo(() => {
-    const dsMap = Object.fromEntries(datasets.map(d => [d.id, new Set(d.columns || [])]))
-    return new Set(blocks.filter(b => {
-      if (!b.dataset_id || b.type === 'filter' || b.type === 'text' || b.type === 'image') return false
-      const cols = dsMap[b.dataset_id]
-      if (!cols?.size) return false
-      if (b.label_col && !cols.has(b.label_col)) return true
-      if (b.value_col && !cols.has(b.value_col)) return true
-      return false
-    }).map(b => b.id))
-  }, [datasets, blocks])
-
   function clearDatasetFilters(datasetId) {
     setFilterResetTrigger({ datasetId, ts: Date.now() })
   }
@@ -1451,6 +1422,35 @@ export default function DashboardDetailPage() {
       return next
     })
   }
+
+  // Dataset primário (mais blocos apontam para ele)
+  const primaryDatasetId = useMemo(() => {
+    const count = {}
+    blocks.forEach(b => { if (b.dataset_id) count[b.dataset_id] = (count[b.dataset_id] || 0) + 1 })
+    return Object.entries(count).sort((a, b) => b[1] - a[1])[0]?.[0] || datasets[0]?.id || null
+  }, [blocks, datasets])
+
+  // Colunas do dataset primário que nenhum bloco usa
+  const unusedCols = useMemo(() => {
+    if (!primaryDatasetId || !datasets.length) return []
+    const ds = datasets.find(d => d.id === primaryDatasetId)
+    if (!ds?.columns?.length) return []
+    const used = new Set(blocks.flatMap(b => [b.label_col, b.value_col, b.filter_col].filter(Boolean)))
+    return ds.columns.filter(c => !used.has(c))
+  }, [primaryDatasetId, datasets, blocks])
+
+  // Blocos com colunas que não existem mais no dataset
+  const brokenBlockIds = useMemo(() => {
+    const dsMap = Object.fromEntries(datasets.map(d => [d.id, new Set(d.columns || [])]))
+    return new Set(blocks.filter(b => {
+      if (!b.dataset_id || b.type === 'filter' || b.type === 'text' || b.type === 'image') return false
+      const cols = dsMap[b.dataset_id]
+      if (!cols?.size) return false
+      if (b.label_col && !cols.has(b.label_col)) return true
+      if (b.value_col && !cols.has(b.value_col)) return true
+      return false
+    }).map(b => b.id))
+  }, [datasets, blocks])
 
   function enterEditMode() {
     if (!report) return
