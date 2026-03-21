@@ -1425,9 +1425,10 @@ export default function DashboardDetailPage() {
 
   function handleAutoLayout() {
     if (!blocks.length) return
-    // Tamanhos padrão por tipo
+
     const SIZE = {
       filter:  b => b.config?.date_mode ? { w: 4, h: 2 } : { w: 3, h: 4 },
+      slider:  () => ({ w: 3, h: 2 }),
       kpi:     () => ({ w: 3, h: 2 }),
       line:    () => ({ w: 6, h: 4 }),
       area:    () => ({ w: 6, h: 4 }),
@@ -1437,27 +1438,51 @@ export default function DashboardDetailPage() {
       bubble:  () => ({ w: 6, h: 4 }),
       pie:     () => ({ w: 4, h: 4 }),
       combo:   () => ({ w: 6, h: 4 }),
+      treemap: () => ({ w: 6, h: 4 }),
+      gauge:   () => ({ w: 3, h: 3 }),
       table:   () => ({ w: 12, h: 5 }),
       text:    () => ({ w: 6, h: 3 }),
       image:   () => ({ w: 4, h: 4 }),
-      treemap: () => ({ w: 6, h: 4 }),
-      gauge:   () => ({ w: 3, h: 3 }),
-      slider:  () => ({ w: 3, h: 2 }),
     }
-    // Ordenar: filtros → KPIs → gráficos → tabela → outros
-    const ORDER = { filter: 0, slider: 0, kpi: 1, line: 2, area: 2, bar: 2, bar_h: 2, scatter: 2, bubble: 2, pie: 3, combo: 2, treemap: 3, gauge: 3, table: 4, text: 5, image: 5 }
-    const sorted = [...blocks].sort((a, b) => (ORDER[a.type] ?? 6) - (ORDER[b.type] ?? 6))
 
-    // Posicionamento simples: pack left-to-right, quebra linha quando não cabe
-    let curX = 0, curY = 0, rowH = 0
-    const laid = sorted.map(b => {
-      const { w, h } = (SIZE[b.type] ? SIZE[b.type](b) : { w: 6, h: 4 })
-      if (curX + w > 12) { curY += rowH; curX = 0; rowH = 0 }
-      const layout = { x: curX, y: curY, w, h }
-      curX += w
-      rowH = Math.max(rowH, h)
-      return { ...b, layout }
-    })
+    // Separar em grupos — cada grupo ocupa linhas próprias
+    const groups = [
+      blocks.filter(b => b.type === 'filter' && b.config?.date_mode),   // date filter (linha própria)
+      blocks.filter(b => b.type === 'filter' && !b.config?.date_mode),  // category filters
+      blocks.filter(b => b.type === 'slider'),
+      blocks.filter(b => b.type === 'kpi'),
+      blocks.filter(b => ['line','area','bar','bar_h','scatter','bubble','combo','treemap'].includes(b.type)),
+      blocks.filter(b => b.type === 'pie' || b.type === 'gauge'),
+      blocks.filter(b => b.type === 'table'),
+      blocks.filter(b => b.type === 'text' || b.type === 'image'),
+      blocks.filter(b => !SIZE[b.type]),                                 // tipos desconhecidos
+    ]
+
+    let curY = 0
+    const laid = []
+
+    for (const group of groups) {
+      if (!group.length) continue
+      let curX = 0, rowH = 0
+
+      // Date filter: ocupa a linha inteira (w=12)
+      if (group[0].type === 'filter' && group[0].config?.date_mode && group.length === 1) {
+        const { h } = SIZE.filter(group[0])
+        laid.push({ ...group[0], layout: { x: 0, y: curY, w: 12, h } })
+        curY += h
+        continue
+      }
+
+      for (const b of group) {
+        const { w, h } = SIZE[b.type] ? SIZE[b.type](b) : { w: 6, h: 4 }
+        if (curX + w > 12) { curY += rowH; curX = 0; rowH = 0 }
+        laid.push({ ...b, layout: { x: curX, y: curY, w, h } })
+        curX += w
+        rowH = Math.max(rowH, h)
+      }
+      curY += rowH
+    }
+
     setBlocks(laid)
   }
 
