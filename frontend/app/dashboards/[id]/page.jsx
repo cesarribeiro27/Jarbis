@@ -2142,24 +2142,121 @@ export default function DashboardDetailPage() {
           </div>
         )}
 
-        <div className="mb-4 flex items-center gap-2 flex-wrap text-sm">
-          <button onClick={() => setShowDateFilter(v => !v)} className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl border transition-colors ${showDateFilter || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
-            {t('dateFilter')}
-          </button>
-          {showDateFilter && (
-            <>
-              <select value={globalDateFilter.dateCol} onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))} className="border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400">
-                <option value="">{t('filters.dateColPlaceholder')}</option>
-                {[...new Set(datasets.flatMap(ds => ds.columns || []))].sort().map(col => <option key={col} value={col}>{col}</option>)}
-              </select>
-              <input type="date" value={globalDateFilter.dateFrom} onChange={e => setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value }))} className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
-              <span className="text-sm text-gray-400">{t('dateTo')}</span>
-              <input type="date" value={globalDateFilter.dateTo} onChange={e => setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value }))} className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
-              <button onClick={() => setGlobalDateFilter({ dateCol: '', dateFrom: '', dateTo: '' })} className="text-sm text-gray-400 hover:text-gray-700">{t('clear')}</button>
-            </>
-          )}
-        </div>
+        {/* Filtro de data global — view mode */}
+        {(() => {
+          // Detectar colunas de data: prioriza filter blocks do canvas, depois nomes sugestivos
+          const DATE_KEYWORDS = ['mes', 'mês', 'data', 'date', 'periodo', 'período', 'dt', 'competencia',
+            'emissao', 'emissão', 'vencimento', 'referencia', 'referência', 'lancamento', 'lançamento']
+          const filterBlockCols = blocks.filter(b => b.type === 'filter' && b.filter_col).map(b => b.filter_col)
+          const allCols = [...new Set(datasets.flatMap(ds => ds.columns || []))]
+          const dateCols = [...new Set([
+            ...filterBlockCols,
+            ...allCols.filter(c => DATE_KEYWORDS.some(k => c.toLowerCase().includes(k))),
+          ])]
+          const bestDateCol = globalDateFilter.dateCol || dateCols[0] || ''
+          const hasFilter = globalDateFilter.dateFrom || globalDateFilter.dateTo
+
+          return (
+            <div className={`mb-4 rounded-xl border transition-colors ${showDateFilter || hasFilter ? 'border-violet-200 bg-violet-50 dark:bg-violet-900/20 dark:border-violet-700' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'}`}>
+              {/* Header do filtro */}
+              <button
+                onClick={() => {
+                  const next = !showDateFilter
+                  setShowDateFilter(next)
+                  if (next && !globalDateFilter.dateCol && bestDateCol) {
+                    setGlobalDateFilter(f => ({ ...f, dateCol: bestDateCol }))
+                  }
+                }}
+                className="w-full flex items-center justify-between px-4 py-2.5"
+              >
+                <span className={`flex items-center gap-2 text-sm font-medium ${showDateFilter || hasFilter ? 'text-violet-700 dark:text-violet-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
+                  {t('dateFilter')}
+                  {hasFilter && (
+                    <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full font-semibold">
+                      {globalDateFilter.dateFrom && globalDateFilter.dateTo ? `${globalDateFilter.dateFrom} → ${globalDateFilter.dateTo}` : globalDateFilter.dateFrom || globalDateFilter.dateTo}
+                    </span>
+                  )}
+                </span>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${showDateFilter ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+
+              {/* Controles expandidos */}
+              {showDateFilter && (
+                <div className="px-4 pb-3 flex flex-wrap items-center gap-3 border-t border-violet-100 dark:border-violet-800 pt-3">
+                  {/* Coluna de data: mostra select apenas se há mais de uma opção */}
+                  {dateCols.length > 1 ? (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-violet-600 uppercase tracking-wide">Coluna</label>
+                      <select
+                        value={globalDateFilter.dateCol || bestDateCol}
+                        onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))}
+                        className="border border-violet-200 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      >
+                        {dateCols.map(col => <option key={col} value={col}>{col}</option>)}
+                      </select>
+                    </div>
+                  ) : bestDateCol ? (
+                    <span className="text-xs text-violet-600 font-medium bg-violet-100 dark:bg-violet-900/40 px-2.5 py-1 rounded-lg">{bestDateCol}</span>
+                  ) : (
+                    <select
+                      value={globalDateFilter.dateCol}
+                      onChange={e => setGlobalDateFilter(f => ({ ...f, dateCol: e.target.value }))}
+                      className="border border-violet-200 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    >
+                      <option value="">Selecione a coluna de data</option>
+                      {allCols.map(col => <option key={col} value={col}>{col}</option>)}
+                    </select>
+                  )}
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold text-violet-600 uppercase tracking-wide">De</label>
+                    <input
+                      type="date"
+                      value={globalDateFilter.dateFrom}
+                      onChange={e => {
+                        setGlobalDateFilter(f => ({ ...f, dateFrom: e.target.value, dateCol: f.dateCol || bestDateCol }))
+                      }}
+                      className="border border-violet-200 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold text-violet-600 uppercase tracking-wide">Até</label>
+                    <input
+                      type="date"
+                      value={globalDateFilter.dateTo}
+                      onChange={e => {
+                        setGlobalDateFilter(f => ({ ...f, dateTo: e.target.value, dateCol: f.dateCol || bestDateCol }))
+                      }}
+                      className="border border-violet-200 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    />
+                  </div>
+
+                  {/* Atalhos rápidos */}
+                  {[
+                    { label: 'Este mês', fn: () => { const n = new Date(); setGlobalDateFilter(f => ({ ...f, dateCol: f.dateCol || bestDateCol, dateFrom: `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-01`, dateTo: `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(new Date(n.getFullYear(),n.getMonth()+1,0).getDate()).padStart(2,'0')}` })) }},
+                    { label: 'Mês anterior', fn: () => { const n = new Date(); const m = n.getMonth() === 0 ? 12 : n.getMonth(); const y = n.getMonth() === 0 ? n.getFullYear()-1 : n.getFullYear(); setGlobalDateFilter(f => ({ ...f, dateCol: f.dateCol || bestDateCol, dateFrom: `${y}-${String(m).padStart(2,'0')}-01`, dateTo: `${y}-${String(m).padStart(2,'0')}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}` })) }},
+                    { label: 'Este ano', fn: () => { const y = new Date().getFullYear(); setGlobalDateFilter(f => ({ ...f, dateCol: f.dateCol || bestDateCol, dateFrom: `${y}-01-01`, dateTo: `${y}-12-31` })) }},
+                  ].map(({ label, fn }) => (
+                    <button key={label} onClick={fn} className="self-end mb-0.5 px-2.5 py-1.5 text-xs text-violet-600 bg-violet-100 dark:bg-violet-900/40 hover:bg-violet-200 rounded-lg font-medium transition-colors">
+                      {label}
+                    </button>
+                  ))}
+
+                  {hasFilter && (
+                    <button
+                      onClick={() => setGlobalDateFilter({ dateCol: bestDateCol, dateFrom: '', dateTo: '' })}
+                      className="self-end mb-0.5 px-2.5 py-1.5 text-xs text-gray-500 hover:text-red-500 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 rounded-lg font-medium transition-colors"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {translating && (
           <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5">
