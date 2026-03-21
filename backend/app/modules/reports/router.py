@@ -1382,11 +1382,10 @@ async def generate_dashboard_endpoint(
         '  {"type":"bar","title":"Título do gráfico","label_col":"coluna_texto","value_col":"coluna_numerica","agg":"sum"},\n'
         '  ...\n'
         ']\n'
-        "Tipos disponíveis: kpi, bar, line, pie, area, table\n\n"
+        "Tipos disponíveis: kpi, bar, line, pie, area\n\n"
         "Regras gerais:\n"
         "- kpi: value_col=coluna numérica, label_col=null, agg=sum/avg/count\n"
         "- bar/line/area/pie: label_col=coluna de texto ou data, value_col=coluna numérica\n"
-        "- table: label_col=null, value_col=null (exibe linhas brutas)\n"
         "- Use nomes de colunas EXATAMENTE como no dataset\n"
         "- Títulos em português, curtos e descritivos\n"
         "- Se houver coluna de data, inclua pelo menos 1 gráfico de linha/área por período\n"
