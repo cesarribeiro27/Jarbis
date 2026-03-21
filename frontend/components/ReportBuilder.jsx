@@ -4135,8 +4135,11 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
         const result = await api.reports.datasets.getExcelSheets(fd)
         if (result.sheets && result.sheets.length > 1) {
           const meta = result.sheets_meta || result.sheets.map(s => ({ name: s }))
-          const suggested = meta.find(m => m.suggested)
-          setExcelSheetPicker({ file, sheets: result.sheets, sheetsMeta: meta, defaultSheet: suggested?.name || result.sheets[0] })
+          // Se a aba sugerida é um espelho de fórmula, usa a aba fonte como padrão
+          const suggested = meta.find(m => m.suggested) || meta.find(m => m.type === 'data')
+          const formulaMirror = !suggested && meta.find(m => m.formula_source)
+          const defaultSheet = suggested?.name || formulaMirror?.formula_source || result.sheets[0]
+          setExcelSheetPicker({ file, sheets: result.sheets, sheetsMeta: meta, defaultSheet })
           if (fileRef.current) fileRef.current.value = ''
           return
         }
@@ -4345,6 +4348,7 @@ function ExcelSheetPickerInline({ sheets, sheetsMeta, defaultSheet, onConfirm, o
   const typeLabel = (type) => {
     if (type === 'data') return { label: 'Dados', cls: 'bg-green-100 text-green-700' }
     if (type === 'summary') return { label: 'Resumo', cls: 'bg-yellow-100 text-yellow-700' }
+    if (type === 'formula') return { label: 'Fórmula', cls: 'bg-orange-100 text-orange-700' }
     if (type === 'empty') return { label: 'Vazia', cls: 'bg-gray-100 text-gray-400' }
     return { label: 'Indefinida', cls: 'bg-gray-100 text-gray-500' }
   }

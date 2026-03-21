@@ -599,6 +599,28 @@ def _analyze_sheet(ws) -> dict:
     }
 
 
+def _enrich_formula_mirrors(content: bytes, sheets_meta: list[dict]) -> None:
+    """Detecta abas que são espelhos por fórmula (sem dados cached) e enriquece os metadados.
+
+    Modifica sheets_meta in-place: abas-espelho recebem type='formula',
+    formula_source com o nome da aba real, e suggested=False.
+    A aba fonte tem seu suggested=True forçado se ainda não estava.
+    """
+    from app.modules.reports.dataset_service import _resolve_formula_sheet
+    for meta in sheets_meta:
+        if meta.get("row_count", 0) < 3 and meta.get("type") in ("empty", "unknown", "summary"):
+            source = _resolve_formula_sheet(content, meta["name"])
+            if source:
+                meta["type"] = "formula"
+                meta["formula_source"] = source
+                meta["suggested"] = False
+                meta["reason"] = f"Espelho de '{source}' — importe a aba '{source}'"
+                # Garante que a aba fonte seja marcada como sugerida
+                for m in sheets_meta:
+                    if m["name"] == source and not m.get("suggested"):
+                        m["suggested"] = True
+
+
 @router.get(
     "/datasets/google-sheets-sheets",
     summary="Lista abas de uma planilha Google Sheets pública",
@@ -620,10 +642,11 @@ async def get_google_sheets_sheets(
             raise HTTPException(status_code=400, detail="Não foi possível baixar a planilha. Verifique se está pública.")
         import io
         import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(resp.content), read_only=True, data_only=True)
+        content = resp.content
+        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
         sheets_meta = [_analyze_sheet(wb[name]) for name in wb.sheetnames]
         wb.close()
-        # Retrocompatibilidade: sheets = lista de nomes
+        _enrich_formula_mirrors(content, sheets_meta)
         return {"sheets": [s["name"] for s in sheets_meta], "sheets_meta": sheets_meta}
     except HTTPException:
         raise
@@ -648,6 +671,7 @@ async def get_excel_sheets(
         wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
         sheets_meta = [_analyze_sheet(wb[name]) for name in wb.sheetnames]
         wb.close()
+        _enrich_formula_mirrors(content, sheets_meta)
         return {"sheets": [s["name"] for s in sheets_meta], "sheets_meta": sheets_meta}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")

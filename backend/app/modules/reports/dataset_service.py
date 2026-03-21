@@ -206,6 +206,44 @@ def _parse_csv(content: bytes) -> list[dict]:
     return [_coerce_row(dict(row)) for row in reader]
 
 
+def _count_non_null(rows: list[tuple]) -> int:
+    """Conta valores não-nulos em uma lista de linhas."""
+    return sum(1 for r in rows for v in r if v is not None)
+
+
+def _resolve_formula_sheet(content: bytes, sheet_name: str) -> str | None:
+    """Se a aba é um espelho por fórmula (sem dados cached), detecta e retorna a aba fonte.
+
+    Abre o arquivo sem data_only para ler as fórmulas brutas. Detecta padrões como:
+    - =ARRAYFORMULA(BASE_DADOS!A1:BU)
+    - =BASE_DADOS!A1
+    - ='Aba Dados'!B2
+    """
+    import re as _re
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=False, data_only=False)
+        if sheet_name not in wb.sheetnames:
+            wb.close()
+            return None
+        ws = wb[sheet_name]
+        # Verifica as primeiras 5 linhas / 10 células em busca de referências cross-sheet
+        for row in ws.iter_rows(max_row=5, values_only=False):
+            for cell in row:
+                val = cell.value
+                if val and isinstance(val, str) and val.startswith("="):
+                    # Padrões: =FUNC('Sheet'!...) ou =FUNC(Sheet!...) ou ='Sheet'!A1
+                    m = _re.search(r"[=(,]'?([^'!\(\),\s][^'!\(\),]*?)'?!", val)
+                    if m:
+                        ref = m.group(1).strip()
+                        if ref in wb.sheetnames and ref != sheet_name:
+                            wb.close()
+                            return ref
+        wb.close()
+    except Exception:
+        pass
+    return None
+
+
 def _find_header_row(rows: list[tuple]) -> int:
     """Encontra o índice da linha de cabeçalho real.
 
@@ -227,7 +265,19 @@ def _find_header_row(rows: list[tuple]) -> int:
 def _parse_excel(content: bytes, sheet_name: str | None = None) -> list[dict]:
     wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+    actual_name = ws.title
     rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    # Se a aba parece vazia (fórmulas sem cache), tenta detectar aba fonte
+    if _count_non_null(rows[:10]) < 3 and len(rows) > 1:
+        source = _resolve_formula_sheet(content, actual_name)
+        if source:
+            wb2 = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+            if source in wb2.sheetnames:
+                rows = list(wb2[source].iter_rows(values_only=True))
+            wb2.close()
+
     if not rows:
         return []
     header_idx = _find_header_row(rows)
