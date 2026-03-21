@@ -624,16 +624,17 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
 
 // ─── Date filter shortcuts ────────────────────────────────────────────────────
 const DATE_SHORTCUTS = [
-  { key: 'hoje',          label: 'Hoje' },
-  { key: 'ontem',         label: 'Ontem' },
-  { key: 'esta_semana',   label: 'Esta semana (dom. até hoje)' },
-  { key: '7d',            label: '7 dias atrás' },
-  { key: 'semana_ant',    label: 'Semana passada (dom. a sáb.)' },
-  { key: '14d',           label: '14 dias atrás' },
-  { key: 'este_mes',      label: 'Este mês' },
-  { key: '30d',           label: '30 dias atrás' },
-  { key: 'ultimo_mes',    label: 'Último mês' },
-  { key: 'todo',          label: 'Todo o período' },
+  { key: 'hoje',        label: 'Hoje',             group: 'Dias' },
+  { key: 'ontem',       label: 'Ontem',            group: 'Dias' },
+  { key: 'esta_semana', label: 'Esta semana',       group: 'Semanas' },
+  { key: 'semana_ant',  label: 'Semana passada',    group: 'Semanas' },
+  { key: 'este_mes',    label: 'Este mês',          group: 'Meses' },
+  { key: 'mes_ant',     label: 'Mês passado',       group: 'Meses' },
+  { key: 'ultimos_3m',  label: 'Últimos 3 meses',   group: 'Meses' },
+  { key: 'ultimos_6m',  label: 'Últimos 6 meses',   group: 'Meses' },
+  { key: 'este_ano',    label: 'Este ano',           group: 'Anos' },
+  { key: 'ultimo_ano',  label: 'Último ano',         group: 'Anos' },
+  { key: 'todo',        label: 'Todo o período',     group: null },
 ]
 
 function _getShortcutRange(key) {
@@ -641,16 +642,19 @@ function _getShortcutRange(key) {
   const y = now.getFullYear(), m = now.getMonth(), d = now.getDate()
   const fmt = dt => dt.toISOString().slice(0, 10)
   const ymd = (yr, mo, dy) => fmt(new Date(yr, mo, dy))
+  // Início da semana = segunda-feira (visão empresarial)
+  const dow = now.getDay() === 0 ? 6 : now.getDay() - 1 // days since monday
   switch (key) {
-    case 'hoje':        return { from: ymd(y, m, d),   to: ymd(y, m, d) }
-    case 'ontem':       return { from: ymd(y, m, d-1), to: ymd(y, m, d-1) }
-    case 'esta_semana': { const dow = now.getDay(); return { from: fmt(new Date(y, m, d - dow)), to: ymd(y, m, d) } }
-    case '7d':          return { from: ymd(y, m, d-7),  to: ymd(y, m, d) }
-    case 'semana_ant':  { const dow = now.getDay(); return { from: fmt(new Date(y, m, d-dow-7)), to: fmt(new Date(y, m, d-dow-1)) } }
-    case '14d':         return { from: ymd(y, m, d-14), to: ymd(y, m, d) }
-    case 'este_mes':    return { from: ymd(y, m, 1),    to: ymd(y, m+1, 0) }
-    case '30d':         return { from: ymd(y, m, d-30), to: ymd(y, m, d) }
-    case 'ultimo_mes':  return { from: ymd(y, m-1, 1),  to: ymd(y, m, 0) }
+    case 'hoje':        return { from: ymd(y, m, d),       to: ymd(y, m, d) }
+    case 'ontem':       return { from: ymd(y, m, d - 1),   to: ymd(y, m, d - 1) }
+    case 'esta_semana': return { from: fmt(new Date(y, m, d - dow)), to: ymd(y, m, d) }
+    case 'semana_ant':  return { from: fmt(new Date(y, m, d - dow - 7)), to: fmt(new Date(y, m, d - dow - 1)) }
+    case 'este_mes':    return { from: ymd(y, m, 1),       to: ymd(y, m + 1, 0) }
+    case 'mes_ant':     return { from: ymd(y, m - 1, 1),   to: ymd(y, m, 0) }
+    case 'ultimos_3m':  return { from: ymd(y, m - 3, 1),   to: ymd(y, m + 1, 0) }
+    case 'ultimos_6m':  return { from: ymd(y, m - 6, 1),   to: ymd(y, m + 1, 0) }
+    case 'este_ano':    return { from: ymd(y, 0, 1),        to: ymd(y, 11, 31) }
+    case 'ultimo_ano':  return { from: ymd(y - 1, 0, 1),   to: ymd(y - 1, 11, 31) }
     default:            return { from: '', to: '' }
   }
 }
@@ -790,85 +794,84 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
     <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure a coluna de data</div>
   )
 
+  // Agrupar shortcuts por categoria
+  const shortcutGroups = DATE_SHORTCUTS.reduce((acc, s) => {
+    const g = s.group || '__bottom__'
+    if (!acc[g]) acc[g] = []
+    acc[g].push(s)
+    return acc
+  }, {})
+
   const picker = (
     <div
       ref={dropdownRef}
-      style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999, minWidth: 560 }}
-      className="bg-white border border-gray-200 rounded-xl shadow-2xl flex overflow-hidden"
+      style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999, minWidth: 580 }}
+      className="bg-white border border-gray-200 rounded-2xl shadow-2xl flex overflow-hidden"
     >
-      {/* Shortcuts list */}
-      <div className="w-44 border-r border-gray-100 py-2 shrink-0">
-        {DATE_SHORTCUTS.map(s => (
-          <button
-            key={s.key}
-            onClick={() => handleShortcut(s.key)}
-            className={`w-full text-left px-4 py-1.5 text-sm transition-colors ${
-              activeKey === s.key ? 'text-violet-600 bg-violet-50 font-medium' : 'text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
-        <div className="px-4 pt-2 mt-1 border-t border-gray-100">
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number" min="1"
-              value={customDays}
-              onChange={e => setCustomDays(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && customDays) {
-                  const n = parseInt(customDays)
-                  if (n > 0) {
-                    const today = new Date()
-                    const past = new Date(today); past.setDate(today.getDate() - n)
-                    applyRange(past.toISOString().slice(0, 10), today.toISOString().slice(0, 10))
-                  }
-                }
-              }}
-              className="w-12 border border-gray-200 rounded px-1.5 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-violet-400"
-              placeholder="30"
-            />
-            <span className="text-xs text-gray-500">dias até hoje</span>
-          </div>
-        </div>
+      {/* Shortcuts list — grupos */}
+      <div className="w-48 border-r border-gray-100 py-3 shrink-0 bg-gray-50/60">
+        {['Dias', 'Semanas', 'Meses', 'Anos', '__bottom__'].map(group => {
+          const items = shortcutGroups[group]
+          if (!items) return null
+          return (
+            <div key={group} className="mb-1">
+              {group !== '__bottom__' && (
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-2 pb-1">{group}</p>
+              )}
+              {group === '__bottom__' && <div className="mx-4 my-2 border-t border-gray-200" />}
+              {items.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => handleShortcut(s.key)}
+                  className={`w-full text-left px-4 py-1.5 text-sm transition-colors rounded-none ${
+                    activeKey === s.key
+                      ? 'text-violet-700 bg-violet-100 font-semibold'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )
+        })}
       </div>
 
       {/* Calendar area */}
-      <div className="p-4 flex-1">
-        <div className="flex items-end gap-2 mb-3">
-          <div className="flex-1">
-            <label className="text-[10px] text-gray-400 block mb-0.5">Data de início *</label>
-            <input type="date" value={tempFrom}
-              onChange={e => setTempFrom(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
-            />
-          </div>
-          <span className="text-gray-400 pb-1.5">—</span>
-          <div className="flex-1">
-            <label className="text-[10px] text-gray-400 block mb-0.5">Data de término</label>
-            <input type="date" value={tempTo}
-              onChange={e => setTempTo(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
-            />
-          </div>
+      <div className="p-5 flex-1">
+        {/* Range inputs */}
+        <div className="flex items-center gap-2 mb-4 bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
+          <svg className="w-4 h-4 text-violet-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <input type="date" value={tempFrom}
+            onChange={e => setTempFrom(e.target.value)}
+            className="bg-transparent text-sm text-gray-700 focus:outline-none flex-1 min-w-0"
+          />
+          <span className="text-gray-300 font-light">→</span>
+          <input type="date" value={tempTo}
+            onChange={e => setTempTo(e.target.value)}
+            className="bg-transparent text-sm text-gray-700 focus:outline-none flex-1 min-w-0"
+          />
         </div>
 
-        <div className="flex items-center justify-between mb-2">
+        {/* Month navigation */}
+        <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) } else setCalMonth(m => m - 1) }}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <div className="flex gap-10">
-            <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[prevMonth]} {prevYear}</span>
-            <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[calMonth]} {calYear}</span>
+          <div className="flex gap-16">
+            <span className="text-xs font-semibold text-gray-500">{MONTH_NAMES_SHORT[prevMonth]} {prevYear}</span>
+            <span className="text-xs font-semibold text-gray-500">{MONTH_NAMES_SHORT[calMonth]} {calYear}</span>
           </div>
           <button
             onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) } else setCalMonth(m => m + 1) }}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
 
@@ -877,32 +880,53 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
           <_MiniCalendar year={calYear}  month={calMonth}  from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
         </div>
 
-        <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
-          <button onClick={() => setOpen(false)} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
           <button
-            onClick={() => applyRange(tempFrom, tempTo)}
-            disabled={!tempFrom && !tempTo}
-            className="px-4 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium disabled:opacity-40"
+            onClick={() => { applyRange('', ''); }}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
           >
-            Aplicar
+            Limpar
           </button>
+          <div className="flex gap-2">
+            <button onClick={() => setOpen(false)} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
+            <button
+              onClick={() => applyRange(tempFrom, tempTo)}
+              disabled={!tempFrom && !tempTo}
+              className="px-5 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-40 transition-colors shadow-sm"
+            >
+              Aplicar
+            </button>
+          </div>
         </div>
       </div>
     </div>
   )
 
+  const hasFilter = from || to
+
   return (
-    <div className="h-full flex items-center">
+    <div className="h-full flex items-center px-1">
       <button
         ref={triggerRef}
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-violet-400 transition-all text-sm text-gray-700 w-full shadow-sm"
+        className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border transition-all w-full group ${
+          hasFilter
+            ? 'border-violet-300 bg-violet-50 text-violet-700 hover:border-violet-400'
+            : 'border-gray-200 bg-white text-gray-600 hover:border-violet-300 hover:bg-violet-50/30'
+        }`}
       >
-        <svg className="w-4 h-4 text-violet-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-4 h-4 shrink-0 ${hasFilter ? 'text-violet-500' : 'text-gray-400 group-hover:text-violet-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
-        <span className="flex-1 text-left truncate text-sm">{displayLabel}</span>
-        <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <span className={`flex-1 text-left truncate text-sm font-medium ${hasFilter ? 'text-violet-700' : 'text-gray-600'}`}>{displayLabel}</span>
+        {hasFilter && (
+          <span
+            onClick={e => { e.stopPropagation(); applyRange('', '') }}
+            className="w-4 h-4 flex items-center justify-center rounded-full bg-violet-200 text-violet-600 hover:bg-violet-300 text-[10px] font-bold shrink-0 cursor-pointer"
+            title="Limpar filtro"
+          >✕</span>
+        )}
+        <svg className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''} ${hasFilter ? 'text-violet-400' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
         </svg>
       </button>
