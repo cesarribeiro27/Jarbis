@@ -1613,14 +1613,18 @@ export default function DashboardDetailPage() {
 
   function addBlock(type) {
     const block = newBlock(type, BLOCK_TYPES)
-    setBlocks([...blocks, block])
-    setSelectedBlockId(block.id)
+    const bottomY = blocks.reduce((m, b) => Math.max(m, (b.layout?.y ?? 0) + (b.layout?.h ?? 2)), 0)
+    const placed = { ...block, layout: { ...block.layout, y: bottomY } }
+    setBlocks([...blocks, placed])
+    setSelectedBlockId(placed.id)
     setSidePanel('config'); setSidebarOpen(true)
   }
 
   function addBlockObject(block) {
-    setBlocks([...blocks, block])
-    setSelectedBlockId(block.id)
+    const bottomY = blocks.reduce((m, b) => Math.max(m, (b.layout?.y ?? 0) + (b.layout?.h ?? 2)), 0)
+    const placed = block.layout?.y != null ? block : { ...block, layout: { ...block.layout, x: 0, y: bottomY } }
+    setBlocks([...blocks, placed])
+    setSelectedBlockId(placed.id)
     setSidePanel('config'); setSidebarOpen(true)
   }
 
@@ -1644,7 +1648,9 @@ export default function DashboardDetailPage() {
     const kpis = newBlocks.filter(b => b.type === 'kpi')
     const charts = newBlocks.filter(b => b.type !== 'kpi' && b.type !== 'filter' && b.type !== 'slider')
     const ordered = [...filters, ...kpis, ...charts]
-    let curX = 0, curY = 0, rowH = 0
+    // Começa a partir do final do layout existente para não sobrepor blocos
+    const startY = blocks.reduce((m, b) => Math.max(m, (b.layout?.y ?? 0) + (b.layout?.h ?? 2)), 0)
+    let curX = 0, curY = startY, rowH = 0
     const withLayout = ordered.map((b) => {
       const isKpi = b.type === 'kpi'
       // Usa sugestão de tamanho da IA se disponível, senão aplica padrão por tipo
