@@ -615,6 +615,126 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
   )
 }
 
+const DATE_FILTER_KEYWORDS = ['mes', 'mês', 'data', 'date', 'periodo', 'período', 'dt', 'competencia',
+  'emissao', 'emissão', 'vencimento', 'referencia', 'referência', 'lancamento', 'lançamento']
+
+function isDateFilterCol(col) {
+  if (!col) return false
+  const cl = col.toLowerCase()
+  return DATE_FILTER_KEYWORDS.some(k => cl.includes(k))
+}
+
+function getActivePeriod(from, to) {
+  if (!from && !to) return null
+  const n = new Date()
+  const y = n.getFullYear(), m = n.getMonth() + 1
+  const pad = v => String(v).padStart(2, '0')
+  const thisFrom = `${y}-${pad(m)}-01`
+  const thisDays = new Date(y, m, 0).getDate()
+  const thisTo = `${y}-${pad(m)}-${pad(thisDays)}`
+  const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y
+  const prevDays = new Date(py, pm, 0).getDate()
+  const prevFrom = `${py}-${pad(pm)}-01`, prevTo = `${py}-${pad(pm)}-${pad(prevDays)}`
+  if (from === thisFrom && to === thisTo) return 'mes'
+  if (from === prevFrom && to === prevTo) return 'mes_ant'
+  if (from === `${y}-01-01` && to === `${y}-12-31`) return 'ano'
+  if (from === `${y - 1}-01-01` && to === `${y - 1}-12-31`) return 'ano_ant'
+  return 'custom'
+}
+
+function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterChange }) {
+  const col = block.filter_col
+  const label = block.filter_label || col || 'Período'
+  const df = (globalDateFilter?.dateCol === col || !globalDateFilter?.dateCol) ? globalDateFilter : {}
+  const from = df?.dateFrom || ''
+  const to = df?.dateTo || ''
+  const active = getActivePeriod(from, to)
+
+  function set(dateFrom, dateTo) {
+    if (onGlobalDateFilterChange) onGlobalDateFilterChange(f => ({ ...f, dateCol: col, dateFrom, dateTo }))
+  }
+
+  function clear() {
+    if (onGlobalDateFilterChange) onGlobalDateFilterChange(f => ({ ...f, dateFrom: '', dateTo: '', dateCol: col }))
+  }
+
+  const n = new Date()
+  const y = n.getFullYear(), m = n.getMonth() + 1
+  const pad = v => String(v).padStart(2, '0')
+
+  const periods = [
+    {
+      key: 'mes', label: 'Este mês',
+      from: `${y}-${pad(m)}-01`,
+      to: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`,
+    },
+    {
+      key: 'mes_ant', label: 'Mês anterior',
+      from: (() => { const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y; return `${py}-${pad(pm)}-01` })(),
+      to: (() => { const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y; return `${py}-${pad(pm)}-${pad(new Date(py, pm, 0).getDate())}` })(),
+    },
+    {
+      key: 'tri', label: 'Últimos 3 meses',
+      from: (() => { const d = new Date(n); d.setMonth(d.getMonth() - 3); d.setDate(1); return d.toISOString().slice(0, 10) })(),
+      to: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`,
+    },
+    {
+      key: 'sem', label: 'Últimos 6 meses',
+      from: (() => { const d = new Date(n); d.setMonth(d.getMonth() - 6); d.setDate(1); return d.toISOString().slice(0, 10) })(),
+      to: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`,
+    },
+    { key: 'ano', label: 'Este ano', from: `${y}-01-01`, to: `${y}-12-31` },
+    { key: 'ano_ant', label: 'Ano anterior', from: `${y - 1}-01-01`, to: `${y - 1}-12-31` },
+  ]
+
+  if (!col) {
+    return <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure a coluna de data no painel lateral</div>
+  }
+
+  return (
+    <div className="flex flex-col gap-2 h-full justify-center px-1">
+      <div className="flex items-center justify-between mb-0.5">
+        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
+        {(from || to) && (
+          <button onClick={clear} className="text-[10px] text-violet-500 hover:text-violet-700 font-semibold">Limpar</button>
+        )}
+      </div>
+      {/* Period buttons */}
+      <div className="flex flex-wrap gap-1.5">
+        {periods.map(p => (
+          <button
+            key={p.key}
+            onClick={() => active === p.key ? clear() : set(p.from, p.to)}
+            className={`px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all ${
+              active === p.key
+                ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-violet-400 hover:text-violet-600'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      {/* Custom range */}
+      <div className="flex items-center gap-2 mt-1">
+        <input
+          type="date"
+          value={from}
+          onChange={e => onGlobalDateFilterChange && onGlobalDateFilterChange(f => ({ ...f, dateCol: col, dateFrom: e.target.value }))}
+          className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
+        />
+        <span className="text-xs text-gray-400">→</span>
+        <input
+          type="date"
+          value={to}
+          onChange={e => onGlobalDateFilterChange && onGlobalDateFilterChange(f => ({ ...f, dateCol: col, dateTo: e.target.value }))}
+          className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
+        />
+      </div>
+    </div>
+  )
+}
+
 function SliderBlockPreview({ block, rangeFilters, onRangeChange }) {
   const dsId = block.dataset_id
   const col = block.config?.slider_col
@@ -851,7 +971,7 @@ function AISummaryBlock({ block, readOnly }) {
   )
 }
 
-function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
+function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, onGlobalDateFilterChange, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
   const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active (legacy single-level)
 
@@ -898,6 +1018,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'filter') {
+    if (isDateFilterCol(block.filter_col) || block.config?.date_mode) {
+      return <DateFilterBlockPreview block={block} globalDateFilter={globalDateFilter} onGlobalDateFilterChange={onGlobalDateFilterChange} />
+    }
     return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} shareToken={shareToken} locale={locale} />
   }
 
@@ -4159,7 +4282,7 @@ function BlockDropZones({ block, draggedColumn, onDrop }) {
   )
 }
 
-export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null, onFiltersChange = null, filterResetTrigger = null }) {
+export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, onGlobalDateFilterChange = null, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null, onFiltersChange = null, filterResetTrigger = null }) {
   const t = useTranslations('dashboardEditor')
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
@@ -4457,6 +4580,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 onCrossFilter={handleCrossFilter}
                 onFilterChange={handleFilterChange}
                 globalDateFilter={globalDateFilter}
+                onGlobalDateFilterChange={onGlobalDateFilterChange}
                 shareToken={shareToken}
                 rangeFilters={rangeFilters}
                 onRangeChange={handleRangeChange}
