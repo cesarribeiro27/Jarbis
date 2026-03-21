@@ -206,18 +206,37 @@ def _parse_csv(content: bytes) -> list[dict]:
     return [_coerce_row(dict(row)) for row in reader]
 
 
+def _find_header_row(rows: list[tuple]) -> int:
+    """Encontra o índice da linha de cabeçalho real.
+
+    Ignora linhas de título/metadados no topo da aba — linhas onde quase tudo
+    é None ou há apenas 1-2 células preenchidas. Retorna o índice da primeira
+    linha com pelo menos 3 valores não-nulos e maioria de strings (cabeçalhos).
+    """
+    for i, row in enumerate(rows[:20]):
+        non_null = [v for v in row if v is not None]
+        if len(non_null) < 2:
+            continue
+        # Linha de cabeçalho: maioria são strings (não números puros)
+        string_count = sum(1 for v in non_null if isinstance(v, str))
+        if string_count >= max(2, len(non_null) * 0.5):
+            return i
+    return 0  # fallback: primeira linha
+
+
 def _parse_excel(content: bytes, sheet_name: str | None = None) -> list[dict]:
     wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
     rows = list(ws.iter_rows(values_only=True))
     if not rows:
         return []
-    headers = [str(h).strip() if h is not None else f"col_{i}" for i, h in enumerate(rows[0])]
+    header_idx = _find_header_row(rows)
+    headers = [str(h).strip() if h is not None else f"col_{i}" for i, h in enumerate(rows[header_idx])]
     result = []
-    for row in rows[1:]:
+    for row in rows[header_idx + 1:]:
         if all(v is None for v in row):
             continue
-        result.append(_coerce_row({headers[i]: row[i] for i in range(len(headers))}))
+        result.append(_coerce_row({headers[i]: row[i] if i < len(row) else None for i in range(len(headers))}))
     return result
 
 

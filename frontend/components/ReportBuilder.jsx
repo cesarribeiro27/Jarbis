@@ -4134,7 +4134,9 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
         const fd = new FormData(); fd.append('file', file)
         const result = await api.reports.datasets.getExcelSheets(fd)
         if (result.sheets && result.sheets.length > 1) {
-          setExcelSheetPicker({ file, sheets: result.sheets })
+          const meta = result.sheets_meta || result.sheets.map(s => ({ name: s }))
+          const suggested = meta.find(m => m.suggested)
+          setExcelSheetPicker({ file, sheets: result.sheets, sheetsMeta: meta, defaultSheet: suggested?.name || result.sheets[0] })
           if (fileRef.current) fileRef.current.value = ''
           return
         }
@@ -4326,9 +4328,9 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
       {excelSheetPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setExcelSheetPicker(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="font-semibold text-gray-800 mb-1">Selecionar aba do Excel</h2>
-            <p className="text-xs text-gray-400 mb-4">O arquivo tem {excelSheetPicker.sheets.length} abas. Escolha qual importar.</p>
-            <ExcelSheetPickerInline sheets={excelSheetPicker.sheets} onConfirm={handleExcelSheetConfirm} onClose={() => setExcelSheetPicker(null)} />
+            <h2 className="font-semibold text-gray-800 mb-1">Qual aba contém os dados?</h2>
+            <p className="text-xs text-gray-400 mb-4">O arquivo tem {excelSheetPicker.sheets.length} abas. Escolha qual importar como dataset.</p>
+            <ExcelSheetPickerInline sheets={excelSheetPicker.sheets} sheetsMeta={excelSheetPicker.sheetsMeta} defaultSheet={excelSheetPicker.defaultSheet} onConfirm={handleExcelSheetConfirm} onClose={() => setExcelSheetPicker(null)} />
           </div>
         </div>
       )}
@@ -4336,16 +4338,48 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
   )
 }
 
-function ExcelSheetPickerInline({ sheets, onConfirm, onClose }) {
-  const [selected, setSelected] = useState(sheets[0] || '')
+function ExcelSheetPickerInline({ sheets, sheetsMeta, defaultSheet, onConfirm, onClose }) {
+  const [selected, setSelected] = useState(defaultSheet || sheets[0] || '')
+  const meta = sheetsMeta || sheets.map(s => ({ name: s }))
+
+  const typeLabel = (type) => {
+    if (type === 'data') return { label: 'Dados', cls: 'bg-green-100 text-green-700' }
+    if (type === 'summary') return { label: 'Resumo', cls: 'bg-yellow-100 text-yellow-700' }
+    if (type === 'empty') return { label: 'Vazia', cls: 'bg-gray-100 text-gray-400' }
+    return { label: 'Indefinida', cls: 'bg-gray-100 text-gray-500' }
+  }
+
   return (
     <>
-      <select value={selected} onChange={e => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 mb-4">
-        {sheets.map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
+      <div className="flex flex-col gap-2 mb-4 max-h-64 overflow-y-auto pr-1">
+        {meta.map(m => {
+          const isSelected = selected === m.name
+          const tl = typeLabel(m.type)
+          return (
+            <button
+              key={m.name}
+              onClick={() => setSelected(m.name)}
+              className={`w-full text-left rounded-xl border-2 px-3 py-2.5 transition-all ${isSelected ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-violet-300'}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-800 flex-1 truncate">{m.name}</span>
+                {m.suggested && (
+                  <span className="text-[10px] font-semibold bg-violet-600 text-white px-1.5 py-0.5 rounded-full">Recomendada</span>
+                )}
+                {m.type && (
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${tl.cls}`}>{tl.label}</span>
+                )}
+              </div>
+              {m.reason && (
+                <p className="text-[11px] text-gray-400 mt-0.5">{m.reason}</p>
+              )}
+            </button>
+          )
+        })}
+      </div>
       <div className="flex gap-2">
         <button onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
-        <button onClick={() => onConfirm(selected)} className="flex-1 bg-violet-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-violet-700">Importar</button>
+        <button onClick={() => onConfirm(selected)} className="flex-1 bg-violet-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-violet-700">Importar aba</button>
       </div>
     </>
   )
@@ -4423,7 +4457,7 @@ function generateSmartPresets(ds) {
       blocks.push(mkLine('Evolução Mensal', dateCol, mainValue))
     }
     presets.push({
-      id: 'faturamento', icon: '💰',
+      id: 'faturamento',
       title: dateCol ? `Evolução de ${mainValue}` : `Análise de ${mainValue}`,
       desc: dateCol ? 'KPIs + evolução mensal + filtro de período' : 'KPIs principais',
       blocks,
@@ -4438,7 +4472,7 @@ function generateSmartPresets(ds) {
     blocks.push(mkBubble(`Concentração por ${clientCol}`, clientCol, mainValue))
     blocks.push(mkBarH(`Top ${clientCol}`, clientCol, mainValue))
     presets.push({
-      id: 'clientes', icon: '👥',
+      id: 'clientes',
       title: `Por ${clientCol}`,
       desc: 'Concentração + ranking',
       blocks,
@@ -4453,7 +4487,7 @@ function generateSmartPresets(ds) {
     blocks.push(mkCatFilter(catCol))
     blocks.push(mkPie(`Distribuição por ${catCol}`, catCol, mainValue))
     presets.push({
-      id: 'categoria', icon: '🎯',
+      id: 'categoria',
       title: `Por ${catCol}`,
       desc: 'Filtro + distribuição',
       blocks,
@@ -4463,7 +4497,7 @@ function generateSmartPresets(ds) {
   // ── Preset 4: Filtro de data standalone ───────────────────────────────────
   if (dateCol) {
     presets.push({
-      id: 'date_filter', icon: '📅',
+      id: 'date_filter',
       title: 'Filtro de Período',
       desc: `Selecionar intervalo de ${dateCol}`,
       blocks: [mkDateFilter()],
@@ -4540,7 +4574,12 @@ export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, o
                 <div className="divide-y divide-violet-50">
                   {allPresets.map(preset => (
                     <div key={`${preset.dsId}-${preset.id}`} className="flex items-center gap-2 px-3 py-2.5 bg-white hover:bg-violet-50/60 transition-colors group">
-                      <span className="text-base shrink-0">{preset.icon}</span>
+                      <span className="shrink-0 w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500">
+                        {preset.id === 'faturamento' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4v16" /></svg>}
+                        {preset.id === 'clientes' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M16 3.13a4 4 0 010 7.75" /></svg>}
+                        {preset.id === 'categoria' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>}
+                        {preset.id === 'date_filter' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>}
+                      </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-700 leading-none truncate">{preset.title}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5 leading-none truncate">{preset.desc}</p>

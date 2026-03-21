@@ -543,8 +543,10 @@ def _analyze_sheet(ws) -> dict:
     if not sample_rows:
         return {"name": ws.title, "type": "empty", "row_count": 0, "col_count": 0, "suggested": False, "reason": "Aba vazia"}
 
-    headers = sample_rows[0]
-    data_rows = [r for r in sample_rows[1:] if any(v is not None for v in r)]
+    from app.modules.reports.dataset_service import _find_header_row
+    header_idx = _find_header_row(sample_rows)
+    headers = sample_rows[header_idx]
+    data_rows = [r for r in sample_rows[header_idx + 1:] if any(v is not None for v in r)]
     col_count = sum(1 for h in headers if h is not None)
     row_count = len(data_rows)  # approximate (sample only)
 
@@ -673,9 +675,11 @@ async def upload_dataset(
     name = filename.rsplit(".", 1)[0] if "." in filename else filename
     service = DatasetService(db)
     ds = await service.create_from_file(effective_tenant_id, name, filename, content, sheet_name=sheet_name)
+    from .query_engine import detect_column_types
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
+        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
     )
 
 
