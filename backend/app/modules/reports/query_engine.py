@@ -89,6 +89,18 @@ def _parse_date(v: Any) -> date | None:
     if isinstance(v, date):
         return v
     s = str(v).strip()
+    # Formato ano-mês (ex: "2025-01", "2025-03") — muito comum em dashboards mensais
+    if len(s) == 7 and s[4] == "-":
+        try:
+            return datetime.strptime(s, "%Y-%m").date()
+        except ValueError:
+            pass
+    # Formato mês/ano BR (ex: "01/2025")
+    if len(s) == 7 and s[2] == "/":
+        try:
+            return datetime.strptime(s, "%m/%Y").date()
+        except ValueError:
+            pass
     for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y", "%Y/%m/%d", "%Y-%m-%dT%H:%M:%S"):
         try:
             return datetime.strptime(s[:10], fmt).date()
