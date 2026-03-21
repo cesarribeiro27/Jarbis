@@ -157,21 +157,22 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     // Linha temporal para cada métrica × cada coluna de data
     dateCols.forEach(dateCol => {
       numCols.slice(0, 3).forEach(metric => {
-        generated.push({ type: 'line', title: `${metric} ao longo do tempo`, label_col: dateCol, value_col: metric, agg: 'sum', dataset_id: datasetId })
+        // Colunas de data precisam de dim_type:'date' e granularity para query correta
+        generated.push({ type: 'line', title: `${metric} ao longo do tempo`, label_col: dateCol, value_col: metric, agg: 'sum', dataset_id: datasetId, config: { dim_type: 'date', granularity: 'month' } })
       })
     })
 
     // Barras: cada dimensão × cada métrica principal
     dimCols.slice(0, 3).forEach(dim => {
       numCols.slice(0, 2).forEach(metric => {
-        generated.push({ type: 'bar', title: `${metric} por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId })
+        generated.push({ type: 'bar', title: `${metric} por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId, config: { dim_type: 'text' } })
       })
     })
 
     // Pizza: distribuição por dimensão (sem duplicar barras)
     dimCols.slice(1, 4).forEach((dim, i) => {
       const metric = numCols[i] || numCols[0]
-      if (metric) generated.push({ type: 'pie', title: `Distribuição por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId })
+      if (metric) generated.push({ type: 'pie', title: `Distribuição por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId, config: { dim_type: 'text' } })
     })
 
     // Tabela geral com todos os dados
