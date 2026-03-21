@@ -99,7 +99,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
   const [aiUsage, setAiUsage] = useState(null)
   const [genError, setGenError] = useState(null)
   const [genSuccess, setGenSuccess] = useState(null)
-  const [showGenSection, setShowGenSection] = useState(false)
+  const [showGenSection, setShowGenSection] = useState(true)
 
   useEffect(() => {
     api.reports.aiUsage().then(setAiUsage).catch(() => {})
@@ -146,35 +146,37 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     }
 
     const generated = []
-    const mainMetric = numCols[0] || null
     const mainDim = dimCols[0] || null
-    const kpiDim = mainDim  // KPI precisa de label_col para fazer a query
+    const kpiDim = mainDim  // KPI precisa de label_col para a query funcionar
 
-    // KPIs — até 4 métricas
-    if (mainDim) {
-      numCols.slice(0, 4).forEach(col => {
+    // KPIs — TODAS as métricas (usuário exclui o que não precisar)
+    if (kpiDim && numCols.length > 0) {
+      numCols.forEach(col => {
         generated.push({ type: 'kpi', title: col, value_col: col, label_col: kpiDim, agg: 'sum', dataset_id: datasetId })
       })
     }
 
-    // Gráfico de linha temporal (se houver data + métrica)
-    if (dateCols.length > 0 && mainMetric) {
-      generated.push({ type: 'line', title: `${mainMetric} ao longo do tempo`, label_col: dateCols[0], value_col: mainMetric, agg: 'sum', dataset_id: datasetId })
-    }
+    // Linha temporal para cada métrica × cada coluna de data
+    dateCols.forEach(dateCol => {
+      numCols.slice(0, 3).forEach(metric => {
+        generated.push({ type: 'line', title: `${metric} ao longo do tempo`, label_col: dateCol, value_col: metric, agg: 'sum', dataset_id: datasetId })
+      })
+    })
 
-    // Gráfico de barras — categoria + métrica
-    if (mainDim && mainMetric) {
-      generated.push({ type: 'bar', title: `${mainMetric} por ${mainDim}`, label_col: mainDim, value_col: mainMetric, agg: 'sum', dataset_id: datasetId })
-    }
+    // Barras: cada dimensão × cada métrica principal
+    dimCols.slice(0, 3).forEach(dim => {
+      numCols.slice(0, 2).forEach(metric => {
+        generated.push({ type: 'bar', title: `${metric} por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId })
+      })
+    })
 
-    // Gráfico de pizza — segunda categoria (se houver)
-    if (dimCols.length > 1 && mainMetric) {
-      generated.push({ type: 'pie', title: `Distribuição por ${dimCols[1]}`, label_col: dimCols[1], value_col: mainMetric, agg: 'sum', dataset_id: datasetId })
-    } else if (dimCols.length === 1 && numCols.length > 1) {
-      generated.push({ type: 'pie', title: `${numCols[1]} por ${mainDim}`, label_col: mainDim, value_col: numCols[1], agg: 'sum', dataset_id: datasetId })
-    }
+    // Pizza: distribuição por dimensão (sem duplicar barras)
+    dimCols.slice(1, 4).forEach((dim, i) => {
+      const metric = numCols[i] || numCols[0]
+      if (metric) generated.push({ type: 'pie', title: `Distribuição por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId })
+    })
 
-    // Tabela geral
+    // Tabela geral com todos os dados
     generated.push({ type: 'table', title: selectedDs.name, label_col: null, value_col: null, dataset_id: datasetId })
 
     onAddBlocks(generated)
@@ -614,19 +616,24 @@ function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets, onQu
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [expandedDatasets, setExpandedDatasets] = useState(() => new Set())
+  const [collapsedGroups, setCollapsedGroups] = useState(() => new Set())
 
-  const grouped = datasets.map(ds => ({
-    ...ds,
-    filteredCols: (ds.columns || [])
-      .filter(col => !search || col.toLowerCase().includes(search.toLowerCase()))
-      .map(col => ({
-        col,
-        colType: ds.column_types?.[col] === 'number' ? 'number'
-          : ds.column_types?.[col] === 'date' ? 'date' : 'text',
-      }))
-  })).filter(ds => ds.filteredCols.length > 0 || !search)
+  const TYPE_GROUPS = [
+    { key: 'number', label: 'Números', badge: '#', bgClass: 'bg-blue-50 dark:bg-blue-900/30 text-blue-500' },
+    { key: 'date',   label: 'Datas',   badge: '~', bgClass: 'bg-amber-50 dark:bg-amber-900/30 text-amber-500' },
+    { key: 'text',   label: 'Texto',   badge: 'A', bgClass: 'bg-gray-100 dark:bg-gray-800 text-gray-500' },
+  ]
 
-  // Expande automaticamente o primeiro dataset
+  const grouped = datasets.map(ds => {
+    const allCols = (ds.columns || []).filter(col => !search || col.toLowerCase().includes(search.toLowerCase()))
+    const byType = { number: [], date: [], text: [] }
+    allCols.forEach(col => {
+      const t = ds.column_types?.[col] === 'number' ? 'number' : ds.column_types?.[col] === 'date' ? 'date' : 'text'
+      byType[t].push({ col, colType: t })
+    })
+    return { ...ds, byType, totalFiltered: allCols.length }
+  }).filter(ds => ds.totalFiltered > 0 || !search)
+
   useEffect(() => {
     if (datasets.length > 0 && expandedDatasets.size === 0) {
       setExpandedDatasets(new Set([datasets[0].id]))
@@ -634,23 +641,48 @@ function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets, onQu
   }, [datasets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleDataset(id) {
-    setExpandedDatasets(prev => {
-      const s = new Set(prev)
-      s.has(id) ? s.delete(id) : s.add(id)
-      return s
-    })
+    setExpandedDatasets(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  }
+  function toggleGroup(key) {
+    setCollapsedGroups(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s })
+  }
+
+  function ColItem({ col, colType, dsId, badgeBg }) {
+    return (
+      <div
+        draggable
+        onDragStart={e => {
+          e.dataTransfer.effectAllowed = 'copy'
+          e.dataTransfer.setData('text/plain', JSON.stringify({ col, colType, datasetId: dsId }))
+          onDragStart(col, colType, dsId)
+        }}
+        onDragEnd={onDragEnd}
+        className="flex items-center gap-1.5 px-2 py-1 rounded-lg mx-1 cursor-grab active:cursor-grabbing hover:bg-violet-50 dark:hover:bg-violet-900/20 group transition-colors"
+      >
+        <span className="text-[9px] select-none text-gray-200 dark:text-gray-600 group-hover:text-violet-300 shrink-0">⠿</span>
+        <span className={`text-[9px] font-bold px-1 py-0.5 rounded shrink-0 ${badgeBg}`}>
+          {colType === 'number' ? '#' : colType === 'date' ? '~' : 'A'}
+        </span>
+        <span className="text-xs text-gray-600 dark:text-gray-400 truncate group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors flex-1">{col}</span>
+        {onQuickAdd && (
+          <button
+            draggable={false}
+            onClick={e => { e.stopPropagation(); onQuickAdd(col, colType, dsId) }}
+            title={`Criar bloco com "${col}"`}
+            className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center rounded text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-opacity"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+          </button>
+        )}
+      </div>
+    )
   }
 
   return (
     <div className={`shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col transition-all duration-200 ${collapsed ? 'w-10' : 'w-56'} hidden sm:flex`}>
-      {/* Header */}
       <div className="flex items-center justify-between px-2 py-2.5 border-b border-gray-100 dark:border-gray-800 shrink-0">
         {!collapsed && <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest pl-1">Dados</span>}
-        <button
-          onClick={() => setCollapsed(c => !c)}
-          className="ml-auto p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 shrink-0"
-          title={collapsed ? 'Expandir painel de dados' : 'Recolher painel de dados'}
-        >
+        <button onClick={() => setCollapsed(c => !c)} className="ml-auto p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 shrink-0">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'} />
           </svg>
@@ -659,85 +691,62 @@ function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets, onQu
 
       {!collapsed && (
         <>
-          {/* Busca */}
           <div className="px-2 py-2 shrink-0">
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar coluna..."
-              className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 dark:focus:ring-violet-800"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar coluna..."
+              className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
             />
           </div>
 
-          {/* Lista */}
           <div className="flex-1 overflow-y-auto pb-2 min-h-0">
             {grouped.length === 0 && (
               <div className="px-3 py-6 text-center">
-                <svg className="w-7 h-7 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7m-9 4v4m0 0H8m3 0h3M9 7V3m6 4V3" /></svg>
                 <p className="text-xs text-gray-400 mb-3">Nenhum dataset ainda</p>
                 <button onClick={onManageDatasets} className="text-xs text-violet-600 hover:text-violet-700 font-semibold">+ Adicionar dados</button>
               </div>
             )}
             {grouped.map(ds => (
               <div key={ds.id} className="mb-0.5">
-                <button
-                  onClick={() => toggleDataset(ds.id)}
-                  className="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-                >
+                {/* Dataset header */}
+                <button onClick={() => toggleDataset(ds.id)} className="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
                   <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform duration-150 ${expandedDatasets.has(ds.id) ? '' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                   <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 truncate flex-1 text-left">{ds.name}</span>
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600 shrink-0">{ds.filteredCols.length}</span>
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600 shrink-0">{ds.totalFiltered}</span>
                 </button>
 
                 {expandedDatasets.has(ds.id) && (
-                  <div className="pl-1 pb-1">
-                    {ds.filteredCols.map(({ col, colType }) => (
-                      <div
-                        key={col}
-                        draggable
-                        onDragStart={e => {
-                          e.dataTransfer.effectAllowed = 'copy'
-                          e.dataTransfer.setData('text/plain', JSON.stringify({ col, colType, datasetId: ds.id }))
-                          onDragStart(col, colType, ds.id)
-                        }}
-                        onDragEnd={onDragEnd}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg mx-1 cursor-grab active:cursor-grabbing hover:bg-violet-50 dark:hover:bg-violet-900/20 group transition-colors"
-                      >
-                        <span className="text-[9px] select-none text-gray-200 dark:text-gray-600 group-hover:text-violet-300 shrink-0">⠿</span>
-                        <span className={`text-[9px] font-bold px-1 py-0.5 rounded shrink-0 ${
-                          colType === 'number' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500'
-                          : colType === 'date' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                        }`}>
-                          {colType === 'number' ? '#' : colType === 'date' ? '~' : 'A'}
-                        </span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 truncate group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{col}</span>
-                        {onQuickAdd && (
+                  <div className="pb-1">
+                    {TYPE_GROUPS.map(({ key, label, badgeBg }) => {
+                      const cols = ds.byType[key] || []
+                      if (cols.length === 0) return null
+                      const groupKey = `${ds.id}_${key}`
+                      const isCollapsed = collapsedGroups.has(groupKey)
+                      return (
+                        <div key={key}>
+                          {/* Type group header */}
                           <button
-                            draggable={false}
-                            onClick={e => { e.stopPropagation(); onQuickAdd(col, colType, ds.id) }}
-                            title={`Criar bloco com "${col}"`}
-                            className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center rounded text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-opacity"
+                            onClick={() => toggleGroup(groupKey)}
+                            className="w-full flex items-center gap-1.5 px-3 py-1 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
                           >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                            <svg className={`w-2.5 h-2.5 text-gray-300 shrink-0 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex-1 text-left">{label}</span>
+                            <span className="text-[9px] text-gray-300">{cols.length}</span>
                           </button>
-                        )}
-                      </div>
-                    ))}
+                          {!isCollapsed && cols.map(({ col, colType }) => (
+                            <ColItem key={col} col={col} colType={colType} dsId={ds.id} badgeBg={badgeBg} />
+                          ))}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Rodapé */}
           <div className="border-t border-gray-100 dark:border-gray-800 px-2 py-2 shrink-0">
-            <button
-              onClick={onManageDatasets}
-              className="w-full flex items-center justify-center gap-1.5 text-[10px] text-violet-600 hover:text-violet-700 font-semibold py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-            >
+            <button onClick={onManageDatasets} className="w-full flex items-center justify-center gap-1.5 text-[10px] text-violet-600 hover:text-violet-700 font-semibold py-1.5 rounded-lg hover:bg-violet-50 transition-colors">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               Gerenciar dados
             </button>
@@ -1203,6 +1212,18 @@ export default function DashboardDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Gerar dashboard com IA */}
+          {datasets.length > 0 && (
+            <button
+              onClick={() => setShowAiPanel(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold rounded-lg hover:bg-violet-100 hover:border-violet-300 transition-colors"
+              title="Gerar dashboard automaticamente"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span className="hidden sm:inline">Gerar com IA</span>
+            </button>
+          )}
 
           {/* Undo / Redo buttons */}
           <button
