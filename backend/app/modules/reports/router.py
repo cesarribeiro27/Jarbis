@@ -33,7 +33,7 @@ from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.cache import cache_get, cache_set, get_redis
+from app.core.cache import cache_get, cache_set, get_redis, _sanitize_for_json
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user, get_effective_tenant_id
 from app.modules.tenants.models import User
@@ -820,7 +820,7 @@ async def query_dataset_v2(
             if ds_exists:
                 try:
                     result = execute_query(warp_rows, req)
-                    result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+                    result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
                     await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
                     return result_dict
                 except Exception as exc:
@@ -846,7 +846,7 @@ async def query_dataset_v2(
 
         try:
             result = execute_query(rows, req)
-            result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+            result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
             await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
             return result_dict
         except Exception as exc:
@@ -919,7 +919,7 @@ async def public_query_dataset_v2(
             )
             if ds_exists:
                 result = execute_query(warp_rows, req)
-                result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+                result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
                 await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
                 return JSONResponse(
                     content=result_dict,
@@ -938,7 +938,7 @@ async def public_query_dataset_v2(
         await warp_set_rows(redis, str(dataset_id), rows)
 
         result = execute_query(rows, req)
-        result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+        result_dict = _sanitize_for_json(result.model_dump() if hasattr(result, "model_dump") else result)
         await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
         return JSONResponse(
             content=result_dict,
