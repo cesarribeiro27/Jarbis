@@ -2048,7 +2048,7 @@ export default function DashboardDetailPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} />}
+              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} onAddPreset={addMultipleBlocks} />}
               {sidePanel === 'config' && (activeBlock
                 ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} />
                 : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />
