@@ -1918,9 +1918,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'heatmap') {
-    const rowCol = cfg.row_col || block.label_col
-    const colCol = cfg.col_col
-    const valCol = cfg.value_col || block.value_col
+    const rowCol = config.row_col || block.label_col
+    const colCol = config.col_col
+    const valCol = config.value_col || block.value_col
     if (!rowCol || !colCol || !valCol || !displayData?.length) {
       return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Configure linha, coluna e valor</div>
     }
@@ -1934,7 +1934,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const allVals = Object.values(valueMap)
     const maxVal = Math.max(...allVals, 1)
     const minVal = Math.min(...allVals, 0)
-    const baseColor = cfg.color || '#7c3aed'
+    const baseColor = config.color || '#7c3aed'
     const r = parseInt(baseColor.slice(1, 3), 16)
     const g = parseInt(baseColor.slice(3, 5), 16)
     const b = parseInt(baseColor.slice(5, 7), 16)
@@ -1966,7 +1966,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                       backgroundColor: `rgba(${r},${g},${b},${0.1 + intensity * 0.9})`,
                       margin: 1,
                       borderRadius: 2,
-                      cursor: cfg.click_url ? 'pointer' : 'default',
+                      cursor: config.click_url ? 'pointer' : 'default',
                     }}
                   />
                 )
@@ -1999,7 +1999,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={waterfallData} barSize={32} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: cfg.click_url ? 'pointer' : 'default' }}
+            <BarChart data={waterfallData} barSize={32} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }}
               onClick={d => { if (d?.activePayload?.[0]?.payload?.label) handleClick(d.activePayload[0].payload.label) }}>
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
@@ -2192,10 +2192,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'histogram') {
-    const vals = data.map(r => parseFloat(r[cfg.value_col])).filter(v => !isNaN(v))
+    const vals = data.map(r => parseFloat(r[config.value_col])).filter(v => !isNaN(v))
     if (!vals.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>
     const min = Math.min(...vals), max = Math.max(...vals)
-    const bins = cfg.bins || 10
+    const bins = config.bins || 10
     const width = (max - min) / bins || 1
     const buckets = Array.from({ length: bins }, (_, i) => ({
       range: `${(min + i * width).toFixed(1)}–${(min + (i + 1) * width).toFixed(1)}`,
@@ -2208,7 +2208,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
           <XAxis dataKey="range" tick={{ fontSize: 10 }} />
           <YAxis />
           <Tooltip />
-          <Bar dataKey="count" fill={cfg.color || '#7c3aed'} />
+          <Bar dataKey="count" fill={config.color || '#7c3aed'} />
         </BarChart>
       </ResponsiveContainer>
     )
@@ -2219,10 +2219,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return (
       <div className="flex flex-col gap-3 p-3 h-full overflow-auto">
         {rows.map((row, i) => {
-          const label = row[cfg.label_col] || `Item ${i + 1}`
-          const value = parseFloat(row[cfg.value_col]) || 0
-          const target = parseFloat(row[cfg.target_col]) || 0
-          const maxVal = parseFloat(row[cfg.max_col]) || Math.max(value, target) * 1.2 || 100
+          const label = row[config.label_col] || `Item ${i + 1}`
+          const value = parseFloat(row[config.value_col]) || 0
+          const target = parseFloat(row[config.target_col]) || 0
+          const maxVal = parseFloat(row[config.max_col]) || Math.max(value, target) * 1.2 || 100
           const valuePct = Math.min((value / maxVal) * 100, 100)
           const targetPct = Math.min((target / maxVal) * 100, 100)
           const isOk = value >= target
@@ -2316,13 +2316,13 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
 
   if (block.type === 'sankey') {
     const rows = displayData
-    if (!rows.length || !cfg.source_col || !cfg.target_col || !cfg.value_col) {
+    if (!rows.length || !config.source_col || !config.target_col || !config.value_col) {
       return <div className="text-gray-400 text-sm p-4">Configure source_col, target_col e value_col</div>
     }
     const links = rows.map(r => ({
-      source: String(r[cfg.source_col]),
-      target: String(r[cfg.target_col]),
-      value: parseFloat(r[cfg.value_col]) || 0,
+      source: String(r[config.source_col]),
+      target: String(r[config.target_col]),
+      value: parseFloat(r[config.value_col]) || 0,
     })).filter(l => l.value > 0)
     const nodeNames = [...new Set([...links.map(l => l.source), ...links.map(l => l.target)])]
     const nodeTotals = {}
@@ -2383,11 +2383,11 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     if (!rows.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>
     const toNum = v => parseFloat(v) || 0
     const candles = rows.map(r => ({
-      date: r[cfg.date_col] || '',
-      open: toNum(r[cfg.open_col]),
-      high: toNum(r[cfg.high_col]),
-      low: toNum(r[cfg.low_col]),
-      close: toNum(r[cfg.close_col]),
+      date: r[config.date_col] || '',
+      open: toNum(r[config.open_col]),
+      high: toNum(r[config.high_col]),
+      low: toNum(r[config.low_col]),
+      close: toNum(r[config.close_col]),
     }))
     const allVals = candles.flatMap(c => [c.high, c.low]).filter(v => v > 0)
     if (!allVals.length) return <div className="text-gray-400 text-sm p-4">Configure as colunas OHLC.</div>
@@ -2440,8 +2440,8 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     if (!rows.length) return <div className="text-gray-400 text-sm p-4">Sem dados</div>
     const bpGroups = {}
     rows.forEach(r => {
-      const g = cfg.group_col ? String(r[cfg.group_col]) : 'Todos'
-      const v = parseFloat(r[cfg.value_col])
+      const g = config.group_col ? String(r[config.group_col]) : 'Todos'
+      const v = parseFloat(r[config.value_col])
       if (!isNaN(v)) {
         if (!bpGroups[g]) bpGroups[g] = []
         bpGroups[g].push(v)
