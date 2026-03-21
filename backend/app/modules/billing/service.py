@@ -435,7 +435,10 @@ class BillingService:
             select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)
         ) or 0
         ds_count = await self.db.scalar(
-            select(func.count()).select_from(ReportDataset).where(ReportDataset.tenant_id == tenant_id)
+            select(func.count()).select_from(ReportDataset).where(
+                ReportDataset.tenant_id == tenant_id,
+                ReportDataset.is_demo.is_(False),
+            )
         ) or 0
         user_count = await self.db.scalar(
             select(func.count()).select_from(User).where(

@@ -76,7 +76,10 @@ async def check_dataset_limit(
     if max_datasets == -1:
         return
     count = await db.scalar(
-        select(func.count()).select_from(ReportDataset).where(ReportDataset.tenant_id == tenant_id)
+        select(func.count()).select_from(ReportDataset).where(
+            ReportDataset.tenant_id == tenant_id,
+            ReportDataset.is_demo.is_(False),
+        )
     )
     if (count or 0) >= max_datasets:
         next_plan = _next_plan(plan)

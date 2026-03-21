@@ -659,7 +659,7 @@ async def admin_get_tenant(
     limits = get_effective_limits(tenant.plan, tenant.addon_packs)
     usage = {
         "dashboards": await db.scalar(select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)) or 0,
-        "datasets": await db.scalar(select(func.count()).select_from(ReportDataset).where(ReportDataset.tenant_id == tenant_id)) or 0,
+        "datasets": await db.scalar(select(func.count()).select_from(ReportDataset).where(ReportDataset.tenant_id == tenant_id, ReportDataset.is_demo.is_(False))) or 0,
         "alerts": await db.scalar(select(func.count()).select_from(ReportAlert).where(ReportAlert.tenant_id == tenant_id)) or 0,
     }
 
