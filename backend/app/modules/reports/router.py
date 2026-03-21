@@ -1822,54 +1822,56 @@ async def generate_dashboard_endpoint(
     objetivo_str = f"\n\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
 
     system_prompt = (
-        "Você é um especialista sênior em Business Intelligence e análise de dados para empresas brasileiras.\n"
-        "Analise o schema do dataset e gere um dashboard coeso, profissional e visualmente rico.\n\n"
+        "Você é um Chief Analytics Officer (CAO) com visão estratégica de CEO, CMO, CFO e CSO.\n"
+        "Seu trabalho é transformar dados brutos em um dashboard executivo de alto impacto — "
+        "o tipo que um Diretor apresentaria em reunião de board.\n\n"
         "RETORNE SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON):\n"
         '[\n'
-        '  {"type":"kpi","title":"Título","value_col":"coluna","agg":"sum","label_col":null,"layout":{"w":3,"h":2}},\n'
-        '  {"type":"line","title":"Título","label_col":"coluna_data","value_col":"coluna","agg":"sum","layout":{"w":6,"h":4}},\n'
-        '  {"type":"scatter","title":"Título","label_col":"coluna_num_eixoX","value_col":"coluna_num_eixoY","layout":{"w":6,"h":4}},\n'
+        '  {"type":"kpi","title":"Receita Total","value_col":"coluna","agg":"sum","label_col":null,"layout":{"w":3,"h":2}},\n'
+        '  {"type":"line","title":"Evolução da Receita","label_col":"coluna_data","value_col":"coluna","agg":"sum","layout":{"w":6,"h":4}},\n'
+        '  {"type":"bubble","title":"Receita por Cliente","label_col":"coluna_texto","value_col":"coluna_numero","agg":"sum","layout":{"w":6,"h":4}},\n'
         '  ...\n'
         ']\n\n'
         "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie, bubble\n\n"
-        "TAMANHOS DE LAYOUT por tipo (siga rigorosamente):\n"
-        "  kpi    → w=3, h=2  (máx 4 por linha)\n"
-        "  line   → w=6, h=4  (evolução temporal — OBRIGATÓRIO se houver coluna de data)\n"
-        "  area   → w=6, h=4  (área acumulada — para séries cumulativas ou de crescimento)\n"
-        "  bar    → w=6, h=4  (barras verticais — nomes curtos, até 8 categorias)\n"
-        "  bar_h  → w=6, h=4  (barras horizontais — PREFERIR se nomes longos ou >8 categorias)\n"
-        "  pie    → w=4, h=4  (pizza — máx 6 fatias, usar quando há 2–6 categorias de composição)\n"
-        "  bubble → w=6, h=4  (bolhas empacotadas — PREFERIR quando há dimensão textual + métrica)\n\n"
-        "QUANDO USAR BUBBLE (packed bubble chart — visualmente mais bonito):\n"
-        "  • Há uma dimensão textual (cliente, produto, categoria) com 5–30 valores únicos + uma métrica\n"
-        "  • Exemplo: Cliente × Receita → cada bolha = um cliente, tamanho = receita\n"
-        "  • label_col = coluna de TEXTO (nome), value_col = coluna NUMÉRICA ★ INTERESSANTE\n"
-        "  • PREFERIR bubble a pie quando há mais de 6 categorias\n"
-        "  • PREFERIR bubble a bar_h quando o objetivo é impacto visual\n\n"
-        "REGRAS OBRIGATÓRIAS:\n"
-        "1. Use APENAS colunas marcadas ★ INTERESSANTE para métricas de KPI/gráfico\n"
-        "2. Ignore completamente colunas marcadas '— zero/irrelevante' ou 'MUITOS NULOS'\n"
-        "3. kpi: label_col=null, value_col=coluna_numero_INTERESSANTE\n"
-        "4. Gráficos bar/line/area/pie: label_col=texto_ou_data, value_col=numero_INTERESSANTE\n"
-        "5. Nomes de colunas EXATAMENTE como no dataset (case-sensitive)\n"
-        "6. Títulos em português, objetivos, máx 35 caracteres\n"
-        "7. Cada bloco responde UMA pergunta de negócio específica\n"
-        "8. Colunas com nulos>70%: NÃO usar como métrica\n"
-        "9. NÃO repetir o mesmo par label_col+value_col em dois gráficos\n\n"
-        "ESTRUTURA RECOMENDADA (8–12 blocos):\n"
-        "  • Linha 1: 3–4 KPIs (métricas principais)\n"
-        "  • Linha 2: line/area (evolução temporal) + pie OU bar_h (composição)\n"
-        "  • Linha 3: bar (top N por categoria) + scatter SE houver 2 métricas por entidade\n"
-        "  • Linha 4+: outros ângulos de análise (ticket médio, margem, concentração)\n\n"
+        "TAMANHOS (siga rigorosamente):\n"
+        "  kpi    → w=3, h=2  |  line/area → w=6, h=4  |  bar/bar_h → w=6, h=4\n"
+        "  pie    → w=4, h=4  |  bubble    → w=6, h=4\n\n"
+        "QUANDO USAR CADA TIPO:\n"
+        "  • kpi    → métricas de destaque: receita total, ticket médio, crescimento, contagens relevantes\n"
+        "  • line   → série temporal: evolução mensal/trimestral de receita, volume, crescimento\n"
+        "  • area   → série temporal acumulada: receita acumulada, crescimento YoY\n"
+        "  • bar    → ranking com nomes curtos (até 8 itens): top categorias, meses\n"
+        "  • bar_h  → ranking com nomes longos (>8 itens ou nomes > 10 chars): top clientes, produtos\n"
+        "  • pie    → composição com 2–5 categorias SIGNIFICATIVAS (não usar para códigos)\n"
+        "  • bubble → impacto visual de dimensão × métrica (clientes, produtos, categorias)\n\n"
+        "REGRAS ABSOLUTAS:\n"
+        "1. Use APENAS colunas ★ INTERESSANTE para métricas\n"
+        "2. Ignore colunas '— zero/irrelevante' ou 'MUITOS NULOS'\n"
+        "3. Alíquotas/percentuais/taxas: agg=avg — NUNCA sum\n"
+        "4. Nomes de colunas EXATAMENTE como no dataset (case-sensitive)\n"
+        "5. Títulos executivos em português — o que um CEO entenderia em 2 segundos (máx 32 chars)\n"
+        "6. Cada bloco responde UMA pergunta estratégica (ex: 'Quem são meus maiores clientes?')\n"
+        "7. NÃO repetir o mesmo par label_col+value_col em dois blocos\n"
+        "8. NUNCA usar como dimensão: CNPJ, CPF, ID, código, chave, número de documento\n"
+        "   Esses são identificadores técnicos, não dimensões de negócio\n\n"
+        "MENTALIDADE EXECUTIVA — pense nessas perguntas estratégicas:\n"
+        "  • 'Qual é nossa receita e como está evoluindo?' → KPI + line\n"
+        "  • 'Quem são nossos maiores clientes/produtos?' → bubble ou bar_h\n"
+        "  • 'Como está distribuída nossa carteira?' → pie (max 5 categorias significativas)\n"
+        "  • 'Qual o ticket médio e como maximizá-lo?' → KPI com agg=avg\n"
+        "  • 'Onde está a concentração de risco/oportunidade?' → bubble\n"
+        "  • 'Qual a tendência: crescendo ou caindo?' → area com linha de tendência\n\n"
+        "ESTRUTURA IDEAL (9–12 blocos):\n"
+        "  Linha 1: 3–4 KPIs executivos (receita, crescimento, ticket médio, principal métrica)\n"
+        "  Linha 2: line/area evolução temporal (w=6) + bubble ou pie de composição (w=6)\n"
+        "  Linha 3: bar_h top N + bubble segunda dimensão ou bar outra métrica\n"
+        "  Linha 4+: análises adicionais de valor (margem, concentração, comparativos)\n\n"
         f"{domain_section}"
-        "REGRAS DE QUALIDADE:\n"
-        "  • Alíquotas, percentuais, taxas: agg=avg, NUNCA sum\n"
-        "  • Prefira bar_h para listas longas (clientes, produtos, CNPJs)\n"
-        "  • Use scatter quando o insight é 'quais X têm mais A e mais B ao mesmo tempo'\n"
-        "  • Evite pie quando há mais de 6 categorias — prefira bubble\n"
-        "  • Use bar_h para listas longas com comparação precisa (ex: top 10 por valor)\n"
-        "  • Use bubble para comparação visual por proporção (ex: clientes por receita)\n"
-        "  • Se houver coluna de data, SEMPRE gere ao menos um gráfico line ou area"
+        "QUALIDADE VISUAL:\n"
+        "  • Prefira bubble a pie quando há >5 categorias\n"
+        "  • Prefira bar_h a bar quando nomes têm >10 caracteres\n"
+        "  • Todo dashboard precisa de pelo menos 1 gráfico temporal se houver data\n"
+        "  • Títulos como 'Receita por Cliente', 'Evolução Mensal', 'Top Produtos' — nunca 'Gráfico 1'"
     )
 
     client = ant.Anthropic(api_key=api_key)
@@ -1947,16 +1949,38 @@ async def generate_dashboard_endpoint(
             "layout": {"w": 4, "h": 2},
         })
 
-    # Até 2 colunas categóricas com cardinalidade baixa (boas para filtro)
+    # Colunas que são identificadores técnicos — NÃO devem virar filtros
+    _ID_SIGNALS = ["cnpj", "cpf", "id", "codigo", "código", "chave", "numero", "número",
+                   "nfe", "nfse", "rps", "protocolo", "inscricao", "inscrição", "cep",
+                   "telefone", "email", "e-mail", "url", "hash", "uuid", "key"]
+
+    def _is_identifier_col(col_name: str) -> bool:
+        cl = col_name.lower().replace(" ", "_").replace("-", "_")
+        return any(sig in cl for sig in _ID_SIGNALS)
+
+    def _values_are_codes(top3: list) -> bool:
+        """Retorna True se os valores parecem códigos (1-2 chars ou todos maiúsculos sem espaço)."""
+        for v in top3:
+            v = str(v).strip()
+            if len(v) <= 2:
+                return True
+            if v.isupper() and len(v) <= 6 and " " not in v:
+                return True
+        return False
+
+    # Até 2 colunas categóricas úteis como filtro de negócio
     cat_filters_added = 0
     for col, st in col_stats.items():
         if cat_filters_added >= 2:
             break
         if col == suggested_date_col:
             continue
+        if _is_identifier_col(col):
+            continue
         if st.get("type") == "texto":
             unique = st.get("unique", 0)
-            if 2 <= unique <= 15:
+            top3 = st.get("top3", [])
+            if 2 <= unique <= 20 and not _values_are_codes(top3):
                 filter_blocks.append({
                     "id": str(_uuid.uuid4()),
                     "type": "filter",
