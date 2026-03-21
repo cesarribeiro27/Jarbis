@@ -201,8 +201,8 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
             dataset_id: datasetId,
             filter_col: result.suggested_date_col,
             filter_label: 'Período',
-            config: { filter_type: 'date_range' },
-            layout: { x: 0, y: 0, w: 4, h: 2 },
+            config: {},
+            layout: { x: 0, y: 0, w: 6, h: 2 },
           })
         }
         if (onSetDateCol) onSetDateCol(result.suggested_date_col)
@@ -1546,10 +1546,11 @@ export default function DashboardDetailPage() {
 
   function addMultipleBlocks(newBlocks) {
     if (!newBlocks?.length) return
-    // Separa KPIs e gráficos para posicionar KPIs primeiro
+    // Ordem: filtros → KPIs → gráficos
+    const filters = newBlocks.filter(b => b.type === 'filter' || b.type === 'slider')
     const kpis = newBlocks.filter(b => b.type === 'kpi')
-    const charts = newBlocks.filter(b => b.type !== 'kpi')
-    const ordered = [...kpis, ...charts]
+    const charts = newBlocks.filter(b => b.type !== 'kpi' && b.type !== 'filter' && b.type !== 'slider')
+    const ordered = [...filters, ...kpis, ...charts]
     let curX = 0, curY = 0, rowH = 0
     const withLayout = ordered.map((b) => {
       const isKpi = b.type === 'kpi'

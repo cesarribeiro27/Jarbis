@@ -1790,7 +1790,8 @@ async def generate_dashboard_endpoint(
     # Detectar coluna de data mais relevante para sugerir ao frontend
     date_cols = [col for col, st in col_stats.items() if st.get("type") == "data"]
     # Preferir colunas com nome relacionado a mês/data/período
-    date_priority = ["mes", "mês", "data", "date", "periodo", "período", "dt", "competencia"]
+    date_priority = ["mes", "mês", "data", "date", "periodo", "período", "dt", "competencia",
+                     "emissao", "emissão", "vencimento", "referencia", "referência", "lancamento", "lançamento"]
     suggested_date_col = None
     for priority in date_priority:
         for dc in date_cols:
@@ -1801,6 +1802,13 @@ async def generate_dashboard_endpoint(
             break
     if not suggested_date_col and date_cols:
         suggested_date_col = date_cols[0]
+    # Fallback: checar nome das colunas mesmo que tipo não detectado como data
+    if not suggested_date_col:
+        for col in columns:
+            col_l = col.lower()
+            if any(sig in col_l for sig in date_priority):
+                suggested_date_col = col
+                break
 
     # ── Detecção de domínio ────────────────────────────────────────────────
     domain_key, domain_tpl = _detect_domain(columns, rows)
