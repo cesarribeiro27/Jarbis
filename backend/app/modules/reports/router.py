@@ -3268,7 +3268,7 @@ async def delete_scheduled_report(
 
 @router.post(
     "/{report_id}/diagnose",
-    summary="Diagnóstico inteligente do dashboard — insights, gaps e sugestões",
+    summary="Diagnóstico inteligente do dashboard — insights, gaps e histórico De/Para",
 )
 async def diagnose_dashboard_endpoint(
     report_id: uuid.UUID,
@@ -3278,10 +3278,12 @@ async def diagnose_dashboard_endpoint(
 ):
     import json
     import os
+    import re as _re
 
     import anthropic as ant
 
     from .ai_usage_models import AIUsageLog
+    from .diagnosis_models import DiagnosisSnapshot
 
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     plan = tenant.plan if tenant else "free"
@@ -3301,24 +3303,22 @@ async def diagnose_dashboard_endpoint(
     for page in pages:
         all_blocks.extend(page.get("blocks", []))
     if not all_blocks:
-        # Fallback para legado
         all_blocks = report.blocks or []
 
-    # Coletar dataset IDs únicos usados nos blocos
     dataset_ids = list({b.get("dataset_id") for b in all_blocks if b.get("dataset_id")})
 
     if not dataset_ids:
         return {
-            "domain": "generic",
-            "domain_name": "Genérico",
-            "insights": ["O dashboard não tem blocos conectados a nenhum dataset."],
+            "domain": "generic", "domain_name": "Genérico",
+            "visual_insights": ["O dashboard ainda não tem blocos conectados a dados."],
+            "technical": {"total_rows": 0, "total_cols": 0, "block_types": {}, "missing_columns": []},
             "missing_blocks": [],
-            "missing_columns": [],
-            "suggestions": ["Conecte um dataset aos blocos para obter um diagnóstico completo."],
+            "suggestions": ["Conecte um dataset e clique em Gerar com IA para criar os primeiros blocos."],
             "health_score": 10,
+            "previous": None,
         }
 
-    # Usar o primeiro dataset (principal)
+    # Dataset principal
     svc = DatasetService(db)
     ds = None
     for did in dataset_ids:
@@ -3336,7 +3336,7 @@ async def diagnose_dashboard_endpoint(
 
     columns = ds.columns or []
 
-    # Tentar carregar rows do warp cache (Redis) — fallback para DB
+    # Rows: Redis (warp cache) > DB
     rows = ds.rows or []
     if not rows:
         try:
@@ -3349,11 +3349,9 @@ async def diagnose_dashboard_endpoint(
             pass
 
     total_rows = len(rows)
-
-    # Detectar domínio
     domain_key, domain_tpl = _detect_domain(columns, rows)
 
-    # Analisar colunas existentes
+    # Estatísticas das colunas
     col_stats: dict[str, dict] = {}
     for col in columns:
         vals = [r.get(col) for r in rows if r.get(col) is not None
@@ -3361,85 +3359,65 @@ async def diagnose_dashboard_endpoint(
                     "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
                     "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
                 )]
-        null_count = total_rows - len(vals)
-        null_pct = round(null_count / total_rows * 100) if total_rows else 100
+        null_pct = round((total_rows - len(vals)) / total_rows * 100) if total_rows else 100
         nums = [float(v) for v in vals if isinstance(v, (int, float))]
         if nums:
-            col_stats[col] = {
-                "type": "numero",
-                "sum": round(sum(nums), 2),
-                "avg": round(sum(nums) / len(nums), 2),
-                "null_pct": null_pct,
-            }
+            col_stats[col] = {"type": "numero", "sum": round(sum(nums), 2), "avg": round(sum(nums)/len(nums), 2), "null_pct": null_pct}
         else:
             col_stats[col] = {"type": "texto", "null_pct": null_pct}
 
-    # Resumo dos blocos atuais
-    block_types = {}
+    block_types: dict[str, int] = {}
     for b in all_blocks:
         bt = b.get("type", "unknown")
         block_types[bt] = block_types.get(bt, 0) + 1
 
-    # Identificar colunas ausentes do template do domínio
-    missing_cols_from_template = []
-    for improvement in domain_tpl.get("optional_improvements", []):
-        col_signal = improvement["col"].lower().replace("_", "")
-        if not any(col_signal in c.lower().replace("_", "") for c in columns):
-            missing_cols_from_template.append(improvement)
+    missing_cols_from_template = [
+        imp for imp in domain_tpl.get("optional_improvements", [])
+        if not any(imp["col"].lower().replace("_", "") in c.lower().replace("_", "") for c in columns)
+    ]
 
-    # Schema para a IA
     schema_lines = []
     for col, st in col_stats.items():
         if st["type"] == "numero":
-            schema_lines.append(f"  {col}: número | soma={st['sum']} | média={st['avg']} | nulos={st['null_pct']}%")
+            schema_lines.append(f"  {col}: número | total={st['sum']} | média={st['avg']}")
         else:
-            schema_lines.append(f"  {col}: texto | nulos={st['null_pct']}%")
-
-    blocks_summary = json.dumps(block_types, ensure_ascii=False)
+            schema_lines.append(f"  {col}: texto")
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key or api_key == "your_key_here":
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
 
     system_prompt = (
-        "Você é um analista de BI sênior especializado em dashboards para PMEs brasileiras. "
-        "Analise o dataset e o dashboard e responda APENAS com JSON válido, sem markdown.\n\n"
-        "O JSON deve ter exatamente esta estrutura:\n"
+        "Você é um analista de negócios especializado em BI para PMEs brasileiras. "
+        "Responda APENAS com JSON válido, sem markdown.\n\n"
+        "Estrutura OBRIGATÓRIA do JSON:\n"
         "{\n"
-        '  "insights": ["insight 1", "insight 2", "insight 3"],\n'
-        '  "missing_blocks": [\n'
-        '    {"type": "line", "title": "Título sugerido", "reason": "Por que este bloco é importante"}\n'
-        '  ],\n'
-        '  "missing_columns": [\n'
-        '    {"col": "NOME_COLUNA", "impact": "O que essa coluna permitiria analisar"}\n'
-        '  ],\n'
-        '  "suggestions": ["sugestão 1", "sugestão 2"],\n'
+        '  "visual_insights": ["frase de negócio 1", "frase de negócio 2", "frase de negócio 3"],\n'
+        '  "missing_blocks": [{"type": "line", "title": "Título", "reason": "Por que adicionar"}],\n'
+        '  "missing_columns": [{"col": "NOME", "impact": "O que permitiria analisar"}],\n'
+        '  "suggestions": ["ação concreta 1", "ação concreta 2"],\n'
         '  "health_score": 75\n'
         "}\n\n"
-        "Regras OBRIGATÓRIAS:\n"
-        "- insights: SEMPRE gere 2-3 frases. Se tiver dados numéricos, use os valores. "
-        "  Se não tiver dados, comente sobre a estrutura (ex: 'Dataset com X colunas cobrindo domínio Y. "
-        "  Os blocos Z indicam foco em análise W.'). Nunca retorne insights vazio.\n"
-        "- missing_blocks: blocos que deveriam estar mas não estão (máx 2). "
-        "  Se o dashboard já está completo, retorne lista vazia.\n"
-        "- missing_columns: colunas ausentes que agregariam valor (máx 2). "
-        "  Se o dataset já está bom, retorne lista vazia.\n"
-        "- suggestions: 1-2 ações concretas e positivas para o usuário melhorar o dashboard\n"
-        "- health_score: 0-100 baseado nos blocos presentes vs blocos esperados para o domínio\n"
-        "- Responda em português brasileiro\n"
-        "- Priorize insights sobre missing_columns — entregar valor primeiro, lacunas depois"
+        "REGRAS:\n"
+        "- visual_insights: 2-3 frases sobre o NEGÓCIO (faturamento, clientes, tendências). "
+        "  Use os números reais do schema. PROIBIDO mencionar 'banco de dados', 'colunas', 'blocos', 'dataset'. "
+        "  Fale como analista para o dono da empresa, não para um técnico.\n"
+        "- missing_blocks: até 2 gráficos que faltam. Se já está completo, lista vazia.\n"
+        "- missing_columns: até 2 colunas que agregariam valor de negócio. Se já está bom, lista vazia.\n"
+        "- suggestions: 1-2 ações de negócio que o usuário pode tomar com os dados.\n"
+        "- health_score: 0-100. 100 = dashboard completo para o domínio detectado.\n"
+        "- Responda em português brasileiro, linguagem simples e direta."
     )
 
     user_msg = (
-        f"DOMÍNIO: {domain_tpl['name']}\n"
-        f"DATASET: {total_rows} linhas, {len(columns)} colunas\n\n"
-        f"COLUNAS:\n" + "\n".join(schema_lines or [f"  {c}: (sem dados disponíveis)" for c in columns[:10]]) + "\n\n"
-        f"BLOCOS ATUAIS NO DASHBOARD: {blocks_summary}\n"
-        f"(Total de blocos: {len(all_blocks)})\n\n"
-        + (f"POSSÍVEIS COLUNAS A ADICIONAR:\n"
-           + "\n".join(f"  - {m['col']}: {m['impact']}" for m in missing_cols_from_template[:2])
-           + "\n\n" if missing_cols_from_template else "")
-        + "Gere o diagnóstico JSON:"
+        f"SETOR/DOMÍNIO: {domain_tpl['name']}\n"
+        f"DADOS: {total_rows} registros\n\n"
+        f"MÉTRICAS DISPONÍVEIS:\n" + "\n".join(schema_lines or [f"  {c}" for c in columns[:12]]) + "\n\n"
+        f"VISUALIZAÇÕES NO DASHBOARD: {json.dumps(block_types, ensure_ascii=False)}\n"
+        + (f"\nCOLUNAS EXTRAS QUE PODERIAM EXISTIR:\n"
+           + "\n".join(f"  {m['col']}: {m['impact']}" for m in missing_cols_from_template[:2])
+           if missing_cols_from_template else "")
+        + "\n\nGere o diagnóstico:"
     )
 
     client = ant.Anthropic(api_key=api_key)
@@ -3450,41 +3428,84 @@ async def diagnose_dashboard_endpoint(
         messages=[{"role": "user", "content": user_msg}],
     )
 
-    # Log de uso
+    # Log de uso de IA
     try:
         usage = msg.usage
         log = AIUsageLog(
-            tenant_id=current_user.tenant_id,
-            user_id=current_user.id,
-            dataset_id=ds.id,
+            tenant_id=current_user.tenant_id, user_id=current_user.id, dataset_id=ds.id,
             model="claude-haiku-4-5-20251001",
-            tokens_input=usage.input_tokens,
-            tokens_output=usage.output_tokens,
+            tokens_input=usage.input_tokens, tokens_output=usage.output_tokens,
             question="[diagnose-dashboard]",
         )
         db.add(log)
-        await db.commit()
     except Exception:
         pass
 
     text = msg.content[0].text.strip()
     try:
-        import re as _re
-        m = _re.search(r"\{.*\}", text, _re.DOTALL)
-        result = json.loads(m.group() if m else text)
+        m2 = _re.search(r"\{.*\}", text, _re.DOTALL)
+        ai_result = json.loads(m2.group() if m2 else text)
     except Exception:
-        result = {
-            "insights": ["Não foi possível gerar insights automáticos."],
-            "missing_blocks": [],
-            "missing_columns": [{"col": c["col"], "impact": c["impact"]} for c in missing_cols_from_template[:3]],
-            "suggestions": [],
-            "health_score": 50,
+        ai_result = {
+            "visual_insights": [f"Dashboard com {len(all_blocks)} visualizações no domínio {domain_tpl['name']}."],
+            "missing_blocks": [], "missing_columns": [], "suggestions": [], "health_score": 50,
         }
+
+    visual_insights = ai_result.get("visual_insights") or ai_result.get("insights") or []
+    missing_blocks_ai = ai_result.get("missing_blocks", [])[:2]
+    missing_columns_ai = ai_result.get("missing_columns", [])[:2]
+    suggestions_ai = ai_result.get("suggestions", [])[:2]
+    health_score = int(ai_result.get("health_score", 50))
+
+    # Dados técnicos (separados dos visuais)
+    technical = {
+        "total_rows": total_rows,
+        "total_cols": len(columns),
+        "block_types": block_types,
+        "missing_columns": missing_columns_ai,
+    }
+
+    # Carregar snapshot anterior para comparação De/Para
+    from datetime import timezone as _tz
+    prev_snapshot = await db.scalar(
+        select(DiagnosisSnapshot)
+        .where(DiagnosisSnapshot.report_id == report_id, DiagnosisSnapshot.tenant_id == current_user.tenant_id)
+        .order_by(DiagnosisSnapshot.created_at.desc())
+        .limit(1)
+    )
+    previous = None
+    if prev_snapshot:
+        previous = {
+            "health_score": prev_snapshot.health_score,
+            "visual_insights": prev_snapshot.visual_insights,
+            "created_at": prev_snapshot.created_at.isoformat(),
+            "delta": health_score - prev_snapshot.health_score,
+        }
+
+    # Salvar novo snapshot
+    snapshot = DiagnosisSnapshot(
+        report_id=report_id,
+        tenant_id=current_user.tenant_id,
+        health_score=health_score,
+        domain=domain_key,
+        domain_name=domain_tpl["name"],
+        visual_insights=visual_insights,
+        missing_blocks=missing_blocks_ai,
+        missing_columns=missing_columns_ai,
+        suggestions=suggestions_ai,
+    )
+    db.add(snapshot)
+    await db.commit()
 
     return {
         "domain": domain_key,
         "domain_name": domain_tpl["name"],
-        **result,
+        "visual_insights": visual_insights,
+        "missing_blocks": missing_blocks_ai,
+        "technical": technical,
+        "suggestions": suggestions_ai,
+        "health_score": health_score,
+        "previous": previous,
     }
 
 

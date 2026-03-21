@@ -19,6 +19,7 @@ from app.database import Base
 # IMPORTANTE: cada novo model deve ser importado aqui
 from app.modules.reports.models import Report  # noqa: F401
 from app.modules.reports.ai_usage_models import AIUsageLog  # noqa: F401
+from app.modules.reports.diagnosis_models import DiagnosisSnapshot  # noqa: F401
 from app.modules.admin.models import UserSession  # noqa: F401
 from app.modules.tenants.models import Tenant, User  # noqa: F401
 

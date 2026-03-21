@@ -581,10 +581,13 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   )
 }
 
-function DiagnosticoPanel({ reportId, onClose }) {
+function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [tab, setTab] = useState('analise') // 'analise' | 'tecnico'
+  const [addedBlocks, setAddedBlocks] = useState(new Set())
+  const [exported, setExported] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -594,25 +597,55 @@ function DiagnosticoPanel({ reportId, onClose }) {
       .finally(() => setLoading(false))
   }, [reportId])
 
-  const scoreColor = result
-    ? result.health_score >= 75 ? 'text-green-600' : result.health_score >= 50 ? 'text-amber-500' : 'text-red-500'
-    : 'text-gray-400'
-  const scoreRing = result
-    ? result.health_score >= 75 ? 'stroke-green-500' : result.health_score >= 50 ? 'stroke-amber-400' : 'stroke-red-400'
-    : 'stroke-gray-200'
+  const score = result?.health_score ?? 0
+  const scoreColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-amber-500' : 'text-red-500'
+  const scoreRing = score >= 75 ? 'stroke-green-500' : score >= 50 ? 'stroke-amber-400' : 'stroke-red-400'
+  const scoreLabel = score >= 75 ? 'Ótimo' : score >= 50 ? 'Em evolução' : 'Incompleto'
+
+  const prev = result?.previous
+  const delta = prev?.delta
+
+  function handleAddBlock(mb) {
+    if (!onAddBlock) return
+    onAddBlock({
+      id: crypto.randomUUID(),
+      type: mb.type,
+      title: mb.title || mb.label || mb.type,
+      dataset_id: null,
+      label_col: null, value_col: null, agg: 'sum',
+      config: {},
+      layout: { x: 0, y: Infinity, w: mb.type === 'kpi' ? 3 : 6, h: mb.type === 'kpi' ? 2 : 4 },
+    })
+    setAddedBlocks(s => new Set([...s, mb.type + (mb.title || '')]))
+  }
+
+  function handleExport() {
+    if (!onExportInsights || !result) return
+    const insights = result.visual_insights || []
+    const lines = insights.map(i => `• ${i}`).join('\n')
+    const text = `📊 Análise IA — ${result.domain_name || 'Dashboard'}\n\n${lines}`
+    onExportInsights(text)
+    setExported(true)
+    setTimeout(() => setExported(false), 2500)
+  }
+
+  const dateStr = result?.previous?.created_at
+    ? new Date(result.previous.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
               </svg>
             </div>
-            <span className="font-semibold text-gray-800 text-sm">Diagnóstico do Dashboard</span>
+            <span className="font-semibold text-gray-800 text-sm">Diagnóstico IA</span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -621,111 +654,129 @@ function DiagnosticoPanel({ reportId, onClose }) {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100 shrink-0">
+          {[{ id: 'analise', label: 'Análise' }, { id: 'tecnico', label: 'Técnico' }].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${tab === t.id ? 'text-amber-700 border-b-2 border-amber-500 bg-amber-50/40' : 'text-gray-500 hover:text-gray-700'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+
           {loading && (
-            <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
               <svg className="w-8 h-8 text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
-              <p className="text-sm text-gray-500">Analisando seu dashboard...</p>
+              <p className="text-sm text-gray-500">Analisando seus dados...</p>
             </div>
           )}
 
-          {error && (
-            <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-600">{error}</div>
-          )}
+          {error && <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-600">{error}</div>}
 
-          {result && !loading && (
+          {result && !loading && tab === 'analise' && (
             <>
-              {/* Health Score */}
-              <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
-                <div className="relative w-16 h-16 shrink-0">
-                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+              {/* Health Score + De/Para */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3.5">
+                <div className="relative w-14 h-14 shrink-0">
+                  <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
                     <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" strokeWidth="3"/>
                     <circle cx="18" cy="18" r="15.9" fill="none" className={scoreRing} strokeWidth="3"
-                      strokeDasharray={`${result.health_score} 100`} strokeLinecap="round"/>
+                      strokeDasharray={`${score} 100`} strokeLinecap="round"/>
                   </svg>
-                  <span className={`absolute inset-0 flex items-center justify-center text-base font-bold ${scoreColor}`}>
-                    {result.health_score}
-                  </span>
+                  <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold ${scoreColor}`}>{score}</span>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Health Score</p>
-                  <p className={`text-lg font-bold ${scoreColor}`}>
-                    {result.health_score >= 75 ? 'Ótimo' : result.health_score >= 50 ? 'Regular' : 'Incompleto'}
-                  </p>
-                  {result.domain_name && (
-                    <p className="text-xs text-gray-400 mt-0.5">Domínio: {result.domain_name}</p>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-base font-bold ${scoreColor}`}>{scoreLabel}</p>
+                    {delta !== null && delta !== undefined && (
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${delta > 0 ? 'bg-green-100 text-green-700' : delta < 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                        {delta > 0 ? `+${delta}` : delta} {dateStr && <span className="font-normal opacity-70">vs {dateStr}</span>}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{result.domain_name || 'Genérico'}</p>
+                  {!prev && <p className="text-[10px] text-gray-300 mt-0.5">Primeira análise — próxima mostrará evolução</p>}
                 </div>
               </div>
 
-              {/* Insights */}
-              {result.insights?.length > 0 && (
+              {/* De/Para: insights anteriores */}
+              {prev?.visual_insights?.length > 0 && (
+                <details className="group">
+                  <summary className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide cursor-pointer list-none flex items-center gap-1.5 hover:text-gray-600">
+                    <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                    Análise anterior ({dateStr})
+                  </summary>
+                  <div className="mt-2 flex flex-col gap-1.5 pl-4 border-l-2 border-gray-100">
+                    {prev.visual_insights.slice(0, 2).map((ins, i) => (
+                      <p key={i} className="text-[11px] text-gray-400 italic">{ins}</p>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {/* Insights de negócio */}
+              {(result.visual_insights?.length > 0 || result.insights?.length > 0) && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">O que seus dados dizem</p>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">O que seus dados mostram</p>
                   <div className="flex flex-col gap-2">
-                    {result.insights.map((insight, i) => (
+                    {(result.visual_insights || result.insights).map((insight, i) => (
                       <div key={i} className="flex items-start gap-2 bg-blue-50 rounded-lg px-3 py-2.5">
-                        <span className="text-blue-400 text-sm mt-0.5">💡</span>
-                        <p className="text-xs text-blue-800">{insight}</p>
+                        <span className="text-blue-400 text-sm mt-0.5 shrink-0">💡</span>
+                        <p className="text-xs text-blue-800 leading-relaxed">{insight}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Missing blocks */}
+              {/* Missing blocks com botão + */}
               {result.missing_blocks?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Visualizações recomendadas</p>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Visualizações recomendadas</p>
                   <div className="flex flex-col gap-2">
-                    {result.missing_blocks.map((mb, i) => (
-                      <div key={i} className="flex items-center gap-3 border border-dashed border-gray-200 rounded-lg px-3 py-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
-                          <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                          </svg>
+                    {result.missing_blocks.map((mb, i) => {
+                      const key = mb.type + (mb.title || '')
+                      const added = addedBlocks.has(key)
+                      return (
+                        <div key={i} className="flex items-center gap-3 border border-dashed border-violet-200 rounded-xl px-3 py-2.5 bg-violet-50/30">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-700">{mb.title || mb.label}</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">{mb.reason}</p>
+                          </div>
+                          {onAddBlock && (
+                            <button
+                              onClick={() => handleAddBlock(mb)}
+                              disabled={added}
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${added ? 'bg-green-100 text-green-600' : 'bg-violet-100 text-violet-600 hover:bg-violet-200'}`}
+                              title={added ? 'Adicionado!' : 'Adicionar ao dashboard'}
+                            >
+                              {added
+                                ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                                : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
+                              }
+                            </button>
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-700">{mb.title || mb.label}</p>
-                          <p className="text-[11px] text-gray-400 truncate">{mb.reason}</p>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
-                </div>
-              )}
-
-              {/* Missing columns */}
-              {result.missing_columns?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Enriqueça seu dataset</p>
-                  <div className="flex flex-col gap-2">
-                    {result.missing_columns.map((mc, i) => (
-                      <div key={i} className="flex items-start gap-2 bg-amber-50 rounded-lg px-3 py-2.5">
-                        <span className="text-amber-500 text-sm mt-0.5">+</span>
-                        <div>
-                          <p className="text-xs font-medium text-amber-800">{mc.col}</p>
-                          <p className="text-[11px] text-amber-600">{mc.impact}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-2">Adicione estas colunas na sua planilha para análises mais completas.</p>
                 </div>
               )}
 
               {/* Suggestions */}
               {result.suggestions?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Próximos passos</p>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Próximos passos</p>
                   <div className="flex flex-col gap-1.5">
                     {result.suggestions.map((s, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                        <span className="text-violet-400 mt-0.5 shrink-0">{i + 1}.</span>
+                        <span className="text-amber-400 shrink-0 mt-0.5 font-bold">{i + 1}.</span>
                         <p>{s}</p>
                       </div>
                     ))}
@@ -733,14 +784,81 @@ function DiagnosticoPanel({ reportId, onClose }) {
                 </div>
               )}
 
-              {result.missing_blocks?.length === 0 && result.missing_columns?.length === 0 && (
-                <div className="text-center py-4 text-xs text-green-600 bg-green-50 rounded-xl">
-                  Dashboard completo! Todas as visualizações essenciais estão presentes.
+              {result.missing_blocks?.length === 0 && !result.suggestions?.length && (
+                <div className="text-center py-3 text-xs text-green-600 bg-green-50 rounded-xl">
+                  Dashboard completo para o domínio detectado!
+                </div>
+              )}
+            </>
+          )}
+
+          {result && !loading && tab === 'tecnico' && (
+            <>
+              {/* Métricas técnicas */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Registros', value: result.technical?.total_rows?.toLocaleString('pt-BR') ?? '—' },
+                  { label: 'Colunas', value: result.technical?.total_cols ?? '—' },
+                  { label: 'Domínio', value: result.domain_name ?? '—' },
+                  { label: 'Health Score', value: result.health_score ?? '—' },
+                ].map(item => (
+                  <div key={item.label} className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">{item.label}</p>
+                    <p className="text-sm font-bold text-gray-700 mt-0.5">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tipos de bloco */}
+              {result.technical?.block_types && Object.keys(result.technical.block_types).length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Blocos no dashboard</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(result.technical.block_types).map(([type, count]) => (
+                      <span key={type} className="text-[11px] px-2 py-1 bg-violet-50 text-violet-700 rounded-full font-medium">
+                        {type} ×{count}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Colunas a adicionar */}
+              {result.technical?.missing_columns?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Enriqueça sua planilha</p>
+                  <div className="flex flex-col gap-2">
+                    {result.technical.missing_columns.map((mc, i) => (
+                      <div key={i} className="flex items-start gap-2 bg-amber-50 rounded-lg px-3 py-2.5">
+                        <span className="text-amber-500 text-xs font-bold mt-0.5 shrink-0">+</span>
+                        <div>
+                          <p className="text-xs font-semibold text-amber-800">{mc.col}</p>
+                          <p className="text-[11px] text-amber-600">{mc.impact}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1.5">Adicione estas colunas na sua planilha para análises mais completas.</p>
                 </div>
               )}
             </>
           )}
         </div>
+
+        {/* Footer — exportar para dashboard */}
+        {result && !loading && onExportInsights && (
+          <div className="px-4 py-3 border-t border-gray-100 shrink-0">
+            <button
+              onClick={handleExport}
+              className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 ${exported ? 'bg-green-100 text-green-700' : 'bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100'}`}
+            >
+              {exported
+                ? <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg> Adicionado ao dashboard!</>
+                : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg> Adicionar análise ao dashboard</>
+              }
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1397,6 +1515,19 @@ export default function DashboardDetailPage() {
     setSidePanel('config'); setSidebarOpen(true)
   }
 
+  function exportInsightsToDashboard(text) {
+    const block = {
+      id: crypto.randomUUID(),
+      type: 'text',
+      title: 'Análise IA',
+      dataset_id: null,
+      config: { content: text, is_ai_insight: true },
+      layout: { x: 0, y: Infinity, w: 12, h: 3 },
+    }
+    setBlocks(prev => [...prev, block])
+    setShowDiagnostico(false)
+  }
+
   function addMultipleBlocks(newBlocks) {
     if (!newBlocks?.length) return
     // Separa KPIs e gráficos para posicionar KPIs primeiro
@@ -1785,7 +1916,7 @@ export default function DashboardDetailPage() {
           />
         </div>
         {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
-        {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} />}
+        {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
 
         {showVersions && (
           <div className="fixed inset-0 z-50 flex">
