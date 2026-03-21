@@ -118,7 +118,7 @@ function MiniBarChart({ data }) {
   )
 }
 
-function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
+function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDateCol }) {
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
   const [activeTab, setActiveTab] = useState('generate')
@@ -190,14 +190,19 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
       }
 
       onAddBlocks(mapped)
+      if (result.suggested_date_col && onSetDateCol) {
+        onSetDateCol(result.suggested_date_col)
+      }
       setGenResult({
         count: mapped.length,
         kpis: mapped.filter(b => b.type === 'kpi').length,
         charts: mapped.filter(b => b.type !== 'kpi').length,
+        domain_name: result.domain_name,
+        suggested_date_col: result.suggested_date_col,
       })
       setGenStep(4)
       api.reports.aiUsage().then(setAiUsage).catch(() => {})
-      setTimeout(onClose, 2200)
+      setTimeout(onClose, 2800)
     } catch (e) {
       clearTimeout(t1); clearTimeout(t2)
       setGenError(e.message || 'Erro ao gerar dashboard.')
@@ -407,7 +412,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
 
               {/* Estado: sucesso */}
               {genStep === 4 && genResult && (
-                <div className="py-8 flex flex-col items-center gap-4 text-center">
+                <div className="py-6 flex flex-col items-center gap-4 text-center">
                   <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
                     <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
@@ -421,7 +426,15 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                         genResult.charts > 0 && `${genResult.charts} gráfico${genResult.charts > 1 ? 's' : ''}`,
                       ].filter(Boolean).join(' + ')}
                     </p>
+                    {genResult.domain_name && (
+                      <p className="text-xs text-violet-600 mt-1 font-medium">Domínio: {genResult.domain_name}</p>
+                    )}
                   </div>
+                  {genResult.suggested_date_col && (
+                    <div className="text-xs bg-violet-50 border border-violet-100 rounded-lg px-3 py-2 text-violet-700">
+                      Filtro de data configurado automaticamente: <b>{genResult.suggested_date_col}</b>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-400">Fechando em instantes...</p>
                 </div>
               )}
@@ -561,6 +574,171 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
             </div>
           )}
 
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DiagnosticoPanel({ reportId, onClose }) {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    setLoading(true)
+    api.reports.diagnoseDashboard(reportId)
+      .then(setResult)
+      .catch(e => setError(e.message || 'Erro ao diagnosticar'))
+      .finally(() => setLoading(false))
+  }, [reportId])
+
+  const scoreColor = result
+    ? result.health_score >= 75 ? 'text-green-600' : result.health_score >= 50 ? 'text-amber-500' : 'text-red-500'
+    : 'text-gray-400'
+  const scoreRing = result
+    ? result.health_score >= 75 ? 'stroke-green-500' : result.health_score >= 50 ? 'stroke-amber-400' : 'stroke-red-400'
+    : 'stroke-gray-200'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
+              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <span className="font-semibold text-gray-800 text-sm">Diagnóstico do Dashboard</span>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <svg className="w-8 h-8 text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <p className="text-sm text-gray-500">Analisando seu dashboard...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-600">{error}</div>
+          )}
+
+          {result && !loading && (
+            <>
+              {/* Health Score */}
+              <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
+                <div className="relative w-16 h-16 shrink-0">
+                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" strokeWidth="3"/>
+                    <circle cx="18" cy="18" r="15.9" fill="none" className={scoreRing} strokeWidth="3"
+                      strokeDasharray={`${result.health_score} 100`} strokeLinecap="round"/>
+                  </svg>
+                  <span className={`absolute inset-0 flex items-center justify-center text-base font-bold ${scoreColor}`}>
+                    {result.health_score}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Health Score</p>
+                  <p className={`text-lg font-bold ${scoreColor}`}>
+                    {result.health_score >= 75 ? 'Ótimo' : result.health_score >= 50 ? 'Regular' : 'Incompleto'}
+                  </p>
+                  {result.domain_name && (
+                    <p className="text-xs text-gray-400 mt-0.5">Domínio: {result.domain_name}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Insights */}
+              {result.insights?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">O que seus dados dizem</p>
+                  <div className="flex flex-col gap-2">
+                    {result.insights.map((insight, i) => (
+                      <div key={i} className="flex items-start gap-2 bg-blue-50 rounded-lg px-3 py-2.5">
+                        <span className="text-blue-400 text-sm mt-0.5">💡</span>
+                        <p className="text-xs text-blue-800">{insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing blocks */}
+              {result.missing_blocks?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Visualizações recomendadas</p>
+                  <div className="flex flex-col gap-2">
+                    {result.missing_blocks.map((mb, i) => (
+                      <div key={i} className="flex items-center gap-3 border border-dashed border-gray-200 rounded-lg px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-700">{mb.title || mb.label}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{mb.reason}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing columns */}
+              {result.missing_columns?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Enriqueça seu dataset</p>
+                  <div className="flex flex-col gap-2">
+                    {result.missing_columns.map((mc, i) => (
+                      <div key={i} className="flex items-start gap-2 bg-amber-50 rounded-lg px-3 py-2.5">
+                        <span className="text-amber-500 text-sm mt-0.5">+</span>
+                        <div>
+                          <p className="text-xs font-medium text-amber-800">{mc.col}</p>
+                          <p className="text-[11px] text-amber-600">{mc.impact}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-2">Adicione estas colunas na sua planilha para análises mais completas.</p>
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {result.suggestions?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Próximos passos</p>
+                  <div className="flex flex-col gap-1.5">
+                    {result.suggestions.map((s, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs text-gray-600">
+                        <span className="text-violet-400 mt-0.5 shrink-0">{i + 1}.</span>
+                        <p>{s}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {result.missing_blocks?.length === 0 && result.missing_columns?.length === 0 && (
+                <div className="text-center py-4 text-xs text-green-600 bg-green-50 rounded-xl">
+                  Dashboard completo! Todas as visualizações essenciais estão presentes.
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -989,6 +1167,7 @@ export default function DashboardDetailPage() {
   const [filterResetTrigger, setFilterResetTrigger] = useState(null)
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
+  const [showDiagnostico, setShowDiagnostico] = useState(false)
   const [nearLimit, setNearLimit] = useState(false)
   const [draggedColumn, setDraggedColumn] = useState(null) // { col, colType, datasetId }
   const [exportingPDF, setExportingPDF] = useState(false)
@@ -1416,6 +1595,18 @@ export default function DashboardDetailPage() {
             </button>
           )}
 
+          {/* Diagnóstico BI */}
+          {blocks.length > 0 && (
+            <button
+              onClick={() => setShowDiagnostico(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-colors"
+              title="Diagnóstico do dashboard"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              <span className="hidden sm:inline">Diagnóstico</span>
+            </button>
+          )}
+
           {/* Undo / Redo buttons */}
           <button
             title="Desfazer (Ctrl+Z)"
@@ -1592,7 +1783,8 @@ export default function DashboardDetailPage() {
             setShowAiPanel={setShowAiPanel}
           />
         </div>
-        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} />}
+        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} />}
+        {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} />}
 
         {showVersions && (
           <div className="fixed inset-0 z-50 flex">
@@ -1672,6 +1864,12 @@ export default function DashboardDetailPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
               {t('ask')}
             </button>
+            {blocks.length > 0 && (
+              <button onClick={() => setShowDiagnostico(true)} className="flex items-center gap-1.5 px-3 py-2 border border-amber-200 bg-amber-50 text-amber-700 text-sm rounded-xl hover:bg-amber-100 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Diagnóstico
+              </button>
+            )}
             <button onClick={handleShare} disabled={sharingLoading} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
               {sharingLoading ? t('sharing') : t('share')}
@@ -1753,7 +1951,8 @@ export default function DashboardDetailPage() {
 
         <ReportBuilder blocks={((displayReport ?? report).pages || pages).find(p => p.id === activePageId)?.blocks || (displayReport ?? report).blocks || []} readOnly={true} datasets={datasets} globalDateFilter={globalDateFilter} />
       </div>
-      {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} />}
+      {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} />}
+      {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} />}
     </AppLayout>
   )
 }

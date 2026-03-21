@@ -1553,6 +1553,111 @@ async def ai_query_endpoint(
     }
 
 
+# ---------------------------------------------------------------------------
+# Domain detection for BI Advisor
+# ---------------------------------------------------------------------------
+
+DOMAIN_TEMPLATES = {
+    "fiscal_nfse": {
+        "name": "NFS-e / Fiscal",
+        "signals": ["nfs", "nfs-e", "nota fiscal", "receita_liquida", "aliquota", "iss", "tomador", "prestador", "rps", "guia", "quitacao"],
+        "insights_focus": "faturamento, notas canceladas, concentração de clientes, sazonalidade mensal",
+        "kpi_hints": "faturamento total (sum RECEITA_LIQUIDA notas válidas), quantidade de notas, ticket médio, taxa de cancelamento",
+        "chart_hints": "evolução mensal (line por MÊS), ranking clientes (bar_h por CLIENTE), mix tipo operação (pie)",
+        "optional_improvements": [
+            {"col": "CUSTO_OPERACIONAL", "impact": "Calcular margem real (receita - custo)"},
+            {"col": "DATA_PAGAMENTO", "impact": "Análise de prazo médio de recebimento (DSO)"},
+            {"col": "SEGMENTO_CLIENTE", "impact": "Análise de concentração e LTV por segmento"},
+            {"col": "FORMA_PAGAMENTO", "impact": "Mix de recebimento (boleto, PIX, cartão)"},
+            {"col": "VENDEDOR", "impact": "Ranking de desempenho por vendedor"},
+        ],
+    },
+    "vendas": {
+        "name": "Vendas / Comercial",
+        "signals": ["venda", "pedido", "receita", "ticket", "cliente", "produto", "canal", "vendedor", "comissao", "meta"],
+        "insights_focus": "receita total, ticket médio, conversão, ranking de produtos e clientes",
+        "kpi_hints": "receita total, número de pedidos, ticket médio, clientes ativos",
+        "chart_hints": "evolução de vendas (line), ranking produtos (bar_h), mix canal (pie)",
+        "optional_improvements": [
+            {"col": "CUSTO_PRODUTO", "impact": "Calcular margem bruta por produto"},
+            {"col": "DATA_ENTREGA", "impact": "Análise de prazo de entrega e SLA"},
+            {"col": "REGIAO", "impact": "Mapa e análise regional de vendas"},
+            {"col": "CATEGORIA", "impact": "Análise de mix por categoria"},
+        ],
+    },
+    "marketing": {
+        "name": "Marketing / Campanhas",
+        "signals": ["campanha", "impressao", "clique", "ctr", "cpl", "cac", "lead", "roas", "investimento", "conversao", "midia"],
+        "insights_focus": "ROI de campanhas, custo por lead, eficiência por canal",
+        "kpi_hints": "investimento total, leads gerados, CPL, ROAS",
+        "chart_hints": "evolução temporal (line), performance por canal (bar_h), mix investimento (pie)",
+        "optional_improvements": [
+            {"col": "RECEITA_GERADA", "impact": "Calcular ROAS real por campanha"},
+            {"col": "TAXA_CONVERSAO", "impact": "Funil de conversão completo"},
+        ],
+    },
+    "rh": {
+        "name": "RH / Pessoas",
+        "signals": ["colaborador", "funcionario", "salario", "cargo", "departamento", "admissao", "demissao", "folha", "headcount"],
+        "insights_focus": "headcount, custo de folha, rotatividade, distribuição por departamento",
+        "kpi_hints": "headcount total, custo folha, turnover, salário médio",
+        "chart_hints": "headcount por departamento (bar), evolução folha (line), distribuição cargos (pie)",
+        "optional_improvements": [
+            {"col": "AVALIACAO_DESEMPENHO", "impact": "Correlação entre desempenho e remuneração"},
+            {"col": "MOTIVO_SAIDA", "impact": "Análise de causas de turnover"},
+        ],
+    },
+    "financeiro": {
+        "name": "Financeiro / DRE",
+        "signals": ["receita", "despesa", "custo", "lucro", "margem", "ebitda", "caixa", "dre", "balanco", "resultado"],
+        "insights_focus": "resultado líquido, margens, evolução de receita vs despesa",
+        "kpi_hints": "receita total, despesas, lucro líquido, margem",
+        "chart_hints": "evolução receita vs despesa (line), composição despesas (pie), resultado mensal (bar)",
+        "optional_improvements": [
+            {"col": "CENTRO_CUSTO", "impact": "Análise de custos por centro de custo"},
+            {"col": "CATEGORIA_DESPESA", "impact": "Detalhamento de onde o dinheiro vai"},
+        ],
+    },
+    "ecommerce": {
+        "name": "E-commerce",
+        "signals": ["pedido", "sku", "produto", "categoria", "frete", "devolucao", "avaliacao", "estoque", "carrinho"],
+        "insights_focus": "GMV, taxa de conversão, produtos mais vendidos, devolução",
+        "kpi_hints": "GMV total, pedidos, ticket médio, taxa devolução",
+        "chart_hints": "evolução GMV (line), top produtos (bar_h), categorias (pie)",
+        "optional_improvements": [
+            {"col": "MARGEM_PRODUTO", "impact": "Identificar produtos mais rentáveis"},
+            {"col": "ORIGEM_TRAFEGO", "impact": "Atribuição de receita por canal de aquisição"},
+        ],
+    },
+}
+
+
+def _detect_domain(columns: list[str], rows: list[dict]) -> tuple[str, dict]:
+    """Detecta o domínio do dataset com base nos nomes das colunas.
+    Retorna (domain_key, template_dict).
+    """
+    cols_lower = " ".join(c.lower() for c in columns)
+    best_domain = "generic"
+    best_score = 0
+
+    for domain_key, template in DOMAIN_TEMPLATES.items():
+        score = sum(1 for signal in template["signals"] if signal in cols_lower)
+        if score > best_score:
+            best_score = score
+            best_domain = domain_key
+
+    if best_score == 0:
+        return "generic", {
+            "name": "Genérico",
+            "insights_focus": "principais métricas e tendências",
+            "kpi_hints": "totais e médias das colunas numéricas",
+            "chart_hints": "evolução temporal e rankings dimensionais",
+            "optional_improvements": [],
+        }
+
+    return best_domain, DOMAIN_TEMPLATES[best_domain]
+
+
 class GenerateDashboardRequest(BaseModel):
     dataset_id: uuid.UUID
     objetivo: str | None = None
@@ -1682,6 +1787,30 @@ async def generate_dashboard_endpoint(
     schema_str = "\n".join(schema_parts)
     schema_str += f"\n\nAmostra (5 linhas):\n{json.dumps(sample_rows, ensure_ascii=False, default=str)}"
 
+    # Detectar coluna de data mais relevante para sugerir ao frontend
+    date_cols = [col for col, st in col_stats.items() if st.get("type") == "data"]
+    # Preferir colunas com nome relacionado a mês/data/período
+    date_priority = ["mes", "mês", "data", "date", "periodo", "período", "dt", "competencia"]
+    suggested_date_col = None
+    for priority in date_priority:
+        for dc in date_cols:
+            if priority in dc.lower():
+                suggested_date_col = dc
+                break
+        if suggested_date_col:
+            break
+    if not suggested_date_col and date_cols:
+        suggested_date_col = date_cols[0]
+
+    # ── Detecção de domínio ────────────────────────────────────────────────
+    domain_key, domain_tpl = _detect_domain(columns, rows)
+    domain_section = (
+        f"\nDOMÍNIO DETECTADO: {domain_tpl['name']}\n"
+        f"Foco de análise: {domain_tpl['insights_focus']}\n"
+        f"KPIs recomendados: {domain_tpl['kpi_hints']}\n"
+        f"Gráficos recomendados: {domain_tpl['chart_hints']}\n"
+    )
+
     objetivo_str = f"\n\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
 
     system_prompt = (
@@ -1716,12 +1845,11 @@ async def generate_dashboard_endpoint(
         "  • Linha 1: 3-4 KPIs com as métricas de maior relevância\n"
         "  • Linha 2: gráfico de linha/área com evolução temporal (se houver data)\n"
         "  • Linha 3+: bar de ranking (top dimensões) + pie de composição\n\n"
-        "DOMÍNIO FISCAL BRASILEIRO (referência de interpretação, não regra):\n"
-        "  • NFS-e: Valor Total Recebido e Base de Cálculo = indicadores de faturamento\n"
-        "  • Alíquota: agg=avg se relevante, NUNCA sum\n"
-        "  • Simples Nacional: PIS, COFINS, CSLL, IR, INSS zerados (nonzero_pct<5% = irrelevante)\n"
-        "  • Datas (Emissão, Fato Gerador): ideais para eixo X de linha temporal\n"
-        "  • Cliente/Tomador: ideal para ranking (bar) de concentração de receita"
+        f"{domain_section}"
+        "REGRAS ADICIONAIS PARA QUALIDADE:\n"
+        "  • Alíquotas e percentuais: use agg=avg, NUNCA sum\n"
+        "  • Colunas de status/flag (SIM/NAO, P/C): use para filtros ou pie de composição\n"
+        "  • Se houver coluna de data, SEMPRE inclua um gráfico de evolução temporal"
     )
 
     client = ant.Anthropic(api_key=api_key)
@@ -1782,7 +1910,12 @@ async def generate_dashboard_endpoint(
             b["layout"].setdefault("w", default_size["w"])
             b["layout"].setdefault("h", default_size["h"])
 
-    return {"blocks": blocks, "dataset_name": ds.name}
+    return {
+        "blocks": blocks,
+        "suggested_date_col": suggested_date_col,
+        "domain": domain_key,
+        "domain_name": domain_tpl["name"],
+    }
 
 
 @router.get("/ai-usage", summary="Retorna cota mensal de IA do tenant")
@@ -3126,6 +3259,215 @@ async def delete_scheduled_report(
     deleted = await svc.delete(schedule_id, current_user.tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
+
+
+# ---------------------------------------------------------------------------
+# BI Advisor — diagnóstico inteligente de dashboard
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/{report_id}/diagnose",
+    summary="Diagnóstico inteligente do dashboard — insights, gaps e sugestões",
+)
+async def diagnose_dashboard_endpoint(
+    report_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
+):
+    import json
+    import os
+
+    import anthropic as ant
+
+    from .ai_usage_models import AIUsageLog
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    plan = tenant.plan if tenant else "free"
+    check_feature_allowed("ai", plan)
+    await check_ai_query_limit(db, current_user.tenant_id, plan)
+
+    # Carregar o report
+    report = await db.scalar(
+        select(Report).where(Report.id == report_id, Report.tenant_id == effective_tenant_id)
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Dashboard não encontrado")
+
+    # Extrair blocos das páginas
+    all_blocks = []
+    pages = report.pages or []
+    for page in pages:
+        all_blocks.extend(page.get("blocks", []))
+    if not all_blocks:
+        # Fallback para legado
+        all_blocks = report.blocks or []
+
+    # Coletar dataset IDs únicos usados nos blocos
+    dataset_ids = list({b.get("dataset_id") for b in all_blocks if b.get("dataset_id")})
+
+    if not dataset_ids:
+        return {
+            "domain": "generic",
+            "domain_name": "Genérico",
+            "insights": ["O dashboard não tem blocos conectados a nenhum dataset."],
+            "missing_blocks": [],
+            "missing_columns": [],
+            "suggestions": ["Conecte um dataset aos blocos para obter um diagnóstico completo."],
+            "health_score": 10,
+        }
+
+    # Usar o primeiro dataset (principal)
+    svc = DatasetService(db)
+    ds = None
+    for did in dataset_ids:
+        try:
+            ds = await svc.get(uuid.UUID(did), effective_tenant_id)
+            if not ds and effective_tenant_id != current_user.tenant_id:
+                ds = await svc.get(uuid.UUID(did), current_user.tenant_id)
+            if ds:
+                break
+        except Exception:
+            continue
+
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+    columns = ds.columns or []
+    rows = ds.rows or []
+    total_rows = len(rows)
+
+    # Detectar domínio
+    domain_key, domain_tpl = _detect_domain(columns, rows)
+
+    # Analisar colunas existentes
+    col_stats: dict[str, dict] = {}
+    for col in columns:
+        vals = [r.get(col) for r in rows if r.get(col) is not None
+                and str(r.get(col)).strip().lower() not in (
+                    "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+                    "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+                )]
+        null_count = total_rows - len(vals)
+        null_pct = round(null_count / total_rows * 100) if total_rows else 100
+        nums = [float(v) for v in vals if isinstance(v, (int, float))]
+        if nums:
+            col_stats[col] = {
+                "type": "numero",
+                "sum": round(sum(nums), 2),
+                "avg": round(sum(nums) / len(nums), 2),
+                "null_pct": null_pct,
+            }
+        else:
+            col_stats[col] = {"type": "texto", "null_pct": null_pct}
+
+    # Resumo dos blocos atuais
+    block_types = {}
+    for b in all_blocks:
+        bt = b.get("type", "unknown")
+        block_types[bt] = block_types.get(bt, 0) + 1
+
+    # Identificar colunas ausentes do template do domínio
+    missing_cols_from_template = []
+    for improvement in domain_tpl.get("optional_improvements", []):
+        col_signal = improvement["col"].lower().replace("_", "")
+        if not any(col_signal in c.lower().replace("_", "") for c in columns):
+            missing_cols_from_template.append(improvement)
+
+    # Schema para a IA
+    schema_lines = []
+    for col, st in col_stats.items():
+        if st["type"] == "numero":
+            schema_lines.append(f"  {col}: número | soma={st['sum']} | média={st['avg']} | nulos={st['null_pct']}%")
+        else:
+            schema_lines.append(f"  {col}: texto | nulos={st['null_pct']}%")
+
+    blocks_summary = json.dumps(block_types, ensure_ascii=False)
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key or api_key == "your_key_here":
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
+
+    system_prompt = (
+        "Você é um analista de BI sênior especializado em dashboards para PMEs brasileiras. "
+        "Analise o dataset e o dashboard atual e responda APENAS com JSON válido, sem markdown.\n\n"
+        "O JSON deve ter exatamente esta estrutura:\n"
+        "{\n"
+        '  "insights": ["insight 1", "insight 2", "insight 3"],\n'
+        '  "missing_blocks": [\n'
+        '    {"type": "line", "title": "Título sugerido", "reason": "Por que este bloco é importante"}\n'
+        '  ],\n'
+        '  "missing_columns": [\n'
+        '    {"col": "NOME_COLUNA", "impact": "O que essa coluna permitiria analisar"}\n'
+        '  ],\n'
+        '  "suggestions": ["sugestão 1", "sugestão 2"],\n'
+        '  "health_score": 75\n'
+        "}\n\n"
+        "Regras:\n"
+        "- insights: 2-4 frases curtas com descobertas reais dos dados (use os valores do schema)\n"
+        "- missing_blocks: blocos que deveriam estar no dashboard mas não estão (máx 3)\n"
+        "- missing_columns: colunas que não existem mas melhorariam muito a análise (máx 4)\n"
+        "- suggestions: ações concretas que o usuário pode tomar (máx 3)\n"
+        "- health_score: 0-100, quão completo e útil está o dashboard atual\n"
+        "- Responda em português brasileiro\n"
+        "- Seja específico com números reais do dataset, não genérico"
+    )
+
+    user_msg = (
+        f"DOMÍNIO: {domain_tpl['name']}\n"
+        f"DATASET: {total_rows} linhas, {len(columns)} colunas\n\n"
+        f"COLUNAS:\n" + "\n".join(schema_lines) + "\n\n"
+        f"BLOCOS ATUAIS NO DASHBOARD: {blocks_summary}\n\n"
+        f"COLUNAS AUSENTES IDENTIFICADAS:\n"
+        + "\n".join(f"  - {m['col']}: {m['impact']}" for m in missing_cols_from_template)
+        + "\n\nGere o diagnóstico JSON:"
+    )
+
+    client = ant.Anthropic(api_key=api_key)
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+
+    # Log de uso
+    try:
+        usage = msg.usage
+        log = AIUsageLog(
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            dataset_id=ds.id,
+            model="claude-haiku-4-5-20251001",
+            tokens_input=usage.input_tokens,
+            tokens_output=usage.output_tokens,
+            question="[diagnose-dashboard]",
+        )
+        db.add(log)
+        await db.commit()
+    except Exception:
+        pass
+
+    text = msg.content[0].text.strip()
+    try:
+        import re as _re
+        m = _re.search(r"\{.*\}", text, _re.DOTALL)
+        result = json.loads(m.group() if m else text)
+    except Exception:
+        result = {
+            "insights": ["Não foi possível gerar insights automáticos."],
+            "missing_blocks": [],
+            "missing_columns": [{"col": c["col"], "impact": c["impact"]} for c in missing_cols_from_template[:3]],
+            "suggestions": [],
+            "health_score": 50,
+        }
+
+    return {
+        "domain": domain_key,
+        "domain_name": domain_tpl["name"],
+        **result,
+    }
 
 
 # ---------------------------------------------------------------------------

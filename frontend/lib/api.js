@@ -190,6 +190,7 @@ export const api = {
       apiFetch('/reports/ai-query', { method: 'POST', body: JSON.stringify({ dataset_id: datasetId, question }) }),
     generateDashboard: (datasetId, objetivo) =>
       apiFetch('/reports/generate-dashboard', { method: 'POST', body: JSON.stringify({ dataset_id: datasetId, objetivo: objetivo || null }) }),
+    diagnoseDashboard: (reportId) => apiFetch(`/reports/${reportId}/diagnose`, { method: 'POST' }),
     aiUsage: () => apiFetch('/reports/ai-usage'),
     publicQuery: (token, id, labelCol, valueCol, agg = 'sum', filterCol = null, filterVal = null, dateCol = null, dateFrom = null, dateTo = null) =>
       fetch(`${API_URL}/reports/public/${token}/datasets/${id}/query?${buildQS({ label_col: labelCol, value_col: valueCol, agg, filter_col: filterCol, filter_val: filterVal, date_col: dateCol, date_from: dateFrom, date_to: dateTo })}`)
