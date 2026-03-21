@@ -1850,58 +1850,81 @@ async def generate_dashboard_endpoint(
     objetivo_str = f"\n\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
 
     system_prompt = (
-        "Você é um Chief Analytics Officer (CAO) com visão estratégica de CEO, CMO, CFO e CSO.\n"
-        "Seu trabalho é transformar dados brutos em um dashboard executivo de alto impacto — "
-        "o tipo que um Diretor apresentaria em reunião de board.\n\n"
-        "RETORNE SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON):\n"
+        "Você é um Jornalista de Dados com visão estratégica de negócio.\n"
+        "Seu trabalho: transformar dados em uma HISTÓRIA VISUAL que o usuário lê de cima para baixo — "
+        "como um artigo bem estruturado, não uma coleção de gráficos.\n\n"
+
+        "ANTES DE GERAR, pense:\n"
+        "  1. Qual é a PERGUNTA CENTRAL que esses dados respondem?\n"
+        "  2. Qual é a HISTÓRIA que os números contam — contexto, tendência, composição, detalhe?\n"
+        "  3. Em que ORDEM um leitor descobriria essa história naturalmente, de cima para baixo?\n"
+        "  4. Qual é o gráfico HERÓI da história — aquele que sozinho explica o negócio?\n\n"
+
+        "NARRATIVA EM 4 ATOS (os blocos devem estar nessa ordem no JSON):\n\n"
+        "  ATO 1 — CONTEXTO: 'Onde estamos agora?'\n"
+        "    3–4 KPIs macro — os números mais importantes. O ponto de partida da história.\n"
+        "    Ex: Receita Total, Ticket Médio, Volume de Operações, Principal Resultado\n\n"
+        "  ATO 2 — TEMPO: 'Como chegamos aqui? Para onde vai?'\n"
+        "    1 gráfico temporal herói — linha ou area com a métrica principal ao longo do tempo.\n"
+        "    Este é o gráfico mais importante: use w=12 para ele ocupar toda a largura e ter IMPACTO.\n"
+        "    Revela tendência, sazonalidade, picos, quedas — a 'espinha dorsal' da história.\n\n"
+        "  ATO 3 — COMPOSIÇÃO: 'Quem ou o quê explica esse número?'\n"
+        "    Decomposição por dimensão: cliente, produto, região, categoria, canal, tipo.\n"
+        "    Use bubble para impacto visual, bar_h para ranking longo, pie para proporção simples.\n"
+        "    Responde: 'De onde vem esse resultado? Quem são os protagonistas?'\n\n"
+        "  ATO 4 — DETALHE: 'Onde está a oportunidade ou o problema?'\n"
+        "    Granularidade fina: segundas métricas, cruzamentos, outliers, distribuições.\n"
+        "    O que o CEO perguntaria depois de entender o contexto, a tendência e a composição.\n\n"
+
+        "RETORNE SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON).\n"
+        "Os blocos devem estar na ORDEM DA NARRATIVA — o primeiro bloco = início da história.\n\n"
         '[\n'
-        '  {"type":"kpi","title":"Receita Total","value_col":"coluna","agg":"sum","label_col":null,"layout":{"w":3,"h":2}},\n'
-        '  {"type":"line","title":"Evolução da Receita","label_col":"coluna_data","value_col":"coluna","agg":"sum","layout":{"w":6,"h":4}},\n'
-        '  {"type":"bubble","title":"Receita por Cliente","label_col":"coluna_texto","value_col":"coluna_numero","agg":"sum","layout":{"w":6,"h":4}},\n'
+        '  {"type":"kpi","title":"Receita Total","value_col":"col_valor","agg":"sum","layout":{"w":3,"h":2}},\n'
+        '  {"type":"kpi","title":"Ticket Médio","value_col":"col_valor","agg":"avg","layout":{"w":3,"h":2}},\n'
+        '  {"type":"line","title":"Evolução Mensal da Receita","label_col":"col_data","value_col":"col_valor","agg":"sum","layout":{"w":12,"h":5}},\n'
+        '  {"type":"bubble","title":"Receita por Cliente","label_col":"col_cliente","value_col":"col_valor","agg":"sum","layout":{"w":6,"h":4}},\n'
+        '  {"type":"bar_h","title":"Top Produtos por Resultado","label_col":"col_produto","value_col":"col_resultado","agg":"sum","layout":{"w":6,"h":4}},\n'
         '  ...\n'
         ']\n\n'
-        "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie, bubble\n\n"
-        "TAMANHOS (siga rigorosamente):\n"
-        "  kpi    → w=3, h=2  |  line/area → w=6, h=4  |  bar/bar_h → w=6, h=4\n"
-        "  pie    → w=4, h=4  |  bubble    → w=6, h=4\n\n"
-        "QUANDO USAR CADA TIPO:\n"
-        "  • kpi    → métricas de destaque: receita total, ticket médio, crescimento, contagens relevantes\n"
-        "  • line   → série temporal: evolução mensal/trimestral de receita, volume, crescimento\n"
-        "  • area   → série temporal acumulada: receita acumulada, crescimento YoY\n"
-        "  • bar    → ranking com nomes curtos (até 8 itens): top categorias, meses\n"
-        "  • bar_h  → ranking com nomes longos (>8 itens ou nomes > 10 chars): top clientes, produtos\n"
-        "  • pie    → composição com 2–5 categorias SIGNIFICATIVAS com nomes legíveis\n"
-        "             (NUNCA use pie para colunas cujo top3 mostra letras/códigos como C, P, T, A, N)\n"
-        "  • bubble → impacto visual de dimensão × métrica (clientes, produtos, categorias)\n\n"
+
+        "FERRAMENTAS VISUAIS — escolha a que MELHOR SERVE A HISTÓRIA naquele momento:\n"
+        "  kpi    → número de impacto. w=3,h=2 para 4 em linha | w=4,h=2 para 3 em linha\n"
+        "  line   → série temporal. w=12,h=5 para herói da tela | w=6,h=4 para lado a lado\n"
+        "  area   → série temporal acumulada ou com área de destaque\n"
+        "  bar    → ranking de 3-8 itens com nomes curtos (w=6,h=4 ou w=4,h=4)\n"
+        "  bar_h  → ranking com nomes longos: clientes, produtos, cidades (w=6,h=4)\n"
+        "  pie    → proporção de 2–5 categorias com nomes LEGÍVEIS, não códigos (w=4,h=4)\n"
+        "  bubble → impacto dimensional: tamanho do círculo = magnitude da métrica (w=6,h=4)\n"
+        "  filter → filtro interativo para o usuário explorar (w=4,h=2 ou w=6,h=2)\n\n"
+
+        "DRAMA VISUAL — tamanhos comunicam importância:\n"
+        "  w=12 → gráfico herói, ocupa toda a linha, máximo impacto (use no Ato 2)\n"
+        "  w=6  → gráfico principal, dois por linha (use no Ato 3 e 4)\n"
+        "  w=4  → gráfico de suporte, três por linha\n"
+        "  w=3  → KPI, quatro por linha (use no Ato 1)\n"
+        "  Altura: h=2 para KPIs/filtros | h=4 para gráficos normais | h=5 para gráficos herói\n\n"
+
         "REGRAS ABSOLUTAS:\n"
-        "1. Use APENAS colunas ★ INTERESSANTE para métricas\n"
+        "1. Use APENAS colunas ★ INTERESSANTE para métricas numéricas\n"
         "2. Ignore colunas '— zero/irrelevante' ou 'MUITOS NULOS'\n"
         "3. Alíquotas/percentuais/taxas: agg=avg — NUNCA sum\n"
         "4. Nomes de colunas EXATAMENTE como no dataset (case-sensitive)\n"
-        "5. Títulos executivos em português — o que um CEO entenderia em 2 segundos (máx 32 chars)\n"
-        "6. Cada bloco responde UMA pergunta estratégica (ex: 'Quem são meus maiores clientes?')\n"
-        "7. NÃO repetir o mesmo par label_col+value_col em dois blocos\n"
-        "8. NUNCA usar como dimensão em gráficos ou filtros: CNPJ, CPF, ID, código, chave,\n"
-        "   número de documento, endereço, logradouro, bairro, CEP, complemento, observação,\n"
-        "   descrição de texto livre. Esses são dados cadastrais, não dimensões analíticas.\n\n"
-        "MENTALIDADE EXECUTIVA — pense nessas perguntas estratégicas:\n"
-        "  • 'Qual é nossa receita e como está evoluindo?' → KPI + line\n"
-        "  • 'Quem são nossos maiores clientes/produtos?' → bubble ou bar_h\n"
-        "  • 'Como está distribuída nossa carteira?' → pie (max 5 categorias significativas)\n"
-        "  • 'Qual o ticket médio e como maximizá-lo?' → KPI com agg=avg\n"
-        "  • 'Onde está a concentração de risco/oportunidade?' → bubble\n"
-        "  • 'Qual a tendência: crescendo ou caindo?' → area com linha de tendência\n\n"
-        "ESTRUTURA IDEAL (9–12 blocos):\n"
-        "  Linha 1: 3–4 KPIs executivos (receita, crescimento, ticket médio, principal métrica)\n"
-        "  Linha 2: line/area evolução temporal (w=6) + bubble ou pie de composição (w=6)\n"
-        "  Linha 3: bar_h top N + bubble segunda dimensão ou bar outra métrica\n"
-        "  Linha 4+: análises adicionais de valor (margem, concentração, comparativos)\n\n"
+        "5. Títulos são CAPÍTULOS DA HISTÓRIA — informam o que o usuário vai descobrir (máx 36 chars)\n"
+        "6. Não repita o mesmo par label_col+value_col em dois blocos\n"
+        "7. NUNCA use como dimensão: CNPJ, CPF, ID, código, número de documento, endereço,\n"
+        "   CEP, telefone, e-mail, observação, descrição livre — são dados cadastrais, não analíticos\n"
+        "8. NUNCA use pie quando top3 mostra letras/códigos isolados (C, P, T, N, S)\n"
+        "9. O gráfico do Ato 2 (temporal) deve usar w=12 se houver coluna de data\n\n"
+
         f"{domain_section}"
-        "QUALIDADE VISUAL:\n"
-        "  • Prefira bubble a pie quando há >5 categorias\n"
-        "  • Prefira bar_h a bar quando nomes têm >10 caracteres\n"
-        "  • Todo dashboard precisa de pelo menos 1 gráfico temporal se houver data\n"
-        "  • Títulos como 'Receita por Cliente', 'Evolução Mensal', 'Top Produtos' — nunca 'Gráfico 1'"
+
+        "TESTE DE QUALIDADE — antes de retornar, verifique:\n"
+        "  ✓ Os blocos estão na ordem da narrativa (contexto → tempo → composição → detalhe)?\n"
+        "  ✓ Um leitor lendo de cima para baixo entende o negócio em 30 segundos?\n"
+        "  ✓ Cada bloco responde a pergunta que surge naturalmente após o anterior?\n"
+        "  ✓ O gráfico mais importante tem mais espaço (w=12 ou w=6 de destaque)?\n"
+        "  ✓ Títulos são informativos como capítulos de artigo, não genéricos ('Gráfico 1')?\n"
+        "  ✓ Há pelo menos 1 gráfico temporal com w=12 se o dataset tem coluna de data?"
     )
 
     client = ant.Anthropic(api_key=api_key)
