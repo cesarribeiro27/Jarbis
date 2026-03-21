@@ -3335,7 +3335,19 @@ async def diagnose_dashboard_endpoint(
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
     columns = ds.columns or []
+
+    # Tentar carregar rows do warp cache (Redis) — fallback para DB
     rows = ds.rows or []
+    if not rows:
+        try:
+            from app.core.cache import get_redis as _get_redis
+            _redis = _get_redis()
+            _cached = await warp_get_rows(_redis, str(ds.id))
+            if _cached:
+                rows = _cached
+        except Exception:
+            pass
+
     total_rows = len(rows)
 
     # Detectar domínio
@@ -3391,7 +3403,7 @@ async def diagnose_dashboard_endpoint(
 
     system_prompt = (
         "Você é um analista de BI sênior especializado em dashboards para PMEs brasileiras. "
-        "Analise o dataset e o dashboard atual e responda APENAS com JSON válido, sem markdown.\n\n"
+        "Analise o dataset e o dashboard e responda APENAS com JSON válido, sem markdown.\n\n"
         "O JSON deve ter exatamente esta estrutura:\n"
         "{\n"
         '  "insights": ["insight 1", "insight 2", "insight 3"],\n'
@@ -3404,24 +3416,30 @@ async def diagnose_dashboard_endpoint(
         '  "suggestions": ["sugestão 1", "sugestão 2"],\n'
         '  "health_score": 75\n'
         "}\n\n"
-        "Regras:\n"
-        "- insights: 2-4 frases curtas com descobertas reais dos dados (use os valores do schema)\n"
-        "- missing_blocks: blocos que deveriam estar no dashboard mas não estão (máx 3)\n"
-        "- missing_columns: colunas que não existem mas melhorariam muito a análise (máx 4)\n"
-        "- suggestions: ações concretas que o usuário pode tomar (máx 3)\n"
-        "- health_score: 0-100, quão completo e útil está o dashboard atual\n"
+        "Regras OBRIGATÓRIAS:\n"
+        "- insights: SEMPRE gere 2-3 frases. Se tiver dados numéricos, use os valores. "
+        "  Se não tiver dados, comente sobre a estrutura (ex: 'Dataset com X colunas cobrindo domínio Y. "
+        "  Os blocos Z indicam foco em análise W.'). Nunca retorne insights vazio.\n"
+        "- missing_blocks: blocos que deveriam estar mas não estão (máx 2). "
+        "  Se o dashboard já está completo, retorne lista vazia.\n"
+        "- missing_columns: colunas ausentes que agregariam valor (máx 2). "
+        "  Se o dataset já está bom, retorne lista vazia.\n"
+        "- suggestions: 1-2 ações concretas e positivas para o usuário melhorar o dashboard\n"
+        "- health_score: 0-100 baseado nos blocos presentes vs blocos esperados para o domínio\n"
         "- Responda em português brasileiro\n"
-        "- Seja específico com números reais do dataset, não genérico"
+        "- Priorize insights sobre missing_columns — entregar valor primeiro, lacunas depois"
     )
 
     user_msg = (
         f"DOMÍNIO: {domain_tpl['name']}\n"
         f"DATASET: {total_rows} linhas, {len(columns)} colunas\n\n"
-        f"COLUNAS:\n" + "\n".join(schema_lines) + "\n\n"
-        f"BLOCOS ATUAIS NO DASHBOARD: {blocks_summary}\n\n"
-        f"COLUNAS AUSENTES IDENTIFICADAS:\n"
-        + "\n".join(f"  - {m['col']}: {m['impact']}" for m in missing_cols_from_template)
-        + "\n\nGere o diagnóstico JSON:"
+        f"COLUNAS:\n" + "\n".join(schema_lines or [f"  {c}: (sem dados disponíveis)" for c in columns[:10]]) + "\n\n"
+        f"BLOCOS ATUAIS NO DASHBOARD: {blocks_summary}\n"
+        f"(Total de blocos: {len(all_blocks)})\n\n"
+        + (f"POSSÍVEIS COLUNAS A ADICIONAR:\n"
+           + "\n".join(f"  - {m['col']}: {m['impact']}" for m in missing_cols_from_template[:2])
+           + "\n\n" if missing_cols_from_template else "")
+        + "Gere o diagnóstico JSON:"
     )
 
     client = ant.Anthropic(api_key=api_key)

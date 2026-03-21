@@ -118,7 +118,7 @@ function MiniBarChart({ data }) {
   )
 }
 
-function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDateCol }) {
+function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDateCol, onShowDateFilter }) {
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
   const [activeTab, setActiveTab] = useState('generate')
@@ -192,6 +192,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
       onAddBlocks(mapped)
       if (result.suggested_date_col && onSetDateCol) {
         onSetDateCol(result.suggested_date_col)
+        if (onShowDateFilter) onShowDateFilter(true)
       }
       setGenResult({
         count: mapped.length,
@@ -1783,7 +1784,7 @@ export default function DashboardDetailPage() {
             setShowAiPanel={setShowAiPanel}
           />
         </div>
-        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} />}
+        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
         {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} />}
 
         {showVersions && (
