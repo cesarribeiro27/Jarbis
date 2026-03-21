@@ -35,6 +35,10 @@ async function apiFetch(path, options = {}) {
     throw new Error(message)
   }
 
+  if (response.status === 429) {
+    throw new Error('Muitas requisições. Aguarde um momento e tente novamente.')
+  }
+
   if (response.status === 402 || response.status === 403) {
     const errorData = await response.json().catch(() => ({}))
     const detail = errorData.detail || {}
