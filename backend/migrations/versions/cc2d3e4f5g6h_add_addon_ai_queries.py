@@ -1,16 +1,16 @@
 """add addon_ai_queries to tenants
 
-Revision ID: ab1c2d3e4f5g
-Revises: za2b3c4d5e6f
-Create Date: 2026-03-21 10:00:00.000000
+Revision ID: cc2d3e4f5g6h
+Revises: bb1c2d3e4f5g
+Create Date: 2026-03-21 14:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ab1c2d3e4f5g'
-down_revision = 'za2b3c4d5e6f'
+revision = 'cc2d3e4f5g6h'
+down_revision = 'bb1c2d3e4f5g'
 branch_labels = None
 depends_on = None
 
