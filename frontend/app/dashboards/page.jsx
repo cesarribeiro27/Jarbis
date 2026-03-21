@@ -224,11 +224,12 @@ function AiCreateModal({ onClose }) {
         return
       }
 
-      // Posicionar blocos: KPIs primeiro, depois gráficos
-      const kpis = result.blocks.filter(b => b.type === 'kpi')
-      const charts = result.blocks.filter(b => b.type !== 'kpi')
+      // Ordem: filtros (data + categoria) → KPIs → gráficos
+      const filterBlocks = result.blocks.filter(b => b.type === 'filter')
+      const kpis         = result.blocks.filter(b => b.type === 'kpi')
+      const charts       = result.blocks.filter(b => b.type !== 'filter' && b.type !== 'kpi')
       let curX = 0, curY = 0, rowH = 0
-      const blocksWithLayout = [...kpis, ...charts].map(b => {
+      const blocksWithLayout = [...filterBlocks, ...kpis, ...charts].map(b => {
         const isKpi = b.type === 'kpi'
         const w = b.layout?.w || (isKpi ? 3 : 6)
         const h = b.layout?.h || (isKpi ? 2 : 4)

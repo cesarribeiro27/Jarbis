@@ -1918,6 +1918,44 @@ async def generate_dashboard_endpoint(
             b["layout"].setdefault("w", default_size["w"])
             b["layout"].setdefault("h", default_size["h"])
 
+    # ── Auto-inserir blocos de filtro no topo ─────────────────────────────────
+    # 1. Coluna de data → sempre adiciona filtro de data
+    # 2. Colunas categóricas com poucos valores únicos (2–15) → filtro de categoria
+    filter_blocks = []
+
+    if suggested_date_col:
+        filter_blocks.append({
+            "id": str(_uuid.uuid4()),
+            "type": "filter",
+            "config": {"date_mode": True},
+            "dataset_id": str(data.dataset_id),
+            "filter_col": suggested_date_col,
+            "filter_label": suggested_date_col,
+            "layout": {"w": 4, "h": 2},
+        })
+
+    # Até 2 colunas categóricas com cardinalidade baixa (boas para filtro)
+    cat_filters_added = 0
+    for col, st in col_stats.items():
+        if cat_filters_added >= 2:
+            break
+        if col == suggested_date_col:
+            continue
+        if st.get("type") == "texto":
+            unique = st.get("unique", 0)
+            if 2 <= unique <= 15:
+                filter_blocks.append({
+                    "id": str(_uuid.uuid4()),
+                    "type": "filter",
+                    "dataset_id": str(data.dataset_id),
+                    "filter_col": col,
+                    "filter_label": col,
+                    "layout": {"w": 3, "h": 4},
+                })
+                cat_filters_added += 1
+
+    blocks = filter_blocks + blocks
+
     return {
         "blocks": blocks,
         "suggested_date_col": suggested_date_col,

@@ -615,122 +615,282 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
   )
 }
 
-const DATE_FILTER_KEYWORDS = ['mes', 'mês', 'data', 'date', 'periodo', 'período', 'dt', 'competencia',
-  'emissao', 'emissão', 'vencimento', 'referencia', 'referência', 'lancamento', 'lançamento']
 
-function isDateFilterCol(col) {
-  if (!col) return false
-  const cl = col.toLowerCase()
-  return DATE_FILTER_KEYWORDS.some(k => cl.includes(k))
+// ─── Date filter shortcuts ────────────────────────────────────────────────────
+const DATE_SHORTCUTS = [
+  { key: 'hoje',          label: 'Hoje' },
+  { key: 'ontem',         label: 'Ontem' },
+  { key: 'esta_semana',   label: 'Esta semana (dom. até hoje)' },
+  { key: '7d',            label: '7 dias atrás' },
+  { key: 'semana_ant',    label: 'Semana passada (dom. a sáb.)' },
+  { key: '14d',           label: '14 dias atrás' },
+  { key: 'este_mes',      label: 'Este mês' },
+  { key: '30d',           label: '30 dias atrás' },
+  { key: 'ultimo_mes',    label: 'Último mês' },
+  { key: 'todo',          label: 'Todo o período' },
+]
+
+function _getShortcutRange(key) {
+  const now = new Date()
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate()
+  const fmt = dt => dt.toISOString().slice(0, 10)
+  const ymd = (yr, mo, dy) => fmt(new Date(yr, mo, dy))
+  switch (key) {
+    case 'hoje':        return { from: ymd(y, m, d),   to: ymd(y, m, d) }
+    case 'ontem':       return { from: ymd(y, m, d-1), to: ymd(y, m, d-1) }
+    case 'esta_semana': { const dow = now.getDay(); return { from: fmt(new Date(y, m, d - dow)), to: ymd(y, m, d) } }
+    case '7d':          return { from: ymd(y, m, d-7),  to: ymd(y, m, d) }
+    case 'semana_ant':  { const dow = now.getDay(); return { from: fmt(new Date(y, m, d-dow-7)), to: fmt(new Date(y, m, d-dow-1)) } }
+    case '14d':         return { from: ymd(y, m, d-14), to: ymd(y, m, d) }
+    case 'este_mes':    return { from: ymd(y, m, 1),    to: ymd(y, m+1, 0) }
+    case '30d':         return { from: ymd(y, m, d-30), to: ymd(y, m, d) }
+    case 'ultimo_mes':  return { from: ymd(y, m-1, 1),  to: ymd(y, m, 0) }
+    default:            return { from: '', to: '' }
+  }
 }
 
-function getActivePeriod(from, to) {
-  if (!from && !to) return null
-  const n = new Date()
-  const y = n.getFullYear(), m = n.getMonth() + 1
-  const pad = v => String(v).padStart(2, '0')
-  const thisFrom = `${y}-${pad(m)}-01`
-  const thisDays = new Date(y, m, 0).getDate()
-  const thisTo = `${y}-${pad(m)}-${pad(thisDays)}`
-  const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y
-  const prevDays = new Date(py, pm, 0).getDate()
-  const prevFrom = `${py}-${pad(pm)}-01`, prevTo = `${py}-${pad(pm)}-${pad(prevDays)}`
-  if (from === thisFrom && to === thisTo) return 'mes'
-  if (from === prevFrom && to === prevTo) return 'mes_ant'
-  if (from === `${y}-01-01` && to === `${y}-12-31`) return 'ano'
-  if (from === `${y - 1}-01-01` && to === `${y - 1}-12-31`) return 'ano_ant'
-  return 'custom'
+function _findActiveShortcut(from, to) {
+  if (!from && !to) return 'todo'
+  for (const s of DATE_SHORTCUTS) {
+    if (s.key === 'todo') continue
+    const r = _getShortcutRange(s.key)
+    if (r.from === from && r.to === to) return s.key
+  }
+  return null
+}
+
+function _fmtDate(ds) {
+  if (!ds) return ''
+  const [y, mo, d] = ds.split('-')
+  return `${d}/${mo}/${y}`
+}
+
+const MONTH_NAMES_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+const DAY_HEADERS = ['D','S','T','Q','Q','S','S']
+
+function _MiniCalendar({ year, month, from, to, hovering, onDayClick, onDayHover }) {
+  const firstDow = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const pad = n => String(n).padStart(2, '0')
+  const ds = d => `${year}-${pad(month + 1)}-${pad(d)}`
+
+  const cells = []
+  for (let i = 0; i < firstDow; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  return (
+    <div>
+      <div className="text-[11px] font-bold text-gray-700 text-center mb-2">
+        {MONTH_NAMES_SHORT[month].toUpperCase()}. DE {year}
+      </div>
+      <div className="grid grid-cols-7 text-center">
+        {DAY_HEADERS.map((h, i) => (
+          <div key={i} className="text-[10px] text-gray-400 pb-1 font-medium">{h}</div>
+        ))}
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />
+          const dateStr = ds(d)
+          const isSel = dateStr === from || dateStr === to
+          const end = to || hovering
+          const inRange = from && end && dateStr > Math.min(from, end) && dateStr < Math.max(from, end)
+          return (
+            <div
+              key={i}
+              onClick={() => onDayClick(dateStr)}
+              onMouseEnter={() => onDayHover(dateStr)}
+              className={`text-[11px] py-1 cursor-pointer transition-colors select-none ${
+                isSel    ? 'bg-violet-600 text-white font-semibold rounded-full' :
+                inRange  ? 'bg-violet-100 text-violet-800' :
+                           'hover:bg-gray-100 text-gray-700 rounded'
+              }`}
+            >
+              {d}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterChange }) {
   const col = block.filter_col
-  const label = block.filter_label || col || 'Período'
-  const df = (globalDateFilter?.dateCol === col || !globalDateFilter?.dateCol) ? globalDateFilter : {}
-  const from = df?.dateFrom || ''
-  const to = df?.dateTo || ''
-  const active = getActivePeriod(from, to)
+  const [open, setOpen] = useState(false)
+  const [tempFrom, setTempFrom] = useState('')
+  const [tempTo,   setTempTo]   = useState('')
+  const [hovering, setHovering] = useState('')
+  const [customDays, setCustomDays] = useState('')
+  const [calYear,  setCalYear]  = useState(new Date().getFullYear())
+  const [calMonth, setCalMonth] = useState(new Date().getMonth())
+  const ref = useRef(null)
 
-  function set(dateFrom, dateTo) {
-    if (onGlobalDateFilterChange) onGlobalDateFilterChange(f => ({ ...f, dateCol: col, dateFrom, dateTo }))
+  const from = globalDateFilter?.dateFrom || ''
+  const to   = globalDateFilter?.dateTo   || ''
+
+  useEffect(() => {
+    if (open) { setTempFrom(from); setTempTo(to) }
+  }, [open]) // eslint-disable-line
+
+  useEffect(() => {
+    if (!open) return
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const applyRange = (f, t) => {
+    if (onGlobalDateFilterChange) onGlobalDateFilterChange(prev => ({ ...prev, dateCol: col, dateFrom: f, dateTo: t }))
+    setOpen(false)
   }
 
-  function clear() {
-    if (onGlobalDateFilterChange) onGlobalDateFilterChange(f => ({ ...f, dateFrom: '', dateTo: '', dateCol: col }))
+  const handleShortcut = key => {
+    const r = _getShortcutRange(key)
+    applyRange(r.from, r.to)
   }
 
-  const n = new Date()
-  const y = n.getFullYear(), m = n.getMonth() + 1
-  const pad = v => String(v).padStart(2, '0')
-
-  const periods = [
-    {
-      key: 'mes', label: 'Este mês',
-      from: `${y}-${pad(m)}-01`,
-      to: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`,
-    },
-    {
-      key: 'mes_ant', label: 'Mês anterior',
-      from: (() => { const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y; return `${py}-${pad(pm)}-01` })(),
-      to: (() => { const pm = m === 1 ? 12 : m - 1, py = m === 1 ? y - 1 : y; return `${py}-${pad(pm)}-${pad(new Date(py, pm, 0).getDate())}` })(),
-    },
-    {
-      key: 'tri', label: 'Últimos 3 meses',
-      from: (() => { const d = new Date(n); d.setMonth(d.getMonth() - 3); d.setDate(1); return d.toISOString().slice(0, 10) })(),
-      to: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`,
-    },
-    {
-      key: 'sem', label: 'Últimos 6 meses',
-      from: (() => { const d = new Date(n); d.setMonth(d.getMonth() - 6); d.setDate(1); return d.toISOString().slice(0, 10) })(),
-      to: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`,
-    },
-    { key: 'ano', label: 'Este ano', from: `${y}-01-01`, to: `${y}-12-31` },
-    { key: 'ano_ant', label: 'Ano anterior', from: `${y - 1}-01-01`, to: `${y - 1}-12-31` },
-  ]
-
-  if (!col) {
-    return <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure a coluna de data no painel lateral</div>
+  const handleDayClick = dateStr => {
+    if (!tempFrom || (tempFrom && tempTo)) {
+      setTempFrom(dateStr); setTempTo('')
+    } else {
+      const [f, t] = tempFrom <= dateStr ? [tempFrom, dateStr] : [dateStr, tempFrom]
+      setTempFrom(f); setTempTo(t)
+    }
   }
+
+  const prevMonth = calMonth === 0 ? 11 : calMonth - 1
+  const prevYear  = calMonth === 0 ? calYear - 1 : calYear
+
+  const activeKey = _findActiveShortcut(from, to)
+  const displayLabel = activeKey
+    ? DATE_SHORTCUTS.find(s => s.key === activeKey)?.label
+    : (from || to) ? `${_fmtDate(from)} — ${_fmtDate(to)}` : 'Todo o período'
+
+  if (!col) return (
+    <div className="flex items-center justify-center h-full text-xs text-gray-300">Configure a coluna de data</div>
+  )
 
   return (
-    <div className="flex flex-col gap-2 h-full justify-center px-1">
-      <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
-        {(from || to) && (
-          <button onClick={clear} className="text-[10px] text-violet-500 hover:text-violet-700 font-semibold">Limpar</button>
-        )}
-      </div>
-      {/* Period buttons */}
-      <div className="flex flex-wrap gap-1.5">
-        {periods.map(p => (
-          <button
-            key={p.key}
-            onClick={() => active === p.key ? clear() : set(p.from, p.to)}
-            className={`px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all ${
-              active === p.key
-                ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-violet-400 hover:text-violet-600'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-      {/* Custom range */}
-      <div className="flex items-center gap-2 mt-1">
-        <input
-          type="date"
-          value={from}
-          onChange={e => onGlobalDateFilterChange && onGlobalDateFilterChange(f => ({ ...f, dateCol: col, dateFrom: e.target.value }))}
-          className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
-        />
-        <span className="text-xs text-gray-400">→</span>
-        <input
-          type="date"
-          value={to}
-          onChange={e => onGlobalDateFilterChange && onGlobalDateFilterChange(f => ({ ...f, dateCol: col, dateTo: e.target.value }))}
-          className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
-        />
-      </div>
+    <div ref={ref} className="relative h-full flex items-center">
+      {/* Collapsed trigger */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-violet-400 transition-all text-sm text-gray-700 w-full shadow-sm"
+      >
+        <svg className="w-4 h-4 text-violet-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span className="flex-1 text-left truncate text-sm">{displayLabel}</span>
+        <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+
+      {/* Picker dropdown */}
+      {open && (
+        <div className="absolute top-full left-0 z-[200] mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl flex overflow-hidden" style={{ minWidth: 560 }}>
+          {/* Shortcuts list */}
+          <div className="w-44 border-r border-gray-100 py-2 shrink-0">
+            {DATE_SHORTCUTS.map(s => (
+              <button
+                key={s.key}
+                onClick={() => handleShortcut(s.key)}
+                className={`w-full text-left px-4 py-1.5 text-sm transition-colors ${
+                  activeKey === s.key
+                    ? 'text-violet-600 bg-violet-50 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+            {/* Custom N days */}
+            <div className="px-4 pt-2 mt-1 border-t border-gray-100">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number" min="1"
+                  value={customDays}
+                  onChange={e => setCustomDays(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && customDays) {
+                      const n = parseInt(customDays)
+                      if (n > 0) {
+                        const today = new Date()
+                        const past = new Date(today); past.setDate(today.getDate() - n)
+                        applyRange(past.toISOString().slice(0, 10), today.toISOString().slice(0, 10))
+                      }
+                    }
+                  }}
+                  className="w-12 border border-gray-200 rounded px-1.5 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  placeholder="30"
+                />
+                <span className="text-xs text-gray-500">dias até hoje</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Calendar area */}
+          <div className="p-4 flex-1">
+            {/* Date inputs */}
+            <div className="flex items-end gap-2 mb-3">
+              <div className="flex-1">
+                <label className="text-[10px] text-gray-400 block mb-0.5">Data de início *</label>
+                <input type="date" value={tempFrom}
+                  onChange={e => setTempFrom(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+              <span className="text-gray-400 pb-1.5">—</span>
+              <div className="flex-1">
+                <label className="text-[10px] text-gray-400 block mb-0.5">Data de térm...</label>
+                <input type="date" value={tempTo}
+                  onChange={e => setTempTo(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+            </div>
+
+            {/* Month nav */}
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) } else setCalMonth(m => m - 1) }}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <div className="flex gap-10">
+                <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[prevMonth]} {prevYear}</span>
+                <span className="text-xs font-semibold text-gray-600">{MONTH_NAMES_SHORT[calMonth]} {calYear}</span>
+              </div>
+              <button
+                onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) } else setCalMonth(m => m + 1) }}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+
+            {/* Two-month calendar */}
+            <div className="grid grid-cols-2 gap-6"
+              onMouseLeave={() => setHovering('')}
+            >
+              <_MiniCalendar year={prevYear} month={prevMonth} from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
+              <_MiniCalendar year={calYear}  month={calMonth}  from={tempFrom} to={tempTo} hovering={hovering} onDayClick={handleDayClick} onDayHover={setHovering} />
+            </div>
+
+            {/* Apply / Cancel */}
+            <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+              <button onClick={() => setOpen(false)} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+              <button
+                onClick={() => applyRange(tempFrom, tempTo)}
+                disabled={!tempFrom && !tempTo}
+                className="px-4 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium disabled:opacity-40"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1018,7 +1178,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'filter') {
-    if (isDateFilterCol(block.filter_col) || block.config?.date_mode) {
+    if (block.config?.date_mode) {
       return <DateFilterBlockPreview block={block} globalDateFilter={globalDateFilter} onGlobalDateFilterChange={onGlobalDateFilterChange} />
     }
     return <FilterBlockPreview block={block} activeFilters={activeFilters} onFilterChange={onFilterChange} shareToken={shareToken} locale={locale} />
