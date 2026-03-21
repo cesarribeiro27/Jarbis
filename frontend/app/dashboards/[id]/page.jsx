@@ -149,12 +149,10 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     const mainDim = dimCols[0] || null
     const kpiDim = mainDim  // KPI precisa de label_col para a query funcionar
 
-    // KPIs — TODAS as métricas (usuário exclui o que não precisar)
-    if (kpiDim && numCols.length > 0) {
-      numCols.forEach(col => {
-        generated.push({ type: 'kpi', title: col, value_col: col, label_col: kpiDim, agg: 'sum', dataset_id: datasetId })
-      })
-    }
+    // KPIs — TODAS as métricas (sem label_col → query sem dimensão retorna total geral)
+    numCols.forEach(col => {
+      generated.push({ type: 'kpi', title: col, value_col: col, agg: 'sum', dataset_id: datasetId })
+    })
 
     // Linha temporal para cada métrica × cada coluna de data
     dateCols.forEach(dateCol => {

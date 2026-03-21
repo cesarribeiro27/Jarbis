@@ -346,11 +346,12 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
     })
   }
 
-  const dims = [{
+  // Se label_col não estiver definido, dimensions: [] — execute_query agrupa tudo como "Total"
+  const dims = effectiveLabelCol ? [{
     column: effectiveLabelCol,
     type: block.config?.dim_type || 'text',
     granularity: block.config?.granularity || null,
-  }]
+  }] : []
   // For stacked charts, add series_col as a second dimension
   if (['bar_stacked', 'area_stacked'].includes(block.type) && block.config?.series_col) {
     dims.push({ column: block.config.series_col, type: 'text', granularity: null })
@@ -926,7 +927,22 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
 
   const effectiveDatasetId = (block.dataset_id && block.dataset_id !== '__onboarding__') ? block.dataset_id : null
   const isSampleData = block.static_data && !effectiveDatasetId
-  if (!isSampleData && !['pivot', 'gantt', 'sankey', 'candlestick', 'boxplot', 'table'].includes(block.type) && (!effectiveDatasetId || !block.label_col || !block.value_col)) {
+  // KPI/gauge/speedometer/bullet só precisam de dataset_id + value_col (sem dimensão obrigatória)
+  const noLabelRequired = ['kpi', 'gauge', 'speedometer', 'bullet', 'pivot', 'gantt', 'sankey', 'candlestick', 'boxplot', 'table'].includes(block.type)
+  if (!isSampleData && ['kpi', 'gauge', 'speedometer', 'bullet'].includes(block.type) && (!effectiveDatasetId || !block.value_col)) {
+    const msg = !block.dataset_id ? 'Arraste um dataset aqui' : 'Arraste uma coluna numérica (#)'
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
+        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <ellipse cx="12" cy="5" rx="9" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+        </svg>
+        <p className="text-[10px] text-gray-400 font-medium leading-snug">{msg}</p>
+        <p className="text-[9px] text-gray-300">ou clique em <strong>Editar</strong> para configurar</p>
+      </div>
+    )
+  }
+  if (!isSampleData && !noLabelRequired && (!effectiveDatasetId || !block.label_col || !block.value_col)) {
     const msg = !block.dataset_id
       ? 'Arraste um dataset aqui'
       : !block.label_col

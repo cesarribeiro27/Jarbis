@@ -818,10 +818,15 @@ async def query_dataset_v2(
                 )
             )
             if ds_exists:
-                result = execute_query(warp_rows, req)
-                result_dict = result.model_dump() if hasattr(result, "model_dump") else result
-                await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
-                return result
+                try:
+                    result = execute_query(warp_rows, req)
+                    result_dict = result.model_dump() if hasattr(result, "model_dump") else result
+                    await cache_set(redis, cache_key, result_dict, ttl=_CACHE_TTL)
+                    return result_dict
+                except Exception as exc:
+                    import logging
+                    logging.getLogger(__name__).error("execute_query (warp) failed: %s", exc, exc_info=True)
+                    return {"data": [], "total_rows": 0, "columns": [], "compare_data": None}
 
         # 3. Full DB load (popula Warp para próximas queries); fallback para tenant raiz
         service = DatasetService(db)
