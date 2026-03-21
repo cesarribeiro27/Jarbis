@@ -126,31 +126,8 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     'Montando estrutura do dashboard...',
   ]
 
-  // Posiciona blocos de forma inteligente: KPIs na linha 1, gráficos abaixo
-  function arrangeBlocks(rawBlocks) {
-    const kpis = rawBlocks.filter(b => b.type === 'kpi')
-    const charts = rawBlocks.filter(b => b.type !== 'kpi')
-    const result = []
-
-    kpis.forEach((b, i) => {
-      const w = b.layout?.w || 3
-      const h = b.layout?.h || 2
-      result.push({ ...b, layout: { x: (i % 4) * 3, y: Math.floor(i / 4) * h, w, h } })
-    })
-
-    const kpiH = Math.ceil(kpis.length / 4) * 2
-    charts.forEach((b, i) => {
-      const w = Math.min(b.layout?.w || 6, 12)
-      const h = b.layout?.h || 4
-      const colsPerRow = Math.floor(12 / w) || 1
-      result.push({ ...b, layout: { x: (i % colsPerRow) * w, y: kpiH + Math.floor(i / colsPerRow) * h, w, h } })
-    })
-
-    return result
-  }
-
   async function generateDashboard() {
-    if (!datasetId || !selectedDs || genStep > 0) return
+    if (!datasetId || !selectedDs || genStep > 0 || !onAddBlocks) return
     setGenError(null)
     setGenResult(null)
     setGenStep(1)
@@ -175,18 +152,17 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
         },
       }))
 
-      const arranged = arrangeBlocks(mapped)
-      if (!arranged.length) {
+      if (!mapped.length) {
         setGenError('A IA não gerou blocos. Tente descrever o objetivo do dashboard.')
         setGenStep(-1)
         return
       }
 
-      onAddBlocks(arranged)
+      onAddBlocks(mapped)
       setGenResult({
-        count: arranged.length,
-        kpis: arranged.filter(b => b.type === 'kpi').length,
-        charts: arranged.filter(b => b.type !== 'kpi').length,
+        count: mapped.length,
+        kpis: mapped.filter(b => b.type === 'kpi').length,
+        charts: mapped.filter(b => b.type !== 'kpi').length,
       })
       setGenStep(4)
       api.reports.aiUsage().then(setAiUsage).catch(() => {})
@@ -274,9 +250,9 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
         {/* ── Tabs ── */}
         <div className="flex border-b border-gray-100 shrink-0">
           {[
-            { id: 'generate', icon: '✨', label: 'Gerar Dashboard' },
-            { id: 'ask',      icon: '💬', label: 'Perguntar' },
-          ].map(tab => (
+            onAddBlocks && { id: 'generate', icon: '✨', label: 'Gerar Dashboard' },
+            { id: 'ask', icon: '💬', label: 'Perguntar' },
+          ].filter(Boolean).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -1209,17 +1185,21 @@ export default function DashboardDetailPage() {
 
   function addMultipleBlocks(newBlocks) {
     if (!newBlocks?.length) return
-    // Layout automático: KPIs ficam em linha de 3 col cada (4 por linha), gráficos 6 col (2 por linha)
+    // Separa KPIs e gráficos para posicionar KPIs primeiro
+    const kpis = newBlocks.filter(b => b.type === 'kpi')
+    const charts = newBlocks.filter(b => b.type !== 'kpi')
+    const ordered = [...kpis, ...charts]
     let curX = 0, curY = 0, rowH = 0
-    const withLayout = newBlocks.map((b) => {
+    const withLayout = ordered.map((b) => {
       const isKpi = b.type === 'kpi'
-      const w = isKpi ? 3 : 6
-      const h = isKpi ? 3 : 4
+      // Usa sugestão de tamanho da IA se disponível, senão aplica padrão por tipo
+      const w = b.layout?.w || (isKpi ? 3 : 6)
+      const h = b.layout?.h || (isKpi ? 2 : 4)
       if (curX + w > 12) { curY += rowH; curX = 0; rowH = 0 }
       const layout = { x: curX, y: curY, w, h }
       curX += w
       rowH = Math.max(rowH, h)
-      return { id: crypto.randomUUID(), ...b, layout }
+      return { id: b.id || crypto.randomUUID(), ...b, layout }
     })
     setBlocks([...blocks, ...withLayout])
     setSelectedBlockId(withLayout[0]?.id || null)
