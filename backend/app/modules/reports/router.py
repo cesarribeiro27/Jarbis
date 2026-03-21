@@ -1171,6 +1171,7 @@ class AiQueryRequest(BaseModel):
 
 
 _AI_MODEL = "claude-haiku-4-5-20251001"
+_AI_MODEL_GENERATE = "claude-sonnet-4-6"
 
 
 @router.post("/ai-query", summary="Consulta dataset com linguagem natural via IA (Claude)")
@@ -1316,6 +1317,7 @@ async def generate_dashboard_endpoint(
     import json
     import os
     import re
+    import uuid as _uuid
 
     import anthropic as ant
 
@@ -1337,93 +1339,141 @@ async def generate_dashboard_endpoint(
 
     columns = ds.columns or []
     rows = ds.rows or []
-    sample = rows[:10]
+    total_rows = len(rows)
 
-    # Inferir tipo de cada coluna
-    col_types: dict[str, str] = {}
-    if sample:
-        for col in columns:
-            vals = [r.get(col) for r in sample if r.get(col) is not None]
-            if vals:
-                try:
-                    [float(str(v).replace(",", ".")) for v in vals]
-                    col_types[col] = "numero"
-                except (ValueError, TypeError):
-                    # Detectar datas
-                    import re as _re
-                    sample_val = str(vals[0])
-                    if _re.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}", sample_val):
-                        col_types[col] = "data"
-                    else:
-                        col_types[col] = "texto"
+    # ── Análise estatística completa de TODAS as linhas ──────────────────────
+    col_stats: dict[str, dict] = {}
+    for col in columns:
+        vals = [r.get(col) for r in rows if r.get(col) is not None]
+        null_count = total_rows - len(vals)
+
+        if not vals:
+            col_stats[col] = {"type": "texto", "null_pct": 100}
+            continue
+
+        # Tentar numérico
+        nums: list[float] = []
+        all_numeric = True
+        for v in vals:
+            try:
+                nums.append(float(str(v).replace(",", ".")))
+            except (ValueError, TypeError):
+                all_numeric = False
+                break
+
+        if all_numeric and nums:
+            nonzero = sum(1 for n in nums if n != 0)
+            col_stats[col] = {
+                "type": "numero",
+                "sum": round(sum(nums), 2),
+                "avg": round(sum(nums) / len(nums), 2),
+                "min": round(min(nums), 2),
+                "max": round(max(nums), 2),
+                "count": len(nums),
+                "nonzero_pct": round(nonzero / len(nums) * 100),
+                "null_pct": round(null_count / total_rows * 100) if total_rows else 0,
+            }
+        else:
+            sample_val = str(vals[0])
+            if re.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}", sample_val):
+                col_stats[col] = {
+                    "type": "data",
+                    "sample": sample_val,
+                    "count": len(vals),
+                }
             else:
-                col_types[col] = "texto"
+                str_vals = [str(v) for v in vals]
+                unique_vals = list(dict.fromkeys(str_vals))
+                col_stats[col] = {
+                    "type": "texto",
+                    "unique": len(set(str_vals)),
+                    "top3": unique_vals[:3],
+                    "count": len(vals),
+                }
 
-    num_cols = [c for c, t in col_types.items() if t == "numero"]
-    txt_cols = [c for c, t in col_types.items() if t == "texto"]
-    date_cols = [c for c, t in col_types.items() if t == "data"]
+    # ── Schema para a IA com estatísticas claras ─────────────────────────────
+    schema_parts = [
+        f"Dataset: {ds.name}",
+        f"Total de linhas: {total_rows}",
+        "",
+        "Colunas (analise cuidadosamente cada uma):",
+    ]
+    for col, st in col_stats.items():
+        if st["type"] == "numero":
+            flag = "★ INTERESSANTE" if st["nonzero_pct"] >= 20 else "— zero/irrelevante"
+            schema_parts.append(
+                f'  "{col}" [número {flag}] sum={st["sum"]}, avg={st["avg"]}, '
+                f'nonzero={st["nonzero_pct"]}%'
+            )
+        elif st["type"] == "data":
+            schema_parts.append(f'  "{col}" [data] ex: {st["sample"]}')
+        else:
+            top3 = ", ".join(st.get("top3", []))
+            schema_parts.append(
+                f'  "{col}" [texto] {st.get("unique", "?")} valores únicos, ex: {top3}'
+            )
 
-    col_desc = ", ".join(f"{c}({col_types.get(c,'texto')})" for c in columns)
-    schema_str = (
-        f"Dataset: {ds.name}\n"
-        f"Colunas: {col_desc}\n"
-        f"Amostra ({len(sample)} linhas):\n{json.dumps(sample[:5], ensure_ascii=False, default=str)}"
-    )
+    sample_rows = rows[:5]
+    schema_str = "\n".join(schema_parts)
+    schema_str += f"\n\nAmostra (5 linhas):\n{json.dumps(sample_rows, ensure_ascii=False, default=str)}"
 
-    objetivo_str = f"\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
+    objetivo_str = f"\n\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
 
     system_prompt = (
-        "Você é um especialista em BI, visualização de dados e análise financeira para empresas brasileiras. "
-        "Dado o schema de um dataset, gere blocos de dashboard que sejam informativos e relevantes — "
-        "a quantidade deve refletir o que faz sentido gerencial, não um número fixo.\n"
-        "Retorne SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON) no formato:\n"
+        "Você é um especialista sênior em Business Intelligence e análise de dados para empresas brasileiras.\n"
+        "Analise o schema do dataset e gere um dashboard coeso, profissional e informativo.\n\n"
+        "RETORNE SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON):\n"
         '[\n'
-        '  {"type":"kpi","title":"Título do card","value_col":"coluna_numerica","agg":"sum","label_col":null},\n'
-        '  {"type":"bar","title":"Título do gráfico","label_col":"coluna_texto","value_col":"coluna_numerica","agg":"sum"},\n'
+        '  {"type":"kpi","title":"Título","value_col":"coluna","agg":"sum","label_col":null,'
+        '"layout":{"w":3,"h":2}},\n'
+        '  {"type":"line","title":"Título","label_col":"coluna_data","value_col":"coluna","agg":"sum",'
+        '"layout":{"w":6,"h":4}},\n'
         '  ...\n'
-        ']\n'
-        "Tipos disponíveis: kpi, bar, line, pie, area\n\n"
-        "Regras gerais:\n"
-        "- kpi: value_col=coluna numérica, label_col=null, agg=sum/avg/count\n"
-        "- bar/line/area/pie: label_col=coluna de texto ou data, value_col=coluna numérica\n"
-        "- Use nomes de colunas EXATAMENTE como no dataset\n"
-        "- Títulos em português, curtos e descritivos\n"
-        "- Se houver coluna de data, inclua pelo menos 1 gráfico de linha/área por período\n"
-        "- Gere blocos variados: combine KPIs com gráficos de tendência, ranking e distribuição\n\n"
-        "Princípio fundamental: cada bloco deve levar a uma decisão ou ação gerencial. "
-        "Analise a amostra dos dados para entender o que realmente tem valor — use os dados como fonte da verdade.\n\n"
-        "Conhecimento de domínio (use como referência para interpretar os dados, não como regra fixa):\n\n"
-        "Fiscal brasileiro — NFS-e (Nota Fiscal de Serviço Eletrônica):\n"
-        "- Campos como Valor Total Recebido, Base de Cálculo, ISS devido, Valor das Deduções são os principais indicadores financeiros\n"
-        "- 'Alíquota' é uma taxa percentual — somar alíquotas não faz sentido analítico; avg faz sentido se relevante\n"
-        "- PIS, COFINS, CSLL, IR, INSS: em empresas do Simples Nacional esses campos ficam zerados (imposto unificado no DAS); em Lucro Presumido/Real têm valores — verifique na amostra\n"
-        "- CEI e Matrícula da Obra: relevantes apenas em serviços de construção civil\n"
-        "- 'Valor do Crédito': crédito de ISS para o tomador de serviço\n"
-        "- Colunas de data (Data do Fato Gerador, Data de Emissão): excelentes para análise de tendência temporal\n\n"
-        "Análise financeira geral:\n"
-        "- Faturamento → sum do valor principal; Ticket médio → avg; Volume → count\n"
-        "- Tendência temporal → line/area com granularidade mensal\n"
-        "- Concentração (top N) → bar com ranking\n"
-        "- Composição do mix → pie/treemap com categoria\n"
-        "- Um bom dashboard financeiro equilibra: visão geral (KPIs), tendência (linha), ranking (barra) e composição (pizza)"
+        ']\n\n'
+        "TIPOS DISPONÍVEIS: kpi, bar, bar_h, line, area, pie\n\n"
+        "TAMANHOS DE LAYOUT por tipo (siga rigorosamente):\n"
+        "  kpi    → w=3, h=2  (máx 4 por linha, ocupam linha 1)\n"
+        "  line   → w=6, h=4  (evolução temporal — para colunas de data)\n"
+        "  area   → w=6, h=4  (área acumulada — para séries temporais)\n"
+        "  bar    → w=6, h=4  (ranking de categorias)\n"
+        "  bar_h  → w=6, h=4  (preferir se nomes forem longos ou muitas categorias)\n"
+        "  pie    → w=4, h=4  (composição, máx 8 fatias)\n\n"
+        "REGRAS OBRIGATÓRIAS:\n"
+        "1. Use APENAS colunas marcadas ★ INTERESSANTE para métricas de KPI/gráfico\n"
+        "2. Ignore completamente colunas marcadas '— zero/irrelevante'\n"
+        "3. kpi: label_col=null, value_col=coluna_numero_INTERESSANTE\n"
+        "4. Gráficos: label_col=texto_ou_data, value_col=numero_INTERESSANTE\n"
+        "5. Nomes de colunas EXATAMENTE como no dataset (case-sensitive)\n"
+        "6. Títulos em português, objetivos, máx 35 caracteres\n"
+        "7. Cada bloco deve responder UMA pergunta de negócio específica\n\n"
+        "ESTRUTURA RECOMENDADA DO DASHBOARD:\n"
+        "  • Linha 1: 3-4 KPIs com as métricas de maior relevância\n"
+        "  • Linha 2: gráfico de linha/área com evolução temporal (se houver data)\n"
+        "  • Linha 3+: bar de ranking (top dimensões) + pie de composição\n\n"
+        "DOMÍNIO FISCAL BRASILEIRO (referência de interpretação, não regra):\n"
+        "  • NFS-e: Valor Total Recebido e Base de Cálculo = indicadores de faturamento\n"
+        "  • Alíquota: agg=avg se relevante, NUNCA sum\n"
+        "  • Simples Nacional: PIS, COFINS, CSLL, IR, INSS zerados (nonzero_pct<5% = irrelevante)\n"
+        "  • Datas (Emissão, Fato Gerador): ideais para eixo X de linha temporal\n"
+        "  • Cliente/Tomador: ideal para ranking (bar) de concentração de receita"
     )
 
     client = ant.Anthropic(api_key=api_key)
     msg = client.messages.create(
-        model=_AI_MODEL,
-        max_tokens=1024,
+        model=_AI_MODEL_GENERATE,
+        max_tokens=2048,
         system=system_prompt,
-        messages=[{"role": "user", "content": f"{schema_str}{objetivo_str}\n\nGere o dashboard:"}],
+        messages=[{"role": "user", "content": f"{schema_str}{objetivo_str}\n\nGere o dashboard JSON:"}],
     )
 
-    # Log de uso
+    # ── Log de uso ────────────────────────────────────────────────────────────
     try:
         usage = msg.usage
         log = AIUsageLog(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             dataset_id=data.dataset_id,
-            model=_AI_MODEL,
+            model=_AI_MODEL_GENERATE,
             tokens_input=usage.input_tokens,
             tokens_output=usage.output_tokens,
             question=f"[generate-dashboard] {data.objetivo or ''}",
@@ -1442,12 +1492,29 @@ async def generate_dashboard_endpoint(
             raise HTTPException(status_code=500, detail="IA não retornou JSON válido.")
         blocks = json.loads(m.group())
 
-    if not isinstance(blocks, list):
+    if not isinstance(blocks, list) or not blocks:
         raise HTTPException(status_code=500, detail="IA retornou formato inválido.")
 
-    # Injetar dataset_id em cada bloco
+    # ── Defaults de layout e id por tipo ─────────────────────────────────────
+    _layout_defaults = {
+        "kpi": {"w": 3, "h": 2},
+        "line": {"w": 6, "h": 4},
+        "area": {"w": 6, "h": 4},
+        "bar": {"w": 6, "h": 4},
+        "bar_h": {"w": 6, "h": 4},
+        "pie": {"w": 4, "h": 4},
+    }
     for b in blocks:
         b["dataset_id"] = str(data.dataset_id)
+        if not b.get("id"):
+            b["id"] = str(_uuid.uuid4())
+        btype = b.get("type", "bar")
+        default_size = _layout_defaults.get(btype, {"w": 6, "h": 4})
+        if not isinstance(b.get("layout"), dict):
+            b["layout"] = default_size.copy()
+        else:
+            b["layout"].setdefault("w", default_size["w"])
+            b["layout"].setdefault("h", default_size["h"])
 
     return {"blocks": blocks, "dataset_name": ds.name}
 

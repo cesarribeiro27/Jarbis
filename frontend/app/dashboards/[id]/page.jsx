@@ -90,18 +90,20 @@ function newBlock(type, blockTypes) {
 function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
+  const [activeTab, setActiveTab] = useState('generate')
   const [datasetId, setDatasetId] = useState(datasets[0]?.id || '')
+
+  // Generate tab state: 0=idle, 1-3=loading steps, 4=success, -1=error
+  const [genStep, setGenStep] = useState(0)
+  const [genError, setGenError] = useState(null)
+  const [genResult, setGenResult] = useState(null)
+  const [objetivo, setObjetivo] = useState('')
+
+  // Ask tab state
   const [question, setQuestion] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
-  const historyRef = useRef(null)
   const [aiUsage, setAiUsage] = useState(null)
-  const [genError, setGenError] = useState(null)
-  const [genSuccess, setGenSuccess] = useState(null)
-  const [showGenSection, setShowGenSection] = useState(true)
-  const [genLoading, setGenLoading] = useState(false)
-  const [objetivo, setObjetivo] = useState('')
 
   useEffect(() => {
     api.reports.aiUsage().then(setAiUsage).catch(() => {})
@@ -116,40 +118,90 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     dimCols[0] && numCols[0] && t('ai.suggTop', { dim: dimCols[0], metric: numCols[0] }),
     numCols[0] && t('ai.suggTrend', { col: numCols[0] }),
     t('ai.suggCategories'),
-    t('ai.suggAnomalies'),
   ].filter(Boolean).slice(0, 4)
 
-  async function generateFullDashboard() {
-    if (!datasetId || !selectedDs || genLoading) return
-    setGenError(null); setGenSuccess(null); setGenLoading(true)
+  const GEN_STEPS = [
+    'Analisando colunas e métricas...',
+    'Identificando padrões relevantes...',
+    'Montando estrutura do dashboard...',
+  ]
+
+  // Posiciona blocos de forma inteligente: KPIs na linha 1, gráficos abaixo
+  function arrangeBlocks(rawBlocks) {
+    const kpis = rawBlocks.filter(b => b.type === 'kpi')
+    const charts = rawBlocks.filter(b => b.type !== 'kpi')
+    const result = []
+
+    kpis.forEach((b, i) => {
+      const w = b.layout?.w || 3
+      const h = b.layout?.h || 2
+      result.push({ ...b, layout: { x: (i % 4) * 3, y: Math.floor(i / 4) * h, w, h } })
+    })
+
+    const kpiH = Math.ceil(kpis.length / 4) * 2
+    charts.forEach((b, i) => {
+      const w = Math.min(b.layout?.w || 6, 12)
+      const h = b.layout?.h || 4
+      const colsPerRow = Math.floor(12 / w) || 1
+      result.push({ ...b, layout: { x: (i % colsPerRow) * w, y: kpiH + Math.floor(i / colsPerRow) * h, w, h } })
+    })
+
+    return result
+  }
+
+  async function generateDashboard() {
+    if (!datasetId || !selectedDs || genStep > 0) return
+    setGenError(null)
+    setGenResult(null)
+    setGenStep(1)
+
+    const t1 = setTimeout(() => setGenStep(2), 2500)
+    const t2 = setTimeout(() => setGenStep(3), 5000)
+
     try {
       const result = await api.reports.generateDashboard(datasetId, objetivo.trim() || null)
-      const blocks = (result.blocks || []).map(b => ({
+      clearTimeout(t1); clearTimeout(t2)
+
+      const mapped = (result.blocks || []).map(b => ({
         ...b,
+        id: b.id || crypto.randomUUID(),
         dataset_id: datasetId,
         config: {
           ...(b.config || {}),
-          dim_type: b.label_col ? (selectedDs?.column_types?.[b.label_col] === 'date' ? 'date' : 'text') : undefined,
+          dim_type: b.label_col
+            ? (selectedDs?.column_types?.[b.label_col] === 'date' ? 'date' : 'text')
+            : undefined,
           granularity: selectedDs?.column_types?.[b.label_col] === 'date' ? 'month' : undefined,
         },
       }))
-      if (!blocks.length) { setGenError('A IA não gerou blocos. Tente descrever o objetivo.'); return }
-      onAddBlocks(blocks)
-      setGenSuccess(`${blocks.length} blocos criados!`)
-      setShowGenSection(false)
+
+      const arranged = arrangeBlocks(mapped)
+      if (!arranged.length) {
+        setGenError('A IA não gerou blocos. Tente descrever o objetivo do dashboard.')
+        setGenStep(-1)
+        return
+      }
+
+      onAddBlocks(arranged)
+      setGenResult({
+        count: arranged.length,
+        kpis: arranged.filter(b => b.type === 'kpi').length,
+        charts: arranged.filter(b => b.type !== 'kpi').length,
+      })
+      setGenStep(4)
       api.reports.aiUsage().then(setAiUsage).catch(() => {})
-      setTimeout(onClose, 1200)
+      setTimeout(onClose, 2200)
     } catch (e) {
+      clearTimeout(t1); clearTimeout(t2)
       setGenError(e.message || 'Erro ao gerar dashboard.')
-    } finally {
-      setGenLoading(false)
+      setGenStep(-1)
     }
   }
 
   async function ask(q) {
     const qText = q || question.trim()
     if (!datasetId || !qText) return
-    setLoading(true); setError(null)
+    setLoading(true)
     const entry = { id: crypto.randomUUID(), question: qText, answer: null, error: null, ts: new Date().toISOString() }
     setHistory(h => [entry, ...h])
     if (!q) setQuestion('')
@@ -159,7 +211,6 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
       api.reports.aiUsage().then(setAiUsage).catch(() => {})
     } catch (e) {
       setHistory(h => h.map(e => e.id === entry.id ? { ...e, error: e.message } : e))
-      setError(e.message)
     } finally { setLoading(false) }
   }
 
@@ -167,92 +218,231 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     return new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   }
 
+  const isGenerating = genStep >= 1 && genStep <= 3
+
+  if (datasets.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 text-center" onClick={e => e.stopPropagation()}>
+          <p className="text-sm text-gray-500">{t('ai.noDataset')}</p>
+          <button onClick={onClose} className="mt-4 text-sm text-violet-600 hover:underline">Fechar</button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85vh]" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[88vh]" onClick={e => e.stopPropagation()}>
+
+        {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-          <span className="font-semibold text-gray-800 text-sm flex items-center gap-2">
-            <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-            {t('ai.title')}
-          </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <span className="font-semibold text-gray-800 text-sm">Jarbis IA</span>
+          </div>
+          <div className="flex items-center gap-3">
             {aiUsage && aiUsage.limit !== -1 && (
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                aiUsage.remaining === 0
-                  ? 'bg-red-50 text-red-500'
-                  : aiUsage.remaining <= 10
-                  ? 'bg-amber-50 text-amber-600'
-                  : 'bg-violet-50 text-violet-600'
-              }`}>
-                {aiUsage.remaining}/{aiUsage.limit} consultas
-              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      aiUsage.remaining === 0 ? 'bg-red-400' :
+                      aiUsage.remaining <= 10 ? 'bg-amber-400' : 'bg-violet-500'
+                    }`}
+                    style={{ width: `${Math.round((aiUsage.remaining / aiUsage.limit) * 100)}%` }}
+                  />
+                </div>
+                <span className={`text-[10px] font-medium tabular-nums ${
+                  aiUsage.remaining === 0 ? 'text-red-500' :
+                  aiUsage.remaining <= 10 ? 'text-amber-600' : 'text-gray-400'
+                }`}>{aiUsage.remaining}/{aiUsage.limit}</span>
+              </div>
             )}
-            {history.length > 0 && (
-              <button onClick={() => setHistory([])} className="text-[10px] text-gray-400 hover:text-gray-600 font-medium">{t('ai.clearHistory')}</button>
-            )}
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto" ref={historyRef}>
-          {datasets.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-sm text-gray-400">{t('ai.noDataset')}</p>
-            </div>
-          ) : (
+        {/* ── Tabs ── */}
+        <div className="flex border-b border-gray-100 shrink-0">
+          {[
+            { id: 'generate', icon: '✨', label: 'Gerar Dashboard' },
+            { id: 'ask',      icon: '💬', label: 'Perguntar' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                activeTab === tab.id
+                  ? 'text-violet-700 border-b-2 border-violet-600 bg-violet-50/40'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <span className="text-base leading-none">{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Content ── */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ════════ TAB: GERAR ════════ */}
+          {activeTab === 'generate' && (
             <div className="p-5 flex flex-col gap-4">
 
-              {/* Gerar dashboard completo */}
-              {onAddBlocks && (
-                <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
-                  <button
-                    onClick={() => setShowGenSection(s => !s)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-left"
+              {/* Dataset selector (só aparece se houver mais de 1) */}
+              {datasets.length > 1 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Dataset</label>
+                  <select
+                    value={datasetId}
+                    onChange={e => { setDatasetId(e.target.value); setGenStep(0); setGenError(null); setGenResult(null) }}
+                    disabled={isGenerating}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-50"
                   >
-                    <span className="flex items-center gap-2 text-sm font-semibold text-violet-700">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                      Gerar dashboard automaticamente
-                    </span>
-                    <svg className={`w-4 h-4 text-violet-400 transition-transform ${showGenSection ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
-                  </button>
-                  {showGenSection && (
-                    <div className="px-4 pb-4 flex flex-col gap-3 border-t border-violet-100 pt-3">
-                      <p className="text-xs text-violet-600">A IA analisa seu dataset e cria automaticamente os KPIs e gráficos mais relevantes para o seu negócio.</p>
-                      <textarea
-                        value={objetivo}
-                        onChange={e => setObjetivo(e.target.value)}
-                        placeholder="Opcional: descreva o objetivo do dashboard (ex: análise financeira de NFS-e, faturamento mensal por cliente...)"
-                        rows={2}
-                        disabled={genLoading}
-                        className="w-full border border-violet-200 rounded-lg px-3 py-2 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none disabled:opacity-50"
-                      />
-                      {genError && <p className="text-xs text-red-500">{genError}</p>}
-                      {genSuccess && <p className="text-xs text-green-600 font-medium">{genSuccess}</p>}
-                      <button
-                        onClick={generateFullDashboard}
-                        disabled={!datasetId || genLoading}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-lg disabled:opacity-40 transition-colors"
-                      >
-                        {genLoading
-                          ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Gerando...</>
-                          : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Gerar dashboard</>
-                        }
-                      </button>
-                    </div>
-                  )}
+                    {datasets.map(ds => (
+                      <option key={ds.id} value={ds.id}>{ds.name} ({ds.row_count} linhas)</option>
+                    ))}
+                  </select>
                 </div>
               )}
+
+              {/* Estado: idle ou erro */}
+              {(genStep === 0 || genStep === -1) && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      Contexto <span className="text-gray-400 font-normal">(opcional)</span>
+                    </label>
+                    <textarea
+                      value={objetivo}
+                      onChange={e => setObjetivo(e.target.value)}
+                      placeholder="Ex: análise de faturamento NFS-e, foco em tendência mensal e top clientes..."
+                      rows={3}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
+                    />
+                  </div>
+
+                  {genStep === -1 && genError && (
+                    <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 flex items-start gap-2">
+                      <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <div>
+                        <p className="text-xs font-medium text-red-600">Erro ao gerar</p>
+                        <p className="text-xs text-red-500 mt-0.5">{genError}</p>
+                        <button onClick={() => setGenStep(0)} className="text-xs text-violet-600 hover:underline mt-1">Tentar novamente</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={generateDashboard}
+                    disabled={!datasetId}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Gerar Dashboard com IA
+                  </button>
+
+                  <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+                    A IA analisa todas as colunas, identifica o que é relevante e cria KPIs e gráficos posicionados de forma inteligente.
+                  </p>
+                </>
+              )}
+
+              {/* Estado: gerando (animação de progresso) */}
+              {isGenerating && (
+                <div className="py-10 flex flex-col items-center gap-6">
+                  <div className="relative w-20 h-20">
+                    <svg className="w-20 h-20 text-violet-100" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                    </svg>
+                    <svg className="w-20 h-20 text-violet-500 animate-spin absolute inset-0" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                      <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-violet-700">{GEN_STEPS[genStep - 1]}</p>
+                    <p className="text-xs text-gray-400 mt-1.5">Usando IA avançada para criar um dashboard relevante</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {GEN_STEPS.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`rounded-full transition-all duration-500 ${
+                          i < genStep ? 'w-6 h-1.5 bg-violet-500' : 'w-2 h-2 bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Estado: sucesso */}
+              {genStep === 4 && genResult && (
+                <div className="py-8 flex flex-col items-center gap-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800 text-base">Dashboard criado!</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {[
+                        genResult.kpis > 0 && `${genResult.kpis} KPI${genResult.kpis > 1 ? 's' : ''}`,
+                        genResult.charts > 0 && `${genResult.charts} gráfico${genResult.charts > 1 ? 's' : ''}`,
+                      ].filter(Boolean).join(' + ')}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400">Fechando em instantes...</p>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* ════════ TAB: PERGUNTAR ════════ */}
+          {activeTab === 'ask' && (
+            <div className="p-5 flex flex-col gap-4">
 
               {/* Dataset selector */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('ai.datasetLabel')}</label>
-                <select value={datasetId} onChange={e => setDatasetId(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                  {datasets.map(ds => <option key={ds.id} value={ds.id}>{ds.name} ({t('ai.rowsCount', { n: ds.row_count })})</option>)}
+                <select
+                  value={datasetId}
+                  onChange={e => setDatasetId(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                >
+                  {datasets.map(ds => (
+                    <option key={ds.id} value={ds.id}>{ds.name} ({t('ai.rowsCount', { n: ds.row_count })})</option>
+                  ))}
                 </select>
                 {selectedDs && (
-                  <p className="text-[10px] text-gray-400 mt-1">{t('ai.colsInfo', { n: selectedDs.columns?.length })}: {selectedDs.columns?.slice(0,5).join(', ')}{(selectedDs.columns?.length || 0) > 5 ? '...' : ''}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {t('ai.colsInfo', { n: selectedDs.columns?.length })}: {selectedDs.columns?.slice(0,5).join(', ')}
+                    {(selectedDs.columns?.length || 0) > 5 ? '...' : ''}
+                  </p>
                 )}
               </div>
 
@@ -262,7 +452,11 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('ai.suggestions')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {SUGGESTIONS.map((s, i) => (
-                      <button key={i} onClick={() => ask(s)} className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                      <button
+                        key={i}
+                        onClick={() => ask(s)}
+                        className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                      >
                         {s}
                       </button>
                     ))}
@@ -281,15 +475,27 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                   autoFocus
                   disabled={loading}
                 />
-                <button onClick={() => ask()} disabled={loading || !datasetId || !question.trim()} className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-40 transition-colors shrink-0">
-                  {loading ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> : t('ai.send')}
+                <button
+                  onClick={() => ask()}
+                  disabled={loading || !datasetId || !question.trim()}
+                  className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-40 transition-colors shrink-0"
+                >
+                  {loading
+                    ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    : t('ai.send')
+                  }
                 </button>
               </div>
 
               {/* Histórico */}
               {history.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('ai.history')}</p>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('ai.history')}</p>
+                    <button onClick={() => setHistory([])} className="text-[10px] text-gray-400 hover:text-gray-600 font-medium">
+                      {t('ai.clearHistory')}
+                    </button>
+                  </div>
                   {history.map(entry => (
                     <div key={entry.id} className="rounded-xl border border-gray-100 overflow-hidden">
                       <div className="bg-gray-50 px-3 py-2 flex items-center justify-between gap-2">
@@ -297,35 +503,30 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                         <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(entry.ts)}</span>
                       </div>
                       {entry.answer ? (
-                        <div className="bg-violet-50 px-3 py-2.5">
+                        <div className="px-3 py-2.5 bg-violet-50">
                           <p className="text-sm text-violet-900 leading-relaxed">{entry.answer}</p>
                           {entry.aiResult?.suggested_chart_type && onAddBlock && (
                             <button
                               onClick={() => {
-                                const newB = {
+                                onAddBlock({
                                   id: crypto.randomUUID(),
                                   type: entry.aiResult.suggested_chart_type || 'bar',
-                                  title: entry.aiResult.suggested_title || 'Gráfico AI',
+                                  title: entry.aiResult.suggested_title || 'Gráfico IA',
                                   dataset_id: entry.datasetId || null,
-                                  label_col: entry.aiResult.suggested_config?.label_col || null,
-                                  value_col: entry.aiResult.suggested_config?.value_col || null,
-                                  agg: 'sum',
-                                  config: {
-                                    label_col: entry.aiResult.suggested_config?.label_col || '',
-                                    value_col: entry.aiResult.suggested_config?.value_col || '',
-                                    agg: 'sum',
-                                  },
+                                  label_col: entry.aiResult.query?.label_col || null,
+                                  value_col: entry.aiResult.query?.value_col || null,
+                                  agg: entry.aiResult.query?.agg || 'sum',
+                                  config: {},
                                   layout: { x: 0, y: 999, w: 6, h: 4 },
-                                }
-                                onAddBlock(newB)
+                                })
                                 onClose()
                               }}
-                              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                              className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors text-xs font-medium"
                             >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                               </svg>
-                              Adicionar {entry.aiResult.suggested_chart_type} ao dashboard
+                              Adicionar ao dashboard
                             </button>
                           )}
                         </div>
@@ -335,7 +536,10 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                         </div>
                       ) : (
                         <div className="bg-violet-50 px-3 py-2.5 flex items-center gap-2">
-                          <svg className="w-3.5 h-3.5 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                          <svg className="w-3.5 h-3.5 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
                           <span className="text-xs text-violet-400">{t('ai.analyzing')}</span>
                         </div>
                       )}
@@ -343,8 +547,10 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                   ))}
                 </div>
               )}
+
             </div>
           )}
+
         </div>
       </div>
     </div>
