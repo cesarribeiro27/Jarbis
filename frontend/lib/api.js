@@ -46,7 +46,11 @@ async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: response.status === 404 ? 'not found' : 'Erro desconhecido' }))
+    const error = await response.json().catch(async () => {
+      const raw = await response.text().catch(() => '')
+      if (raw) console.error('[API] non-JSON response', response.status, response.url, raw.slice(0, 300))
+      return { detail: response.status === 404 ? 'not found' : 'Erro desconhecido' }
+    })
     const detail = error.detail
     const message = Array.isArray(detail)
       ? detail.map(e => e.msg || JSON.stringify(e)).join('; ')
