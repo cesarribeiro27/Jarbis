@@ -519,6 +519,84 @@ async def get_onboarding_dataset(
     )
 
 
+def _analyze_sheet(ws) -> dict:
+    """Analisa uma aba e retorna metadados para ajudar o usuário a identificar bancos de dados."""
+    import re as _re
+
+    # Nomes suspeitos de não serem banco de dados
+    SUMMARY_KEYWORDS = {
+        'dashboard', 'analise', 'análise', 'visao', 'visão', 'resumo',
+        'pivot', 'grafico', 'gráfico', 'relatorio', 'relatório', 'chart',
+        'overview', 'sumario', 'sumário', 'summary', 'report',
+    }
+
+    name_lower = ws.title.lower()
+    name_clean = _re.sub(r'[^a-z]', '', name_lower)
+
+    # Lê amostra de linhas (máx 100)
+    sample_rows = []
+    for row in ws.iter_rows(values_only=True, max_row=101):
+        sample_rows.append(row)
+        if len(sample_rows) >= 101:
+            break
+
+    if not sample_rows:
+        return {"name": ws.title, "type": "empty", "row_count": 0, "col_count": 0, "suggested": False, "reason": "Aba vazia"}
+
+    headers = sample_rows[0]
+    data_rows = [r for r in sample_rows[1:] if any(v is not None for v in r)]
+    col_count = sum(1 for h in headers if h is not None)
+    row_count = len(data_rows)  # approximate (sample only)
+
+    # Heurísticas
+    name_is_summary = any(kw in name_clean for kw in SUMMARY_KEYWORDS)
+    has_enough_rows = row_count >= 5
+    has_enough_cols = col_count >= 3
+    headers_look_like_text = sum(1 for h in headers if h and isinstance(h, str) and not str(h).replace('.','').replace(',','').replace(' ','').replace('R$','').replace('%','').lstrip('-').isnumeric()) >= col_count * 0.6 if col_count else False
+
+    # Fill density: percentual de células não-nulas nas linhas de dados
+    if data_rows and col_count:
+        filled = sum(1 for r in data_rows[:20] for v in r[:col_count] if v is not None)
+        total = len(data_rows[:20]) * col_count
+        fill_density = filled / total if total else 0
+    else:
+        fill_density = 0
+
+    # Score: 0-100
+    score = 0
+    if has_enough_rows: score += 30
+    if has_enough_cols: score += 20
+    if headers_look_like_text: score += 20
+    if fill_density >= 0.5: score += 20
+    if not name_is_summary: score += 10
+
+    if score >= 60 and has_enough_rows and has_enough_cols:
+        sheet_type = "data"
+        suggested = True
+        reason = f"{row_count}+ linhas · {col_count} colunas · parece banco de dados"
+    elif row_count == 0:
+        sheet_type = "empty"
+        suggested = False
+        reason = "Aba vazia ou sem dados"
+    elif name_is_summary or not has_enough_rows:
+        sheet_type = "summary"
+        suggested = False
+        reason = "Parece resumo ou tabela analítica"
+    else:
+        sheet_type = "unknown"
+        suggested = False
+        reason = f"{row_count} linhas · estrutura indefinida"
+
+    return {
+        "name": ws.title,
+        "type": sheet_type,       # "data" | "summary" | "empty" | "unknown"
+        "row_count": row_count,
+        "col_count": col_count,
+        "suggested": suggested,
+        "reason": reason,
+    }
+
+
 @router.get(
     "/datasets/google-sheets-sheets",
     summary="Lista abas de uma planilha Google Sheets pública",
@@ -540,10 +618,11 @@ async def get_google_sheets_sheets(
             raise HTTPException(status_code=400, detail="Não foi possível baixar a planilha. Verifique se está pública.")
         import io
         import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(resp.content), read_only=True)
-        sheets = wb.sheetnames
+        wb = openpyxl.load_workbook(io.BytesIO(resp.content), read_only=True, data_only=True)
+        sheets_meta = [_analyze_sheet(wb[name]) for name in wb.sheetnames]
         wb.close()
-        return {"sheets": sheets}
+        # Retrocompatibilidade: sheets = lista de nomes
+        return {"sheets": [s["name"] for s in sheets_meta], "sheets_meta": sheets_meta}
     except HTTPException:
         raise
     except Exception as e:
@@ -564,10 +643,10 @@ async def get_excel_sheets(
     try:
         import io
         import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True)
-        sheets = wb.sheetnames
+        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        sheets_meta = [_analyze_sheet(wb[name]) for name in wb.sheetnames]
         wb.close()
-        return {"sheets": sheets}
+        return {"sheets": [s["name"] for s in sheets_meta], "sheets_meta": sheets_meta}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
 

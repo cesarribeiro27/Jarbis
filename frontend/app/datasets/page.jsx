@@ -9,20 +9,61 @@ import { useTranslations, useLocale } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-function ExcelSheetPickerModal({ sheets, onConfirm, onClose }) {
-  const [selected, setSelected] = useState(sheets[0] || '')
+function SheetQualityBadge({ type, suggested }) {
+  if (type === 'data' && suggested) return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Banco de dados</span>
+  if (type === 'summary') return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Resumo</span>
+  if (type === 'empty') return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">Vazia</span>
+  return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">Indefinido</span>
+}
+
+function ExcelSheetPickerModal({ sheets, sheetsMeta = [], onConfirm, onClose }) {
+  const suggested = sheetsMeta.find(s => s.suggested)
+  const [selected, setSelected] = useState(suggested?.name || sheets[0] || '')
+  const hasAnyData = sheetsMeta.some(s => s.type === 'data')
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Selecionar aba do Excel</h2>
-        <p className="text-xs text-gray-400 mb-4">O arquivo contém {sheets.length} abas. Escolha qual importar.</p>
-        <select
-          value={selected}
-          onChange={e => setSelected(e.target.value)}
-          className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 mb-4"
-        >
-          {sheets.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Selecionar aba</h2>
+        <p className="text-xs text-gray-400 mb-3">O arquivo contém {sheets.length} {sheets.length === 1 ? 'aba' : 'abas'}. Escolha qual importar.</p>
+
+        {!hasAnyData && sheetsMeta.length > 0 && (
+          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+            Nenhuma aba parece conter um banco de dados estruturado.{' '}
+            <a href="/datasets/boas-praticas" target="_blank" className="underline font-medium">Ver como estruturar seus dados</a>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5 mb-4">
+          {sheets.map((s, i) => {
+            const meta = sheetsMeta[i] || {}
+            const isSelected = selected === s
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSelected(s)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-colors ${
+                  isSelected
+                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-violet-300 hover:bg-violet-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-violet-500' : 'bg-gray-300'}`} />
+                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{s}</span>
+                  {meta.suggested && <span className="text-[9px] text-emerald-600 shrink-0">✦ sugerida</span>}
+                </div>
+                {meta.type && <SheetQualityBadge type={meta.type} suggested={meta.suggested} />}
+              </button>
+            )
+          })}
+        </div>
+
+        {selected && sheetsMeta.find(s => s.name === selected)?.reason && (
+          <p className="text-[11px] text-gray-400 mb-3">{sheetsMeta.find(s => s.name === selected).reason}</p>
+        )}
+
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
           <button onClick={() => onConfirm(selected)} className="flex-1 bg-violet-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-violet-700">Importar</button>
@@ -39,6 +80,7 @@ function ApiDatasetModal({ onClose, onCreated }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [sheets, setSheets] = useState([])
+  const [sheetsMeta, setSheetsMeta] = useState([])
   const [selectedSheet, setSelectedSheet] = useState('')
   const [sheetsLoading, setSheetsLoading] = useState(false)
 
@@ -65,8 +107,13 @@ function ApiDatasetModal({ onClose, onCreated }) {
     setError(null)
     try {
       const result = await api.reports.datasets.fetchGoogleSheets(form.api_url)
+      const meta = result.sheets_meta || []
       setSheets(result.sheets || [])
-      if (result.sheets?.length > 0) setSelectedSheet(result.sheets[0])
+      setSheetsMeta(meta)
+      // Auto-selecionar a aba sugerida (banco de dados)
+      const suggested = meta.find(s => s.suggested)
+      const first = result.sheets?.[0] || ''
+      setSelectedSheet(suggested?.name || first)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -131,9 +178,37 @@ function ApiDatasetModal({ onClose, onCreated }) {
                 </div>
               )}
               {sheets.length > 0 && (
-                <select value={selectedSheet} onChange={e => setSelectedSheet(e.target.value)} className="mt-2 w-full border border-violet-200 dark:border-violet-700 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                  {sheets.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <div className="mt-2 flex flex-col gap-1">
+                  {!sheetsMeta.some(s => s.suggested) && sheetsMeta.length > 0 && (
+                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
+                      Nenhuma aba parece ser um banco de dados.{' '}
+                      <a href="/datasets/boas-praticas" target="_blank" className="underline">Ver boas práticas</a>
+                    </div>
+                  )}
+                  {sheets.map((s, i) => {
+                    const meta = sheetsMeta[i] || {}
+                    const isSelected = selectedSheet === s
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSelectedSheet(s)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left transition-colors ${
+                          isSelected ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:border-violet-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-violet-500' : 'bg-gray-300'}`} />
+                          <span className="text-xs text-gray-800 truncate">{s}</span>
+                          {meta.suggested && <span className="text-[9px] text-emerald-600 shrink-0">✦</span>}
+                        </div>
+                        {meta.type === 'data' && <span className="text-[10px] text-emerald-600 shrink-0">banco de dados</span>}
+                        {meta.type === 'summary' && <span className="text-[10px] text-amber-600 shrink-0">resumo</span>}
+                        {meta.type === 'empty' && <span className="text-[10px] text-gray-400 shrink-0">vazia</span>}
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </div>
             <div>
@@ -595,7 +670,7 @@ export default function DatasetsPage() {
         const fd = new FormData(); fd.append('file', file)
         const result = await api.reports.datasets.getExcelSheets(fd)
         if (result.sheets && result.sheets.length > 1) {
-          setExcelSheetPicker({ file, sheets: result.sheets })
+          setExcelSheetPicker({ file, sheets: result.sheets, sheetsMeta: result.sheets_meta || [] })
           return
         }
       } catch { /* falha silenciosa — faz upload direto */ }
@@ -931,6 +1006,7 @@ export default function DatasetsPage() {
       {excelSheetPicker && (
         <ExcelSheetPickerModal
           sheets={excelSheetPicker.sheets}
+          sheetsMeta={excelSheetPicker.sheetsMeta || []}
           onConfirm={handleExcelSheetConfirm}
           onClose={() => setExcelSheetPicker(null)}
         />
