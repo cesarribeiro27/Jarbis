@@ -9,9 +9,10 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia e instala dependências Python
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Copia e instala dependências Python a partir do pyproject.toml
+COPY pyproject.toml ./
+RUN python3 -c "import tomllib; deps=tomllib.load(open('pyproject.toml','rb'))['project']['dependencies']; print('\n'.join(deps))" > /tmp/req.txt \
+    && pip install --no-cache-dir -r /tmp/req.txt
 
 # Copia o código
 COPY . .
