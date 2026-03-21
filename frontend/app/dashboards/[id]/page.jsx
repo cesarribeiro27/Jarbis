@@ -100,6 +100,8 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
   const [genError, setGenError] = useState(null)
   const [genSuccess, setGenSuccess] = useState(null)
   const [showGenSection, setShowGenSection] = useState(true)
+  const [genLoading, setGenLoading] = useState(false)
+  const [objetivo, setObjetivo] = useState('')
 
   useEffect(() => {
     api.reports.aiUsage().then(setAiUsage).catch(() => {})
@@ -117,71 +119,31 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
     t('ai.suggAnomalies'),
   ].filter(Boolean).slice(0, 4)
 
-  function generateFullDashboard() {
-    if (!datasetId || !selectedDs) return
-    setGenError(null); setGenSuccess(null)
-
-    const types = selectedDs.column_types || {}
-    const allCols = selectedDs.columns || []
-
-    // Padrões de nomes que indicam código/ID/flag, não métrica financeira
-    const CODE_PATTERN = /^(nº|n°|num|nro|cod|código|tipo|indicador|índice|index|id|serie|número do end|complemento|bairro|cep|inscrição|rps|municipio|pais|estado|uf|opção|opcao|simples|iss retido|retencao|retenção|discriminação)/i
-
-    const allNumCols = allCols.filter(c => types[c] === 'number')
-    const dateCols = allCols.filter(c => types[c] === 'date')
-    const txtCols = allCols.filter(c => types[c] !== 'number' && types[c] !== 'date')
-
-    // Preferir colunas numéricas que parecem métricas reais (não códigos)
-    const metricCols = allNumCols.filter(c => !CODE_PATTERN.test(c))
-    const numCols = metricCols.length > 0 ? metricCols : allNumCols
-
-    // Preferir colunas de texto que são categorias úteis (não endereços etc.)
-    const ADDR_PATTERN = /^(endereço|complemento|bairro|cep|logradouro|municipio|cidade|estado|uf|pais|inscricao|inscrição)/i
-    const catCols = txtCols.filter(c => !ADDR_PATTERN.test(c))
-    const dimCols = catCols.length > 0 ? catCols : txtCols
-
-    if (numCols.length === 0 && dimCols.length === 0) {
-      setGenError('Dataset não tem colunas numéricas ou de texto suficientes para gerar cards.')
-      return
+  async function generateFullDashboard() {
+    if (!datasetId || !selectedDs || genLoading) return
+    setGenError(null); setGenSuccess(null); setGenLoading(true)
+    try {
+      const result = await api.reports.generateDashboard(datasetId, objetivo.trim() || null)
+      const blocks = (result.blocks || []).map(b => ({
+        ...b,
+        dataset_id: datasetId,
+        config: {
+          ...(b.config || {}),
+          dim_type: b.label_col ? (selectedDs?.column_types?.[b.label_col] === 'date' ? 'date' : 'text') : undefined,
+          granularity: selectedDs?.column_types?.[b.label_col] === 'date' ? 'month' : undefined,
+        },
+      }))
+      if (!blocks.length) { setGenError('A IA não gerou blocos. Tente descrever o objetivo.'); return }
+      onAddBlocks(blocks)
+      setGenSuccess(`${blocks.length} blocos criados!`)
+      setShowGenSection(false)
+      api.reports.aiUsage().then(setAiUsage).catch(() => {})
+      setTimeout(onClose, 1200)
+    } catch (e) {
+      setGenError(e.message || 'Erro ao gerar dashboard.')
+    } finally {
+      setGenLoading(false)
     }
-
-    const generated = []
-    const mainDim = dimCols[0] || null
-    const kpiDim = mainDim  // KPI precisa de label_col para a query funcionar
-
-    // KPIs — TODAS as métricas (sem label_col → query sem dimensão retorna total geral)
-    numCols.forEach(col => {
-      generated.push({ type: 'kpi', title: col, value_col: col, agg: 'sum', dataset_id: datasetId })
-    })
-
-    // Linha temporal para cada métrica × cada coluna de data
-    dateCols.forEach(dateCol => {
-      numCols.slice(0, 3).forEach(metric => {
-        // Colunas de data precisam de dim_type:'date' e granularity para query correta
-        generated.push({ type: 'line', title: `${metric} ao longo do tempo`, label_col: dateCol, value_col: metric, agg: 'sum', dataset_id: datasetId, config: { dim_type: 'date', granularity: 'month' } })
-      })
-    })
-
-    // Barras: cada dimensão × cada métrica principal
-    dimCols.slice(0, 3).forEach(dim => {
-      numCols.slice(0, 2).forEach(metric => {
-        generated.push({ type: 'bar', title: `${metric} por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId, config: { dim_type: 'text' } })
-      })
-    })
-
-    // Pizza: distribuição por dimensão (sem duplicar barras)
-    dimCols.slice(1, 4).forEach((dim, i) => {
-      const metric = numCols[i] || numCols[0]
-      if (metric) generated.push({ type: 'pie', title: `Distribuição por ${dim}`, label_col: dim, value_col: metric, agg: 'sum', dataset_id: datasetId, config: { dim_type: 'text' } })
-    })
-
-    // Tabela geral com todos os dados
-    generated.push({ type: 'table', title: selectedDs.name, label_col: null, value_col: null, dataset_id: datasetId })
-
-    onAddBlocks(generated)
-    setGenSuccess(`${generated.length} blocos criados!`)
-    setShowGenSection(false)
-    setTimeout(onClose, 1000)
   }
 
   async function ask(q) {
@@ -257,16 +219,26 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                   </button>
                   {showGenSection && (
                     <div className="px-4 pb-4 flex flex-col gap-3 border-t border-violet-100 pt-3">
-                      <p className="text-xs text-violet-600">Analisa as colunas do dataset e cria automaticamente os cards mais relevantes — KPIs, gráficos e tabela.</p>
+                      <p className="text-xs text-violet-600">A IA analisa seu dataset e cria automaticamente os KPIs e gráficos mais relevantes para o seu negócio.</p>
+                      <textarea
+                        value={objetivo}
+                        onChange={e => setObjetivo(e.target.value)}
+                        placeholder="Opcional: descreva o objetivo do dashboard (ex: análise financeira de NFS-e, faturamento mensal por cliente...)"
+                        rows={2}
+                        disabled={genLoading}
+                        className="w-full border border-violet-200 rounded-lg px-3 py-2 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none disabled:opacity-50"
+                      />
                       {genError && <p className="text-xs text-red-500">{genError}</p>}
                       {genSuccess && <p className="text-xs text-green-600 font-medium">{genSuccess}</p>}
                       <button
                         onClick={generateFullDashboard}
-                        disabled={!datasetId}
+                        disabled={!datasetId || genLoading}
                         className="flex items-center justify-center gap-2 w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-lg disabled:opacity-40 transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        Gerar dashboard
+                        {genLoading
+                          ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Gerando...</>
+                          : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Gerar dashboard</>
+                        }
                       </button>
                     </div>
                   )}
