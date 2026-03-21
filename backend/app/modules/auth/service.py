@@ -134,8 +134,13 @@ class AuthService:
 
     async def login(self, data: LoginRequest) -> AuthResponse:
         """Autentica um usuário e retorna os tokens JWT."""
+        import logging
         from sqlalchemy.orm import selectinload
-        user = await self.db.scalar(select(User).where(User.email == data.email).options(selectinload(User.tenant)))
+        try:
+            user = await self.db.scalar(select(User).where(User.email == data.email).options(selectinload(User.tenant)))
+        except Exception as exc:
+            logging.getLogger(__name__).error("login query failed: %s", exc, exc_info=True)
+            raise
 
         if not user or not verify_password(data.password, user.hashed_password):
             raise UnauthorizedError("Email ou senha incorretos.")

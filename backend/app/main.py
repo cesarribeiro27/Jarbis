@@ -251,6 +251,21 @@ async def health_check():
     return {"status": "ok", "version": settings.app_version}
 
 
+@app.get("/debug/schema", tags=["Sistema"])
+async def debug_schema():
+    from sqlalchemy import text
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        cols_result = await db.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'tenants' ORDER BY ordinal_position"
+        ))
+        cols = [r[0] for r in cols_result.fetchall()]
+        rev_result = await db.execute(text("SELECT version_num FROM alembic_version"))
+        rev = rev_result.scalar()
+    return {"alembic_version": rev, "tenant_columns": cols, "count": len(cols)}
+
+
 @app.get("/", tags=["Sistema"])
 async def root():
     return {"name": "Jarbis API", "version": settings.app_version, "docs": "/docs"}
