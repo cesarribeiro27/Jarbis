@@ -99,13 +99,29 @@ def _parse_date(v: Any) -> date | None:
 
 def _to_float(v: Any) -> float:
     import math
+    import re as _re
     if v is None:
         return 0.0
+    if isinstance(v, bool):
+        return 1.0 if v else 0.0
     if isinstance(v, (int, float)):
         f = float(v)
         return 0.0 if math.isnan(f) or math.isinf(f) else f
+    s = str(v).strip()
+    # Remove símbolos monetários (R$, $, €, £, ¥) e espaços
+    s = _re.sub(r'[R\$€£¥\s]', '', s).rstrip('%').strip()
+    if not s:
+        return 0.0
+    # Formato BR/EU: 11.174,44 → ponto é milhar, vírgula é decimal
+    if ',' in s and '.' in s:
+        if s.rfind(',') > s.rfind('.'):
+            s = s.replace('.', '').replace(',', '.')
+        else:
+            s = s.replace(',', '')
+    elif ',' in s:
+        s = s.replace(',', '.')
     try:
-        f = float(str(v).strip().replace(",", ".").replace(" ", ""))
+        f = float(s)
         return 0.0 if math.isnan(f) or math.isinf(f) else f
     except (ValueError, TypeError):
         return 0.0
@@ -329,7 +345,18 @@ def execute_query(rows: list[dict], req: QueryRequest) -> QueryResult:
                 groups[key][col].append(1)
             else:
                 raw_val = row.get(col)
-                groups[key][col].append(raw_val if m.aggregation == "count_distinct" else _to_float(raw_val))
+                if m.aggregation == "count_distinct":
+                    groups[key][col].append(raw_val)
+                elif m.aggregation == "count":
+                    # count conta a linha mesmo com valor nulo
+                    groups[key][col].append(1)
+                elif raw_val is None or str(raw_val).strip().lower() in (
+                    "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+                    "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+                ):
+                    pass  # ignora nulo/vazio/erro de fórmula — não trata como zero
+                else:
+                    groups[key][col].append(_to_float(raw_val))
 
     # 5. Converter grupos em resultado
     data = _aggregate_groups(groups, req.metrics, dim_labels)

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { LogoA } from '@/components/logos/JarbisLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
@@ -70,7 +71,9 @@ function HowItWorksIcon({ index }) {
   )
 }
 
-const PLAN_KEYS = ['free', 'solo', 'equipe', 'ilimitado', 'enterprise']
+const PLAN_KEYS = ['free', 'essential', 'pro', 'business', 'enterprise']
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
 
@@ -148,9 +151,13 @@ function FaqItem({ q, a }) {
 export default function LandingPage() {
   const t = useTranslations()
   const locale = useLocale()
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [annual, setAnnual] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [uploadState, setUploadState] = useState('idle') // idle | uploading | done | error
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -172,9 +179,9 @@ export default function LandingPage() {
 
   const basePrices = {
     free: 0,
-    solo: pricing.solo,
-    equipe: pricing.equipe,
-    ilimitado: pricing.ilimitado,
+    essential: pricing.essential,
+    pro: pricing.pro,
+    business: pricing.business,
     enterprise: null,
   }
 
@@ -199,10 +206,43 @@ export default function LandingPage() {
 
   const PLAN_CONFIG = {
     free:       { highlight: false, enterprise: false },
-    solo:       { highlight: false, enterprise: false },
-    equipe:     { highlight: true,  enterprise: false, tag: t('pricing.mostPopular') },
-    ilimitado:  { highlight: false, enterprise: false },
+    essential:  { highlight: false, enterprise: false },
+    pro:        { highlight: true,  enterprise: false, tag: t('pricing.mostPopular') },
+    business:   { highlight: false, enterprise: false },
     enterprise: { highlight: false, enterprise: true  },
+  }
+
+  async function handleUploadFile(file) {
+    if (!file) return
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+      setUploadState('error')
+      return
+    }
+    setUploadState('uploading')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`${API_BASE}/reports/preview-upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) throw new Error('upload failed')
+      const data = await res.json()
+      router.push(`/preview/${data.temp_token}`)
+    } catch {
+      setUploadState('error')
+    }
+  }
+
+  function onFileChange(e) {
+    handleUploadFile(e.target.files?.[0])
+  }
+
+  function onDrop(e) {
+    e.preventDefault()
+    setDragOver(false)
+    handleUploadFile(e.dataTransfer.files?.[0])
   }
 
   return (
@@ -300,19 +340,66 @@ export default function LandingPage() {
             {t('hero.subtitle')}
           </motion.p>
 
-          {/* CTAs */}
+          {/* Upload widget */}
           <motion.div
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.4 }}
+            className="max-w-xl mx-auto mb-6"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={onFileChange}
+            />
+            <motion.div
+              onClick={() => uploadState === 'idle' && fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              animate={dragOver ? { scale: 1.02 } : { scale: 1 }}
+              className={`relative border-2 border-dashed rounded-2xl px-6 py-7 cursor-pointer transition-all ${
+                dragOver
+                  ? 'border-violet-400 bg-violet-500/15'
+                  : uploadState === 'error'
+                  ? 'border-red-500/40 bg-red-500/10'
+                  : 'border-white/20 bg-white/5 hover:border-violet-400/60 hover:bg-white/10'
+              }`}
+            >
+              {uploadState === 'uploading' ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-300">{t('hero.upload.analyzing')}</p>
+                </div>
+              ) : uploadState === 'error' ? (
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-sm text-red-400">{t('hero.upload.error')}</p>
+                  <button onClick={(e) => { e.stopPropagation(); setUploadState('idle') }} className="text-xs text-gray-400 underline">{t('hero.upload.tryAgain')}</button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{t('hero.upload.title')}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{t('hero.upload.subtitle')}</p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+            <p className="text-center text-xs text-gray-600 mt-3">{t('hero.upload.orCta')} <Link href="/signup" className="text-violet-400 hover:text-violet-300 underline">{t('hero.upload.signupLink')}</Link></p>
+          </motion.div>
+
+          {/* CTAs */}
+          <motion.div
+            variants={fadeUp} initial="hidden" animate="visible"
+            transition={{ delay: 0.5 }}
             className="flex flex-col sm:flex-row gap-3 justify-center mb-4"
           >
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-              <Link href="/signup"
-                className="inline-flex items-center justify-center gap-2 bg-violet-600 text-white font-bold px-8 py-4 rounded-full hover:bg-violet-500 transition-all text-base shadow-lg shadow-violet-900/50">
-                {t('hero.ctaPrimary')}
-                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-              </Link>
-            </motion.div>
             <a href="#como-funciona"
               className="inline-flex items-center justify-center border border-white/10 text-gray-300 font-semibold px-8 py-4 rounded-full hover:bg-white/5 transition-all text-base">
               {t('hero.ctaSecondary')}
@@ -322,13 +409,12 @@ export default function LandingPage() {
           {/* Free badge + social proof */}
           <motion.div
             variants={fadeIn} initial="hidden" animate="visible"
-            transition={{ delay: 0.55 }}
+            transition={{ delay: 0.6 }}
           >
-            <p className="text-xs text-gray-600 mb-3">{t('hero.freeBadge')}</p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs text-gray-600">
-              <span>✦ Configuração em 5 minutos</span>
-              <span>✦ Grátis para começar</span>
-              <span>✦ Suporte em português</span>
+              <span>✦ {t('hero.proof1')}</span>
+              <span>✦ {t('hero.proof2')}</span>
+              <span>✦ {t('hero.proof3')}</span>
             </div>
           </motion.div>
         </div>
@@ -626,8 +712,8 @@ export default function LandingPage() {
                         <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />Jarbis
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">BI Global</div></th>
-                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">Power BI</div></th>
+                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">{t('comparison.colExcel')}</div></th>
+                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">{t('comparison.colBiCorp')}</div></th>
                   </tr>
                 </thead>
                 <tbody>

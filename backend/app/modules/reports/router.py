@@ -152,6 +152,113 @@ async def _bump_dataset_version(redis, dataset_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Preview anônimo (sem auth) — para mecânica de conversão da landing page
+# ---------------------------------------------------------------------------
+
+_PREVIEW_TTL = 86400  # 24 horas
+
+
+@router.post(
+    "/preview-upload",
+    summary="Upload anônimo para preview — sem autenticação",
+    include_in_schema=False,
+)
+async def preview_upload(
+    file: Annotated[UploadFile, File()],
+    request: Request,
+):
+    """Recebe arquivo CSV/Excel sem autenticação.
+    Analisa, gera estatísticas e armazena em Redis com TTL 24h.
+    Retorna temp_token para redirecionar para /preview/{token}.
+    """
+    from app.modules.reports.dataset_service import _parse_csv, _parse_excel, _detect_columns
+
+    filename = file.filename or "planilha"
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 5 MB)")
+
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    try:
+        if ext in ("xlsx", "xls"):
+            rows = _parse_excel(content)
+        else:
+            rows = _parse_csv(content)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato inválido. Use CSV ou Excel (.xlsx/.xls)")
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="Arquivo vazio ou sem dados")
+
+    columns = _detect_columns(rows)
+    row_count = len(rows)
+
+    # Gerar estatísticas simples por coluna
+    stats = []
+    for col in columns[:6]:  # máx 6 colunas para o preview
+        vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
+                "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+                "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+            )]
+        numeric = [v for v in vals if isinstance(v, (int, float))]
+        if numeric:
+            stats.append({
+                "col": col,
+                "type": "numeric",
+                "sum": round(sum(numeric), 2),
+                "avg": round(sum(numeric) / len(numeric), 2),
+                "max": max(numeric),
+                "min": min(numeric),
+                "count": len(numeric),
+            })
+        else:
+            unique = list(dict.fromkeys(str(v) for v in vals[:20]))
+            stats.append({
+                "col": col,
+                "type": "text",
+                "unique_count": len(set(str(v) for v in vals)),
+                "top": unique[:5],
+            })
+
+    temp_token = secrets.token_urlsafe(24)
+    preview_data = {
+        "file_name": filename,
+        "row_count": row_count,
+        "columns": columns,
+        "stats": stats,
+        "sample": rows[:3],  # 3 linhas de amostra (não mostrar dados reais)
+    }
+
+    redis = await get_redis()
+    if redis:
+        import json as _json
+        await redis.setex(
+            f"jarbis:preview:{temp_token}",
+            _PREVIEW_TTL,
+            _json.dumps(preview_data, default=str),
+        )
+
+    return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
+
+
+@router.get(
+    "/preview/{token}",
+    summary="Retorna dados do preview anônimo",
+    include_in_schema=False,
+)
+async def get_preview(token: str):
+    """Retorna dados do preview sem autenticação."""
+    import json as _json
+    redis = await get_redis()
+    if not redis:
+        raise HTTPException(status_code=503, detail="Serviço indisponível")
+    raw = await redis.get(f"jarbis:preview:{token}")
+    if not raw:
+        raise HTTPException(status_code=404, detail="Preview não encontrado ou expirado")
+    return _json.loads(raw)
+
+
+# ---------------------------------------------------------------------------
 # Authenticated endpoints
 # ---------------------------------------------------------------------------
 
@@ -1179,6 +1286,7 @@ async def ai_query_endpoint(
     data: AiQueryRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
     import json
     import os
@@ -1194,7 +1302,9 @@ async def ai_query_endpoint(
     await check_ai_query_limit(db, current_user.tenant_id, plan)
 
     svc = DatasetService(db)
-    ds = await svc.get(data.dataset_id, current_user.tenant_id)
+    ds = await svc.get(data.dataset_id, effective_tenant_id)
+    if not ds and effective_tenant_id != current_user.tenant_id:
+        ds = await svc.get(data.dataset_id, current_user.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
@@ -1204,27 +1314,72 @@ async def ai_query_endpoint(
 
     columns = ds.columns or []
     rows = ds.rows or []
+    total_rows = len(rows)
     sample = rows[:5]
 
-    # Inferir tipo de cada coluna a partir da amostra para melhorar a acurácia da IA
-    col_types: dict[str, str] = {}
-    if sample:
-        for col in columns:
-            vals = [r.get(col) for r in sample if r.get(col) is not None]
-            if vals:
-                try:
-                    [float(str(v).replace(",", ".")) for v in vals]
-                    col_types[col] = "número"
-                except (ValueError, TypeError):
-                    col_types[col] = "texto"
+    # ── Análise estatística completa de TODAS as linhas (igual ao generate_dashboard) ──
+    col_stats: dict[str, dict] = {}
+    for col in columns:
+        vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
+                "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+                "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+            )]
+        null_count = total_rows - len(vals)
+        if not vals:
+            col_stats[col] = {"type": "texto", "note": "sem dados"}
+            continue
+        nums: list[float] = []
+        all_numeric = True
+        for v in vals:
+            try:
+                nums.append(float(str(v).replace(",", ".")))
+            except (ValueError, TypeError):
+                all_numeric = False
+                break
+        if all_numeric and nums:
+            nonzero = sum(1 for n in nums if n != 0)
+            col_stats[col] = {
+                "type": "número",
+                "sum": round(sum(nums), 2),
+                "avg": round(sum(nums) / len(nums), 2),
+                "nonzero_pct": round(nonzero / len(nums) * 100),
+                "null_pct": round(null_count / total_rows * 100) if total_rows else 0,
+            }
+        else:
+            sample_val = str(vals[0])
+            if re.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}", sample_val):
+                col_stats[col] = {"type": "data", "distinct": len(set(str(v) for v in vals))}
             else:
-                col_types[col] = "texto"
+                uniq = list(dict.fromkeys(str(v) for v in vals))
+                col_stats[col] = {"type": "texto", "distinct": len(uniq), "top3": uniq[:3]}
 
-    col_desc = ", ".join(f"{c} ({col_types.get(c, 'texto')})" for c in columns)
+    # Montar descrição de colunas com estatísticas
+    col_lines = []
+    for col in columns:
+        st = col_stats.get(col, {})
+        t = st.get("type", "texto")
+        if t == "número":
+            null_pct = st.get("null_pct", 0)
+            nonzero_pct = st.get("nonzero_pct", 0)
+            if nonzero_pct >= 20 and null_pct <= 70:
+                mark = "★ INTERESSANTE"
+            elif null_pct > 70:
+                mark = f"MUITOS NULOS ({null_pct}% vazio)"
+            else:
+                mark = "zero/irrelevante"
+            col_lines.append(
+                f'"{col}" [número — {mark}] sum={st["sum"]}, avg={st["avg"]}, nonzero={nonzero_pct}%, nulos={null_pct}%'
+            )
+        elif t == "data":
+            col_lines.append(f'"{col}" [data] {st.get("distinct", "?")} valores distintos')
+        else:
+            top = ", ".join(repr(v) for v in st.get("top3", []))
+            col_lines.append(f'"{col}" [texto] {st.get("distinct", "?")} categorias — top: {top}')
+
     schema_str = (
-        f"Dataset: {ds.name}\n"
-        f"Colunas e tipos: {col_desc}\n"
-        f"Amostra ({len(sample)} linhas):\n{json.dumps(sample, ensure_ascii=False, default=str)}"
+        f"Dataset: {ds.name} ({total_rows} linhas)\n"
+        f"Colunas:\n" + "\n".join(f"  {l}" for l in col_lines) +
+        f"\nAmostra ({len(sample)} linhas):\n{json.dumps(sample, ensure_ascii=False, default=str)}"
     )
 
     system_prompt = (
@@ -1291,6 +1446,22 @@ async def ai_query_endpoint(
     filter_val = parsed.get("filter_val")
     answer = parsed.get("answer", "")
 
+    # ── Normalizar nomes de colunas (case-insensitive + strip) ────────────────
+    def _find_col(name: str | None, cols: list[str]) -> str | None:
+        if not name:
+            return None
+        if name in cols:
+            return name
+        name_n = name.lower().strip()
+        for c in cols:
+            if c.lower().strip() == name_n:
+                return c
+        return name  # retorna original — svc.query vai dar 422 com mensagem útil
+
+    label_col = _find_col(label_col, columns)
+    value_col = _find_col(value_col, columns)
+    filter_col = _find_col(filter_col, columns)
+
     query_data = svc.query(ds, label_col, value_col, agg, filter_col, filter_val)
 
     chart_suggestion = _suggest_chart(query_data, data.question)
@@ -1313,6 +1484,7 @@ async def generate_dashboard_endpoint(
     data: GenerateDashboardRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
     import json
     import os
@@ -1329,7 +1501,9 @@ async def generate_dashboard_endpoint(
     await check_ai_query_limit(db, current_user.tenant_id, plan)
 
     svc = DatasetService(db)
-    ds = await svc.get(data.dataset_id, current_user.tenant_id)
+    ds = await svc.get(data.dataset_id, effective_tenant_id)
+    if not ds and effective_tenant_id != current_user.tenant_id:
+        ds = await svc.get(data.dataset_id, current_user.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
@@ -1344,7 +1518,10 @@ async def generate_dashboard_endpoint(
     # ── Análise estatística completa de TODAS as linhas ──────────────────────
     col_stats: dict[str, dict] = {}
     for col in columns:
-        vals = [r.get(col) for r in rows if r.get(col) is not None]
+        vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
+                "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+                "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+            )]
         null_count = total_rows - len(vals)
 
         if not vals:
@@ -1400,10 +1577,19 @@ async def generate_dashboard_endpoint(
     ]
     for col, st in col_stats.items():
         if st["type"] == "numero":
-            flag = "★ INTERESSANTE" if st["nonzero_pct"] >= 20 else "— zero/irrelevante"
+            null_pct = st.get("null_pct", 0)
+            nonzero_pct = st.get("nonzero_pct", 0)
+            # Coluna interessante apenas se: muitos valores preenchidos E maioria não-zero
+            # null_pct > 70% = dados insuficientes para gráfico/KPI confiável
+            if nonzero_pct >= 20 and null_pct <= 70:
+                flag = "★ INTERESSANTE"
+            elif null_pct > 70:
+                flag = f"— MUITOS NULOS ({null_pct}% vazio)"
+            else:
+                flag = "— zero/irrelevante"
             schema_parts.append(
                 f'  "{col}" [número {flag}] sum={st["sum"]}, avg={st["avg"]}, '
-                f'nonzero={st["nonzero_pct"]}%'
+                f'nonzero={nonzero_pct}%, nulos={null_pct}%'
             )
         elif st["type"] == "data":
             schema_parts.append(f'  "{col}" [data] ex: {st["sample"]}')
@@ -1440,12 +1626,13 @@ async def generate_dashboard_endpoint(
         "  pie    → w=4, h=4  (composição, máx 8 fatias)\n\n"
         "REGRAS OBRIGATÓRIAS:\n"
         "1. Use APENAS colunas marcadas ★ INTERESSANTE para métricas de KPI/gráfico\n"
-        "2. Ignore completamente colunas marcadas '— zero/irrelevante'\n"
+        "2. Ignore completamente colunas marcadas '— zero/irrelevante' ou 'MUITOS NULOS'\n"
         "3. kpi: label_col=null, value_col=coluna_numero_INTERESSANTE\n"
         "4. Gráficos: label_col=texto_ou_data, value_col=numero_INTERESSANTE\n"
         "5. Nomes de colunas EXATAMENTE como no dataset (case-sensitive)\n"
         "6. Títulos em português, objetivos, máx 35 caracteres\n"
-        "7. Cada bloco deve responder UMA pergunta de negócio específica\n\n"
+        "7. Cada bloco deve responder UMA pergunta de negócio específica\n"
+        "8. Se uma coluna tem nulos>70%, NÃO a use como métrica — os valores serão imprecisos\n\n"
         "ESTRUTURA RECOMENDADA DO DASHBOARD:\n"
         "  • Linha 1: 3-4 KPIs com as métricas de maior relevância\n"
         "  • Linha 2: gráfico de linha/área com evolução temporal (se houver data)\n"

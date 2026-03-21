@@ -7,13 +7,25 @@
     "trialCta": "Probar gratis — 7 días"
   },
   "hero": {
-    "badge": "Hecho para empresas de todo el mundo",
-    "title1": "Tienes los datos.",
-    "title2": "Nosotros te ayudamos a entenderlos.",
-    "subtitle": "Crea gráficos y dashboards en minutos, sin necesitar conocimientos técnicos. Conecta tu hoja de cálculo, arrastra los bloques y listo.",
+    "badge": "IA incluida en todos los planes — incluso el gratuito",
+    "title1": "Tu planilla se convierte en un",
+    "title2": "dashboard profesional en 30 segundos.",
+    "subtitle": "Sube tu Excel o CSV y la IA de Jarbis analiza todo: genera KPIs, gráficos e informes automáticamente — sin programación, sin analista.",
     "ctaPrimary": "Empieza gratis ahora",
     "ctaSecondary": "Ver cómo funciona",
     "freeBadge": "7 días gratis · Sin tarjeta · Cancela cuando quieras",
+    "proof1": "Configuración en 5 minutos",
+    "proof2": "Gratis para empezar",
+    "proof3": "Sin programación",
+    "upload": {
+      "title": "Arrastra tu planilla aquí",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 5 MB · Sin login",
+      "analyzing": "Analizando tu planilla con IA...",
+      "error": "Archivo inválido. Usa CSV o Excel (máx 5 MB).",
+      "tryAgain": "Intentar de nuevo",
+      "orCta": "o",
+      "signupLink": "crea tu cuenta gratis"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "Ventas Totales",
@@ -124,49 +136,16 @@
     "title": "¿Por qué Jarbis?",
     "subtitle": "La plataforma de BI embebido pensada para negocios en crecimiento.",
     "colFeature": "Funcionalidad",
+    "colExcel": "Planilla Manual",
+    "colBiCorp": "BI Corporativo",
     "rows": [
-      {
-        "feature": "Precio inicial",
-        "jarbis": "Gratis 7 días",
-        "competitor": "$1,000+/mes",
-        "powerbi": "$10/usuario"
-      },
-      {
-        "feature": "Interfaz en español",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Soporte en español",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Incrustar via iframe",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": "Complejo"
-      },
-      {
-        "feature": "IA en lenguaje natural",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Setup en minutos",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Sin tarjeta en el trial",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      }
+      { "feature": "Precio inicial", "jarbis": "Gratis", "competitor": "\"Gratis\" (caro en tiempo)", "powerbi": "$5,000–15,000/mes" },
+      { "feature": "Tiempo al 1er insight", "jarbis": "30 segundos", "competitor": "Horas", "powerbi": "Días/semanas" },
+      { "feature": "IA en todos los planes", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Incrustar via iframe", "jarbis": true, "competitor": false, "powerbi": "Complejo" },
+      { "feature": "¿Necesita TI?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "Setup en minutos", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Sin tarjeta en el trial", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -193,42 +172,44 @@
           "Link público"
         ]
       },
-      "solo": {
-        "name": "Solo",
+      "essential": {
+        "name": "Essential",
         "desc": "Para freelancers y emprendedores",
-        "cta": "Contratar Solo",
+        "cta": "Contratar Essential",
         "features": [
           "8 dashboards",
-          "8 fuentes de datos",
+          "5 fuentes de datos",
           "1 usuario",
-          "5 alertas",
+          "60 consultas IA/mes",
+          "3 alertas",
           "Incrustar en sitio"
         ]
       },
-      "equipe": {
-        "name": "Profesional",
-        "desc": "Para profesionales independientes",
-        "cta": "Contratar Profesional",
+      "pro": {
+        "name": "Pro",
+        "desc": "Para pequeñas empresas",
+        "cta": "Contratar Pro",
         "features": [
           "20 dashboards",
           "15 fuentes de datos",
           "1 usuario",
-          "15 alertas",
-          "IA en tu idioma",
+          "225 consultas IA/mes",
+          "10 alertas",
           "Incrustar en sitio"
         ]
       },
-      "ilimitado": {
-        "name": "Equipo",
+      "business": {
+        "name": "Business",
         "desc": "Para empresas en crecimiento",
-        "cta": "Contratar Equipo",
+        "cta": "Contratar Business",
         "features": [
           "50 dashboards",
           "30 fuentes de datos",
           "5 usuarios",
-          "50 alertas",
-          "IA en tu idioma",
-          "Marca propia en dashboards"
+          "550 consultas IA/mes",
+          "30 alertas",
+          "Marca propia",
+          "Incrustar en sitio"
         ]
       },
       "enterprise": {
@@ -354,9 +335,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "Panel",
+      "home": "Inicio",
+      "dashboard": "Inicio",
       "dashboards": "Dashboards",
-      "data": "Datos",
+      "sources": "Fuentes",
+      "data": "Fuentes",
       "alerts": "Alertas",
       "users": "Usuarios",
       "scheduled": "Inform. Prog.",
@@ -1078,12 +1061,14 @@
       "portalError": "Error al abrir el portal."
     },
     "plans": {
-      "free":       { "name": "Gratis",       "desc": "Para probar",                      "f1": "2 paneles", "f2": "2 fuentes de datos", "f3": "1 usuario", "f4": "Enlace público" },
-      "solo":       { "name": "Solo",         "desc": "Para autónomos y pymes",           "f1": "8 paneles", "f2": "8 fuentes de datos", "f3": "1 usuario", "f4": "5 alertas", "f5": "Incrustar en sitio" },
-      "equipe":     { "name": "Profesional",  "desc": "Para pequeñas empresas",           "f1": "20 paneles", "f2": "15 fuentes de datos", "f3": "1 usuario", "f4": "15 alertas", "f5": "AI Assistente", "f6": "Incrustar en sitio" },
-      "ilimitado":  { "name": "Equipo",       "desc": "Para empresas en crecimiento",     "f1": "50 paneles", "f2": "30 fuentes de datos", "f3": "5 usuarios", "f4": "50 alertas", "f5": "AI Assistente", "f6": "Marca blanca", "f7": "Incrustar en sitio" },
-      "enterprise": { "name": "Empresa",      "desc": "Para grandes operaciones",         "f1": "Todo del Equipo", "f2": "Usuarios ilimitados", "f3": "SLA garantizado por contrato", "f4": "Gestor de cuenta dedicado", "f5": "Onboarding personalizado"
-      }
+      "free":       { "name": "Free",       "desc": "Para probar",                      "f1": "2 paneles", "f2": "2 fuentes de datos", "f3": "1 usuario", "f4": "10 consultas IA/mes" },
+      "essential":  { "name": "Essential",  "desc": "Para autónomos y pymes",           "f1": "8 paneles", "f2": "5 fuentes de datos", "f3": "1 usuario", "f4": "3 alertas", "f5": "60 consultas IA/mes", "f6": "Incrustar en sitio" },
+      "pro":        { "name": "Pro",        "desc": "Para pequeñas empresas",           "f1": "20 paneles", "f2": "15 fuentes de datos", "f3": "1 usuario", "f4": "10 alertas", "f5": "225 consultas IA/mes", "f6": "Incrustar en sitio" },
+      "business":   { "name": "Business",   "desc": "Para empresas en crecimiento",     "f1": "50 paneles", "f2": "30 fuentes de datos", "f3": "5 usuarios", "f4": "30 alertas", "f5": "550 consultas IA/mes", "f6": "Marca blanca", "f7": "Incrustar en sitio" },
+      "enterprise": { "name": "Enterprise", "desc": "Para grandes operaciones",         "f1": "Todo de Business", "f2": "Usuarios ilimitados", "f3": "SLA garantizado por contrato", "f4": "Gestor de cuenta dedicado", "f5": "Onboarding personalizado" },
+      "solo":       { "name": "Essential",  "desc": "Para autónomos y pymes",           "f1": "8 paneles", "f2": "5 fuentes de datos", "f3": "1 usuario", "f4": "3 alertas", "f5": "60 consultas IA/mes", "f6": "Incrustar en sitio" },
+      "equipe":     { "name": "Pro",        "desc": "Para pequeñas empresas",           "f1": "20 paneles", "f2": "15 fuentes de datos", "f3": "1 usuario", "f4": "10 alertas", "f5": "225 consultas IA/mes", "f6": "Incrustar en sitio" },
+      "ilimitado":  { "name": "Business",   "desc": "Para empresas en crecimiento",     "f1": "50 paneles", "f2": "30 fuentes de datos", "f3": "5 usuarios", "f4": "30 alertas", "f5": "550 consultas IA/mes", "f6": "Marca blanca", "f7": "Incrustar en sitio" }
     }
   },
   "usuarios": {

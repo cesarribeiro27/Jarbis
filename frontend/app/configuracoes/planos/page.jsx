@@ -22,37 +22,34 @@ const PLANS = [
     trialBadge: false,
   },
   {
-    key: 'solo',
-    monthlyPrice: 79.90,
-    featureKeys: ['plans.solo.f1', 'plans.solo.f2', 'plans.solo.f3', 'plans.solo.f4', 'plans.solo.f5'],
+    key: 'essential',
+    monthlyPrice: 97.00,
+    featureKeys: ['plans.essential.f1', 'plans.essential.f2', 'plans.essential.f3', 'plans.essential.f4', 'plans.essential.f5', 'plans.essential.f6'],
     color: 'border-blue-200',
     accentColor: 'text-blue-600',
     highlight: false,
     enterprise: false,
     trialBadge: false,
-    stripePriceKey: 'NEXT_PUBLIC_STRIPE_PRICE_SOLO',
   },
   {
-    key: 'equipe',
-    monthlyPrice: 189.90,
-    featureKeys: ['plans.equipe.f1', 'plans.equipe.f2', 'plans.equipe.f3', 'plans.equipe.f4', 'plans.equipe.f5', 'plans.equipe.f6'],
+    key: 'pro',
+    monthlyPrice: 247.00,
+    featureKeys: ['plans.pro.f1', 'plans.pro.f2', 'plans.pro.f3', 'plans.pro.f4', 'plans.pro.f5', 'plans.pro.f6'],
     color: 'border-violet-600',
     accentColor: 'text-violet-600',
     highlight: true,
     enterprise: false,
     trialBadge: false,
-    stripePriceKey: 'NEXT_PUBLIC_STRIPE_PRICE_EQUIPE',
   },
   {
-    key: 'ilimitado',
-    monthlyPrice: 599.90,
-    featureKeys: ['plans.ilimitado.f1', 'plans.ilimitado.f2', 'plans.ilimitado.f3', 'plans.ilimitado.f4', 'plans.ilimitado.f5', 'plans.ilimitado.f6', 'plans.ilimitado.f7'],
+    key: 'business',
+    monthlyPrice: 697.00,
+    featureKeys: ['plans.business.f1', 'plans.business.f2', 'plans.business.f3', 'plans.business.f4', 'plans.business.f5', 'plans.business.f6', 'plans.business.f7'],
     color: 'border-amber-400',
     accentColor: 'text-amber-600',
     highlight: false,
     enterprise: false,
     trialBadge: false,
-    stripePriceKey: 'NEXT_PUBLIC_STRIPE_PRICE_ILIMITADO',
   },
   {
     key: 'enterprise',
@@ -66,20 +63,23 @@ const PLANS = [
   },
 ]
 
-const PRICE_IDS = {
-  solo:      process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO,
-  equipe:    process.env.NEXT_PUBLIC_STRIPE_PRICE_EQUIPE,
-  ilimitado: process.env.NEXT_PUBLIC_STRIPE_PRICE_ILIMITADO,
-  // legados
-  starter:      process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER,
-  professional: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
+// Mapeamento de chaves legadas para as novas (para lookup de rank de plano atual)
+const LEGACY_PLAN_MAP = {
+  solo:         'essential',
+  equipe:       'pro',
+  ilimitado:    'business',
+  starter:      'essential',
+  professional: 'pro',
 }
 
-const PLAN_ORDER = ['free', 'solo', 'equipe', 'ilimitado', 'enterprise',
-                    'starter', 'professional'] // legados ao final
+const PLAN_ORDER = ['free', 'essential', 'pro', 'business', 'enterprise']
+
+function normalizeKey(key) {
+  return LEGACY_PLAN_MAP[key] || key
+}
 
 function planRank(key) {
-  const idx = PLAN_ORDER.indexOf(key)
+  const idx = PLAN_ORDER.indexOf(normalizeKey(key))
   return idx === -1 ? 0 : idx
 }
 
@@ -97,6 +97,7 @@ function PlanosContent() {
   const [addonLoading, setAddonLoading] = useState(false)
   const [addonDashLoading, setAddonDashLoading] = useState(false)
   const [addonDatasetLoading, setAddonDatasetLoading] = useState(false)
+  const [addonAiLoading, setAddonAiLoading] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('success') === '1') {
@@ -153,6 +154,17 @@ function PlanosContent() {
     } catch (err) {
       toast(err.message || t('toast.addonError'), 'warn')
       setAddonDatasetLoading(false)
+    }
+  }
+
+  async function handleAddonAi() {
+    setAddonAiLoading(true)
+    try {
+      const data = await api.billing.addonAiCheckout()
+      window.location.href = data.checkout_url
+    } catch (err) {
+      toast(err.message || t('toast.addonError'), 'warn')
+      setAddonAiLoading(false)
     }
   }
 
@@ -268,7 +280,7 @@ function PlanosContent() {
             {/* Cards de plano */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               {PLANS.map(plan => {
-                const isCurrent = plan.key === currentPlan
+                const isCurrent = plan.key === currentPlan || plan.key === normalizeKey(currentPlan)
                 const isUpgrade = planRank(plan.key) > planRank(currentPlan)
                 const price     = calcPrice(plan.monthlyPrice)
 
@@ -409,7 +421,7 @@ function PlanosContent() {
                       <svg className="w-4 h-4 text-violet-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
                       <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.completo.title')}</span>
                     </div>
-                    <p className="text-2xl font-black text-violet-600 dark:text-violet-400 mt-1">R$49,90<span className="text-xs text-gray-400 font-normal">/mês</span></p>
+                    <p className="text-2xl font-black text-violet-600 dark:text-violet-400 mt-1">R$49<span className="text-xs text-gray-400 font-normal">/mês</span></p>
                     <ul className="mt-3 space-y-1 flex-1">
                       {[t('addon.completo.feature1'), t('addon.completo.feature2'), t('addon.completo.feature3')].map(f => (
                         <li key={f} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
@@ -432,7 +444,7 @@ function PlanosContent() {
                       <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                       <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.dash.title')}</span>
                     </div>
-                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">R$19,90<span className="text-xs text-gray-400 font-normal">/mês</span></p>
+                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">R$29<span className="text-xs text-gray-400 font-normal">/mês</span></p>
                     <ul className="mt-3 space-y-1 flex-1">
                       <li className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                         <svg className="w-3 h-3 text-blue-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
@@ -453,7 +465,7 @@ function PlanosContent() {
                       <svg className="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
                       <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.dataset.title')}</span>
                     </div>
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">R$19,90<span className="text-xs text-gray-400 font-normal">/mês</span></p>
+                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">R$19<span className="text-xs text-gray-400 font-normal">/mês</span></p>
                     <ul className="mt-3 space-y-1 flex-1">
                       <li className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                         <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
@@ -466,6 +478,39 @@ function PlanosContent() {
                     <button onClick={handleAddonDataset} disabled={addonDatasetLoading} className="mt-4 w-full py-2 bg-emerald-600 text-white font-bold text-xs rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50">
                       {addonDatasetLoading ? t('addon.adding') : t('addon.addPack')}
                     </button>
+                  </div>
+                </div>
+
+                {/* Segunda linha: Pack IA */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  {/* Pack IA */}
+                  <div className="bg-gradient-to-br from-fuchsia-50 to-violet-50 dark:from-fuchsia-900/20 dark:to-violet-900/20 border border-fuchsia-200 dark:border-fuchsia-700/50 rounded-2xl p-5 flex flex-col">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="w-4 h-4 text-fuchsia-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/></svg>
+                      <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.ai.title')}</span>
+                    </div>
+                    <p className="text-2xl font-black text-fuchsia-600 dark:text-fuchsia-400 mt-1">R$19<span className="text-xs text-gray-400 font-normal">/mês</span></p>
+                    <ul className="mt-3 space-y-1 flex-1">
+                      {[t('addon.ai.feature1'), t('addon.ai.feature2')].map(f => (
+                        <li key={f} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                          <svg className="w-3 h-3 text-fuchsia-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    {status?.addon_ai_queries > 0 && (
+                      <p className="text-xs text-fuchsia-600 dark:text-fuchsia-400 font-semibold mt-2">✓ {status.addon_ai_queries} {t('addon.ai.active')}</p>
+                    )}
+                    <button onClick={handleAddonAi} disabled={addonAiLoading} className="mt-4 w-full py-2 bg-fuchsia-600 text-white font-bold text-xs rounded-full hover:bg-fuchsia-700 transition-colors disabled:opacity-50">
+                      {addonAiLoading ? t('addon.adding') : t('addon.addPack')}
+                    </button>
+                  </div>
+
+                  {/* Nota sobre upgrade */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-600 rounded-2xl p-5 flex flex-col justify-center items-center text-center">
+                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Muitos add-ons?</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Com 3 ou mais add-ons, o próximo plano pode sair mais barato e com mais recursos.</p>
+                    <a href="/configuracoes/planos" className="text-xs font-bold text-violet-600 hover:text-violet-700">Ver comparativo de planos →</a>
                   </div>
                 </div>
               </div>

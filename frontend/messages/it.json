@@ -7,13 +7,25 @@
     "trialCta": "Prova gratis — 7 giorni"
   },
   "hero": {
-    "badge": "Per aziende di tutto il mondo — nella tua lingua",
-    "title1": "Hai i dati.",
-    "title2": "Ti aiutiamo a capirli.",
-    "subtitle": "Crea grafici e dashboard in pochi minuti, senza conoscenze tecniche. Collega il tuo foglio di calcolo, trascina i blocchi, e il gioco è fatto.",
+    "badge": "IA inclusa in tutti i piani — anche quello gratuito",
+    "title1": "Il tuo foglio di calcolo diventa un",
+    "title2": "dashboard professionale in 30 secondi.",
+    "subtitle": "Carica il tuo Excel o CSV e l'IA di Jarbis analizza tutto: genera KPI, grafici e report automaticamente — senza programmazione, senza analista.",
     "ctaPrimary": "Inizia gratis",
     "ctaSecondary": "Scopri come funziona",
     "freeBadge": "7 giorni gratis · Senza carta · Cancella quando vuoi",
+    "proof1": "Configurazione in 5 minuti",
+    "proof2": "Gratis per iniziare",
+    "proof3": "Nessuna programmazione",
+    "upload": {
+      "title": "Trascina il foglio di calcolo qui",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Max 5 MB · Senza login",
+      "analyzing": "Analisi del foglio con l'IA...",
+      "error": "File non valido. Usa CSV o Excel (max 5 MB).",
+      "tryAgain": "Riprova",
+      "orCta": "o",
+      "signupLink": "crea il tuo account gratuito"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "Vendite Totali",
@@ -124,49 +136,16 @@
     "title": "Perché Jarbis?",
     "subtitle": "La piattaforma BI incorporata per le aziende in crescita.",
     "colFeature": "Funzionalità",
+    "colExcel": "Foglio Manuale",
+    "colBiCorp": "BI Aziendale",
     "rows": [
-      {
-        "feature": "Prezzo iniziale",
-        "jarbis": "Gratis 7 giorni",
-        "competitor": "1.000 $/mese",
-        "powerbi": "10 $/utente"
-      },
-      {
-        "feature": "Interfaccia in italiano",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Supporto in italiano",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Incorporare via iframe",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": "Complesso"
-      },
-      {
-        "feature": "IA in linguaggio naturale",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Configurazione in minuti",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Nessuna carta per il trial",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      }
+      { "feature": "Prezzo iniziale", "jarbis": "Gratis", "competitor": "\"Gratis\" (costoso in tempo)", "powerbi": "5.000–15.000 $/mese" },
+      { "feature": "Tempo al 1° insight", "jarbis": "30 secondi", "competitor": "Ore", "powerbi": "Giorni/settimane" },
+      { "feature": "IA in tutti i piani", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Incorporare via iframe", "jarbis": true, "competitor": false, "powerbi": "Complesso" },
+      { "feature": "Richiede IT/analista?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "Configurazione in minuti", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Nessuna carta per il trial", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -193,42 +172,44 @@
           "Link pubblico"
         ]
       },
-      "solo": {
-        "name": "Solo",
+      "essential": {
+        "name": "Essential",
         "desc": "Per freelance e lavoratori autonomi",
-        "cta": "Scegli Solo",
+        "cta": "Scegli Essential",
         "features": [
           "8 dashboard",
-          "8 fonti di dati",
+          "5 fonti di dati",
           "1 utente",
-          "5 avvisi",
+          "60 richieste IA/mese",
+          "3 avvisi",
           "Incorpora nel sito"
         ]
       },
-      "equipe": {
-        "name": "Professionale",
+      "pro": {
+        "name": "Pro",
         "desc": "Per le piccole imprese",
-        "cta": "Scegli Professionale",
+        "cta": "Scegli Pro",
         "features": [
           "20 dashboard",
           "15 fonti di dati",
           "1 utente",
-          "15 avvisi",
-          "Assistente IA",
+          "225 richieste IA/mese",
+          "10 avvisi",
           "Incorpora nel sito"
         ]
       },
-      "ilimitado": {
-        "name": "Illimitato",
+      "business": {
+        "name": "Business",
         "desc": "Per le aziende in crescita",
-        "cta": "Scegli Illimitato",
+        "cta": "Scegli Business",
         "features": [
           "50 dashboard",
           "30 fonti di dati",
           "5 utenti",
-          "50 avvisi",
-          "Assistente IA",
-          "Dashboard white-label"
+          "550 richieste IA/mese",
+          "30 avvisi",
+          "White-label",
+          "Incorpora nel sito"
         ]
       },
       "enterprise": {
@@ -373,9 +354,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "Pannello",
+      "home": "Home",
+      "dashboard": "Home",
       "dashboards": "Dashboard",
-      "data": "Dati",
+      "sources": "Fonti",
+      "data": "Fonti",
       "alerts": "Avvisi",
       "users": "Utenti",
       "scheduled": "Report prog.",
@@ -1078,12 +1061,14 @@
       "portalError": "Errore durante l'apertura del portale."
     },
     "plans": {
-      "free":       { "name": "Gratuito",     "desc": "Per provare",                    "f1": "2 dashboard", "f2": "2 fonti dati", "f3": "1 utente", "f4": "Link pubblico" },
-      "solo":       { "name": "Solo",         "desc": "Per freelance e PMI",            "f1": "8 dashboard", "f2": "8 fonti dati", "f3": "1 utente", "f4": "5 avvisi", "f5": "Incorpora nel sito" },
-      "equipe":     { "name": "Professionale","desc": "Per le piccole imprese",         "f1": "20 dashboard", "f2": "15 fonti dati", "f3": "1 utente", "f4": "15 avvisi", "f5": "AI Assistente", "f6": "Incorpora nel sito" },
-      "ilimitado":  { "name": "Team",         "desc": "Per le aziende in crescita",    "f1": "50 dashboard", "f2": "30 fonti dati", "f3": "5 utenti", "f4": "50 avvisi", "f5": "AI Assistente", "f6": "White label", "f7": "Incorpora nel sito" },
-      "enterprise": { "name": "Impresa",      "desc": "Per grandi operazioni",          "f1": "Tutto del Team", "f2": "Utenti illimitati", "f3": "SLA garantito per contratto", "f4": "Account manager dedicato", "f5": "Onboarding personalizzato"
-      }
+      "free":       { "name": "Free",       "desc": "Per provare",                    "f1": "2 dashboard", "f2": "2 fonti dati", "f3": "1 utente", "f4": "10 query IA/mese" },
+      "essential":  { "name": "Essential",  "desc": "Per freelance e PMI",            "f1": "8 dashboard", "f2": "5 fonti dati", "f3": "1 utente", "f4": "3 avvisi", "f5": "60 query IA/mese", "f6": "Incorpora nel sito" },
+      "pro":        { "name": "Pro",        "desc": "Per le piccole imprese",         "f1": "20 dashboard", "f2": "15 fonti dati", "f3": "1 utente", "f4": "10 avvisi", "f5": "225 query IA/mese", "f6": "Incorpora nel sito" },
+      "business":   { "name": "Business",   "desc": "Per le aziende in crescita",     "f1": "50 dashboard", "f2": "30 fonti dati", "f3": "5 utenti", "f4": "30 avvisi", "f5": "550 query IA/mese", "f6": "White label", "f7": "Incorpora nel sito" },
+      "enterprise": { "name": "Enterprise", "desc": "Per grandi operazioni",          "f1": "Tutto di Business", "f2": "Utenti illimitati", "f3": "SLA garantito per contratto", "f4": "Account manager dedicato", "f5": "Onboarding personalizzato" },
+      "solo":       { "name": "Essential",  "desc": "Per freelance e PMI",            "f1": "8 dashboard", "f2": "5 fonti dati", "f3": "1 utente", "f4": "3 avvisi", "f5": "60 query IA/mese", "f6": "Incorpora nel sito" },
+      "equipe":     { "name": "Pro",        "desc": "Per le piccole imprese",         "f1": "20 dashboard", "f2": "15 fonti dati", "f3": "1 utente", "f4": "10 avvisi", "f5": "225 query IA/mese", "f6": "Incorpora nel sito" },
+      "ilimitado":  { "name": "Business",   "desc": "Per le aziende in crescita",     "f1": "50 dashboard", "f2": "30 fonti dati", "f3": "5 utenti", "f4": "30 avvisi", "f5": "550 query IA/mese", "f6": "White label", "f7": "Incorpora nel sito" }
     }
   },
   "usuarios": {

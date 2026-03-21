@@ -92,9 +92,9 @@ const Icons = {
 }
 
 const NAV_KEYS = [
-  { href: '/dashboard',  key: 'dashboard',  Icon: Icons.Dashboard },
+  { href: '/dashboard',  key: 'home',       Icon: Icons.Dashboard },
   { href: '/dashboards', key: 'dashboards', Icon: Icons.Charts },
-  { href: '/datasets',   key: 'data',       Icon: Icons.Database },
+  { href: '/datasets',   key: 'sources',    Icon: Icons.Database },
   { href: '/alertas',    key: 'alerts',     Icon: Icons.Bell },
 ]
 

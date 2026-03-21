@@ -182,6 +182,218 @@ function ImageCropperModal({ onSave, onClose }) {
   )
 }
 
+// ─── Modal: Criar dashboard com IA ────────────────────────────────────────────
+function AiCreateModal({ onClose }) {
+  const router = useRouter()
+  const [datasets, setDatasets] = useState([])
+  const [datasetId, setDatasetId] = useState('')
+  const [objetivo, setObjetivo] = useState('')
+  const [step, setStep] = useState(0)  // 0=idle, 1-3=loading, 4=success, -1=error
+  const [error, setError] = useState(null)
+
+  const GEN_STEPS = [
+    'Analisando colunas e métricas...',
+    'Identificando padrões relevantes...',
+    'Montando estrutura do dashboard...',
+  ]
+  const isLoading = step >= 1 && step <= 3
+
+  useEffect(() => {
+    api.reports.datasets.list()
+      .then(d => {
+        const list = d || []
+        setDatasets(list)
+        if (list.length > 0) setDatasetId(list[0].id)
+      })
+      .catch(() => {})
+  }, [])
+
+  async function handleGenerate() {
+    if (!datasetId || step > 0) return
+    setError(null)
+    setStep(1)
+    const t1 = setTimeout(() => setStep(2), 2500)
+    const t2 = setTimeout(() => setStep(3), 5000)
+    try {
+      const result = await api.reports.generateDashboard(datasetId, objetivo.trim() || null)
+      clearTimeout(t1); clearTimeout(t2)
+
+      if (!result.blocks?.length) {
+        setError('A IA não gerou blocos. Tente descrever o objetivo do dashboard.')
+        setStep(-1)
+        return
+      }
+
+      // Posicionar blocos: KPIs primeiro, depois gráficos
+      const kpis = result.blocks.filter(b => b.type === 'kpi')
+      const charts = result.blocks.filter(b => b.type !== 'kpi')
+      let curX = 0, curY = 0, rowH = 0
+      const blocksWithLayout = [...kpis, ...charts].map(b => {
+        const isKpi = b.type === 'kpi'
+        const w = b.layout?.w || (isKpi ? 3 : 6)
+        const h = b.layout?.h || (isKpi ? 2 : 4)
+        if (curX + w > 12) { curY += rowH; curX = 0; rowH = 0 }
+        const layout = { x: curX, y: curY, w, h }
+        curX += w
+        rowH = Math.max(rowH, h)
+        return { ...b, id: b.id || crypto.randomUUID(), dataset_id: datasetId, layout }
+      })
+
+      const dsName = datasets.find(d => d.id === datasetId)?.name || 'Dataset'
+      const title = objetivo.trim() || `Dashboard — ${dsName}`
+      const report = await api.reports.create({
+        title,
+        pages: [{ id: crypto.randomUUID(), title: 'Página 1', blocks: blocksWithLayout }],
+      })
+
+      setStep(4)
+      setTimeout(() => {
+        onClose()
+        router.push(`/dashboards/${report.id}`)
+      }, 1500)
+    } catch (e) {
+      clearTimeout(t1); clearTimeout(t2)
+      setError(e.message || 'Erro ao gerar dashboard.')
+      setStep(-1)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <span className="font-semibold text-gray-800 text-sm">Criar dashboard com IA</span>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div className="p-5 flex flex-col gap-4">
+          {(step === 0 || step === -1) && (
+            <>
+              {datasets.length === 0 ? (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium mb-1">Nenhum dataset importado</p>
+                  <p className="text-xs text-gray-400 mb-4">Importe seus dados primeiro para a IA analisar</p>
+                  <button
+                    onClick={() => { onClose(); router.push('/datasets') }}
+                    className="px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors"
+                  >
+                    Importar dados agora
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Fonte de dados</label>
+                    <select
+                      value={datasetId}
+                      onChange={e => setDatasetId(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    >
+                      {datasets.map(ds => (
+                        <option key={ds.id} value={ds.id}>{ds.name} ({ds.row_count} linhas)</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      O que você quer analisar? <span className="text-gray-400 font-normal">(opcional)</span>
+                    </label>
+                    <textarea
+                      value={objetivo}
+                      onChange={e => setObjetivo(e.target.value)}
+                      placeholder="Ex: faturamento mensal por cliente, análise de vendas por produto, tendência de crescimento..."
+                      rows={3}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
+                    />
+                  </div>
+
+                  {step === -1 && error && (
+                    <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 flex items-start gap-2">
+                      <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <div>
+                        <p className="text-xs text-red-600">{error}</p>
+                        <button onClick={() => setStep(0)} className="text-xs text-violet-600 hover:underline mt-1">Tentar novamente</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!datasetId}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Gerar dashboard agora
+                  </button>
+
+                  <p className="text-[11px] text-gray-400 text-center">
+                    A IA analisa todas as colunas e cria KPIs e gráficos posicionados de forma inteligente.
+                  </p>
+                </>
+              )}
+            </>
+          )}
+
+          {isLoading && (
+            <div className="py-8 flex flex-col items-center gap-5">
+              <div className="relative w-16 h-16">
+                <svg className="w-16 h-16 text-violet-100" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+                <svg className="w-16 h-16 text-violet-500 animate-spin absolute inset-0" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-violet-700">{GEN_STEPS[step - 1]}</p>
+                <p className="text-xs text-gray-400 mt-1">Usando IA para criar um dashboard relevante</p>
+              </div>
+              <div className="flex gap-2">
+                {GEN_STEPS.map((_, i) => (
+                  <div key={i} className={`rounded-full transition-all duration-500 ${i < step ? 'w-6 h-1.5 bg-violet-500' : 'w-2 h-2 bg-gray-200'}`} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="py-8 flex flex-col items-center gap-3 text-center">
+              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <p className="font-semibold text-gray-800">Dashboard criado com sucesso!</p>
+              <p className="text-xs text-gray-400">Abrindo em instantes...</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const COLLECTION_COLORS = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#db2777', '#0891b2']
 
 function NewCollectionModal({ onClose, onCreate }) {
@@ -293,6 +505,7 @@ export default function DashboardsPage() {
   const [collectionReportIds, setCollectionReportIds] = useState(null)
   const [showNewCollection, setShowNewCollection] = useState(false)
   const [addToCollPicker, setAddToCollPicker] = useState(null) // reportId with picker open
+  const [showAiCreate, setShowAiCreate] = useState(false)
 
   useEffect(() => {
     fetchReports()
@@ -510,14 +723,25 @@ export default function DashboardsPage() {
                   </>
                 ) : (
                   <>
-                    <p className="font-semibold text-gray-800 mb-2">{t('empty.title')}</p>
+                    <p className="font-semibold text-gray-800 mb-1">{t('empty.title')}</p>
                     <p className="text-sm text-gray-400 mb-6">{t('empty.desc')}</p>
-                    <button
-                      onClick={() => router.push('/dashboards/novo')}
-                      className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors"
-                    >
-                      {t('empty.cta')}
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <button
+                        onClick={() => setShowAiCreate(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Criar com IA
+                      </button>
+                      <button
+                        onClick={() => router.push('/dashboards/novo')}
+                        className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                      >
+                        Ou criar em branco
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -525,6 +749,32 @@ export default function DashboardsPage() {
 
             {!loading && filtered.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+                {/* ✨ Card hero — Criar com IA */}
+                <div
+                  onClick={() => setShowAiCreate(true)}
+                  className="relative rounded-2xl border border-dashed border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100/40 shadow-sm cursor-pointer hover:shadow-md hover:border-violet-500 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+                >
+                  <div className="h-36 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                      </div>
+                      <span className="text-xs text-violet-500 font-medium">Clique para gerar</span>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl bg-violet-400" />
+                  <div className="px-4 py-3 border-t border-violet-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-violet-700">Criar com IA</span>
+                      <span className="text-[10px] bg-violet-600 text-white font-semibold px-2 py-0.5 rounded-full">Novo</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">IA analisa seus dados e gera automaticamente</p>
+                  </div>
+                </div>
+
                 {filtered.map((r, i) => {
                   const color = PALETTE[i % PALETTE.length]
                   return (
@@ -677,6 +927,8 @@ export default function DashboardsPage() {
           onClose={() => setCropTargetId(null)}
         />
       )}
+
+      {showAiCreate && <AiCreateModal onClose={() => setShowAiCreate(false)} />}
 
       {/* New Collection modal */}
       {showNewCollection && (

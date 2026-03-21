@@ -16,9 +16,18 @@ from app.modules.billing.plan_limits import PLAN_NAMES, PLAN_PRICES, PLANS, get_
 
 # Plano mínimo para cada feature (chave = slug do plano em PLANS)
 _FEATURE_MIN_PLAN: dict[str, str] = {
-    "ai": "equipe",
-    "embed": "free",
-    "white_label": "ilimitado",
+    "ai": "free",
+    "embed": "essential",
+    "white_label": "business",
+}
+
+# Mapeamento de aliases legados para chaves canônicas
+_ALIAS_MAP: dict[str, str] = {
+    "solo":         "essential",
+    "equipe":       "pro",
+    "ilimitado":    "business",
+    "starter":      "essential",
+    "professional": "pro",
 }
 
 
@@ -130,13 +139,19 @@ async def check_ai_query_limit(
     """Lança PlanLimitError se o tenant atingiu a cota mensal de queries de IA."""
     from datetime import timezone
     from app.modules.reports.ai_usage_models import AIUsageLog
+    from app.modules.tenants.models import Tenant as TenantModel
 
     limits = PLANS.get(plan, PLANS["free"])
-    max_queries = limits.max_ai_queries_monthly
-    if max_queries == -1:
+    base_max = limits.max_ai_queries_monthly
+    if base_max == -1:
         return  # ilimitado (Enterprise)
-    if max_queries == 0:
-        raise FeatureNotAvailableError(feature="ai", required_plan=PLAN_NAMES.get("equipe", "Profissional"))
+    if base_max == 0:
+        raise FeatureNotAvailableError(feature="ai", required_plan=PLAN_NAMES.get("essential", "Essential"))
+
+    # Considerar addon_ai_queries do tenant
+    tenant = await db.scalar(select(TenantModel).where(TenantModel.id == tenant_id))
+    addon_ai = getattr(tenant, "addon_ai_queries", 0) or 0
+    max_queries = base_max + addon_ai * 50  # cada addon = +50 perguntas
 
     month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     count = await db.scalar(
@@ -182,8 +197,9 @@ async def check_halp_limit(
 
 
 def _next_plan(current: str) -> str:
-    order = ["free", "solo", "equipe", "ilimitado", "enterprise"]
-    idx = order.index(current) if current in order else 0
+    order = ["free", "essential", "pro", "business", "enterprise"]
+    canonical = _ALIAS_MAP.get(current, current)
+    idx = order.index(canonical) if canonical in order else 0
     next_idx = min(idx + 1, len(order) - 1)
     next_key = order[next_idx]
     price = PLAN_PRICES.get(next_key, "")

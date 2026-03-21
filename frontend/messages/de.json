@@ -7,13 +7,25 @@
     "trialCta": "Kostenlos testen — 7 Tage"
   },
   "hero": {
-    "badge": "Für Unternehmen weltweit — in Ihrer Sprache",
-    "title1": "Sie haben die Daten.",
-    "title2": "Wir helfen Ihnen, sie zu verstehen.",
-    "subtitle": "Erstellen Sie Diagramme und Dashboards in Minuten, ohne technische Kenntnisse. Verbinden Sie Ihre Tabelle, ziehen Sie die Blöcke, und fertig.",
+    "badge": "KI in jedem Plan enthalten — auch im kostenlosen",
+    "title1": "Ihre Tabelle wird in 30 Sekunden",
+    "title2": "zum professionellen Dashboard.",
+    "subtitle": "Laden Sie Ihr Excel oder CSV hoch und die KI von Jarbis analysiert alles: KPIs, Diagramme und Berichte werden automatisch generiert — ohne Programmierung.",
     "ctaPrimary": "Kostenlos starten",
     "ctaSecondary": "Sehen wie es funktioniert",
     "freeBadge": "7 Tage kostenlos · Keine Karte · Jederzeit kündbar",
+    "proof1": "Einrichtung in 5 Minuten",
+    "proof2": "Kostenlos starten",
+    "proof3": "Keine Programmierung",
+    "upload": {
+      "title": "Tabelle hier ablegen",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Max 5 MB · Ohne Login",
+      "analyzing": "Tabelle wird mit KI analysiert...",
+      "error": "Ungültige Datei. Bitte CSV oder Excel verwenden (max 5 MB).",
+      "tryAgain": "Erneut versuchen",
+      "orCta": "oder",
+      "signupLink": "kostenloses Konto erstellen"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "Gesamtumsatz",
@@ -124,49 +136,16 @@
     "title": "Warum Jarbis?",
     "subtitle": "Die eingebettete BI-Plattform für wachsende Unternehmen.",
     "colFeature": "Funktion",
+    "colExcel": "Tabelle Manuell",
+    "colBiCorp": "Enterprise BI",
     "rows": [
-      {
-        "feature": "Startpreis",
-        "jarbis": "7 Tage kostenlos",
-        "competitor": "1.000 $/Monat",
-        "powerbi": "10 $/Nutzer"
-      },
-      {
-        "feature": "Deutsche Oberfläche",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Deutschsprachiger Support",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Einbetten via iframe",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": "Komplex"
-      },
-      {
-        "feature": "KI in natürlicher Sprache",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Einrichtung in Minuten",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Kein Karte für Test",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      }
+      { "feature": "Startpreis", "jarbis": "Kostenlos", "competitor": "\"Kostenlos\" (teuer in Zeit)", "powerbi": "5.000–15.000 $/Monat" },
+      { "feature": "Zeit bis 1. Erkenntnis", "jarbis": "30 Sekunden", "competitor": "Stunden", "powerbi": "Tage/Wochen" },
+      { "feature": "KI in jedem Plan", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Einbetten via iframe", "jarbis": true, "competitor": false, "powerbi": "Komplex" },
+      { "feature": "Braucht IT-Abteilung?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "Einrichtung in Minuten", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Keine Karte für Test", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -193,42 +172,44 @@
           "Öffentlicher Link"
         ]
       },
-      "solo": {
-        "name": "Solo",
+      "essential": {
+        "name": "Essential",
         "desc": "Für Freelancer und Selbstständige",
-        "cta": "Solo wählen",
+        "cta": "Essential wählen",
         "features": [
           "8 Dashboards",
-          "8 Datenquellen",
+          "5 Datenquellen",
           "1 Nutzer",
-          "5 Benachrichtigungen",
+          "60 KI-Anfragen/Monat",
+          "3 Benachrichtigungen",
           "In Website einbetten"
         ]
       },
-      "equipe": {
-        "name": "Professional",
+      "pro": {
+        "name": "Pro",
         "desc": "Für kleine Unternehmen",
-        "cta": "Professional wählen",
+        "cta": "Pro wählen",
         "features": [
           "20 Dashboards",
           "15 Datenquellen",
           "1 Nutzer",
-          "15 Benachrichtigungen",
-          "KI-Assistent",
+          "225 KI-Anfragen/Monat",
+          "10 Benachrichtigungen",
           "In Website einbetten"
         ]
       },
-      "ilimitado": {
-        "name": "Unbegrenzt",
+      "business": {
+        "name": "Business",
         "desc": "Für wachsende Unternehmen",
-        "cta": "Unbegrenzt wählen",
+        "cta": "Business wählen",
         "features": [
           "50 Dashboards",
           "30 Datenquellen",
           "5 Nutzer",
-          "50 Benachrichtigungen",
-          "KI-Assistent",
-          "White-Label-Dashboards"
+          "550 KI-Anfragen/Monat",
+          "30 Benachrichtigungen",
+          "White-Label",
+          "In Website einbetten"
         ]
       },
       "enterprise": {
@@ -373,9 +354,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "Übersicht",
+      "home": "Startseite",
+      "dashboard": "Startseite",
       "dashboards": "Dashboards",
-      "data": "Daten",
+      "sources": "Quellen",
+      "data": "Quellen",
       "alerts": "Benachrichtigungen",
       "users": "Benutzer",
       "scheduled": "Ber. geplant",
@@ -1078,11 +1061,14 @@
       "portalError": "Fehler beim Öffnen des Portals."
     },
     "plans": {
-      "free":       { "name": "Kostenlos",    "desc": "Zum Ausprobieren",                "f1": "2 Dashboards", "f2": "2 Datenquellen", "f3": "1 Benutzer", "f4": "Öffentlicher Link" },
-      "solo":       { "name": "Solo",         "desc": "Für Freelancer und KMUs",         "f1": "8 Dashboards", "f2": "8 Datenquellen", "f3": "1 Benutzer", "f4": "5 Benachrichtigungen", "f5": "In Website einbetten" },
-      "equipe":     { "name": "Professional", "desc": "Für kleine Unternehmen",          "f1": "20 Dashboards", "f2": "15 Datenquellen", "f3": "1 Benutzer", "f4": "15 Benachrichtigungen", "f5": "AI Assistente", "f6": "In Website einbetten" },
-      "ilimitado":  { "name": "Team",         "desc": "Für wachsende Unternehmen",       "f1": "50 Dashboards", "f2": "30 Datenquellen", "f3": "5 Benutzer", "f4": "50 Benachrichtigungen", "f5": "AI Assistente", "f6": "White Label", "f7": "In Website einbetten" },
-      "enterprise": { "name": "Unternehmen",  "desc": "Für große Unternehmen",           "f1": "Alles aus Team", "f2": "Unbegrenzte Benutzer", "f3": "SLA vertraglich garantiert", "f4": "Dedizierter Account Manager", "f5": "Personalisiertes Onboarding" }
+      "free":       { "name": "Free",       "desc": "Zum Ausprobieren",                "f1": "2 Dashboards", "f2": "2 Datenquellen", "f3": "1 Benutzer", "f4": "10 KI-Abfragen/Monat" },
+      "essential":  { "name": "Essential",  "desc": "Für Freelancer und KMUs",         "f1": "8 Dashboards", "f2": "5 Datenquellen", "f3": "1 Benutzer", "f4": "3 Benachrichtigungen", "f5": "60 KI-Abfragen/Monat", "f6": "In Website einbetten" },
+      "pro":        { "name": "Pro",        "desc": "Für kleine Unternehmen",          "f1": "20 Dashboards", "f2": "15 Datenquellen", "f3": "1 Benutzer", "f4": "10 Benachrichtigungen", "f5": "225 KI-Abfragen/Monat", "f6": "In Website einbetten" },
+      "business":   { "name": "Business",   "desc": "Für wachsende Unternehmen",       "f1": "50 Dashboards", "f2": "30 Datenquellen", "f3": "5 Benutzer", "f4": "30 Benachrichtigungen", "f5": "550 KI-Abfragen/Monat", "f6": "White Label", "f7": "In Website einbetten" },
+      "enterprise": { "name": "Enterprise", "desc": "Für große Unternehmen",           "f1": "Alles aus Business", "f2": "Unbegrenzte Benutzer", "f3": "SLA vertraglich garantiert", "f4": "Dedizierter Account Manager", "f5": "Personalisiertes Onboarding" },
+      "solo":       { "name": "Essential",  "desc": "Für Freelancer und KMUs",         "f1": "8 Dashboards", "f2": "5 Datenquellen", "f3": "1 Benutzer", "f4": "3 Benachrichtigungen", "f5": "60 KI-Abfragen/Monat", "f6": "In Website einbetten" },
+      "equipe":     { "name": "Pro",        "desc": "Für kleine Unternehmen",          "f1": "20 Dashboards", "f2": "15 Datenquellen", "f3": "1 Benutzer", "f4": "10 Benachrichtigungen", "f5": "225 KI-Abfragen/Monat", "f6": "In Website einbetten" },
+      "ilimitado":  { "name": "Business",   "desc": "Für wachsende Unternehmen",       "f1": "50 Dashboards", "f2": "30 Datenquellen", "f3": "5 Benutzer", "f4": "30 Benachrichtigungen", "f5": "550 KI-Abfragen/Monat", "f6": "White Label", "f7": "In Website einbetten" }
     }
   },
   "usuarios": {

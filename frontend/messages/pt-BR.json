@@ -7,13 +7,25 @@
     "trialCta": "Testar grátis — 7 dias"
   },
   "hero": {
-    "badge": "Feito para o Brasil — em português, em real",
-    "title1": "Você tem os dados.",
-    "title2": "A gente ajuda a entender.",
-    "subtitle": "Crie gráficos e dashboards em minutos, sem precisar saber nada de tecnologia. Conecte sua planilha, arraste os blocos e pronto.",
+    "badge": "IA incluída em todos os planos — desde o gratuito",
+    "title1": "Sua planilha vira dashboard",
+    "title2": "profissional em 30 segundos.",
+    "subtitle": "Sobe seu Excel ou CSV e a IA do Jarbis analisa tudo: gera KPIs, gráficos e relatórios automaticamente — sem programação, sem analista.",
     "ctaPrimary": "Comece grátis agora",
     "ctaSecondary": "Ver como funciona",
     "freeBadge": "7 dias grátis · Sem cartão · Cancele quando quiser",
+    "proof1": "Configuração em 5 minutos",
+    "proof2": "Grátis para começar",
+    "proof3": "Suporte em português",
+    "upload": {
+      "title": "Arraste sua planilha aqui",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 5 MB · Sem login necessário",
+      "analyzing": "Analisando sua planilha com IA...",
+      "error": "Arquivo inválido. Use CSV ou Excel (máx 5 MB).",
+      "tryAgain": "Tentar novamente",
+      "orCta": "ou",
+      "signupLink": "crie sua conta grátis"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "Total de Vendas",
@@ -111,14 +123,16 @@
     "title": "Por que Jarbis?",
     "subtitle": "A única plataforma de BI embarcado pensada para o mercado brasileiro.",
     "colFeature": "Funcionalidade",
+    "colExcel": "Excel Manual",
+    "colBiCorp": "BI Corporativo",
     "rows": [
-      { "feature": "Preço inicial", "jarbis": "Grátis por 7 dias", "competitor": "$1.000+/mês", "powerbi": "R$60/usuário" },
-      { "feature": "Interface em português", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Suporte em português", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Incorporar via iframe", "jarbis": true, "competitor": true, "powerbi": "Complexo" },
-      { "feature": "AI Assistente", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Setup em minutos", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Sem cartão no teste", "jarbis": true, "competitor": false, "powerbi": false }
+      { "feature": "Preço inicial", "jarbis": "Grátis", "competitor": "\"Grátis\" (caro no tempo)", "powerbi": "R$5.000–15.000/mês" },
+      { "feature": "Tempo para 1° insight", "jarbis": "30 segundos", "competitor": "Horas", "powerbi": "Dias/semanas" },
+      { "feature": "Interface em português", "jarbis": true, "competitor": "Parcial", "powerbi": false },
+      { "feature": "IA em todos os planos", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Precisa de TI ou analista?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "Incorporar via iframe", "jarbis": true, "competitor": false, "powerbi": "Complexo" },
+      { "feature": "Suporte em português", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -138,25 +152,25 @@
         "name": "Gratuito",
         "desc": "Para experimentar sem compromisso",
         "cta": "Criar conta grátis",
-        "features": ["2 dashboards", "2 fontes de dados", "1 usuário", "Link público"]
+        "features": ["2 dashboards", "2 fontes de dados", "1 usuário", "10 consultas IA/mês", "Link público"]
       },
-      "solo": {
-        "name": "Solo",
+      "essential": {
+        "name": "Essential",
         "desc": "Para autônomos e MEIs",
-        "cta": "Assinar Solo",
-        "features": ["8 dashboards", "8 fontes de dados", "1 usuário", "5 alertas", "Incorporar no site"]
+        "cta": "Assinar Essential",
+        "features": ["8 dashboards", "5 fontes de dados", "1 usuário", "60 consultas IA/mês", "3 alertas", "Incorporar no site"]
       },
-      "equipe": {
-        "name": "Profissional",
-        "desc": "Para profissionais liberais",
-        "cta": "Assinar Profissional",
-        "features": ["20 dashboards", "15 fontes de dados", "1 usuário", "15 alertas", "AI Assistente", "Incorporar no site"]
+      "pro": {
+        "name": "Pro",
+        "desc": "Para pequenas empresas",
+        "cta": "Assinar Pro",
+        "features": ["20 dashboards", "15 fontes de dados", "1 usuário", "225 consultas IA/mês", "10 alertas", "Incorporar no site"]
       },
-      "ilimitado": {
-        "name": "Grupo",
+      "business": {
+        "name": "Business",
         "desc": "Para empresas em crescimento",
-        "cta": "Assinar Grupo",
-        "features": ["50 dashboards", "30 fontes de dados", "5 usuários", "50 alertas", "AI Assistente", "Marca própria no dashboard"]
+        "cta": "Assinar Business",
+        "features": ["50 dashboards", "30 fontes de dados", "5 usuários", "550 consultas IA/mês", "30 alertas", "Marca própria", "Incorporar no site"]
       },
       "enterprise": {
         "name": "Enterprise",
@@ -260,9 +274,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "Painel",
+      "home": "Início",
+      "dashboard": "Início",
       "dashboards": "Dashboards",
-      "data": "Dados",
+      "sources": "Fontes",
+      "data": "Fontes",
       "alerts": "Alertas",
       "users": "Usuários",
       "scheduled": "Rel. Agendados",
@@ -878,7 +894,7 @@
     },
     "addon": {
       "title": "Pack de Expansão",
-      "price": "R$49,90/mês por pack",
+      "price": "R$49/mês por pack",
       "desc": "Expanda os limites do seu plano sem fazer upgrade.",
       "users": "+1 usuário por pack",
       "dashboards": "+5 dashboards por pack",
@@ -903,6 +919,12 @@
         "title": "Pack Fontes de Dados",
         "feature": "+3 fontes de dados",
         "active": "fontes ativas"
+      },
+      "ai": {
+        "title": "Pack IA",
+        "feature1": "+50 perguntas de IA/mês",
+        "feature2": "Consultas extras ao assistente",
+        "active": "packs ativos"
       }
     },
     "toast": {
@@ -915,11 +937,14 @@
       "portalError": "Erro ao abrir portal."
     },
     "plans": {
-      "free":       { "name": "Gratuito",     "desc": "Para experimentar",           "f1": "2 dashboards", "f2": "2 fontes de dados", "f3": "1 usuário", "f4": "Link público" },
-      "solo":       { "name": "Solo",         "desc": "Para autônomos e MEIs",       "f1": "8 dashboards", "f2": "8 fontes de dados", "f3": "1 usuário", "f4": "5 alertas", "f5": "Incorporar no site" },
-      "equipe":     { "name": "Profissional", "desc": "Para pequenas empresas",      "f1": "20 dashboards", "f2": "15 fontes de dados", "f3": "1 usuário", "f4": "15 alertas", "f5": "AI Assistente", "f6": "Incorporar no site" },
-      "ilimitado":  { "name": "Grupo",        "desc": "Para empresas em crescimento","f1": "50 dashboards", "f2": "30 fontes de dados", "f3": "5 usuários", "f4": "50 alertas", "f5": "AI Assistente", "f6": "Marca própria", "f7": "Incorporar no site" },
-      "enterprise": { "name": "Enterprise",   "desc": "Para grandes operações",      "f1": "Tudo do Grupo", "f2": "Usuários ilimitados", "f3": "SLA garantido em contrato", "f4": "Gerente de conta dedicado", "f5": "Onboarding personalizado" }
+      "free":       { "name": "Free",       "desc": "Para experimentar",            "f1": "2 dashboards", "f2": "2 fontes de dados", "f3": "1 usuário", "f4": "10 consultas IA/mês" },
+      "essential":  { "name": "Essential",  "desc": "Para autônomos e MEIs",        "f1": "8 dashboards", "f2": "5 fontes de dados", "f3": "1 usuário", "f4": "3 alertas", "f5": "60 consultas IA/mês", "f6": "Incorporar no site" },
+      "pro":        { "name": "Pro",        "desc": "Para pequenas empresas",       "f1": "20 dashboards", "f2": "15 fontes de dados", "f3": "1 usuário", "f4": "10 alertas", "f5": "225 consultas IA/mês", "f6": "Incorporar no site" },
+      "business":   { "name": "Business",   "desc": "Para empresas em crescimento", "f1": "50 dashboards", "f2": "30 fontes de dados", "f3": "5 usuários", "f4": "30 alertas", "f5": "550 consultas IA/mês", "f6": "Marca própria", "f7": "Incorporar no site" },
+      "enterprise": { "name": "Enterprise", "desc": "Para grandes operações",       "f1": "Tudo do Business", "f2": "Usuários ilimitados", "f3": "SLA garantido em contrato", "f4": "Gerente de conta dedicado", "f5": "Onboarding personalizado" },
+      "solo":       { "name": "Essential",  "desc": "Para autônomos e MEIs",        "f1": "8 dashboards", "f2": "5 fontes de dados", "f3": "1 usuário", "f4": "3 alertas", "f5": "60 consultas IA/mês", "f6": "Incorporar no site" },
+      "equipe":     { "name": "Pro",        "desc": "Para pequenas empresas",       "f1": "20 dashboards", "f2": "15 fontes de dados", "f3": "1 usuário", "f4": "10 alertas", "f5": "225 consultas IA/mês", "f6": "Incorporar no site" },
+      "ilimitado":  { "name": "Business",   "desc": "Para empresas em crescimento", "f1": "50 dashboards", "f2": "30 fontes de dados", "f3": "5 usuários", "f4": "30 alertas", "f5": "550 consultas IA/mês", "f6": "Marca própria", "f7": "Incorporar no site" }
     }
   },
   "usuarios": {

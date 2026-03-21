@@ -7,13 +7,25 @@
     "trialCta": "無料トライアル — 7日間"
   },
   "hero": {
-    "badge": "世界中のビジネスに — あなたの言語で",
-    "title1": "データをお持ちですか？",
-    "title2": "理解するお手伝いをします。",
-    "subtitle": "技術的な知識不要で、数分でグラフとダッシュボードを作成できます。スプレッドシートを接続し、ブロックをドラッグするだけで完成。",
+    "badge": "全プランにAI搭載 — 無料プランも含む",
+    "title1": "スプレッドシートが30秒で",
+    "title2": "プロのダッシュボードに変わります。",
+    "subtitle": "ExcelやCSVをアップロードするだけで、JarbisのAIがすべてを分析：KPI、グラフ、レポートを自動生成 — プログラミング不要。",
     "ctaPrimary": "無料で始める",
     "ctaSecondary": "使い方を見る",
     "freeBadge": "7日間無料 · カード不要 · いつでもキャンセル可",
+    "proof1": "5分でセットアップ",
+    "proof2": "無料でスタート",
+    "proof3": "プログラミング不要",
+    "upload": {
+      "title": "スプレッドシートをここにドラッグ",
+      "subtitle": "CSV、Excel (.xlsx/.xls) · 最大5MB · ログイン不要",
+      "analyzing": "AIでスプレッドシートを分析中...",
+      "error": "無効なファイル。CSVまたはExcelを使用してください（最大5MB）。",
+      "tryAgain": "再試行",
+      "orCta": "または",
+      "signupLink": "無料アカウントを作成"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "総売上",
@@ -124,49 +136,16 @@
     "title": "なぜJarbisなのか？",
     "subtitle": "成長企業向けに構築された組み込みBIプラットフォーム。",
     "colFeature": "機能",
+    "colExcel": "手動スプレッドシート",
+    "colBiCorp": "エンタープライズBI",
     "rows": [
-      {
-        "feature": "開始価格",
-        "jarbis": "7日間無料",
-        "competitor": "$1,000+/月",
-        "powerbi": "$10/ユーザー"
-      },
-      {
-        "feature": "日本語インターフェース",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "日本語サポート",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "iframeで埋め込み",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": "複雑"
-      },
-      {
-        "feature": "自然言語AI",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "数分でセットアップ",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "トライアルにカード不要",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      }
+      { "feature": "開始価格", "jarbis": "無料", "competitor": "「無料」(時間コスト高)", "powerbi": "$5,000–15,000/月" },
+      { "feature": "最初のインサイトまで", "jarbis": "30秒", "competitor": "数時間", "powerbi": "数日/週" },
+      { "feature": "全プランにAI搭載", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "iframeで埋め込み", "jarbis": true, "competitor": false, "powerbi": "複雑" },
+      { "feature": "IT部門が必要?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "数分でセットアップ", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "トライアルにカード不要", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -193,42 +172,44 @@
           "公開リンク"
         ]
       },
-      "solo": {
-        "name": "Solo",
+      "essential": {
+        "name": "Essential",
         "desc": "フリーランスと個人起業家向け",
-        "cta": "Soloを選ぶ",
+        "cta": "Essentialを選ぶ",
         "features": [
           "ダッシュボード8つ",
-          "データソース8つ",
+          "データソース5つ",
           "ユーザー1人",
-          "アラート5件",
+          "AIクエリ60回/月",
+          "アラート3件",
           "ウェブサイトに埋め込み"
         ]
       },
-      "equipe": {
-        "name": "プロフェッショナル",
+      "pro": {
+        "name": "Pro",
         "desc": "中小企業向け",
-        "cta": "プロフェッショナルを選ぶ",
+        "cta": "Proを選ぶ",
         "features": [
           "ダッシュボード20つ",
           "データソース15つ",
           "ユーザー1人",
-          "アラート15件",
-          "AIアシスタント",
+          "AIクエリ225回/月",
+          "アラート10件",
           "ウェブサイトに埋め込み"
         ]
       },
-      "ilimitado": {
-        "name": "無制限",
+      "business": {
+        "name": "Business",
         "desc": "成長企業向け",
-        "cta": "無制限を選ぶ",
+        "cta": "Businessを選ぶ",
         "features": [
           "ダッシュボード50つ",
           "データソース30つ",
           "ユーザー5人",
-          "アラート50件",
-          "AIアシスタント",
-          "ホワイトラベルダッシュボード"
+          "AIクエリ550回/月",
+          "アラート30件",
+          "ホワイトラベル",
+          "ウェブサイトに埋め込み"
         ]
       },
       "enterprise": {
@@ -373,9 +354,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "ダッシュボード",
+      "home": "ホーム",
+      "dashboard": "ホーム",
       "dashboards": "ダッシュボード一覧",
-      "data": "データ",
+      "sources": "データソース",
+      "data": "データソース",
       "alerts": "アラート",
       "users": "ユーザー",
       "scheduled": "定期レポート",
@@ -1078,12 +1061,14 @@
       "portalError": "ポータルを開くときにエラーが発生しました。"
     },
     "plans": {
-      "free":       { "name": "無料",       "desc": "お試し用",              "f1": "2 ダッシュボード", "f2": "2 データソース", "f3": "1 ユーザー", "f4": "公開リンク" },
-      "solo":       { "name": "ソロ",       "desc": "フリーランス向け",      "f1": "8 ダッシュボード", "f2": "8 データソース", "f3": "1 ユーザー", "f4": "5 アラート", "f5": "サイトに埋め込む" },
-      "equipe":     { "name": "プロ",       "desc": "中小企業向け",          "f1": "20 ダッシュボード", "f2": "15 データソース", "f3": "1 ユーザー", "f4": "15 アラート", "f5": "AI Assistente", "f6": "サイトに埋め込む" },
-      "ilimitado":  { "name": "チーム",     "desc": "成長企業向け",          "f1": "50 ダッシュボード", "f2": "30 データソース", "f3": "5 ユーザー", "f4": "50 アラート", "f5": "AI Assistente", "f6": "ホワイトラベル", "f7": "サイトに埋め込む" },
-      "enterprise": { "name": "エンタープライズ", "desc": "大規模企業向け", "f1": "チームのすべて", "f2": "無制限ユーザー", "f3": "契約によるSLA保証", "f4": "専任アカウントマネージャー", "f5": "カスタムオンボーディング"
-      }
+      "free":       { "name": "Free",       "desc": "お試し用",              "f1": "2 ダッシュボード", "f2": "2 データソース", "f3": "1 ユーザー", "f4": "AI 10回/月" },
+      "essential":  { "name": "Essential",  "desc": "フリーランス向け",      "f1": "8 ダッシュボード", "f2": "5 データソース", "f3": "1 ユーザー", "f4": "3 アラート", "f5": "AI 60回/月", "f6": "サイトに埋め込む" },
+      "pro":        { "name": "Pro",        "desc": "中小企業向け",          "f1": "20 ダッシュボード", "f2": "15 データソース", "f3": "1 ユーザー", "f4": "10 アラート", "f5": "AI 225回/月", "f6": "サイトに埋め込む" },
+      "business":   { "name": "Business",   "desc": "成長企業向け",          "f1": "50 ダッシュボード", "f2": "30 データソース", "f3": "5 ユーザー", "f4": "30 アラート", "f5": "AI 550回/月", "f6": "ホワイトラベル", "f7": "サイトに埋め込む" },
+      "enterprise": { "name": "Enterprise", "desc": "大規模企業向け",        "f1": "Businessのすべて", "f2": "無制限ユーザー", "f3": "契約によるSLA保証", "f4": "専任アカウントマネージャー", "f5": "カスタムオンボーディング" },
+      "solo":       { "name": "Essential",  "desc": "フリーランス向け",      "f1": "8 ダッシュボード", "f2": "5 データソース", "f3": "1 ユーザー", "f4": "3 アラート", "f5": "AI 60回/月", "f6": "サイトに埋め込む" },
+      "equipe":     { "name": "Pro",        "desc": "中小企業向け",          "f1": "20 ダッシュボード", "f2": "15 データソース", "f3": "1 ユーザー", "f4": "10 アラート", "f5": "AI 225回/月", "f6": "サイトに埋め込む" },
+      "ilimitado":  { "name": "Business",   "desc": "成長企業向け",          "f1": "50 ダッシュボード", "f2": "30 データソース", "f3": "5 ユーザー", "f4": "30 アラート", "f5": "AI 550回/月", "f6": "ホワイトラベル", "f7": "サイトに埋め込む" }
     }
   },
   "usuarios": {

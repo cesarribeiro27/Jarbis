@@ -7,13 +7,25 @@
     "trialCta": "Try free — 7 days"
   },
   "hero": {
-    "badge": "Built for global businesses — in your language",
-    "title1": "You have the data.",
-    "title2": "We help you understand it.",
-    "subtitle": "Create charts and dashboards in minutes, no technical knowledge required. Connect your spreadsheet, drag the blocks, and you're done.",
+    "badge": "AI included in every plan — even the free one",
+    "title1": "Your spreadsheet becomes a",
+    "title2": "professional dashboard in 30 seconds.",
+    "subtitle": "Upload your Excel or CSV and Jarbis AI analyzes everything: generates KPIs, charts and reports automatically — no coding, no analyst.",
     "ctaPrimary": "Start for free",
     "ctaSecondary": "See how it works",
     "freeBadge": "7 days free · No credit card · Cancel anytime",
+    "proof1": "5-minute setup",
+    "proof2": "Free to start",
+    "proof3": "No coding required",
+    "upload": {
+      "title": "Drop your spreadsheet here",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Max 5 MB · No login required",
+      "analyzing": "Analyzing your spreadsheet with AI...",
+      "error": "Invalid file. Use CSV or Excel (max 5 MB).",
+      "tryAgain": "Try again",
+      "orCta": "or",
+      "signupLink": "create your free account"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "Total Sales",
@@ -124,49 +136,16 @@
     "title": "Why Jarbis?",
     "subtitle": "The embedded BI platform built for growing businesses.",
     "colFeature": "Feature",
+    "colExcel": "Manual Spreadsheet",
+    "colBiCorp": "Enterprise BI",
     "rows": [
-      {
-        "feature": "Starting price",
-        "jarbis": "Free for 7 days",
-        "competitor": "$1,000+/mo",
-        "powerbi": "$10/user"
-      },
-      {
-        "feature": "English interface",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": true
-      },
-      {
-        "feature": "English support",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Embed via iframe",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": "Complex"
-      },
-      {
-        "feature": "AI in plain language",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "Setup in minutes",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "No card for trial",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      }
+      { "feature": "Starting price", "jarbis": "Free", "competitor": "\"Free\" (expensive in time)", "powerbi": "$5,000–15,000/mo" },
+      { "feature": "Time to first insight", "jarbis": "30 seconds", "competitor": "Hours", "powerbi": "Days/weeks" },
+      { "feature": "AI in every plan", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "Embed via iframe", "jarbis": true, "competitor": false, "powerbi": "Complex" },
+      { "feature": "Needs IT/analyst?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "Setup in minutes", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "No card for trial", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -193,42 +172,44 @@
           "Public link"
         ]
       },
-      "solo": {
-        "name": "Solo",
+      "essential": {
+        "name": "Essential",
         "desc": "For freelancers and solopreneurs",
-        "cta": "Get Solo",
+        "cta": "Get Essential",
         "features": [
           "8 dashboards",
-          "8 data sources",
+          "5 data sources",
           "1 user",
-          "5 alerts",
+          "60 AI queries/mo",
+          "3 alerts",
           "Embed on website"
         ]
       },
-      "equipe": {
-        "name": "Professional",
-        "desc": "For independent professionals",
-        "cta": "Get Professional",
+      "pro": {
+        "name": "Pro",
+        "desc": "For small businesses",
+        "cta": "Get Pro",
         "features": [
           "20 dashboards",
           "15 data sources",
           "1 user",
-          "15 alerts",
-          "AI assistant",
+          "225 AI queries/mo",
+          "10 alerts",
           "Embed on website"
         ]
       },
-      "ilimitado": {
-        "name": "Team",
+      "business": {
+        "name": "Business",
         "desc": "For growing companies",
-        "cta": "Get Team",
+        "cta": "Get Business",
         "features": [
           "50 dashboards",
           "30 data sources",
           "5 users",
-          "50 alerts",
-          "AI assistant",
-          "White-label dashboards"
+          "550 AI queries/mo",
+          "30 alerts",
+          "White-label",
+          "Embed on website"
         ]
       },
       "enterprise": {
@@ -373,9 +354,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "Dashboard",
+      "home": "Home",
+      "dashboard": "Home",
       "dashboards": "Dashboards",
-      "data": "Data",
+      "sources": "Sources",
+      "data": "Sources",
       "alerts": "Alerts",
       "users": "Users",
       "scheduled": "Scheduled Reports",
@@ -1080,6 +1063,12 @@
         "title": "Data Sources Pack",
         "feature": "+3 data sources",
         "active": "active sources"
+      },
+      "ai": {
+        "title": "AI Pack",
+        "feature1": "+50 AI queries/month",
+        "feature2": "Extra assistant queries",
+        "active": "active packs"
       }
     },
     "toast": {
@@ -1092,11 +1081,14 @@
       "portalError": "Error opening portal."
     },
     "plans": {
-      "free":       { "name": "Free",         "desc": "To try",                    "f1": "2 dashboards", "f2": "2 data sources", "f3": "1 user", "f4": "Public link" },
-      "solo":       { "name": "Solo",         "desc": "For freelancers and SMBs",  "f1": "8 dashboards", "f2": "8 data sources", "f3": "1 user", "f4": "5 alerts", "f5": "Embed on site" },
-      "equipe":     { "name": "Professional", "desc": "For small businesses",      "f1": "20 dashboards", "f2": "15 data sources", "f3": "1 user", "f4": "15 alerts", "f5": "AI in Portuguese", "f6": "Embed on site" },
-      "ilimitado":  { "name": "Team",         "desc": "For growing companies",     "f1": "50 dashboards", "f2": "30 data sources", "f3": "5 users", "f4": "50 alerts", "f5": "AI in Portuguese", "f6": "White label", "f7": "Embed on site" },
-      "enterprise": { "name": "Enterprise",   "desc": "For large operations",      "f1": "Everything in Team", "f2": "Unlimited users", "f3": "SLA guaranteed by contract", "f4": "Dedicated account manager", "f5": "Personalized onboarding" }
+      "free":       { "name": "Free",       "desc": "To try without commitment",   "f1": "2 dashboards", "f2": "2 data sources", "f3": "1 user", "f4": "10 AI queries/month" },
+      "essential":  { "name": "Essential",  "desc": "For freelancers and SMBs",    "f1": "8 dashboards", "f2": "5 data sources", "f3": "1 user", "f4": "3 alerts", "f5": "60 AI queries/month", "f6": "Embed on site" },
+      "pro":        { "name": "Pro",        "desc": "For small businesses",        "f1": "20 dashboards", "f2": "15 data sources", "f3": "1 user", "f4": "10 alerts", "f5": "225 AI queries/month", "f6": "Embed on site" },
+      "business":   { "name": "Business",   "desc": "For growing companies",       "f1": "50 dashboards", "f2": "30 data sources", "f3": "5 users", "f4": "30 alerts", "f5": "550 AI queries/month", "f6": "White label", "f7": "Embed on site" },
+      "enterprise": { "name": "Enterprise", "desc": "For large operations",        "f1": "Everything in Business", "f2": "Unlimited users", "f3": "SLA guaranteed by contract", "f4": "Dedicated account manager", "f5": "Personalized onboarding" },
+      "solo":       { "name": "Essential",  "desc": "For freelancers and SMBs",    "f1": "8 dashboards", "f2": "5 data sources", "f3": "1 user", "f4": "3 alerts", "f5": "60 AI queries/month", "f6": "Embed on site" },
+      "equipe":     { "name": "Pro",        "desc": "For small businesses",        "f1": "20 dashboards", "f2": "15 data sources", "f3": "1 user", "f4": "10 alerts", "f5": "225 AI queries/month", "f6": "Embed on site" },
+      "ilimitado":  { "name": "Business",   "desc": "For growing companies",       "f1": "50 dashboards", "f2": "30 data sources", "f3": "5 users", "f4": "30 alerts", "f5": "550 AI queries/month", "f6": "White label", "f7": "Embed on site" }
     }
   },
   "usuarios": {

@@ -978,14 +978,20 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   if (loading) return <div className="flex items-center justify-center h-full text-xs text-gray-400">{vs.loading}</div>
   if (error) {
     const isNotFound = error.includes('not found') || error.includes('não encontrado') || error === 'Erro desconhecido' || error.includes('404')
-    if (isNotFound) return (
-      <div className="flex flex-col items-center justify-center h-full gap-1.5 px-3">
-        <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-        </svg>
-        <span className="text-xs text-gray-400 text-center">Selecione um dataset<br/>nas configurações do bloco</span>
-      </div>
-    )
+    if (isNotFound) {
+      const hadDataset = block.dataset_id && isUUID(block.dataset_id)
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-1.5 px-3">
+          <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          {hadDataset
+            ? <span className="text-xs text-amber-500 text-center font-medium">Fonte de dados não encontrada<br/><span className="text-gray-400 font-normal">Selecione outro dataset nas configurações</span></span>
+            : <span className="text-xs text-gray-400 text-center">Selecione um dataset<br/>nas configurações do bloco</span>
+          }
+        </div>
+      )
+    }
     return <div className="flex items-center justify-center h-full text-xs text-red-400 px-2 text-center">{error}</div>
   }
   if (!data || data.length === 0) return (

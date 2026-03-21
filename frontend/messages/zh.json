@@ -7,13 +7,25 @@
     "trialCta": "免费试用 — 7天"
   },
   "hero": {
-    "badge": "面向全球企业 — 支持您的语言",
-    "title1": "您拥有数据。",
-    "title2": "我们帮助您理解它。",
-    "subtitle": "无需技术知识，几分钟内创建图表和仪表板。连接您的电子表格，拖放模块，即可完成。",
+    "badge": "每个计划均含AI — 包括免费版",
+    "title1": "您的电子表格在30秒内",
+    "title2": "变成专业仪表板。",
+    "subtitle": "上传您的Excel或CSV，Jarbis AI自动分析所有内容：生成KPI、图表和报告 — 无需编程，无需分析师。",
     "ctaPrimary": "免费开始",
     "ctaSecondary": "了解如何使用",
     "freeBadge": "7天免费 · 无需信用卡 · 随时取消",
+    "proof1": "5分钟完成设置",
+    "proof2": "免费开始",
+    "proof3": "无需编程",
+    "upload": {
+      "title": "将电子表格拖到此处",
+      "subtitle": "CSV、Excel (.xlsx/.xls) · 最大5MB · 无需登录",
+      "analyzing": "正在用AI分析您的表格...",
+      "error": "文件无效。请使用CSV或Excel（最大5MB）。",
+      "tryAgain": "重试",
+      "orCta": "或",
+      "signupLink": "创建免费账户"
+    },
     "mockupUrl": "app.jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "总销售额",
@@ -124,49 +136,16 @@
     "title": "为什么选择Jarbis？",
     "subtitle": "专为成长型企业打造的嵌入式BI平台。",
     "colFeature": "功能",
+    "colExcel": "手动电子表格",
+    "colBiCorp": "企业BI",
     "rows": [
-      {
-        "feature": "起始价格",
-        "jarbis": "7天免费",
-        "competitor": "1,000美元/月",
-        "powerbi": "10美元/用户"
-      },
-      {
-        "feature": "中文界面",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "中文支持",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "iframe嵌入",
-        "jarbis": true,
-        "competitor": true,
-        "powerbi": "复杂"
-      },
-      {
-        "feature": "自然语言AI",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "几分钟完成设置",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      },
-      {
-        "feature": "试用无需信用卡",
-        "jarbis": true,
-        "competitor": false,
-        "powerbi": false
-      }
+      { "feature": "起始价格", "jarbis": "免费", "competitor": "\"免费\"(时间成本高)", "powerbi": "5,000–15,000美元/月" },
+      { "feature": "首个洞察所需时间", "jarbis": "30秒", "competitor": "数小时", "powerbi": "数天/数周" },
+      { "feature": "所有计划含AI", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "iframe嵌入", "jarbis": true, "competitor": false, "powerbi": "复杂" },
+      { "feature": "需要IT部门?", "jarbis": false, "competitor": false, "powerbi": true },
+      { "feature": "几分钟完成设置", "jarbis": true, "competitor": false, "powerbi": false },
+      { "feature": "试用无需信用卡", "jarbis": true, "competitor": false, "powerbi": false }
     ]
   },
   "pricing": {
@@ -193,42 +172,44 @@
           "公开链接"
         ]
       },
-      "solo": {
-        "name": "Solo版",
+      "essential": {
+        "name": "Essential",
         "desc": "适合自由职业者和个人创业者",
-        "cta": "选择Solo版",
+        "cta": "选择Essential",
         "features": [
           "8个仪表板",
-          "8个数据源",
+          "5个数据源",
           "1个用户",
-          "5条提醒",
+          "60次AI查询/月",
+          "3条提醒",
           "嵌入网站"
         ]
       },
-      "equipe": {
-        "name": "专业版",
+      "pro": {
+        "name": "Pro",
         "desc": "适合小型企业",
-        "cta": "选择专业版",
+        "cta": "选择Pro",
         "features": [
           "20个仪表板",
           "15个数据源",
           "1个用户",
-          "15条告警",
-          "AI助手",
+          "225次AI查询/月",
+          "10条告警",
           "嵌入网站"
         ]
       },
-      "ilimitado": {
-        "name": "无限版",
+      "business": {
+        "name": "Business",
         "desc": "适合成长型企业",
-        "cta": "选择无限版",
+        "cta": "选择Business",
         "features": [
           "50个仪表板",
           "30个数据源",
           "5个用户",
-          "50条告警",
-          "AI助手",
-          "白标仪表板"
+          "550次AI查询/月",
+          "30条告警",
+          "白标",
+          "嵌入网站"
         ]
       },
       "enterprise": {
@@ -373,9 +354,11 @@
   },
   "app": {
     "nav": {
-      "dashboard": "仪表板",
+      "home": "首页",
+      "dashboard": "首页",
       "dashboards": "仪表板列表",
-      "data": "数据",
+      "sources": "数据源",
+      "data": "数据源",
       "alerts": "告警",
       "users": "用户",
       "scheduled": "定时报告",
@@ -1078,12 +1061,14 @@
       "portalError": "打开门户时出错。"
     },
     "plans": {
-      "free":       { "name": "免费",   "desc": "用于体验",        "f1": "2 个仪表板", "f2": "2 个数据源", "f3": "1 个用户", "f4": "公开链接" },
-      "solo":       { "name": "单人",   "desc": "适合自由职业者",  "f1": "8 个仪表板", "f2": "8 个数据源", "f3": "1 个用户", "f4": "5 条提醒", "f5": "嵌入网站" },
-      "equipe":     { "name": "专业版", "desc": "适合小型企业",    "f1": "20 个仪表板", "f2": "15 个数据源", "f3": "1 个用户", "f4": "15 条提醒", "f5": "AI Assistente", "f6": "嵌入网站" },
-      "ilimitado":  { "name": "团队版", "desc": "适合成长中的企业","f1": "50 个仪表板", "f2": "30 个数据源", "f3": "5 个用户", "f4": "50 条提醒", "f5": "AI Assistente", "f6": "白标", "f7": "嵌入网站" },
-      "enterprise": { "name": "企业版", "desc": "适合大型运营",    "f1": "团队版全部功能", "f2": "无限用户", "f3": "合同保障SLA", "f4": "专属客户经理", "f5": "定制化入驻"
-      }
+      "free":       { "name": "Free",       "desc": "用于体验",        "f1": "2 个仪表板", "f2": "2 个数据源", "f3": "1 个用户", "f4": "AI 10次/月" },
+      "essential":  { "name": "Essential",  "desc": "适合自由职业者",  "f1": "8 个仪表板", "f2": "5 个数据源", "f3": "1 个用户", "f4": "3 条提醒", "f5": "AI 60次/月", "f6": "嵌入网站" },
+      "pro":        { "name": "Pro",        "desc": "适合小型企业",    "f1": "20 个仪表板", "f2": "15 个数据源", "f3": "1 个用户", "f4": "10 条提醒", "f5": "AI 225次/月", "f6": "嵌入网站" },
+      "business":   { "name": "Business",   "desc": "适合成长中的企业","f1": "50 个仪表板", "f2": "30 个数据源", "f3": "5 个用户", "f4": "30 条提醒", "f5": "AI 550次/月", "f6": "白标", "f7": "嵌入网站" },
+      "enterprise": { "name": "Enterprise", "desc": "适合大型运营",    "f1": "Business全部功能", "f2": "无限用户", "f3": "合同保障SLA", "f4": "专属客户经理", "f5": "定制化入驻" },
+      "solo":       { "name": "Essential",  "desc": "适合自由职业者",  "f1": "8 个仪表板", "f2": "5 个数据源", "f3": "1 个用户", "f4": "3 条提醒", "f5": "AI 60次/月", "f6": "嵌入网站" },
+      "equipe":     { "name": "Pro",        "desc": "适合小型企业",    "f1": "20 个仪表板", "f2": "15 个数据源", "f3": "1 个用户", "f4": "10 条提醒", "f5": "AI 225次/月", "f6": "嵌入网站" },
+      "ilimitado":  { "name": "Business",   "desc": "适合成长中的企业","f1": "50 个仪表板", "f2": "30 个数据源", "f3": "5 个用户", "f4": "30 条提醒", "f5": "AI 550次/月", "f6": "白标", "f7": "嵌入网站" }
     }
   },
   "usuarios": {

@@ -25,7 +25,7 @@ class CheckoutRequest(BaseModel):
 
 
 class CheckoutByPlanRequest(BaseModel):
-    plan: str  # solo | equipe | ilimitado
+    plan: str  # essential | pro | business | (legados: solo | equipe | ilimitado)
 
 
 @router.post("/checkout/plan", summary="Cria sessão de checkout por nome do plano")
@@ -38,10 +38,15 @@ async def create_checkout_by_plan(
         raise HTTPException(status_code=503, detail="Pagamentos não configurados. Entre em contato com o suporte.")
 
     plan_map = {
-        "solo":      settings.stripe_price_solo,
-        "equipe":    settings.stripe_price_equipe,
-        "ilimitado": settings.stripe_price_ilimitado,
-        "starter":   settings.stripe_price_starter,
+        # novas chaves (apontam para os mesmos Stripe price IDs)
+        "essential":    settings.stripe_price_solo,
+        "pro":          settings.stripe_price_equipe,
+        "business":     settings.stripe_price_ilimitado,
+        # legadas
+        "solo":         settings.stripe_price_solo,
+        "equipe":       settings.stripe_price_equipe,
+        "ilimitado":    settings.stripe_price_ilimitado,
+        "starter":      settings.stripe_price_starter,
         "professional": settings.stripe_price_pro,
     }
     price_id = plan_map.get(data.plan, "")
@@ -125,6 +130,21 @@ async def create_addon_dataset_checkout(
     try:
         svc = BillingService(db)
         url = await svc.create_addon_dataset_checkout_session(current_user.tenant_id, current_user.email)
+        return {"checkout_url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/addon/ai/checkout", summary="Cria checkout para pack de IA (+50 perguntas/mês)")
+async def create_addon_ai_checkout(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Pagamentos não configurados.")
+    try:
+        svc = BillingService(db)
+        url = await svc.create_addon_ai_checkout_session(current_user.tenant_id, current_user.email)
         return {"checkout_url": url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

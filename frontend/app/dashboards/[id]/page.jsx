@@ -87,6 +87,37 @@ function newBlock(type, blockTypes) {
   }
 }
 
+function MiniBarChart({ data }) {
+  if (!data?.length) return null
+  const top = data.slice(0, 6)
+  const maxVal = Math.max(...top.map(d => Math.abs(Number(d.value) || 0)))
+  return (
+    <div className="mt-2.5 space-y-1.5 border-t border-violet-100 pt-2.5">
+      {top.map((d, i) => {
+        const pct = maxVal > 0 ? (Math.abs(Number(d.value)) / maxVal) * 100 : 0
+        const val = Number(d.value)
+        const fmt = val >= 1e6
+          ? `${(val / 1e6).toFixed(1)}M`
+          : val >= 1e3
+            ? `${(val / 1e3).toFixed(1)}K`
+            : val.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+        return (
+          <div key={i} className="flex items-center gap-2 text-[11px]">
+            <span className="text-gray-600 truncate shrink-0" style={{ width: '7rem' }}>{d.label}</span>
+            <div className="flex-1 bg-violet-100 rounded-full h-2.5 overflow-hidden">
+              <div className="h-full bg-violet-500 rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-gray-500 tabular-nums shrink-0" style={{ width: '3.5rem', textAlign: 'right' }}>{fmt}</span>
+          </div>
+        )
+      })}
+      {data.length > 6 && (
+        <p className="text-[10px] text-gray-400 text-center pt-0.5">+{data.length - 6} itens</p>
+      )}
+    </div>
+  )
+}
+
 function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
@@ -481,6 +512,9 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks }) {
                       {entry.answer ? (
                         <div className="px-3 py-2.5 bg-violet-50">
                           <p className="text-sm text-violet-900 leading-relaxed">{entry.answer}</p>
+                          {entry.aiResult?.data?.length > 0 && (
+                            <MiniBarChart data={entry.aiResult.data} />
+                          )}
                           {entry.aiResult?.suggested_chart_type && onAddBlock && (
                             <button
                               onClick={() => {

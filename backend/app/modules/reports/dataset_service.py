@@ -75,18 +75,90 @@ def _detect_columns(rows: list[dict]) -> list[str]:
     return list(rows[0].keys())
 
 
+_NULL_STRINGS = frozenset({
+    "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+    "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+})
+
+
+_CURRENCY_PREFIX_RE = None  # inicializado lazy
+
+
+def _try_parse_number(s: str) -> float | None:
+    """Tenta parsear string como número, suportando formatos internacionais e monetários.
+
+    Suporta:
+    - Formato BR: "R$ 11.174,44" → 11174.44
+    - Formato US: "$1,234.56" → 1234.56
+    - Só vírgula decimal: "11,5" → 11.5
+    - Percentual: "5,25%" → 5.25
+    - Sem prefixo: "11174.44" → 11174.44
+    """
+    import re as _re
+    # Remove símbolos de moeda e espaços: R$, $, €, £, ¥, etc.
+    cleaned = _re.sub(r'[R\$€£¥\s]', '', s).strip()
+    # Remove sinal de percentual (guarda para aplicar depois se necessário)
+    cleaned = cleaned.rstrip('%')
+    if not cleaned:
+        return None
+    # Formato: tem vírgula E ponto → vírgula é decimal, ponto é milhar (BR/EU)
+    #          "11.174,44" → "11174.44"
+    if ',' in cleaned and '.' in cleaned:
+        # Verifica qual vem por último para decidir qual é o decimal
+        last_comma = cleaned.rfind(',')
+        last_dot = cleaned.rfind('.')
+        if last_comma > last_dot:
+            # Ponto é milhar, vírgula é decimal: 1.234,56 → 1234.56
+            cleaned = cleaned.replace('.', '').replace(',', '.')
+        else:
+            # Vírgula é milhar, ponto é decimal: 1,234.56 → 1234.56
+            cleaned = cleaned.replace(',', '')
+    elif ',' in cleaned:
+        # Só vírgula — é separador decimal: "11,5" → "11.5"
+        cleaned = cleaned.replace(',', '.')
+    # Caso só tenha ponto: deixa como está (decimal padrão internacional)
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
 def _coerce_row(row: dict) -> dict:
-    """Tenta converter strings numéricas para float."""
+    """Tenta converter strings numéricas para float. Normaliza representações comuns de nulo.
+
+    Trata especificamente:
+    - Formato monetário BR: "R$ 11.174,44" → 11174.44
+    - Erros de fórmula Excel (CellErrorValue: #N/A, #REF!, #DIV/0!, …) → None
+    - float NaN/Inf → None
+    - Qualquer tipo não reconhecido → str → testa null
+    """
+    import math
+
     out = {}
     for k, v in row.items():
-        if isinstance(v, str):
-            cleaned = v.strip().replace(",", ".").replace(" ", "")
-            try:
-                out[k] = float(cleaned)
-            except ValueError:
-                out[k] = v.strip() if v.strip() else None
-        else:
+        if v is None:
+            out[k] = None
+        elif isinstance(v, bool):
             out[k] = v
+        elif isinstance(v, (date, datetime)):
+            out[k] = v  # datas preservadas (JSON-serializable via isoformat)
+        elif isinstance(v, (int, float)):
+            f = float(v)
+            out[k] = None if (math.isnan(f) or math.isinf(f)) else v
+        elif isinstance(v, str):
+            stripped = v.strip()
+            if stripped.lower() in _NULL_STRINGS:
+                out[k] = None
+                continue
+            parsed = _try_parse_number(stripped)
+            if parsed is not None:
+                out[k] = parsed
+            else:
+                out[k] = stripped if stripped else None
+        else:
+            # CellErrorValue do openpyxl (#N/A, #REF!, #DIV/0!, etc.) e outros tipos
+            s = str(v).strip()
+            out[k] = None if (s.lower() in _NULL_STRINGS or s.startswith("#")) else s
     return out
 
 
@@ -185,29 +257,43 @@ def _parse_date_value(v: Any) -> date | None:
 
 
 def _aggregate(rows: list[dict], label_col: str, value_col: str, agg: str) -> list[dict]:
-    """Agrupa rows por label_col e agrega value_col."""
-    groups: dict[str, list[float]] = {}
+    """Agrupa rows por label_col e agrega value_col.
+
+    Células nulas (None) são IGNORADAS nas agregações sum/avg/max/min — não
+    são tratadas como zero. Isso evita distorção em datasets com muitas células
+    em branco: avg([None, None, None, 100]) = 100, não 25.
+    """
+    # groups[label] = (sum_valid, non_null_values, total_count)
+    groups: dict[str, dict] = {}
     for row in rows:
         label = str(row.get(label_col, "")) if row.get(label_col) is not None else "(vazio)"
+        raw = row.get(value_col)
+        entry = groups.setdefault(label, {"vals": [], "total": 0})
+        entry["total"] += 1
+        if raw is None or str(raw).strip().lower() in ("", "null", "none", "n/a", "na", "-"):
+            continue  # ignora nulo/vazio — não trata como zero
         try:
-            value = float(row.get(value_col, 0) or 0)
+            entry["vals"].append(float(raw))
         except (TypeError, ValueError):
-            value = 0.0
-        groups.setdefault(label, []).append(value)
+            pass  # valor não numérico também ignorado
 
     result = []
-    for label, values in groups.items():
+    for label, entry in groups.items():
+        values = entry["vals"]
+        total = entry["total"]
         if agg == "sum":
             v = sum(values)
         elif agg == "avg":
             v = sum(values) / len(values) if values else 0
         elif agg == "count":
-            v = len(values)
+            v = float(total)  # conta todas as linhas, incluindo nulas
+        elif agg == "count_nonzero":
+            v = float(sum(1 for x in values if x != 0))
         elif agg == "max":
             v = max(values) if values else 0
         elif agg == "min":
             v = min(values) if values else 0
-        else:  # none — just use first value
+        else:  # none — first non-null
             v = values[0] if values else 0
         result.append({"label": label, "value": round(v, 4)})
 

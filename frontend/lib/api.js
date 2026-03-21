@@ -219,5 +219,6 @@ export const api = {
     addonCheckout: () => apiFetch('/billing/addon/checkout', { method: 'POST' }),
     addonDashCheckout: () => apiFetch('/billing/addon/dashboard/checkout', { method: 'POST' }),
     addonDatasetCheckout: () => apiFetch('/billing/addon/dataset/checkout', { method: 'POST' }),
+    addonAiCheckout: () => apiFetch('/billing/addon/ai/checkout', { method: 'POST' }),
   },
 }

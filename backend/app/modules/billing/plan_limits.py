@@ -26,64 +26,68 @@ class PlanLimits:
     sla: bool = False
 
 
+# ── Planos canônicos (novas chaves) ───────────────────────────────────────────
+
 PLANS: dict[str, PlanLimits] = {
     "free": PlanLimits(
-        name="Gratuito",
+        name="Free",
         price_monthly=Decimal("0"),
         max_dashboards=2,
         max_datasets=2,
         max_users=1,
         max_alerts=0,
-        max_ai_queries_monthly=10,
+        max_ai_queries_monthly=10,   # split: 3 gerações + 7 perguntas
+        max_halp_monthly=0,
+        allow_embed=False,
+        allow_ai=True,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "essential": PlanLimits(
+        name="Essential",
+        price_monthly=Decimal("97.00"),
+        max_dashboards=8,
+        max_datasets=5,
+        max_users=1,
+        max_alerts=3,
+        max_ai_queries_monthly=60,   # split: 10 gerações + 50 perguntas
+        max_halp_monthly=20,
         allow_embed=True,
         allow_ai=True,
         allow_white_label=False,
         sla=False,
     ),
-    "solo": PlanLimits(
-        name="Solo",
-        price_monthly=Decimal("79.90"),
-        max_dashboards=8,
-        max_datasets=8,
-        max_users=1,
-        max_alerts=5,
-        max_halp_monthly=40,
-        allow_embed=True,
-        allow_ai=False,
-        allow_white_label=False,
-        sla=False,
-    ),
-    "equipe": PlanLimits(
-        name="Profissional",
-        price_monthly=Decimal("189.90"),
+    "pro": PlanLimits(
+        name="Pro",
+        price_monthly=Decimal("247.00"),
         max_dashboards=20,
         max_datasets=15,
         max_users=1,
-        max_alerts=15,
-        max_ai_queries_monthly=100,
-        max_halp_monthly=-1,
+        max_alerts=10,
+        max_ai_queries_monthly=225,  # split: 25 gerações + 200 perguntas
+        max_halp_monthly=40,
         allow_embed=True,
         allow_ai=True,
         allow_white_label=False,
         sla=False,
     ),
-    "ilimitado": PlanLimits(
-        name="Grupo",
-        price_monthly=Decimal("599.90"),
+    "business": PlanLimits(
+        name="Business",
+        price_monthly=Decimal("697.00"),
         max_dashboards=50,
         max_datasets=30,
         max_users=5,
-        max_alerts=50,
-        max_ai_queries_monthly=500,
+        max_alerts=30,
+        max_ai_queries_monthly=550,  # split: 50 gerações + 500 perguntas
         max_halp_monthly=-1,
         allow_embed=True,
         allow_ai=True,
         allow_white_label=True,
-        sla=False,
+        sla=False,                   # SLA apenas no Enterprise
     ),
     "enterprise": PlanLimits(
         name="Enterprise",
-        price_monthly=None,              # sob consulta — negociação manual
+        price_monthly=None,          # sob consulta — negociação manual
         max_dashboards=-1,
         max_datasets=-1,
         max_users=-1,
@@ -95,28 +99,71 @@ PLANS: dict[str, PlanLimits] = {
         allow_white_label=True,
         sla=True,
     ),
-    # ── Chaves legadas (mantidas para compatibilidade com tenants já criados) ──
-    "starter": PlanLimits(
-        name="Solo",
-        price_monthly=Decimal("79.90"),
+    # ── Chaves legadas (aliases para os novos planos — compatibilidade com tenants existentes) ──
+    "solo": PlanLimits(
+        name="Essential",
+        price_monthly=Decimal("97.00"),
         max_dashboards=8,
-        max_datasets=8,
+        max_datasets=5,
         max_users=1,
-        max_alerts=5,
+        max_alerts=3,
+        max_ai_queries_monthly=60,
+        max_halp_monthly=20,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "equipe": PlanLimits(
+        name="Pro",
+        price_monthly=Decimal("247.00"),
+        max_dashboards=20,
+        max_datasets=15,
+        max_users=1,
+        max_alerts=10,
+        max_ai_queries_monthly=225,
         max_halp_monthly=40,
         allow_embed=True,
-        allow_ai=False,
+        allow_ai=True,
+        allow_white_label=False,
+        sla=False,
+    ),
+    "ilimitado": PlanLimits(
+        name="Business",
+        price_monthly=Decimal("697.00"),
+        max_dashboards=50,
+        max_datasets=30,
+        max_users=5,
+        max_alerts=30,
+        max_ai_queries_monthly=550,
+        max_halp_monthly=-1,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=True,
+        sla=False,
+    ),
+    "starter": PlanLimits(
+        name="Essential",
+        price_monthly=Decimal("97.00"),
+        max_dashboards=8,
+        max_datasets=5,
+        max_users=1,
+        max_alerts=3,
+        max_ai_queries_monthly=60,
+        max_halp_monthly=20,
+        allow_embed=True,
+        allow_ai=True,
         allow_white_label=False,
         sla=False,
     ),
     "professional": PlanLimits(
-        name="Profissional",
-        price_monthly=Decimal("189.90"),
+        name="Pro",
+        price_monthly=Decimal("247.00"),
         max_dashboards=20,
         max_datasets=15,
         max_users=1,
-        max_alerts=15,
-        max_ai_queries_monthly=100,
+        max_alerts=10,
+        max_ai_queries_monthly=225,
         allow_embed=True,
         allow_ai=True,
         allow_white_label=False,
@@ -125,22 +172,37 @@ PLANS: dict[str, PlanLimits] = {
 }
 
 # ── Add-on packs ──────────────────────────────────────────────────────────────
-ADDON_PACK_PRICE = Decimal("49.90")       # Pack Completo: +1 user, +5 dash, +3 datasets
+ADDON_PACK_PRICE = Decimal("49.00")       # Pack Completo legado: +1 user, +5 dash, +3 datasets
 ADDON_PACK_USERS = 1
 ADDON_PACK_DASHBOARDS = 5
 ADDON_PACK_DATASETS = 3
 
-ADDON_DASH_PRICE = Decimal("19.90")       # Pack Dashboards: +5 dashboards
+ADDON_DASH_PRICE = Decimal("29.00")       # Pack Dashboards: +5 dashboards
 ADDON_DASH_DASHBOARDS = 5
 
-ADDON_DATASET_PRICE = Decimal("19.90")    # Pack Fontes de Dados: +3 datasets
+ADDON_DATASET_PRICE = Decimal("19.00")    # Pack Fontes de Dados: +3 datasets
 ADDON_DATASET_DATASETS = 3
 
+ADDON_USER_PRICE = Decimal("49.00")       # +1 usuário extra (apenas Business)
+ADDON_USER_USERS = 1
 
-def get_effective_limits(plan: str, addon_packs: int = 0, addon_dashboards: int = 0, addon_datasets: int = 0) -> dict:
+ADDON_AI_QUESTIONS_PRICE = Decimal("19.00")   # +50 perguntas de IA/mês
+ADDON_AI_QUESTIONS = 50
+
+ADDON_AI_GENERATIONS_PRICE = Decimal("29.00") # +10 gerações de dashboard/mês
+ADDON_AI_GENERATIONS = 10
+
+
+def get_effective_limits(
+    plan: str,
+    addon_packs: int = 0,
+    addon_dashboards: int = 0,
+    addon_datasets: int = 0,
+    addon_ai_queries: int = 0,
+) -> dict:
     """Retorna os limites efetivos considerando add-on packs."""
     base = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
-    has_addons = addon_packs > 0 or addon_dashboards > 0 or addon_datasets > 0
+    has_addons = addon_packs > 0 or addon_dashboards > 0 or addon_datasets > 0 or addon_ai_queries > 0
     if not has_addons:
         return base
     return {
@@ -148,6 +210,7 @@ def get_effective_limits(plan: str, addon_packs: int = 0, addon_dashboards: int 
         "datasets":    base["datasets"]   + addon_packs * ADDON_PACK_DATASETS   + addon_datasets   * ADDON_DATASET_DATASETS if base["datasets"]   != -1 else -1,
         "users":       base["users"]      + addon_packs * ADDON_PACK_USERS      if base["users"]      != -1 else -1,
         "alerts":      base["alerts"],
+        "ai_queries":  base.get("ai_queries", 0) + addon_ai_queries * ADDON_AI_QUESTIONS if base.get("ai_queries", 0) != -1 else -1,
         "white_label": base["white_label"],
         "ai":          base["ai"],
         "embed":       base["embed"],
@@ -162,6 +225,7 @@ PLAN_LIMITS: dict[str, dict] = {
         "datasets":      p.max_datasets,
         "users":         p.max_users,
         "alerts":        p.max_alerts,
+        "ai_queries":    p.max_ai_queries_monthly,
         "white_label":   p.allow_white_label,
         "ai":            p.allow_ai,
         "embed":         p.allow_embed,
@@ -173,13 +237,16 @@ PLAN_LIMITS: dict[str, dict] = {
 PLAN_NAMES: dict[str, str] = {key: p.name for key, p in PLANS.items()}
 
 PLAN_PRICES: dict[str, str] = {
-    "solo":         "R$79,90/mês",
-    "equipe":       "R$189,90/mês",
-    "ilimitado":    "R$599,90/mês",
+    "essential":    "R$97,00/mês",
+    "pro":          "R$247,00/mês",
+    "business":     "R$697,00/mês",
     "enterprise":   "Sob consulta",
-    # legado
-    "starter":      "R$79,90/mês",
-    "professional": "R$189,90/mês",
+    # legados
+    "solo":         "R$97,00/mês",
+    "equipe":       "R$247,00/mês",
+    "ilimitado":    "R$697,00/mês",
+    "starter":      "R$97,00/mês",
+    "professional": "R$247,00/mês",
 }
 
 
