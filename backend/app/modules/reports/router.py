@@ -3517,6 +3517,217 @@ async def diagnose_dashboard_endpoint(
     }
 
 
+@router.post(
+    "/{report_id}/suggest-blocks",
+    summary="Sugere novos blocos para colunas ainda não visualizadas no dashboard",
+)
+async def suggest_blocks_endpoint(
+    report_id: uuid.UUID,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
+):
+    import json
+    import os
+    import re as _re
+    import uuid as _uuid
+
+    import anthropic as ant
+
+    from .ai_usage_models import AIUsageLog
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    plan = tenant.plan if tenant else "free"
+    check_feature_allowed("ai", plan)
+    await check_ai_query_limit(db, current_user.tenant_id, plan)
+
+    # Carregar report
+    report = await db.scalar(
+        select(Report).where(Report.id == report_id, Report.tenant_id == effective_tenant_id)
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Dashboard não encontrado")
+
+    # Dataset ID do body
+    dataset_id_raw = data.get("dataset_id")
+    if not dataset_id_raw:
+        raise HTTPException(status_code=422, detail="dataset_id obrigatório")
+    try:
+        dataset_id = uuid.UUID(str(dataset_id_raw))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="dataset_id inválido")
+
+    svc = DatasetService(db)
+    ds = await svc.get(dataset_id, effective_tenant_id)
+    if not ds and effective_tenant_id != current_user.tenant_id:
+        ds = await svc.get(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+    columns = ds.columns or []
+    rows = ds.rows or []
+    if not rows:
+        try:
+            from app.core.cache import get_redis as _get_redis
+            _redis = _get_redis()
+            _cached = await warp_get_rows(_redis, str(ds.id))
+            if _cached:
+                rows = _cached
+        except Exception:
+            pass
+
+    # Extrair colunas já usadas nos blocos existentes
+    all_blocks = []
+    pages = report.pages or []
+    for page in pages:
+        all_blocks.extend(page.get("blocks", []))
+    if not all_blocks:
+        all_blocks = report.blocks or []
+
+    used_cols: set[str] = set()
+    for b in all_blocks:
+        if b.get("label_col"):
+            used_cols.add(b["label_col"])
+        if b.get("value_col"):
+            used_cols.add(b["value_col"])
+        if b.get("filter_col"):
+            used_cols.add(b["filter_col"])
+
+    unused_cols = [c for c in columns if c not in used_cols]
+
+    if not unused_cols:
+        return {"blocks": [], "message": "Todas as colunas já estão visualizadas.", "new_cols": []}
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key or api_key == "your_key_here":
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
+
+    # Estatísticas das colunas não utilizadas
+    total_rows = len(rows)
+    col_stats: dict[str, dict] = {}
+    for col in unused_cols:
+        vals = [r.get(col) for r in rows if r.get(col) is not None
+                and str(r.get(col)).strip().lower() not in ("", "null", "none", "n/a", "na", "-", "--", "nan")]
+        if not vals:
+            col_stats[col] = {"type": "texto", "null_pct": 100}
+            continue
+        nums: list[float] = []
+        all_numeric = True
+        for v in vals:
+            try:
+                nums.append(float(str(v).replace(",", ".")))
+            except (ValueError, TypeError):
+                all_numeric = False
+                break
+        if all_numeric and nums:
+            nonzero = sum(1 for n in nums if n != 0)
+            null_pct = round((total_rows - len(vals)) / total_rows * 100) if total_rows else 0
+            nonzero_pct = round(nonzero / len(nums) * 100)
+            flag = "★ INTERESSANTE" if nonzero_pct >= 20 and null_pct <= 70 else "— zero/irrelevante"
+            col_stats[col] = {"type": "numero", "sum": round(sum(nums), 2), "flag": flag,
+                               "nonzero_pct": nonzero_pct, "null_pct": null_pct}
+        else:
+            import re as _re2
+            sample_val = str(vals[0])
+            if _re2.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}", sample_val):
+                col_stats[col] = {"type": "data", "sample": sample_val}
+            else:
+                unique_vals = list(dict.fromkeys([str(v) for v in vals]))
+                col_stats[col] = {"type": "texto", "unique": len(set(str(v) for v in vals)), "top3": unique_vals[:3]}
+
+    # Schema das colunas novas
+    schema_parts = [f"Dataset: {ds.name}", f"Novas colunas a visualizar ({len(unused_cols)} de {len(columns)} total):"]
+    has_interesting = False
+    for col, st in col_stats.items():
+        if st["type"] == "numero":
+            flag = st.get("flag", "")
+            schema_parts.append(f'  "{col}" [número {flag}] sum={st["sum"]}, nonzero={st.get("nonzero_pct")}%')
+            if "INTERESSANTE" in flag:
+                has_interesting = True
+        elif st["type"] == "data":
+            schema_parts.append(f'  "{col}" [data] ex: {st["sample"]}')
+            has_interesting = True
+        else:
+            top3 = ", ".join(st.get("top3", []))
+            schema_parts.append(f'  "{col}" [texto] {st.get("unique","?")} valores únicos, ex: {top3}')
+            if st.get("unique", 0) > 1:
+                has_interesting = True
+
+    if not has_interesting:
+        return {"blocks": [], "message": "As colunas disponíveis não têm dados suficientes para novas visualizações.", "new_cols": unused_cols}
+
+    schema_str = "\n".join(schema_parts)
+
+    system_prompt = (
+        "Você é um especialista em Business Intelligence para PMEs brasileiras.\n"
+        "Analise as NOVAS colunas informadas e gere blocos de dashboard para elas.\n\n"
+        "RETORNE SOMENTE um JSON array válido (sem markdown, sem texto fora do JSON):\n"
+        '[\n'
+        '  {"type":"kpi","title":"Título","value_col":"coluna","agg":"sum","label_col":null,"layout":{"w":3,"h":2}},\n'
+        '  {"type":"bar","title":"Título","label_col":"coluna_texto","value_col":"coluna_numero","agg":"sum","layout":{"w":6,"h":4}}\n'
+        ']\n\n'
+        "TIPOS: kpi, bar, bar_h, line, area, pie\n"
+        "TAMANHOS: kpi → w=3,h=2 | line/area/bar/bar_h → w=6,h=4 | pie → w=4,h=4\n\n"
+        "REGRAS:\n"
+        "1. Use APENAS as colunas listadas (★ INTERESSANTE)\n"
+        "2. Ignore colunas '— zero/irrelevante' e null_pct>70%\n"
+        "3. Títulos em português, máx 35 chars\n"
+        "4. Cada bloco responde UMA pergunta de negócio\n"
+        "5. Se não há colunas interessantes, retorne []\n"
+        "6. Alíquotas e percentuais: agg=avg"
+    )
+
+    client = ant.Anthropic(api_key=api_key)
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": "user", "content": f"{schema_str}\n\nGere os blocos JSON:"}],
+    )
+
+    # Log de uso
+    try:
+        usage = msg.usage
+        log = AIUsageLog(
+            tenant_id=current_user.tenant_id, user_id=current_user.id, dataset_id=dataset_id,
+            model="claude-haiku-4-5-20251001",
+            tokens_input=usage.input_tokens, tokens_output=usage.output_tokens,
+            question="[suggest-blocks]",
+        )
+        db.add(log)
+        await db.commit()
+    except Exception:
+        pass
+
+    text = msg.content[0].text.strip()
+    try:
+        blocks = json.loads(text)
+    except json.JSONDecodeError:
+        m = _re.search(r"\[.*\]", text, _re.DOTALL)
+        blocks = json.loads(m.group()) if m else []
+
+    if not isinstance(blocks, list):
+        blocks = []
+
+    _layout_defaults = {"kpi": {"w": 3, "h": 2}, "line": {"w": 6, "h": 4}, "area": {"w": 6, "h": 4},
+                        "bar": {"w": 6, "h": 4}, "bar_h": {"w": 6, "h": 4}, "pie": {"w": 4, "h": 4}}
+    for b in blocks:
+        b["dataset_id"] = str(dataset_id)
+        if not b.get("id"):
+            b["id"] = str(_uuid.uuid4())
+        btype = b.get("type", "bar")
+        default_size = _layout_defaults.get(btype, {"w": 6, "h": 4})
+        if not isinstance(b.get("layout"), dict):
+            b["layout"] = default_size.copy()
+        else:
+            b["layout"].setdefault("w", default_size["w"])
+            b["layout"].setdefault("h", default_size["h"])
+
+    msg_text = f"{len(blocks)} novo(s) bloco(s) gerado(s) para {len(unused_cols)} coluna(s) não visualizada(s)." if blocks else "Nenhum bloco gerado para as colunas disponíveis."
+    return {"blocks": blocks, "message": msg_text, "new_cols": unused_cols}
+
+
 # ---------------------------------------------------------------------------
 # Report CRUD — parametrizado /{report_id} deve ficar por ÚLTIMO para não
 # capturar rotas fixas como /datasets, /public, /alerts, /ai-query, /data

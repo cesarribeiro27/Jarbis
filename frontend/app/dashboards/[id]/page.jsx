@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useTranslations, useLocale } from 'next-intl'
@@ -1303,10 +1303,40 @@ export default function DashboardDetailPage() {
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [showDiagnostico, setShowDiagnostico] = useState(false)
+  const [suggestingBlocks, setSuggestingBlocks] = useState(false)
   const [nearLimit, setNearLimit] = useState(false)
   const [draggedColumn, setDraggedColumn] = useState(null) // { col, colType, datasetId }
   const [exportingPDF, setExportingPDF] = useState(false)
   const addMenuRef = useRef()
+
+  // Dataset primário (mais blocos apontam para ele)
+  const primaryDatasetId = useMemo(() => {
+    const count = {}
+    blocks.forEach(b => { if (b.dataset_id) count[b.dataset_id] = (count[b.dataset_id] || 0) + 1 })
+    return Object.entries(count).sort((a, b) => b[1] - a[1])[0]?.[0] || datasets[0]?.id || null
+  }, [blocks, datasets])
+
+  // Colunas do dataset primário que nenhum bloco usa
+  const unusedCols = useMemo(() => {
+    if (!primaryDatasetId || !datasets.length) return []
+    const ds = datasets.find(d => d.id === primaryDatasetId)
+    if (!ds?.columns?.length) return []
+    const used = new Set(blocks.flatMap(b => [b.label_col, b.value_col, b.filter_col].filter(Boolean)))
+    return ds.columns.filter(c => !used.has(c))
+  }, [primaryDatasetId, datasets, blocks])
+
+  // Blocos com colunas que não existem mais no dataset
+  const brokenBlockIds = useMemo(() => {
+    const dsMap = Object.fromEntries(datasets.map(d => [d.id, new Set(d.columns || [])]))
+    return new Set(blocks.filter(b => {
+      if (!b.dataset_id || b.type === 'filter' || b.type === 'text' || b.type === 'image') return false
+      const cols = dsMap[b.dataset_id]
+      if (!cols?.size) return false
+      if (b.label_col && !cols.has(b.label_col)) return true
+      if (b.value_col && !cols.has(b.value_col)) return true
+      return false
+    }).map(b => b.id))
+  }, [datasets, blocks])
 
   function clearDatasetFilters(datasetId) {
     setFilterResetTrigger({ datasetId, ts: Date.now() })
@@ -1565,6 +1595,23 @@ export default function DashboardDetailPage() {
     })
     setBlocks([...blocks, ...withLayout])
     setSelectedBlockId(withLayout[0]?.id || null)
+  }
+
+  async function handleSuggestBlocks() {
+    if (!report?.id || !primaryDatasetId || suggestingBlocks) return
+    setSuggestingBlocks(true)
+    try {
+      const result = await api.reports.suggestBlocks(report.id, primaryDatasetId)
+      if (result.blocks?.length) {
+        addMultipleBlocks(result.blocks)
+      } else {
+        alert(result.message || 'Nenhuma sugestão disponível.')
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSuggestingBlocks(false)
+    }
   }
 
   async function exportPDF() {
@@ -1871,6 +1918,39 @@ export default function DashboardDetailPage() {
               <button onClick={addPage} className="flex items-center justify-center w-7 h-7 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-violet-400 hover:text-violet-500 transition-colors text-sm">+</button>
             </div>
 
+
+            {/* Banner: colunas não visualizadas */}
+            {unusedCols.length > 0 && (
+              <div className="mb-3 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm">
+                <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                <span className="text-amber-700 flex-1">
+                  <b>{unusedCols.length}</b> coluna{unusedCols.length > 1 ? 's' : ''} sem visualização:{' '}
+                  <span className="font-normal text-amber-600">{unusedCols.slice(0, 3).join(', ')}{unusedCols.length > 3 ? '…' : ''}</span>
+                </span>
+                <button
+                  onClick={handleSuggestBlocks}
+                  disabled={suggestingBlocks}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-60 transition-colors shrink-0"
+                >
+                  {suggestingBlocks ? (
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  )}
+                  {suggestingBlocks ? 'Gerando…' : 'Adicionar com IA'}
+                </button>
+              </div>
+            )}
+
+            {/* Banner: blocos com colunas inválidas */}
+            {brokenBlockIds.size > 0 && (
+              <div className="mb-3 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm">
+                <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span className="text-red-700 flex-1">
+                  <b>{brokenBlockIds.size}</b> bloco{brokenBlockIds.size > 1 ? 's' : ''} com colunas que não existem no dataset. Reconfigure-{brokenBlockIds.size > 1 ? 'os' : 'o'} ou regenere o dashboard.
+                </span>
+              </div>
+            )}
 
             <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} draggedColumn={draggedColumn} onDropColumn={handleDropColumn} onFiltersChange={setFilterSummary} filterResetTrigger={filterResetTrigger} />
           </div>
