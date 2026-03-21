@@ -1842,7 +1842,8 @@ async def generate_dashboard_endpoint(
         "  • area   → série temporal acumulada: receita acumulada, crescimento YoY\n"
         "  • bar    → ranking com nomes curtos (até 8 itens): top categorias, meses\n"
         "  • bar_h  → ranking com nomes longos (>8 itens ou nomes > 10 chars): top clientes, produtos\n"
-        "  • pie    → composição com 2–5 categorias SIGNIFICATIVAS (não usar para códigos)\n"
+        "  • pie    → composição com 2–5 categorias SIGNIFICATIVAS com nomes legíveis\n"
+        "             (NUNCA use pie para colunas cujo top3 mostra letras/códigos como C, P, T, A, N)\n"
         "  • bubble → impacto visual de dimensão × métrica (clientes, produtos, categorias)\n\n"
         "REGRAS ABSOLUTAS:\n"
         "1. Use APENAS colunas ★ INTERESSANTE para métricas\n"
@@ -1852,8 +1853,9 @@ async def generate_dashboard_endpoint(
         "5. Títulos executivos em português — o que um CEO entenderia em 2 segundos (máx 32 chars)\n"
         "6. Cada bloco responde UMA pergunta estratégica (ex: 'Quem são meus maiores clientes?')\n"
         "7. NÃO repetir o mesmo par label_col+value_col em dois blocos\n"
-        "8. NUNCA usar como dimensão: CNPJ, CPF, ID, código, chave, número de documento\n"
-        "   Esses são identificadores técnicos, não dimensões de negócio\n\n"
+        "8. NUNCA usar como dimensão em gráficos ou filtros: CNPJ, CPF, ID, código, chave,\n"
+        "   número de documento, endereço, logradouro, bairro, CEP, complemento, observação,\n"
+        "   descrição de texto livre. Esses são dados cadastrais, não dimensões analíticas.\n\n"
         "MENTALIDADE EXECUTIVA — pense nessas perguntas estratégicas:\n"
         "  • 'Qual é nossa receita e como está evoluindo?' → KPI + line\n"
         "  • 'Quem são nossos maiores clientes/produtos?' → bubble ou bar_h\n"
@@ -1952,7 +1954,12 @@ async def generate_dashboard_endpoint(
     # Colunas que são identificadores técnicos — NÃO devem virar filtros
     _ID_SIGNALS = ["cnpj", "cpf", "id", "codigo", "código", "chave", "numero", "número",
                    "nfe", "nfse", "rps", "protocolo", "inscricao", "inscrição", "cep",
-                   "telefone", "email", "e-mail", "url", "hash", "uuid", "key"]
+                   "telefone", "email", "e-mail", "url", "hash", "uuid", "key",
+                   # Endereço/localização — não são dimensões analíticas úteis como filtro
+                   "endereco", "endereço", "logradouro", "bairro", "rua", "avenida",
+                   "complemento",
+                   # Texto livre — não são dimensões categóricas
+                   "descricao", "descrição", "observacao", "observação", "obs"]
 
     def _is_identifier_col(col_name: str) -> bool:
         cl = col_name.lower().replace(" ", "_").replace("-", "_")
