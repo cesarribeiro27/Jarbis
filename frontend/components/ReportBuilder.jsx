@@ -359,11 +359,15 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
     dims.push({ column: block.config.series_col, type: 'text', granularity: null })
   }
 
+  const VALID_AGGS = ['sum', 'count', 'count_distinct', 'avg', 'min', 'max', 'none']
+  const rawAgg = block.value_col === '__count__' ? 'count' : (block.agg || 'sum')
+  const safeAgg = VALID_AGGS.includes(rawAgg) ? rawAgg : 'sum'
+
   const req = {
     dimensions: dims,
     metrics: [{
       column: block.value_col,
-      aggregation: block.agg || 'sum',
+      aggregation: safeAgg,
     }],
     filters,
   }
@@ -507,7 +511,7 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
   useEffect(() => {
     if (!isUUID(dsId) || !col) return
     setLoading(true)
-    const req = { dimensions: [{ column: col, type: 'text' }], metrics: [{ column: '__count__', aggregation: 'sum' }] }
+    const req = { dimensions: [{ column: col, type: 'text' }], metrics: [{ column: '__count__', aggregation: 'count' }] }
     const queryFn = shareToken
       ? api.reports.publicQueryV2(shareToken, dsId, req)
       : api.reports.datasets.queryV2(dsId, req)

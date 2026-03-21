@@ -167,8 +167,8 @@ export default function DatasetDetailPage() {
         if (data.columns?.length) {
           data.columns.forEach(col => {
             const req = col.type === 'number'
-              ? { metrics: [{ column: col.name, agg: 'sum' }], dimensions: [{ column: col.name, type: 'number' }], limit: 8 }
-              : { dimensions: [{ column: col.name, type: col.type === 'date' ? 'date' : 'text' }], metrics: [{ column: '__count__', agg: 'count' }], limit: 8 }
+              ? { metrics: [{ column: col.name, aggregation: 'sum' }], dimensions: [{ column: col.name, type: 'number' }], limit: 8 }
+              : { dimensions: [{ column: col.name, type: col.type === 'date' ? 'date' : 'text' }], metrics: [{ column: '__count__', aggregation: 'count' }], limit: 8 }
             api.reports.datasets.queryV2(id, req)
               .then(res => {
                 const bars = (res.rows || []).map(r => ({
