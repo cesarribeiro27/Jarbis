@@ -3667,7 +3667,9 @@ async def diagnose_dashboard_endpoint(
         "  que o usuário vê na tela. NUNCA cite valores que não aparecem nesses KPIs. "
         "  PROIBIDO mencionar 'banco de dados', 'colunas', 'blocos', 'dataset'. "
         "  Fale como analista para o dono da empresa, não para um técnico.\n"
-        "- missing_blocks: até 2 gráficos que faltam. Se já está completo, lista vazia.\n"
+        "- missing_blocks: até 2 gráficos que faltam. OBRIGATÓRIO incluir 'value_col' (coluna numérica a agregar) "
+        "  e 'label_col' (coluna categórica/data do eixo X ou legenda) usando os nomes EXATOS das colunas disponíveis. "
+        "  Se já está completo, lista vazia.\n"
         "- missing_columns: até 2 colunas que agregariam valor de negócio. Se já está bom, lista vazia.\n"
         "- suggestions: 1-2 ações de negócio que o usuário pode tomar com os dados.\n"
         "- health_score: 0-100. 100 = dashboard completo para o domínio detectado.\n"
@@ -3772,6 +3774,7 @@ async def diagnose_dashboard_endpoint(
     return {
         "domain": domain_key,
         "domain_name": domain_tpl["name"],
+        "dataset_id": str(ds.id),
         "visual_insights": visual_insights,
         "missing_blocks": missing_blocks_ai,
         "technical": technical,
@@ -3779,6 +3782,63 @@ async def diagnose_dashboard_endpoint(
         "health_score": health_score,
         "previous": previous,
     }
+
+
+@router.get(
+    "/{report_id}/diagnose/history",
+    summary="Histórico de análises salvas do dashboard",
+)
+async def diagnose_history_endpoint(
+    report_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
+):
+    snaps = await db.scalars(
+        select(DiagnosisSnapshot)
+        .where(
+            DiagnosisSnapshot.report_id == report_id,
+            DiagnosisSnapshot.tenant_id == current_user.tenant_id,
+        )
+        .order_by(DiagnosisSnapshot.created_at.desc())
+        .limit(10)
+    )
+    return [
+        {
+            "id": str(s.id),
+            "created_at": s.created_at.isoformat(),
+            "health_score": s.health_score,
+            "domain_name": s.domain_name,
+            "visual_insights": s.visual_insights,
+            "missing_blocks": s.missing_blocks,
+            "suggestions": s.suggestions,
+        }
+        for s in snaps
+    ]
+
+
+@router.delete(
+    "/{report_id}/diagnose/{snapshot_id}",
+    summary="Apagar análise salva",
+    status_code=204,
+)
+async def delete_snapshot_endpoint(
+    report_id: uuid.UUID,
+    snapshot_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    snap = await db.scalar(
+        select(DiagnosisSnapshot).where(
+            DiagnosisSnapshot.id == snapshot_id,
+            DiagnosisSnapshot.report_id == report_id,
+            DiagnosisSnapshot.tenant_id == current_user.tenant_id,
+        )
+    )
+    if not snap:
+        raise HTTPException(status_code=404, detail="Análise não encontrada")
+    await db.delete(snap)
+    await db.commit()
 
 
 @router.post(

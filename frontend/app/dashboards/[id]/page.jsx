@@ -639,7 +639,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   )
 }
 
-function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
+function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportInsights }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
@@ -647,12 +647,24 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
   const [addedBlocks, setAddedBlocks] = useState(new Set())
   const [exported, setExported] = useState(false)
 
+  // Histórico
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState(null)
+
   // Pergunta livre
   const [question, setQuestion] = useState('')
   const [askLoading, setAskLoading] = useState(false)
   const [askError, setAskError] = useState(null)
   const [chatHistory, setChatHistory] = useState([])
   const chatEndRef = useRef(null)
+
+  useEffect(() => {
+    api.reports.diagnoseHistory(reportId)
+      .then(setHistory)
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false))
+  }, [reportId])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -663,9 +675,33 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
     if (result || loading) return
     setLoading(true)
     api.reports.diagnoseDashboard(reportId)
-      .then(setResult)
+      .then(r => { setResult(r); setHistory(h => [{ id: 'new', created_at: new Date().toISOString(), health_score: r.health_score, domain_name: r.domain_name, visual_insights: r.visual_insights, missing_blocks: r.missing_blocks, suggestions: r.suggestions }, ...h]) })
       .catch(e => setError(e.message || 'Erro ao diagnosticar'))
       .finally(() => setLoading(false))
+  }
+
+  function loadSnapshot(snap) {
+    setResult({
+      domain_name: snap.domain_name,
+      health_score: snap.health_score,
+      visual_insights: snap.visual_insights,
+      missing_blocks: snap.missing_blocks,
+      suggestions: snap.suggestions,
+      technical: null,
+      previous: null,
+    })
+    setTab('analise')
+  }
+
+  async function handleDeleteSnapshot(e, snapId) {
+    e.stopPropagation()
+    setDeletingId(snapId)
+    try {
+      await api.reports.deleteSnapshot(reportId, snapId)
+      setHistory(h => h.filter(s => s.id !== snapId))
+      if (result && snapId === 'new') setResult(null)
+    } catch {}
+    setDeletingId(null)
   }
 
   const score = result?.health_score ?? 0
@@ -678,12 +714,16 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
 
   function handleAddBlock(mb) {
     if (!onAddBlock) return
+    // Usar dataset_id do resultado da análise ou do primeiro dataset disponível
+    const dsId = result?.dataset_id || datasets?.[0]?.id || null
     onAddBlock({
       id: crypto.randomUUID(),
       type: mb.type,
       title: mb.title || mb.label || mb.type,
-      dataset_id: null,
-      label_col: null, value_col: null, agg: 'sum',
+      dataset_id: dsId,
+      label_col: mb.label_col || null,
+      value_col: mb.value_col || null,
+      agg: 'sum',
       config: {},
       layout: { x: 0, y: Infinity, w: mb.type === 'kpi' ? 3 : 6, h: mb.type === 'kpi' ? 2 : 4 },
     })
@@ -769,8 +809,7 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
 
           {/* Tela de escolha — aparece antes de qualquer ação */}
           {tab === null && (
-            <div className="flex flex-col gap-3 py-4">
-              <p className="text-xs text-gray-400 text-center mb-1">O que você quer fazer?</p>
+            <div className="flex flex-col gap-3 py-2">
               <button
                 onClick={handleGenerateAuto}
                 className="flex items-start gap-3 p-4 border border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50/40 transition-all text-left group"
@@ -782,7 +821,7 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-800">Gerar análise automática</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Análise completa do dashboard com health score, insights e recomendações</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Análise completa com health score, insights e recomendações</p>
                 </div>
               </button>
               <button
@@ -796,9 +835,55 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-800">Fazer uma pergunta</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Pergunte algo específico sobre seus dados — ex: "Como evoluiu o faturamento?"</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Pergunte algo específico — ex: "Como evoluiu o faturamento?"</p>
                 </div>
               </button>
+
+              {/* Histórico de análises */}
+              {!historyLoading && history.length > 0 && (
+                <div className="mt-1">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Análises anteriores</p>
+                  <div className="flex flex-col gap-1.5">
+                    {history.map(snap => (
+                      <button
+                        key={snap.id}
+                        onClick={() => loadSnapshot(snap)}
+                        className="flex items-center justify-between gap-2 px-3 py-2.5 border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-all text-left group"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${snap.health_score >= 70 ? 'bg-green-50 text-green-600' : snap.health_score >= 40 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'}`}>
+                            {snap.health_score}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-700 truncate">{snap.domain_name}</p>
+                            <p className="text-[10px] text-gray-400">
+                              {new Date(snap.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              {' · '}
+                              {new Date(snap.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={e => handleDeleteSnapshot(e, snap.id)}
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"
+                          title="Apagar análise"
+                        >
+                          {deletingId === snap.id
+                            ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                          }
+                        </button>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {historyLoading && (
+                <div className="flex items-center justify-center py-3 gap-2 text-xs text-gray-400">
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  Carregando histórico...
+                </div>
+              )}
             </div>
           )}
 
@@ -2479,7 +2564,7 @@ export default function DashboardDetailPage() {
           />
         </div>
         {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
-        {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
+        {showDiagnostico && <DiagnosticoPanel reportId={report.id} datasets={datasets} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
         {showAddBlockDialog && <AddBlockDialog datasets={datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
 
         {showVersions && (
