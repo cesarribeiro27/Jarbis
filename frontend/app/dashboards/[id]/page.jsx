@@ -135,9 +135,17 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState([])
   const [aiUsage, setAiUsage] = useState(null)
+  const [safetyViolation, setSafetyViolation] = useState(null) // { message, incident_count }
 
   useEffect(() => {
     api.reports.aiUsage().then(setAiUsage).catch(() => {})
+  }, [])
+
+  // Ouve evento de violação de segurança disparado pelo apiFetch
+  useEffect(() => {
+    function handleSafety(e) { setSafetyViolation(e.detail) }
+    window.addEventListener('safety-violation', handleSafety)
+    return () => window.removeEventListener('safety-violation', handleSafety)
   }, [])
 
   const selectedDs = datasets.find(d => d.id === datasetId)
@@ -230,8 +238,9 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   async function ask(q) {
     const qText = q || question.trim()
     if (!datasetId || !qText) return
+    setSafetyViolation(null)
     setLoading(true)
-    const entry = { id: crypto.randomUUID(), question: qText, answer: null, error: null, ts: new Date().toISOString() }
+    const entry = { id: crypto.randomUUID(), question: qText, answer: null, error: null, safety: false, ts: new Date().toISOString() }
     setHistory(h => [entry, ...h])
     if (!q) setQuestion('')
     try {
@@ -239,7 +248,8 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
       setHistory(h => h.map(e => e.id === entry.id ? { ...e, answer: result.answer, aiResult: result, datasetId } : e))
       api.reports.aiUsage().then(setAiUsage).catch(() => {})
     } catch (e) {
-      setHistory(h => h.map(e => e.id === entry.id ? { ...e, error: e.message } : e))
+      const isSafety = e.message && (e.message.includes('bloqueada') || e.message.includes('Termos de Uso'))
+      setHistory(h => h.map(e => e.id === entry.id ? { ...e, error: e.message, safety: isSafety } : e))
     } finally { setLoading(false) }
   }
 
@@ -299,6 +309,29 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
             </button>
           </div>
         </div>
+
+        {/* ── Banner de violação de segurança ── */}
+        {safetyViolation && (
+          <div className="mx-4 mt-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-lg shrink-0">⛔</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-red-700 mb-1">Ação bloqueada — Violação de Segurança</p>
+                <p className="text-[11px] text-red-600 leading-relaxed whitespace-pre-line">{safetyViolation.message}</p>
+                {safetyViolation.incident_count >= 3 && (
+                  <p className="text-[11px] font-bold text-red-700 mt-2">
+                    Sua conta foi suspensa. Entre em contato: comercial@jarbis.cc
+                  </p>
+                )}
+              </div>
+              <button onClick={() => setSafetyViolation(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Tabs ── */}
         <div className="flex border-b border-gray-100 shrink-0">
@@ -571,8 +604,17 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
                           )}
                         </div>
                       ) : entry.error ? (
-                        <div className="bg-red-50 px-3 py-2.5">
-                          <p className="text-xs text-red-600">{entry.error}</p>
+                        <div className={`px-3 py-2.5 ${entry.safety ? 'bg-red-50 border-t border-red-100' : 'bg-red-50'}`}>
+                          {entry.safety ? (
+                            <div className="flex items-start gap-2">
+                              <span className="text-base shrink-0">⛔</span>
+                              <p className="text-xs text-red-700 font-medium leading-relaxed">
+                                Pergunta bloqueada por violar os Termos de Uso. Esta ocorrência foi registrada.
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-red-600">{entry.error}</p>
+                          )}
                         </div>
                       ) : (
                         <div className="bg-violet-50 px-3 py-2.5 flex items-center gap-2">

@@ -1408,6 +1408,22 @@ async def ai_query_endpoint(
     check_feature_allowed("ai", plan)
     await check_ai_query_limit(db, current_user.tenant_id, plan)
 
+    # ── Verificação de segurança — bloqueia prompt injection e engenharia social ──
+    from .security import check_question_safety
+    safety = await check_question_safety(
+        question=data.question,
+        db=db,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        endpoint="ai_query",
+    )
+    if not safety["safe"]:
+        raise HTTPException(status_code=403, detail={
+            "code": "safety_violation",
+            "message": safety["message"],
+            "incident_count": safety.get("incident_count", 1),
+        })
+
     svc = DatasetService(db)
     ds = await svc.get(data.dataset_id, effective_tenant_id)
     if not ds and effective_tenant_id != current_user.tenant_id:
@@ -1711,6 +1727,23 @@ async def generate_dashboard_endpoint(
     plan = tenant.plan if tenant else "free"
     check_feature_allowed("ai", plan)
     await check_ai_query_limit(db, current_user.tenant_id, plan)
+
+    # ── Verificação de segurança no objetivo informado ────────────────────────
+    if data.objetivo:
+        from .security import check_question_safety
+        safety = await check_question_safety(
+            question=data.objetivo,
+            db=db,
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            endpoint="generate_dashboard",
+        )
+        if not safety["safe"]:
+            raise HTTPException(status_code=403, detail={
+                "code": "safety_violation",
+                "message": safety["message"],
+                "incident_count": safety.get("incident_count", 1),
+            })
 
     svc = DatasetService(db)
     ds = await svc.get(data.dataset_id, effective_tenant_id)

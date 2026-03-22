@@ -44,7 +44,12 @@ async function apiFetch(path, options = {}) {
     const detail = errorData.detail || {}
     const payload = typeof detail === 'object' ? detail : { code: 'error', message: String(detail) }
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('upgrade-required', { detail: payload }))
+      if (payload.code === 'safety_violation') {
+        // Violação de segurança — não mostrar modal de upgrade, disparar evento específico
+        window.dispatchEvent(new CustomEvent('safety-violation', { detail: payload }))
+      } else {
+        window.dispatchEvent(new CustomEvent('upgrade-required', { detail: payload }))
+      }
     }
     throw new Error(payload.message || 'Acesso negado')
   }
