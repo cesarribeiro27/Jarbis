@@ -3601,6 +3601,51 @@ async def diagnose_dashboard_endpoint(
         else:
             schema_lines.append(f"  {col}: texto")
 
+    # ── Calcular os valores reais dos KPIs exibidos no dashboard ──────────────
+    # Usa os mesmos filtros configurados em cada bloco, evitando inconsistência
+    # entre o que a IA cita e o que o usuário vê na tela.
+    dashboard_kpi_lines = []
+    for b in all_blocks:
+        if b.get("type") != "kpi":
+            continue
+        vcol = b.get("value_col")
+        if not vcol:
+            continue
+        title = b.get("title") or vcol
+        agg = b.get("agg") or "sum"
+        filter_col = b.get("filter_col")
+        filter_val = b.get("filter_val")
+
+        filtered = rows
+        if filter_col and filter_val is not None:
+            filtered = [r for r in rows if str(r.get(filter_col, "")).strip() == str(filter_val).strip()]
+
+        nums = []
+        for r in filtered:
+            v = r.get(vcol)
+            if v is None:
+                continue
+            try:
+                nums.append(float(str(v).replace(",", ".")))
+            except (ValueError, TypeError):
+                pass
+
+        if not nums:
+            continue
+
+        if agg == "avg":
+            val = sum(nums) / len(nums)
+        elif agg == "count":
+            val = len(nums)
+        elif agg == "min":
+            val = min(nums)
+        elif agg == "max":
+            val = max(nums)
+        else:
+            val = sum(nums)
+
+        dashboard_kpi_lines.append(f"  {title}: {val:,.2f}")
+
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key or api_key == "your_key_here":
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
@@ -3618,7 +3663,9 @@ async def diagnose_dashboard_endpoint(
         "}\n\n"
         "REGRAS:\n"
         "- visual_insights: 2-3 frases sobre o NEGÓCIO (faturamento, clientes, tendências). "
-        "  Use os números reais do schema. PROIBIDO mencionar 'banco de dados', 'colunas', 'blocos', 'dataset'. "
+        "  CRÍTICO: use APENAS os valores da seção 'KPIs DO DASHBOARD' — esses são os números "
+        "  que o usuário vê na tela. NUNCA cite valores que não aparecem nesses KPIs. "
+        "  PROIBIDO mencionar 'banco de dados', 'colunas', 'blocos', 'dataset'. "
         "  Fale como analista para o dono da empresa, não para um técnico.\n"
         "- missing_blocks: até 2 gráficos que faltam. Se já está completo, lista vazia.\n"
         "- missing_columns: até 2 colunas que agregariam valor de negócio. Se já está bom, lista vazia.\n"
@@ -3627,10 +3674,17 @@ async def diagnose_dashboard_endpoint(
         "- Responda em português brasileiro, linguagem simples e direta."
     )
 
+    kpis_section = (
+        "\n\nKPIs DO DASHBOARD (valores exatos exibidos na tela — use SOMENTE estes números):\n"
+        + "\n".join(dashboard_kpi_lines)
+        if dashboard_kpi_lines else ""
+    )
+
     user_msg = (
         f"SETOR/DOMÍNIO: {domain_tpl['name']}\n"
         f"DADOS: {total_rows} registros\n\n"
-        f"MÉTRICAS DISPONÍVEIS:\n" + "\n".join(schema_lines or [f"  {c}" for c in columns[:12]]) + "\n\n"
+        f"MÉTRICAS DO DATASET (contexto apenas):\n" + "\n".join(schema_lines or [f"  {c}" for c in columns[:12]])
+        + kpis_section + "\n\n"
         f"VISUALIZAÇÕES NO DASHBOARD: {json.dumps(block_types, ensure_ascii=False)}\n"
         + (f"\nCOLUNAS EXTRAS QUE PODERIAM EXISTIR:\n"
            + "\n".join(f"  {m['col']}: {m['impact']}" for m in missing_cols_from_template[:2])
