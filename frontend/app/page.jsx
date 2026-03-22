@@ -412,72 +412,152 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Dashboard mockup — desktop com floating */}
+        {/* Dashboard mockup — desktop */}
         <motion.div
-          className="hidden md:block relative max-w-5xl mx-auto mt-16"
+          className="hidden md:block relative max-w-5xl mx-auto mt-16 px-4"
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.9, ease: 'easeOut' }}
         >
+          {/* Glow atrás do mockup */}
+          <div className="absolute -inset-8 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at 50% 80%, rgba(124,58,237,0.35) 0%, rgba(99,102,241,0.1) 40%, transparent 70%)' }} />
+
           <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1.6 }}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut', delay: 1.6 }}
+            className="relative"
           >
-            <div className="absolute -inset-4 rounded-2xl pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(124,58,237,0.3) 0%, transparent 60%)' }} />
-            <div className="relative rounded-t-2xl overflow-hidden border border-white/10" style={{ background: '#13111F' }}>
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5" style={{ background: '#1C1929' }}>
-                <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                <div className="w-3 h-3 rounded-full bg-green-500/70" />
-                <div className="flex-1 mx-4 rounded-md h-6 flex items-center px-3 border border-white/5" style={{ background: '#0B0A1A' }}>
-                  <span className="text-xs text-gray-500">{t('hero.mockupUrl')}</span>
+            {/* Chrome do browser */}
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-violet-950/60"
+              style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#0F0D1D' }}>
+
+              {/* Barra do browser */}
+              <div className="flex items-center gap-2 px-4 py-3 border-b"
+                style={{ background: '#17152A', borderColor: 'rgba(255,255,255,0.06)' }}>
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full" style={{ background: '#FF5F57' }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: '#FEBC2E' }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: '#28C840' }} />
+                </div>
+                <div className="flex-1 mx-4 rounded-lg h-6 flex items-center px-3 gap-2"
+                  style={{ background: '#0B0A1A', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <svg className="w-3 h-3 text-gray-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  <span className="text-[11px] text-gray-500">{t('hero.mockupUrl')}</span>
                 </div>
               </div>
-              <div className="p-5 grid grid-cols-12 gap-3">
-                {[
-                  { labelKey: 'hero.kpi.totalSales', value: pricing.symbol === 'R$' ? 'R$847K' : '$247K', change: '+23%', up: true },
-                  { labelKey: 'hero.kpi.newClients',  value: '1.284', change: '+12%', up: true },
-                  { labelKey: 'hero.kpi.conversion',  value: '4,7%', change: '-0,3%', up: false },
-                  { labelKey: 'hero.kpi.mrr',          value: pricing.symbol === 'R$' ? 'R$124K' : '$36K', change: '+8%', up: true },
-                ].map((kpi) => (
-                  <div key={kpi.labelKey} className="col-span-3 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
-                    <div className="text-xs text-gray-500 mb-1.5">{t(kpi.labelKey)}</div>
-                    <div className="text-xl font-black text-white mb-1">{kpi.value}</div>
-                    <div className={`text-xs font-semibold ${kpi.up ? 'text-emerald-400' : 'text-red-400'}`}>{kpi.change}</div>
-                  </div>
-                ))}
-                <div className="col-span-8 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
-                  <div className="text-xs text-gray-500 mb-4">{t('hero.chart.revenue')}</div>
-                  <div className="flex items-end gap-1.5 h-28">
-                    {[40,55,45,70,60,85,75,92,80,68,88,96].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 11 ? 'linear-gradient(to top, #7c3aed, #a78bfa)' : 'rgba(124,58,237,0.25)' }} />
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-2">
-                    {heroMonths.map(m => (
-                      <div key={m} className="text-[9px] text-gray-600">{m}</div>
-                    ))}
-                  </div>
+
+              {/* Sidebar + conteúdo */}
+              <div className="flex" style={{ background: '#0B0A1A' }}>
+                {/* Mini sidebar */}
+                <div className="w-12 flex-shrink-0 border-r flex flex-col items-center py-4 gap-4"
+                  style={{ background: '#0F0D1D', borderColor: 'rgba(255,255,255,0.05)' }}>
+                  {[
+                    <path key="g" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />,
+                    <path key="c" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+                    <path key="d" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />,
+                  ].map((d, i) => (
+                    <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center ${i === 1 ? 'bg-violet-600/20' : ''}`}>
+                      <svg className={`w-4 h-4 ${i === 1 ? 'text-violet-400' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">{d}</svg>
+                    </div>
+                  ))}
                 </div>
-                <div className="col-span-4 rounded-xl p-4 border border-white/5" style={{ background: '#1C1929' }}>
-                  <div className="text-xs text-gray-500 mb-4">{t('hero.chart.byChannel')}</div>
-                  <div className="space-y-3">
+
+                {/* Área principal */}
+                <div className="flex-1 p-5">
+                  {/* KPIs */}
+                  <div className="grid grid-cols-4 gap-3 mb-4">
                     {[
-                      { labelKey: 'hero.chart.direct',  pct: 45, color: '#7c3aed' },
-                      { labelKey: 'hero.chart.organic', pct: 30, color: '#06b6d4' },
-                      { labelKey: 'hero.chart.paid',    pct: 25, color: '#10b981' },
-                    ].map((item) => (
-                      <div key={item.labelKey}>
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-gray-400">{t(item.labelKey)}</span>
-                          <span className="text-white font-semibold">{item.pct}%</span>
-                        </div>
-                        <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                          <div className="h-1.5 rounded-full" style={{ width: `${item.pct}%`, background: item.color }} />
+                      { labelKey: 'hero.kpi.totalSales', value: pricing.symbol === 'R$' ? 'R$847K' : '$247K', change: '+23%', up: true },
+                      { labelKey: 'hero.kpi.newClients',  value: '1.284', change: '+12%', up: true },
+                      { labelKey: 'hero.kpi.conversion',  value: '4,7%', change: '-0,3%', up: false },
+                      { labelKey: 'hero.kpi.mrr',          value: pricing.symbol === 'R$' ? 'R$124K' : '$36K', change: '+8%', up: true },
+                    ].map((kpi) => (
+                      <div key={kpi.labelKey} className="rounded-xl p-4 border"
+                        style={{ background: '#17152A', borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <div className="text-[11px] text-gray-500 mb-2">{t(kpi.labelKey)}</div>
+                        <div className="text-lg font-black text-white mb-1">{kpi.value}</div>
+                        <div className={`text-[11px] font-semibold flex items-center gap-1 ${kpi.up ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <span>{kpi.up ? '▲' : '▼'}</span>{kpi.change}
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Charts */}
+                  <div className="grid grid-cols-12 gap-3">
+                    {/* Bar chart */}
+                    <div className="col-span-8 rounded-xl p-4 border"
+                      style={{ background: '#17152A', borderColor: 'rgba(255,255,255,0.06)' }}>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[11px] font-semibold text-gray-300">{t('hero.chart.revenue')}</span>
+                        <span className="text-[10px] text-violet-400 font-semibold bg-violet-500/10 px-2 py-0.5 rounded-full">+18% vs anterior</span>
+                      </div>
+                      {/* Linhas de grade */}
+                      <div className="relative">
+                        <div className="absolute inset-x-0 flex flex-col justify-between h-28 pointer-events-none">
+                          {[0,1,2,3].map(i => (
+                            <div key={i} className="border-t w-full" style={{ borderColor: 'rgba(255,255,255,0.04)' }} />
+                          ))}
+                        </div>
+                        <div className="flex items-end gap-1.5 h-28 relative">
+                          {[40,55,45,70,60,85,75,92,80,68,88,96].map((h, i) => (
+                            <div key={i} className="flex-1 rounded-t-sm relative overflow-hidden" style={{
+                              height: `${h}%`,
+                              background: i === 11
+                                ? 'linear-gradient(to top, #6D28D9, #A78BFA)'
+                                : `linear-gradient(to top, rgba(109,40,217,0.12), rgba(167,139,250,0.35))`,
+                              boxShadow: i === 11 ? '0 0 12px rgba(167,139,250,0.4)' : 'none',
+                            }}>
+                              {i === 11 && (
+                                <div className="absolute top-0 inset-x-0 h-0.5 rounded-full" style={{ background: '#A78BFA', boxShadow: '0 0 6px #A78BFA' }} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex justify-between mt-2">
+                        {heroMonths.map(m => (
+                          <div key={m} className="text-[9px] text-gray-600">{m}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Por canal */}
+                    <div className="col-span-4 rounded-xl p-4 border"
+                      style={{ background: '#17152A', borderColor: 'rgba(255,255,255,0.06)' }}>
+                      <div className="text-[11px] font-semibold text-gray-300 mb-4">{t('hero.chart.byChannel')}</div>
+                      <div className="space-y-4">
+                        {[
+                          { labelKey: 'hero.chart.direct',  pct: 45, color: '#7c3aed', glow: 'rgba(124,58,237,0.5)' },
+                          { labelKey: 'hero.chart.organic', pct: 30, color: '#06b6d4', glow: 'rgba(6,182,212,0.5)' },
+                          { labelKey: 'hero.chart.paid',    pct: 25, color: '#10b981', glow: 'rgba(16,185,129,0.5)' },
+                        ].map((item) => (
+                          <div key={item.labelKey}>
+                            <div className="flex justify-between text-xs mb-2">
+                              <span className="text-gray-400 text-[11px]">{t(item.labelKey)}</span>
+                              <span className="text-white font-bold text-[12px]">{item.pct}%</span>
+                            </div>
+                            <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                              <div className="h-2 rounded-full transition-all" style={{
+                                width: `${item.pct}%`,
+                                background: `linear-gradient(to right, ${item.color}aa, ${item.color})`,
+                                boxShadow: `0 0 8px ${item.glow}`,
+                              }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Mini total */}
+                      <div className="mt-5 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <div className="text-[10px] text-gray-600 mb-1">Total de visitas</div>
+                        <div className="text-base font-black text-white">24.812</div>
+                        <div className="text-[10px] text-emerald-400 font-semibold">▲ +34% este mês</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -492,24 +572,30 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7, ease: 'easeOut' }}
         >
-          <div className="rounded-2xl overflow-hidden border border-white/10 p-4" style={{ background: '#13111F' }}>
+          <div className="rounded-2xl overflow-hidden border p-4" style={{ background: '#0F0D1D', borderColor: 'rgba(255,255,255,0.08)' }}>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {[
                 { labelKey: 'hero.kpi.totalSales', value: pricing.symbol === 'R$' ? 'R$847K' : '$247K' },
                 { labelKey: 'hero.kpi.newClients',  value: '1.284' },
               ].map((kpi) => (
-                <div key={kpi.labelKey} className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
+                <div key={kpi.labelKey} className="rounded-xl p-3 border" style={{ background: '#17152A', borderColor: 'rgba(255,255,255,0.06)' }}>
                   <div className="text-[10px] text-gray-500 mb-1">{t(kpi.labelKey)}</div>
                   <div className="text-base font-black text-white">{kpi.value}</div>
-                  <div className="text-[10px] font-semibold text-emerald-400">+23%</div>
+                  <div className="text-[10px] font-semibold text-emerald-400">▲ +23%</div>
                 </div>
               ))}
             </div>
-            <div className="rounded-xl p-3 border border-white/5" style={{ background: '#1C1929' }}>
+            <div className="rounded-xl p-3 border" style={{ background: '#17152A', borderColor: 'rgba(255,255,255,0.06)' }}>
               <div className="text-[10px] text-gray-500 mb-2">{t('hero.chart.revenue')}</div>
               <div className="flex items-end gap-1 h-16">
                 {[40,55,45,70,60,85,75,92,80,68,88,96].map((h, i) => (
-                  <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 11 ? 'linear-gradient(to top, #7c3aed, #a78bfa)' : 'rgba(124,58,237,0.25)' }} />
+                  <div key={i} className="flex-1 rounded-t-sm" style={{
+                    height: `${h}%`,
+                    background: i === 11
+                      ? 'linear-gradient(to top, #6D28D9, #A78BFA)'
+                      : 'linear-gradient(to top, rgba(109,40,217,0.12), rgba(167,139,250,0.3))',
+                    boxShadow: i === 11 ? '0 0 10px rgba(167,139,250,0.4)' : 'none',
+                  }} />
                 ))}
               </div>
             </div>
@@ -517,8 +603,8 @@ export default function LandingPage() {
         </motion.div>
 
         {/* Fade para a próxima seção */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, transparent, #FAFAF8)' }} />
+        <div className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(250,250,248,0.6) 60%, #FAFAF8 100%)' }} />
       </section>
 
       {/* ── ANTES / DEPOIS ── */}
