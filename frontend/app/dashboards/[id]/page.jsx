@@ -1889,10 +1889,10 @@ export default function DashboardDetailPage() {
       type: 'text',
       title: 'Análise IA',
       dataset_id: null,
-      config: { content: text, is_ai_insight: true },
+      config: { text: text, is_ai_insight: true },
       layout: { x: 0, y: Infinity, w: 12, h: 3 },
     }
-    setBlocks(prev => [...prev, block])
+    setBlocks([...blocks, block])
     setShowDiagnostico(false)
   }
 
