@@ -157,6 +157,30 @@ async def _bump_dataset_version(redis, dataset_id: str) -> None:
 
 _PREVIEW_TTL = 86400  # 24 horas
 
+# Cache em memória para preview (Railway roda instância única; sem Redis configurado)
+import time as _time
+_PREVIEW_CACHE: dict[str, tuple[str, float]] = {}  # key -> (json_str, expires_at)
+
+
+def _preview_set(key: str, value: str, ttl: int = _PREVIEW_TTL) -> None:
+    _PREVIEW_CACHE[key] = (value, _time.time() + ttl)
+
+
+def _preview_get(key: str) -> str | None:
+    entry = _PREVIEW_CACHE.get(key)
+    if entry is None:
+        return None
+    v, exp = entry
+    if _time.time() > exp:
+        _PREVIEW_CACHE.pop(key, None)
+        return None
+    return v
+
+
+def _preview_del(*keys: str) -> None:
+    for k in keys:
+        _PREVIEW_CACHE.pop(k, None)
+
 
 @router.post(
     "/preview-upload",
@@ -232,18 +256,10 @@ async def preview_upload(
     }
 
     import json as _json
-    try:
-        meta_json = _json.dumps(_sanitize_for_json(preview_data))
-        rows_json = _json.dumps(_sanitize_for_json(rows))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Erro ao serializar dados: {exc}")
-
-    redis = get_redis()
-    try:
-        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, meta_json)
-        await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, rows_json)
-    finally:
-        await redis.aclose()
+    meta_json = _json.dumps(_sanitize_for_json(preview_data))
+    rows_json = _json.dumps(_sanitize_for_json(rows))
+    _preview_set(f"jarbis:preview:{temp_token}", meta_json)
+    _preview_set(f"jarbis:preview:{temp_token}:rows", rows_json)
 
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -350,13 +366,8 @@ async def preview_sheets(request: Request):
 
         meta_json = _json.dumps(_sanitize_for_json(preview_data))
         rows_json = _json.dumps(_sanitize_for_json(rows))
-
-        redis = get_redis()
-        try:
-            await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, meta_json)
-            await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, rows_json)
-        finally:
-            await redis.aclose()
+        _preview_set(f"jarbis:preview:{temp_token}", meta_json)
+        _preview_set(f"jarbis:preview:{temp_token}:rows", rows_json)
 
         return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -375,11 +386,7 @@ async def preview_sheets(request: Request):
 async def get_preview(token: str):
     """Retorna dados do preview sem autenticação."""
     import json as _json
-    redis = get_redis()
-    try:
-        raw = await redis.get(f"jarbis:preview:{token}")
-    finally:
-        await redis.aclose()
+    raw = _preview_get(f"jarbis:preview:{token}")
     if not raw:
         raise HTTPException(status_code=404, detail="Preview não encontrado ou expirado")
     return _json.loads(raw)
@@ -402,39 +409,34 @@ async def claim_preview(
     from app.modules.reports.dataset_models import ReportDataset
     from app.modules.reports.dataset_service import _detect_columns
 
-    redis = get_redis()
-    try:
-        raw_meta = await redis.get(f"jarbis:preview:{token}")
-        raw_rows = await redis.get(f"jarbis:preview:{token}:rows")
-        if not raw_meta or not raw_rows:
-            raise HTTPException(status_code=404, detail="Preview expirado ou não encontrado.")
+    raw_meta = _preview_get(f"jarbis:preview:{token}")
+    raw_rows = _preview_get(f"jarbis:preview:{token}:rows")
+    if not raw_meta or not raw_rows:
+        raise HTTPException(status_code=404, detail="Preview expirado ou não encontrado.")
 
-        meta = _json.loads(raw_meta)
-        rows = _json.loads(raw_rows)
-        if not rows:
-            raise HTTPException(status_code=400, detail="Preview sem dados.")
+    meta = _json.loads(raw_meta)
+    rows = _json.loads(raw_rows)
+    if not rows:
+        raise HTTPException(status_code=400, detail="Preview sem dados.")
 
-        file_name = meta.get("file_name", "meu-dataset")
-        ds_name = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
-        ds_type = meta.get("ds_type", "csv")
-        columns = _detect_columns(rows)
+    file_name = meta.get("file_name", "meu-dataset")
+    ds_name = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
+    ds_type = meta.get("ds_type", "csv")
+    columns = _detect_columns(rows)
 
-        ds = ReportDataset(
-            tenant_id=current_user.tenant_id,
-            name=ds_name,
-            type=ds_type,
-            rows=rows,
-            columns=columns,
-            row_count=len(rows),
-        )
-        db.add(ds)
-        await db.commit()
-        await db.refresh(ds)
+    ds = ReportDataset(
+        tenant_id=current_user.tenant_id,
+        name=ds_name,
+        type=ds_type,
+        rows=rows,
+        columns=columns,
+        row_count=len(rows),
+    )
+    db.add(ds)
+    await db.commit()
+    await db.refresh(ds)
 
-        await redis.delete(f"jarbis:preview:{token}")
-        await redis.delete(f"jarbis:preview:{token}:rows")
-    finally:
-        await redis.aclose()
+    _preview_del(f"jarbis:preview:{token}", f"jarbis:preview:{token}:rows")
 
     return {"dataset_id": str(ds.id), "name": ds.name, "row_count": ds.row_count}
 
