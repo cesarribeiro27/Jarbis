@@ -890,6 +890,90 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── SEGURANÇA & PROPRIEDADE DOS DADOS ── */}
+      <section className="py-20 sm:py-28 px-6 bg-gray-950">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            variants={stagger} initial="hidden" whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="text-center mb-16"
+          >
+            <motion.div variants={fadeUp} className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 mb-6">
+              <svg className="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            </motion.div>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-5">
+              Os dados são seus.<br className="hidden sm:block" />
+              <span className="text-violet-400">Sempre.</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              No Jarbis, não somos donos dos seus dados — somos guardiões temporários enquanto você trabalha com eles. Essa é a nossa essência.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            variants={stagger} initial="hidden" whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid sm:grid-cols-3 gap-6 mb-16"
+          >
+            {[
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  </svg>
+                ),
+                title: 'Isolamento total',
+                body: 'Cada empresa opera em um ambiente completamente isolado. Nenhum cliente enxerga os dados de outro — por arquitetura, não por configuração.',
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                ),
+                title: 'IA sem memória',
+                body: 'Nenhum dado seu é usado para treinar modelos de IA. O Jarbis analisa apenas o que você enviou, apenas naquela sessão. A sessão encerra, os dados somem.',
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                ),
+                title: 'Abuso tem consequências',
+                body: 'Tentativas de extrair dados do sistema ou manipular a IA são detectadas, registradas e investigadas. Protegemos os dados dos nossos clientes com rigor e responsabilidade legal.',
+              },
+            ].map(({ icon, title, body }) => (
+              <motion.div
+                key={title}
+                variants={fadeUp}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">
+                  {icon}
+                </div>
+                <h3 className="text-white font-bold text-base mb-2">{title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{body}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            variants={fadeUp} initial="hidden" whileInView="visible"
+            viewport={{ once: true }}
+            className="text-center border-t border-white/10 pt-12"
+          >
+            <p className="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+              "Confiar nos dados dos nossos clientes é a<br className="hidden sm:block" />
+              <span className="text-violet-400"> razão de existirmos."</span>
+            </p>
+            <p className="text-gray-500 text-sm mt-3">— Jarbis, plataforma de BI para PMEs brasileiras</p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ── CTA FINAL ── */}
       <motion.section
         variants={stagger} initial="hidden" whileInView="visible"
