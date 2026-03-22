@@ -232,10 +232,16 @@ async def preview_upload(
     }
 
     import json as _json
+    try:
+        meta_json = _json.dumps(_sanitize_for_json(preview_data))
+        rows_json = _json.dumps(_sanitize_for_json(rows))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Erro ao serializar dados: {exc}")
+
     redis = get_redis()
     try:
-        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, _json.dumps(preview_data, default=str))
-        await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, _json.dumps(rows, default=str))
+        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, meta_json)
+        await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, rows_json)
     finally:
         await redis.aclose()
 
@@ -252,6 +258,7 @@ async def preview_sheets(request: Request):
     import httpx
     import re
     import json as _json
+    import traceback
     from app.modules.reports.dataset_service import _parse_csv, _detect_columns
 
     body = await request.json()
@@ -303,51 +310,61 @@ async def preview_sheets(request: Request):
         raise HTTPException(status_code=400, detail="Planilha muito grande (máx 10 MB).")
 
     try:
-        rows = _parse_csv(content)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Não foi possível ler os dados da planilha. Verifique se a planilha tem cabeçalhos na primeira linha.")
+        try:
+            rows = _parse_csv(content)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Não foi possível ler os dados da planilha. Verifique se a planilha tem cabeçalhos na primeira linha. (detalhe: {exc})")
 
-    if not rows:
-        raise HTTPException(status_code=400, detail="Planilha vazia ou sem dados.")
+        if not rows:
+            raise HTTPException(status_code=400, detail="Planilha vazia ou sem dados.")
 
-    columns = _detect_columns(rows)
-    row_count = len(rows)
+        columns = _detect_columns(rows)
+        row_count = len(rows)
 
-    stats = []
-    for col in columns[:6]:
-        vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
-            "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
-            "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
-        )]
-        numeric = [v for v in vals if isinstance(v, (int, float))]
-        if numeric:
-            stats.append({"col": col, "type": "numeric", "sum": round(sum(numeric), 2),
-                          "avg": round(sum(numeric) / len(numeric), 2), "max": max(numeric),
-                          "min": min(numeric), "count": len(numeric)})
-        else:
-            unique = list(dict.fromkeys(str(v) for v in vals[:20]))
-            stats.append({"col": col, "type": "text",
-                          "unique_count": len(set(str(v) for v in vals)), "top": unique[:5]})
+        stats = []
+        for col in columns[:6]:
+            vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
+                "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+                "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+            )]
+            numeric = [v for v in vals if isinstance(v, (int, float)) and not (v != v or v == float('inf') or v == float('-inf'))]
+            if numeric:
+                stats.append({"col": col, "type": "numeric", "sum": round(sum(numeric), 2),
+                              "avg": round(sum(numeric) / len(numeric), 2), "max": max(numeric),
+                              "min": min(numeric), "count": len(numeric)})
+            else:
+                unique = list(dict.fromkeys(str(v) for v in vals[:20]))
+                stats.append({"col": col, "type": "text",
+                              "unique_count": len(set(str(v) for v in vals)), "top": unique[:5]})
 
-    temp_token = secrets.token_urlsafe(24)
-    preview_data = {
-        "file_name": "planilha_sheets.csv",
-        "source_type": "sheets",
-        "ds_type": "csv",
-        "row_count": row_count,
-        "columns": columns,
-        "stats": stats,
-        "sample": rows[:3],
-    }
+        temp_token = secrets.token_urlsafe(24)
+        preview_data = {
+            "file_name": "planilha_sheets.csv",
+            "source_type": "sheets",
+            "ds_type": "csv",
+            "row_count": row_count,
+            "columns": columns,
+            "stats": stats,
+            "sample": rows[:3],
+        }
 
-    redis = get_redis()
-    try:
-        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, _json.dumps(preview_data, default=str))
-        await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, _json.dumps(rows, default=str))
-    finally:
-        await redis.aclose()
+        meta_json = _json.dumps(_sanitize_for_json(preview_data))
+        rows_json = _json.dumps(_sanitize_for_json(rows))
 
-    return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
+        redis = get_redis()
+        try:
+            await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, meta_json)
+            await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, rows_json)
+        finally:
+            await redis.aclose()
+
+        return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {type(exc).__name__}: {exc}\n{tb[-500:]}")
 
 
 @router.get(
