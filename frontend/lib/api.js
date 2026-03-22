@@ -117,6 +117,7 @@ export const api = {
   reports: {
     list: () => apiFetch('/reports'),
     get: (id) => apiFetch(`/reports/${id}`),
+    claimPreview: (token) => apiFetch(`/reports/preview/${token}/claim`, { method: 'POST' }),
     create: (data) => apiFetch('/reports', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => apiFetch(`/reports/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => apiFetch(`/reports/${id}`, { method: 'DELETE' }),

@@ -65,6 +65,9 @@ function SignupForm() {
       if (val) utmParams[key] = val
     }
     if (Object.keys(utmParams).length > 0) setUtms(utmParams)
+    // Persiste o preview token no sessionStorage para sobreviver ao OAuth redirect
+    const pt = searchParams.get('token')
+    if (pt) sessionStorage.setItem('preview_token', pt)
   }, [searchParams])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -104,6 +107,16 @@ function SignupForm() {
       if (data.trial_days_remaining != null) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
       }
+
+      // Importa o dataset do preview se o usuário veio da home com arquivo/sheets
+      const previewToken = searchParams.get('token') || sessionStorage.getItem('preview_token')
+      if (previewToken && data.tokens?.access_token) {
+        try {
+          await api.reports.claimPreview(previewToken)
+        } catch {}
+        sessionStorage.removeItem('preview_token')
+      }
+
       if (data.needs_verification) {
         router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
       } else {

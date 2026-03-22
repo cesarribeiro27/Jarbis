@@ -54,6 +54,19 @@ export default function LoginPage() {
       if (data.trial_days_remaining != null) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
       }
+      // Importa dataset do preview se o usuário veio de um preview antes de fazer login
+      const previewToken = sessionStorage.getItem('preview_token')
+      if (previewToken && data.tokens?.access_token) {
+        try {
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+          await fetch(`${apiBase}/reports/preview/${previewToken}/claim`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${data.tokens.access_token}` },
+          })
+        } catch {}
+        sessionStorage.removeItem('preview_token')
+      }
+
       if (data.needs_verification) {
         router.push(`/verificar-email?email=${encodeURIComponent(email)}`)
       } else {

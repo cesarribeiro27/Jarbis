@@ -223,20 +223,19 @@ async def preview_upload(
     temp_token = secrets.token_urlsafe(24)
     preview_data = {
         "file_name": filename,
+        "source_type": "file",
+        "ds_type": ext if ext in ("xlsx", "xls") else "csv",
         "row_count": row_count,
         "columns": columns,
         "stats": stats,
-        "sample": rows[:3],  # 3 linhas de amostra (não mostrar dados reais)
+        "sample": rows[:3],
     }
 
     redis = await get_redis()
     if redis:
         import json as _json
-        await redis.setex(
-            f"jarbis:preview:{temp_token}",
-            _PREVIEW_TTL,
-            _json.dumps(preview_data, default=str),
-        )
+        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, _json.dumps(preview_data, default=str))
+        await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, _json.dumps(rows, default=str))
 
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -329,13 +328,20 @@ async def preview_sheets(request: Request):
                           "unique_count": len(set(str(v) for v in vals)), "top": unique[:5]})
 
     temp_token = secrets.token_urlsafe(24)
-    preview_data = {"file_name": "planilha_sheets.csv", "row_count": row_count,
-                    "columns": columns, "stats": stats, "sample": rows[:3]}
+    preview_data = {
+        "file_name": "planilha_sheets.csv",
+        "source_type": "sheets",
+        "ds_type": "csv",
+        "row_count": row_count,
+        "columns": columns,
+        "stats": stats,
+        "sample": rows[:3],
+    }
 
     redis = await get_redis()
     if redis:
-        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL,
-                          _json.dumps(preview_data, default=str))
+        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, _json.dumps(preview_data, default=str))
+        await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, _json.dumps(rows, default=str))
 
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -355,6 +361,61 @@ async def get_preview(token: str):
     if not raw:
         raise HTTPException(status_code=404, detail="Preview não encontrado ou expirado")
     return _json.loads(raw)
+
+
+@router.post(
+    "/preview/{token}/claim",
+    summary="Importa dataset do preview anônimo para a conta do usuário",
+    include_in_schema=False,
+)
+async def claim_preview(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Converte preview anônimo em dataset real no tenant do usuário.
+    Chamado automaticamente após o cadastro quando o usuário veio da home com arquivo/sheets.
+    """
+    import json as _json
+    from app.modules.reports.dataset_models import ReportDataset
+    from app.modules.reports.dataset_service import _detect_columns
+
+    redis = await get_redis()
+    if not redis:
+        raise HTTPException(status_code=503, detail="Serviço indisponível.")
+
+    raw_meta = await redis.get(f"jarbis:preview:{token}")
+    raw_rows = await redis.get(f"jarbis:preview:{token}:rows")
+    if not raw_meta or not raw_rows:
+        raise HTTPException(status_code=404, detail="Preview expirado ou não encontrado.")
+
+    meta = _json.loads(raw_meta)
+    rows = _json.loads(raw_rows)
+    if not rows:
+        raise HTTPException(status_code=400, detail="Preview sem dados.")
+
+    file_name = meta.get("file_name", "meu-dataset")
+    ds_name = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
+    ds_type = meta.get("ds_type", "csv")
+    columns = _detect_columns(rows)
+
+    ds = ReportDataset(
+        tenant_id=current_user.tenant_id,
+        name=ds_name,
+        type=ds_type,
+        rows=rows,
+        columns=columns,
+        row_count=len(rows),
+    )
+    db.add(ds)
+    await db.commit()
+    await db.refresh(ds)
+
+    # Limpa o preview do Redis
+    await redis.delete(f"jarbis:preview:{token}")
+    await redis.delete(f"jarbis:preview:{token}:rows")
+
+    return {"dataset_id": str(ds.id), "name": ds.name, "row_count": ds.row_count}
 
 
 # ---------------------------------------------------------------------------

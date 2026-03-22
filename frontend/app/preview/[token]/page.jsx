@@ -230,9 +230,12 @@ export default function PreviewPage() {
                   </svg>
                 </Link>
               </motion.div>
-              <Link href="/login" className="inline-flex items-center justify-center border border-white/10 text-gray-300 font-semibold px-8 py-4 rounded-full hover:bg-white/5 transition-all text-base">
+              <button
+                onClick={() => { sessionStorage.setItem('preview_token', token); router.push('/login') }}
+                className="inline-flex items-center justify-center border border-white/10 text-gray-300 font-semibold px-8 py-4 rounded-full hover:bg-white/5 transition-all text-base"
+              >
                 Já tenho conta
-              </Link>
+              </button>
             </div>
 
             <p className="text-xs text-gray-600 mt-5">
