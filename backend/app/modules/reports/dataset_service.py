@@ -397,6 +397,7 @@ class DatasetService:
         filename: str,
         content: bytes,
         sheet_name: str | None = None,
+        max_rows: int = -1,
     ) -> ReportDataset:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if ext in ("xlsx", "xls"):
@@ -405,6 +406,12 @@ class DatasetService:
         else:
             rows = _parse_csv(content)
             ds_type = "csv"
+
+        if max_rows != -1 and len(rows) > max_rows:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Seu plano suporta até {max_rows:,} linhas por dataset. Este arquivo tem {len(rows):,} linhas. Adicione um pack de linhas para continuar.".replace(",", ".")
+            )
 
         columns = _detect_columns(rows)
         ds = ReportDataset(
@@ -427,8 +434,14 @@ class DatasetService:
         api_url: str,
         api_headers: dict | None,
         api_data_path: str | None,
+        max_rows: int = -1,
     ) -> ReportDataset:
         rows, columns = await self._fetch_api(api_url, api_headers or {}, api_data_path)
+        if max_rows != -1 and len(rows) > max_rows:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Seu plano suporta até {max_rows:,} linhas por dataset. A API retornou {len(rows):,} linhas. Adicione um pack de linhas para continuar.".replace(",", ".")
+            )
         ds = ReportDataset(
             tenant_id=tenant_id,
             name=name,
@@ -446,11 +459,16 @@ class DatasetService:
         await self.db.refresh(ds)
         return ds
 
-    async def sync_api(self, dataset_id: uuid.UUID, tenant_id: uuid.UUID) -> ReportDataset | None:
+    async def sync_api(self, dataset_id: uuid.UUID, tenant_id: uuid.UUID, max_rows: int = -1) -> ReportDataset | None:
         ds = await self.get(dataset_id, tenant_id)
         if not ds or ds.type != "api" or not ds.api_url:
             return None
         new_rows, columns = await self._fetch_api(ds.api_url, ds.api_headers or {}, ds.api_data_path)
+        if max_rows != -1 and len(new_rows) > max_rows:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Seu plano suporta até {max_rows:,} linhas por dataset. A API retornou {len(new_rows):,} linhas. Adicione um pack de linhas para continuar.".replace(",", ".")
+            )
 
         sync_mode = getattr(ds, 'sync_mode', 'replace') or 'replace'
         if sync_mode == 'append':

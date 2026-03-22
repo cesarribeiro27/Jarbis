@@ -18,6 +18,7 @@ class PlanLimits:
     max_datasets: int                    # -1 = ilimitado
     max_users: int                       # -1 = ilimitado
     max_alerts: int                      # -1 = ilimitado
+    max_rows_per_dataset: int = -1       # -1 = ilimitado
     max_ai_queries_monthly: int = 0      # 0 = sem acesso, -1 = ilimitado
     max_halp_monthly: int = 0            # 0 = FAQ fixo (sem IA), -1 = ilimitado
     allow_embed: bool = False
@@ -36,6 +37,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=2,
         max_users=1,
         max_alerts=0,
+        max_rows_per_dataset=5_000,
         max_ai_queries_monthly=10,   # split: 3 gerações + 7 perguntas
         max_halp_monthly=0,
         allow_embed=False,
@@ -50,6 +52,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=5,
         max_users=1,
         max_alerts=3,
+        max_rows_per_dataset=100_000,
         max_ai_queries_monthly=60,   # split: 10 gerações + 50 perguntas
         max_halp_monthly=20,
         allow_embed=True,
@@ -64,6 +67,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=15,
         max_users=1,
         max_alerts=10,
+        max_rows_per_dataset=500_000,
         max_ai_queries_monthly=225,  # split: 25 gerações + 200 perguntas
         max_halp_monthly=40,
         allow_embed=True,
@@ -78,6 +82,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=30,
         max_users=5,
         max_alerts=30,
+        max_rows_per_dataset=2_000_000,
         max_ai_queries_monthly=550,  # split: 50 gerações + 500 perguntas
         max_halp_monthly=-1,
         allow_embed=True,
@@ -92,6 +97,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=-1,
         max_users=-1,
         max_alerts=-1,
+        max_rows_per_dataset=-1,
         max_ai_queries_monthly=-1,
         max_halp_monthly=-1,
         allow_embed=True,
@@ -107,6 +113,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=5,
         max_users=1,
         max_alerts=3,
+        max_rows_per_dataset=100_000,
         max_ai_queries_monthly=60,
         max_halp_monthly=20,
         allow_embed=True,
@@ -121,6 +128,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=15,
         max_users=1,
         max_alerts=10,
+        max_rows_per_dataset=500_000,
         max_ai_queries_monthly=225,
         max_halp_monthly=40,
         allow_embed=True,
@@ -135,6 +143,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=30,
         max_users=5,
         max_alerts=30,
+        max_rows_per_dataset=2_000_000,
         max_ai_queries_monthly=550,
         max_halp_monthly=-1,
         allow_embed=True,
@@ -149,6 +158,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=5,
         max_users=1,
         max_alerts=3,
+        max_rows_per_dataset=100_000,
         max_ai_queries_monthly=60,
         max_halp_monthly=20,
         allow_embed=True,
@@ -163,6 +173,7 @@ PLANS: dict[str, PlanLimits] = {
         max_datasets=15,
         max_users=1,
         max_alerts=10,
+        max_rows_per_dataset=500_000,
         max_ai_queries_monthly=225,
         allow_embed=True,
         allow_ai=True,
@@ -192,6 +203,9 @@ ADDON_AI_QUESTIONS = 50
 ADDON_AI_GENERATIONS_PRICE = Decimal("29.00") # +10 gerações de dashboard/mês
 ADDON_AI_GENERATIONS = 10
 
+ADDON_ROW_PACK_PRICE = Decimal("49.00")       # +100k linhas por dataset
+ADDON_ROW_PACK_ROWS = 100_000
+
 
 def get_effective_limits(
     plan: str,
@@ -199,10 +213,11 @@ def get_effective_limits(
     addon_dashboards: int = 0,
     addon_datasets: int = 0,
     addon_ai_queries: int = 0,
+    addon_row_packs: int = 0,
 ) -> dict:
     """Retorna os limites efetivos considerando add-on packs."""
     base = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
-    has_addons = addon_packs > 0 or addon_dashboards > 0 or addon_datasets > 0 or addon_ai_queries > 0
+    has_addons = addon_packs > 0 or addon_dashboards > 0 or addon_datasets > 0 or addon_ai_queries > 0 or addon_row_packs > 0
     if not has_addons:
         return base
     return {
@@ -211,6 +226,7 @@ def get_effective_limits(
         "users":       base["users"]      + addon_packs * ADDON_PACK_USERS      if base["users"]      != -1 else -1,
         "alerts":      base["alerts"],
         "ai_queries":  base.get("ai_queries", 0) + addon_ai_queries * ADDON_AI_QUESTIONS if base.get("ai_queries", 0) != -1 else -1,
+        "rows":        base.get("rows", -1) + addon_row_packs * ADDON_ROW_PACK_ROWS if base.get("rows", -1) != -1 else -1,
         "white_label": base["white_label"],
         "ai":          base["ai"],
         "embed":       base["embed"],
@@ -225,6 +241,7 @@ PLAN_LIMITS: dict[str, dict] = {
         "datasets":      p.max_datasets,
         "users":         p.max_users,
         "alerts":        p.max_alerts,
+        "rows":          p.max_rows_per_dataset,
         "ai_queries":    p.max_ai_queries_monthly,
         "white_label":   p.allow_white_label,
         "ai":            p.allow_ai,

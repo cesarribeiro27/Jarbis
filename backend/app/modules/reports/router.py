@@ -773,8 +773,19 @@ async def upload_dataset(
     if len(content) > 20 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 20 MB)")
     name = filename.rsplit(".", 1)[0] if "." in filename else filename
+    from app.modules.billing.plan_limits import get_effective_limits as _get_limits
+    _t_plan = tenant.plan if tenant else "free"
+    _limits = _get_limits(
+        _t_plan,
+        getattr(tenant, "addon_packs", 0) or 0,
+        getattr(tenant, "addon_dashboards", 0) or 0,
+        getattr(tenant, "addon_datasets", 0) or 0,
+        getattr(tenant, "addon_ai_queries", 0) or 0,
+        getattr(tenant, "addon_row_packs", 0) or 0,
+    )
+    max_rows = _limits.get("rows", -1)
     service = DatasetService(db)
-    ds = await service.create_from_file(effective_tenant_id, name, filename, content, sheet_name=sheet_name)
+    ds = await service.create_from_file(effective_tenant_id, name, filename, content, sheet_name=sheet_name, max_rows=max_rows)
     from .query_engine import detect_column_types
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
@@ -797,6 +808,17 @@ async def create_api_dataset(
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
+    from app.modules.billing.plan_limits import get_effective_limits as _get_limits
+    _t_plan = tenant.plan if tenant else "free"
+    _limits = _get_limits(
+        _t_plan,
+        getattr(tenant, "addon_packs", 0) or 0,
+        getattr(tenant, "addon_dashboards", 0) or 0,
+        getattr(tenant, "addon_datasets", 0) or 0,
+        getattr(tenant, "addon_ai_queries", 0) or 0,
+        getattr(tenant, "addon_row_packs", 0) or 0,
+    )
+    max_rows = _limits.get("rows", -1)
     service = DatasetService(db)
     try:
         ds = await service.create_from_api(
@@ -805,6 +827,7 @@ async def create_api_dataset(
             body.api_url,
             body.resolved_headers,
             body.api_data_path,
+            max_rows=max_rows,
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao buscar API: {e}")
@@ -934,9 +957,23 @@ async def sync_dataset(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    from app.modules.billing.plan_limits import get_effective_limits as _get_limits
+    _t_plan = tenant.plan if tenant else "free"
+    _limits = _get_limits(
+        _t_plan,
+        getattr(tenant, "addon_packs", 0) or 0,
+        getattr(tenant, "addon_dashboards", 0) or 0,
+        getattr(tenant, "addon_datasets", 0) or 0,
+        getattr(tenant, "addon_ai_queries", 0) or 0,
+        getattr(tenant, "addon_row_packs", 0) or 0,
+    )
+    max_rows = _limits.get("rows", -1)
     service = DatasetService(db)
     try:
-        ds = await service.sync_api(dataset_id, current_user.tenant_id)
+        ds = await service.sync_api(dataset_id, current_user.tenant_id, max_rows=max_rows)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao sincronizar: {e}")
     if not ds:

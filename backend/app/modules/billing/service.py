@@ -209,6 +209,32 @@ class BillingService:
         )
         return session.url
 
+    async def create_addon_rows_checkout_session(
+        self,
+        tenant_id: uuid.UUID,
+        user_email: str,
+    ) -> str:
+        """Cria sessão de checkout para pack de linhas extras (+100k linhas/dataset)."""
+        if not _init_stripe():
+            raise ValueError("Stripe não configurado.")
+        price_id = getattr(settings, "stripe_price_addon_rows", None)
+        if not price_id:
+            raise ValueError("Pack de linhas não configurado. Entre em contato pelo comercial@jarbis.cc.")
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+        customer_id = await self.get_or_create_customer(tenant, user_email)
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{settings.frontend_url}/configuracoes/planos?addon=1",
+            cancel_url=f"{settings.frontend_url}/configuracoes/planos",
+            metadata={"tenant_id": str(tenant_id), "type": "addon_rows"},
+            subscription_data={"metadata": {"tenant_id": str(tenant_id), "type": "addon_rows"}},
+        )
+        return session.url
+
     async def create_portal_session(self, tenant_id: uuid.UUID) -> str:
         """Cria sessão do portal do cliente e retorna a URL."""
         if not _init_stripe():
@@ -276,6 +302,11 @@ class BillingService:
 
         if checkout_type == "addon_ai":
             tenant.addon_ai_queries = (getattr(tenant, "addon_ai_queries", 0) or 0) + 1
+            await self.db.commit()
+            return
+
+        if checkout_type == "addon_rows":
+            tenant.addon_row_packs = (getattr(tenant, "addon_row_packs", 0) or 0) + 1
             await self.db.commit()
             return
 
@@ -446,7 +477,8 @@ class BillingService:
         addon_dashboards = getattr(tenant, "addon_dashboards", 0) or 0
         addon_datasets = getattr(tenant, "addon_datasets", 0) or 0
         addon_ai_queries = getattr(tenant, "addon_ai_queries", 0) or 0
-        limits = get_effective_limits(plan, addon_packs, addon_dashboards, addon_datasets, addon_ai_queries)
+        addon_row_packs = getattr(tenant, "addon_row_packs", 0) or 0
+        limits = get_effective_limits(plan, addon_packs, addon_dashboards, addon_datasets, addon_ai_queries, addon_row_packs)
 
         dash_count = await self.db.scalar(
             select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)
@@ -476,6 +508,7 @@ class BillingService:
             "addon_dashboards": addon_dashboards,
             "addon_datasets": addon_datasets,
             "addon_ai_queries": addon_ai_queries,
+            "addon_row_packs": addon_row_packs,
             "limits": limits,
             "usage": {
                 "dashboards": dash_count,

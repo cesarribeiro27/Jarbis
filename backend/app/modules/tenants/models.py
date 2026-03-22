@@ -45,6 +45,7 @@ class Tenant(Base):
     addon_dashboards: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Dashboards extras comprados via pack individual (+5 por pack)")
     addon_datasets: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Datasets extras comprados via pack individual (+3 por pack)")
     addon_ai_queries: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Packs de IA ativos (+50 perguntas/mês por pack)")
+    addon_row_packs: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Packs de linhas extras (+100k linhas por dataset por pack)")
     plan_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     affiliate_code: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="Código do afiliado que indicou este tenant")
     canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="Data de cancelamento da assinatura")

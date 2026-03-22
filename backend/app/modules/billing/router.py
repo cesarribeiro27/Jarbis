@@ -165,6 +165,21 @@ async def create_addon_ai_checkout(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/addon/rows/checkout", summary="Cria checkout para pack de linhas (+100k linhas/dataset)")
+async def create_addon_rows_checkout(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Pagamentos não configurados.")
+    try:
+        svc = BillingService(db)
+        url = await svc.create_addon_rows_checkout_session(current_user.tenant_id, current_user.email)
+        return {"checkout_url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/portal", summary="Acessa portal do cliente Stripe")
 async def create_portal(
     current_user: User = Depends(get_current_active_user),
