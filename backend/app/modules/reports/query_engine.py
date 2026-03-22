@@ -467,6 +467,14 @@ def detect_column_types(rows: list[dict], sample_size: int = 50) -> dict[str, st
 
         # Já é número nativo
         if all(isinstance(v, (int, float)) for v in values):
+            # Inteiros com baixa cardinalidade = código categórico (ex: Tipo de Registro, Opção Pelo Simples)
+            # Floats = métrica real. Inteiros com muitos valores únicos = métrica ou ID numérico.
+            all_int = all(isinstance(v, int) or (isinstance(v, float) and v == int(v)) for v in values)
+            if all_int:
+                unique_count = len(set(int(v) for v in values))
+                if unique_count <= 15:
+                    result[col] = "text"
+                    continue
             result[col] = "number"
             continue
 
