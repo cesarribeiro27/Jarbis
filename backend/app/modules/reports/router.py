@@ -264,16 +264,39 @@ async def preview_sheets(request: Request):
     sheet_id = m.group(1)
     gid_m = re.search(r"[#&?]gid=(\d+)", url)
     gid = gid_m.group(1) if gid_m else "0"
-    csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
 
+    # Tenta dois formatos de URL de exportação:
+    # 1. export?format=csv (requer publicar na web)
+    # 2. gviz/tq?tqx=out:csv (funciona com "qualquer pessoa com o link")
+    csv_urls = [
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&gid={gid}",
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}",
+    ]
+    _HEADERS = {
+        "User-Agent": "Mozilla/5.0 (compatible; Jarbis/1.0; +https://jarbis.cc)",
+        "Accept": "text/csv,text/plain,*/*",
+    }
+
+    content: bytes | None = None
     try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
-            resp = await client.get(csv_url)
-        if resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Não foi possível acessar a planilha. Verifique se ela está compartilhada como pública.")
-        content = resp.content
-    except httpx.RequestError:
-        raise HTTPException(status_code=400, detail="Erro ao conectar ao Google Sheets. Verifique o link e tente novamente.")
+        async with httpx.AsyncClient(follow_redirects=True, timeout=20) as client:
+            for csv_url in csv_urls:
+                resp = await client.get(csv_url, headers=_HEADERS)
+                if resp.status_code == 200:
+                    ct = resp.headers.get("content-type", "")
+                    # Rejeita respostas HTML (página de login do Google)
+                    if "text/html" in ct or resp.content[:15].lower().startswith(b"<!doctype"):
+                        continue
+                    content = resp.content
+                    break
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=400, detail=f"Não foi possível conectar ao Google Sheets: {exc}")
+
+    if content is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Não foi possível acessar a planilha. Certifique-se de que está compartilhada como 'Qualquer pessoa com o link pode visualizar' ou publicada na web (Arquivo > Compartilhar > Publicar na web)."
+        )
 
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Planilha muito grande (máx 10 MB).")
@@ -281,7 +304,7 @@ async def preview_sheets(request: Request):
     try:
         rows = _parse_csv(content)
     except Exception:
-        raise HTTPException(status_code=400, detail="Não foi possível ler os dados da planilha.")
+        raise HTTPException(status_code=400, detail="Não foi possível ler os dados da planilha. Verifique se a planilha tem cabeçalhos na primeira linha.")
 
     if not rows:
         raise HTTPException(status_code=400, detail="Planilha vazia ou sem dados.")
