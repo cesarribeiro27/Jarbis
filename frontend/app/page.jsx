@@ -154,6 +154,7 @@ export default function LandingPage() {
   const [sheetsUrl, setSheetsUrl] = useState('')
   const [sheetsState, setSheetsState] = useState('idle') // idle | loading | error
   const [sheetsError, setSheetsError] = useState('')
+  const [sheetPicker, setSheetPicker] = useState(null) // { file, sheets, sheetsMeta } | null
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -209,24 +210,13 @@ export default function LandingPage() {
     enterprise: { highlight: false, enterprise: true  },
   }
 
-  async function handleUploadFile(file) {
-    if (!file) return
-    const ext = file.name.split('.').pop().toLowerCase()
-    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
-      setUploadState('error')
-      setUploadError(t('hero.upload.error'))
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadState('error')
-      setUploadError(t('hero.upload.errorSize'))
-      return
-    }
+  async function doUpload(file, sheetName = null) {
     setUploadState('uploading')
     setUploadError('')
     try {
       const formData = new FormData()
       formData.append('file', file)
+      if (sheetName) formData.append('sheet_name', sheetName)
       const res = await fetch(`${API_BASE}/reports/preview-upload`, {
         method: 'POST',
         body: formData,
@@ -241,6 +231,42 @@ export default function LandingPage() {
       setUploadState('error')
       setUploadError(e.message && e.message !== 'upload failed' ? e.message : t('hero.upload.error'))
     }
+  }
+
+  async function handleUploadFile(file) {
+    if (!file) return
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+      setUploadState('error')
+      setUploadError(t('hero.upload.error'))
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadState('error')
+      setUploadError(t('hero.upload.errorSize'))
+      return
+    }
+
+    // Excel com múltiplas abas: mostrar picker primeiro
+    if (['xlsx', 'xls'].includes(ext)) {
+      setUploadState('uploading')
+      setUploadError('')
+      try {
+        const fd = new FormData(); fd.append('file', file)
+        const res = await fetch(`${API_BASE}/reports/preview-excel-sheets`, { method: 'POST', body: fd })
+        if (res.ok) {
+          const { sheets, sheets_meta } = await res.json()
+          if (sheets && sheets.length > 1) {
+            setUploadState('idle')
+            setSheetPicker({ file, sheets, sheetsMeta: sheets_meta || sheets.map(s => ({ name: s })) })
+            return
+          }
+        }
+      } catch {}
+      // Falhou ao ler abas ou tem só 1 aba: prossegue normalmente
+    }
+
+    await doUpload(file)
   }
 
   function onFileChange(e) {
@@ -1187,5 +1213,85 @@ export default function LandingPage() {
       </footer>
 
     </div>
+
+    {/* Modal de seleção de aba do Excel */}
+    {sheetPicker && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Qual aba contém seus dados?</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{sheetPicker.file.name} · {sheetPicker.sheets.length} abas encontradas</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de abas */}
+          <div className="px-4 py-4 space-y-2 max-h-72 overflow-y-auto">
+            {sheetPicker.sheetsMeta.map((s, i) => {
+              const rows = s.estimated_rows ?? s.row_count ?? null
+              const cols = s.col_count ?? (s.columns ? s.columns.length : null)
+              const isEmpty = s.is_empty || rows === 0
+              const isFormula = s.is_formula_mirror
+              return (
+                <button
+                  key={s.name}
+                  onClick={() => {
+                    if (isEmpty) return
+                    const f = sheetPicker.file
+                    setSheetPicker(null)
+                    doUpload(f, s.name)
+                  }}
+                  disabled={isEmpty}
+                  className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all flex items-center gap-4 ${
+                    isEmpty
+                      ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                      : 'border-gray-200 hover:border-violet-400 hover:bg-violet-50 cursor-pointer active:scale-[0.99]'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold ${isEmpty ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-700'}`}>
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{s.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {isEmpty
+                        ? 'Aba vazia'
+                        : isFormula
+                        ? 'Fórmulas espelhadas — pode ter dados'
+                        : [rows != null && `${rows.toLocaleString('pt-BR')} linhas`, cols != null && `${cols} colunas`].filter(Boolean).join(' · ')
+                      }
+                    </p>
+                  </div>
+                  {!isEmpty && (
+                    <svg className="w-4 h-4 text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <p className="text-xs text-gray-400">Clique na aba que contém sua tabela principal</p>
+            <button
+              onClick={() => { setSheetPicker(null); setUploadState('idle') }}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   )
 }

@@ -183,13 +183,35 @@ def _preview_del(*keys: str) -> None:
 
 
 @router.post(
+    "/preview-excel-sheets",
+    summary="Lista abas de Excel para preview anônimo — sem autenticação",
+    include_in_schema=False,
+)
+async def preview_excel_sheets(file: Annotated[UploadFile, File()]):
+    """Recebe arquivo Excel sem autenticação e retorna as abas disponíveis com metadados."""
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 10 MB)")
+    try:
+        import io
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        sheets_meta = [_analyze_sheet(wb[name]) for name in wb.sheetnames]
+        wb.close()
+        _enrich_formula_mirrors(content, sheets_meta)
+        return {"sheets": [s["name"] for s in sheets_meta], "sheets_meta": sheets_meta}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
+
+
+@router.post(
     "/preview-upload",
     summary="Upload anônimo para preview — sem autenticação",
     include_in_schema=False,
 )
 async def preview_upload(
     file: Annotated[UploadFile, File()],
-    request: Request,
+    sheet_name: str | None = Form(None),
 ):
     """Recebe arquivo CSV/Excel sem autenticação.
     Analisa, gera estatísticas e armazena em Redis com TTL 24h.
@@ -205,7 +227,7 @@ async def preview_upload(
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     try:
         if ext in ("xlsx", "xls"):
-            rows = _parse_excel(content)
+            rows = _parse_excel(content, sheet_name=sheet_name)
         else:
             rows = _parse_csv(content)
     except Exception:
