@@ -56,10 +56,14 @@ class Settings(BaseSettings):
     # --- Stripe ---
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
-    # Planos novos
+    # Planos novos — cobrança mensal
     stripe_price_solo: str = ""
     stripe_price_equipe: str = ""
     stripe_price_ilimitado: str = ""
+    # Planos novos — cobrança anual (20% desconto)
+    stripe_price_solo_annual: str = ""
+    stripe_price_equipe_annual: str = ""
+    stripe_price_ilimitado_annual: str = ""
     # Enterprise: negociação manual — sem price_id automático
     # Add-on packs de expansão
     stripe_price_addon: str = ""

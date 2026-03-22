@@ -4,13 +4,13 @@
     "features": "Funcionalidades",
     "pricing": "Preços",
     "login": "Entrar",
-    "trialCta": "Testar grátis — 7 dias"
+    "trialCta": "Testar grátis por 7 dias"
   },
   "hero": {
-    "badge": "IA incluída em todos os planos — desde o gratuito",
-    "title1": "Sua planilha vira dashboard",
-    "title2": "profissional em 30 segundos.",
-    "subtitle": "Sobe seu Excel ou CSV e a IA do Jarbis analisa tudo: gera KPIs, gráficos e relatórios automaticamente — sem programação, sem analista.",
+    "badge": "Análise automática em todos os planos, incluindo o gratuito",
+    "title1": "Seus dados.",
+    "title2": "Sua visão.",
+    "subtitle": "Sobe seu Excel ou CSV e o Jarbis transforma em dashboards profissionais em segundos. KPIs, gráficos e insights — sem código, sem analista.",
     "ctaPrimary": "Comece grátis agora",
     "ctaSecondary": "Ver como funciona",
     "freeBadge": "7 dias grátis · Sem cartão · Cancele quando quiser",
@@ -19,9 +19,9 @@
     "proof3": "Suporte em português",
     "upload": {
       "title": "Arraste sua planilha aqui",
-      "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 5 MB · Sem login necessário",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 10 MB · Sem login necessário",
       "analyzing": "Analisando sua planilha com IA...",
-      "error": "Arquivo inválido. Use CSV ou Excel (máx 5 MB).",
+      "error": "Arquivo inválido. Use CSV ou Excel (máx 10 MB).",
       "tryAgain": "Tentar novamente",
       "orCta": "ou",
       "signupLink": "crie sua conta grátis"
@@ -77,7 +77,7 @@
         "step": "02",
         "emoji": "🎨",
         "title": "Monte seu painel",
-        "desc": "Arraste gráficos, tabelas e indicadores para a tela. A IA pode montar automaticamente — você só ajusta."
+        "desc": "Arraste gráficos, tabelas e indicadores para a tela. O Jarbis monta tudo automaticamente e você só ajusta o que quiser."
       },
       {
         "step": "03",
@@ -993,7 +993,7 @@
     "gallery": {
       "nav": "Novo Dashboard",
       "title": "Escolha um template",
-      "subtitle": "Comece do zero ou use um template pronto — basta conectar seus dados.",
+      "subtitle": "Comece do zero ou use um template pronto. É só conectar seus dados.",
       "searchPlaceholder": "Buscar template...",
       "blocksCount": "{n} blocos",
       "blankCanvas": "Canvas em branco"

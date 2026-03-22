@@ -21,7 +21,7 @@ _BASE_STYLES = """
 # Logo como <img> hospedado — SVG inline é ignorado por Gmail/Outlook.
 # Logo correto: símbolo de órbita + ∴ (versão branca para fundo violeta).
 _LOGO_HTML = (
-    '<img src="https://www.jarbis.cc/logo-email.svg" '
+    '<img src="https://jarbis.cc/logo-email.svg" '
     'width="36" height="36" alt="Jarbis" '
     'style="display:block;width:36px;height:36px;" />'
 )

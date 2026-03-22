@@ -225,7 +225,7 @@ export const api = {
   billing: {
     status: () => apiFetch('/billing/status'),
     checkout: (priceId) => apiFetch('/billing/checkout', { method: 'POST', body: JSON.stringify({ price_id: priceId }) }),
-    checkoutByPlan: (plan) => apiFetch('/billing/checkout/plan', { method: 'POST', body: JSON.stringify({ plan }) }),
+    checkoutByPlan: (plan, annual = false) => apiFetch('/billing/checkout/plan', { method: 'POST', body: JSON.stringify({ plan, annual }) }),
     portal: () => apiFetch('/billing/portal', { method: 'POST' }),
     addonCheckout: () => apiFetch('/billing/addon/checkout', { method: 'POST' }),
     addonDashCheckout: () => apiFetch('/billing/addon/dashboard/checkout', { method: 'POST' }),

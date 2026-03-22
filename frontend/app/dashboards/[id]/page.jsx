@@ -415,11 +415,11 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                    Gerar Dashboard com IA
+                    Gerar Dashboard
                   </button>
 
                   <p className="text-[11px] text-gray-400 text-center leading-relaxed">
-                    A IA analisa todas as colunas, identifica o que é relevante e cria KPIs e gráficos posicionados de forma inteligente.
+                    O Jarbis analisa todas as colunas, identifica o que é relevante e cria KPIs e gráficos posicionados de forma inteligente.
                   </p>
                 </>
               )}
@@ -1196,37 +1196,9 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
     Object.entries(ds.column_types || {}).filter(([, t]) => t === 'date').map(([c]) => c)
   ))].sort()
 
-  // Chips de filtros ativos
-  const activeChips = []
-  if (hasDateFilter) {
-    const label = [globalDateFilter.dateFrom, globalDateFilter.dateTo].filter(Boolean).join(' → ')
-    activeChips.push({ key: 'date', label: `📅 ${label}`, onRemove: () => onGlobalDateFilterChange({ ...globalDateFilter, dateFrom: '', dateTo: '' }) })
-  }
-
   return (
     <div className="space-y-4">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('filters.title')}</p>
-
-      {/* Chips de filtros ativos */}
-      {activeChips.length > 0 && (
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('filters.active')}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {activeChips.map(chip => (
-              <span key={chip.key} className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-700 text-xs rounded-full font-medium">
-                {chip.label}
-                <button onClick={chip.onRemove} className="text-violet-400 hover:text-violet-700 ml-0.5">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </span>
-            ))}
-            <button onClick={() => onGlobalDateFilterChange({ dateCol: globalDateFilter.dateCol, dateFrom: '', dateTo: '' })}
-              className="text-[10px] text-red-400 hover:text-red-600 font-medium px-2 py-1">
-              {t('filters.clearAll')}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Filtro de data global */}
       <div className={`rounded-xl border p-3 space-y-2.5 ${hasDateFilter ? 'bg-violet-50 border-violet-200' : 'bg-gray-50 border-gray-100'}`}>
@@ -1281,40 +1253,66 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
         )}
       </div>
 
-      {/* Filtros por Gráfico */}
+      {/* Filtros ativos por dataset */}
+      {Object.keys(filterSummary).length > 0 && (
+        <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-1.5">
+          <p className="text-[10px] font-semibold text-violet-600 uppercase tracking-wider">Filtros ativos</p>
+          {Object.entries(filterSummary).map(([dsId, count]) => {
+            const ds = datasets.find(d => d.id === dsId)
+            return (
+              <div key={dsId} className="flex items-center justify-between bg-white rounded-lg border border-violet-100 px-2.5 py-1.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] font-bold bg-violet-100 text-violet-600 rounded-full w-5 h-5 flex items-center justify-center shrink-0">{count}</span>
+                  <span className="text-xs text-gray-700 truncate">{ds?.name || 'Dataset'}</span>
+                </div>
+                <button
+                  onClick={() => onClearDatasetFilters?.(dsId)}
+                  className="text-[10px] text-red-400 hover:text-red-600 font-medium shrink-0 ml-2"
+                >
+                  Limpar
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Blocos de filtro configurados */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Filtros por Gráfico</p>
-        {blocks.length === 0 ? (
-          <div className="text-center py-6">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Blocos de filtro</p>
+        {filterBlocks.length === 0 ? (
+          <div className="text-center py-6 px-2">
             <svg className="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            <p className="text-xs text-gray-400">Nenhum bloco no dashboard</p>
+            <p className="text-xs text-gray-400 font-medium">Nenhum bloco de filtro</p>
+            <p className="text-[10px] text-gray-300 mt-1 leading-relaxed">Adicione um bloco "Filtro" ou "Slider" ao dashboard para filtrar dados interativamente</p>
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {blocks.map(block => {
-              const nonDateCount = filterSummary[block.dataset_id] || 0
-              const count = nonDateCount + (hasDateFilter && block.dataset_id ? 1 : 0)
-              const typeLabels = { bar: 'Barras', line: 'Linha', pie: 'Pizza', number: 'Número', table: 'Tabela', filter: 'Filtro', slider: 'Slider', image: 'Imagem', text: 'Texto', area: 'Área', scatter: 'Dispersão', funnel: 'Funil' }
-              const typeLabel = typeLabels[block.type] || block.type
+          <div className="space-y-2">
+            {filterBlocks.map(block => {
+              const ds = datasets.find(d => d.id === block.dataset_id)
+              const isSlider = block.type === 'slider'
+              const col = isSlider ? (block.config?.range_col || block.config?.filter_col) : block.config?.filter_col
+              const dsActive = (filterSummary[block.dataset_id] || 0) > 0
               return (
-                <div
-                  key={block.id}
-                  onClick={() => nonDateCount > 0 && onClearDatasetFilters?.(block.dataset_id)}
-                  className={`flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors ${nonDateCount > 0 ? 'cursor-pointer hover:bg-red-50 border border-transparent hover:border-red-100' : 'cursor-default hover:bg-gray-50 border border-transparent'}`}
-                  title={nonDateCount > 0 ? 'Clique para limpar filtros ativos deste gráfico' : undefined}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] text-gray-400 shrink-0">{typeLabel}</span>
-                    <span className={`text-xs truncate ${nonDateCount > 0 ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>{block.title || typeLabel}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    {nonDateCount > 0 && (
-                      <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <div key={block.id} className={`rounded-lg border p-2.5 transition-colors ${dsActive ? 'border-violet-200 bg-violet-50' : 'border-gray-100 bg-gray-50'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-gray-800 truncate">{block.title || (isSlider ? 'Slider' : 'Filtro')}</span>
+                    {dsActive && (
+                      <button
+                        onClick={() => onClearDatasetFilters?.(block.dataset_id)}
+                        className="text-[10px] text-red-400 hover:text-red-600 font-medium shrink-0"
+                      >
+                        Limpar
+                      </button>
                     )}
-                    <span className={`text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border ${count > 0 ? 'bg-violet-100 text-violet-700 border-violet-300' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
-                      {count}
-                    </span>
                   </div>
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isSlider ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>
+                      {isSlider ? 'Slider' : 'Filtro'}
+                    </span>
+                    {col && <span className="text-[10px] text-gray-500 truncate">coluna: <span className="font-medium text-gray-700">{col}</span></span>}
+                  </div>
+                  {ds && <p className="text-[10px] text-gray-400 mt-1 truncate">{ds.name}</p>}
                 </div>
               )
             })}
@@ -2367,7 +2365,7 @@ export default function DashboardDetailPage() {
               title="Gerar dashboard automaticamente"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              <span className="hidden sm:inline">Gerar com IA</span>
+              <span className="hidden sm:inline">Gerar Dashboard</span>
             </button>
           )}
 

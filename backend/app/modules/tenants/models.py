@@ -72,6 +72,9 @@ class Tenant(Base):
     cidade: Mapped[str | None] = mapped_column(String(100), nullable=True)
     estado: Mapped[str | None] = mapped_column(String(2), nullable=True, comment="UF: SP, RJ, etc.")
 
+    # ── Faturamento ───────────────────────────────────────────────────────────
+    billing_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Nome exibido nas faturas Stripe (ex: 'Minha Empresa Ltda'). Se vazio, usa o nome do tenant.")
+
     # ── White-label (plano Enterprise) ───────────────────────────────────────
     custom_logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="URL da logo customizada do tenant")
     primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True, comment="Cor primária hex: #7c3aed")

@@ -175,8 +175,8 @@ async def preview_upload(
 
     filename = file.filename or "planilha"
     content = await file.read()
-    if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 5 MB)")
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 10 MB)")
 
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     try:
@@ -2830,6 +2830,7 @@ async def test_webhook(
 class CustomizationUpdateInput(BaseModel):
     custom_logo_url: str | None = None
     primary_color: str | None = None
+    billing_name: str | None = None
 
 
 @router.get("/tenant/customization", summary="Configurações de personalização")
@@ -2843,8 +2844,9 @@ async def get_customization(
     return {
         "custom_logo_url": tenant.custom_logo_url,
         "primary_color": tenant.primary_color,
+        "billing_name": tenant.billing_name,
         "plan": tenant.plan,
-        "white_label_enabled": tenant.plan in ("ilimitado", "enterprise"),
+        "white_label_enabled": tenant.plan in ("ilimitado", "business", "enterprise"),
     }
 
 
@@ -2854,17 +2856,30 @@ async def update_customization(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.modules.billing.service import BillingService
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado.")
-    if tenant.plan not in ("ilimitado", "enterprise"):
-        raise HTTPException(status_code=403, detail="White-label disponível apenas no plano Ilimitado.")
-    if data.custom_logo_url is not None:
-        tenant.custom_logo_url = data.custom_logo_url
-    if data.primary_color is not None:
-        if data.primary_color and not (len(data.primary_color) == 7 and data.primary_color.startswith("#")):
-            raise HTTPException(status_code=400, detail="Cor deve ser no formato #RRGGBB.")
-        tenant.primary_color = data.primary_color
+
+    # billing_name: disponível para todos os planos
+    if data.billing_name is not None:
+        billing_name_clean = data.billing_name.strip()[:200] if data.billing_name.strip() else None
+        tenant.billing_name = billing_name_clean
+        # Sincroniza o nome no Stripe
+        svc = BillingService(db)
+        await svc.update_customer_name(tenant)
+
+    # white-label: apenas Business/Enterprise
+    if data.custom_logo_url is not None or data.primary_color is not None:
+        if tenant.plan not in ("ilimitado", "business", "enterprise"):
+            raise HTTPException(status_code=403, detail="White-label disponível apenas no plano Business ou Enterprise.")
+        if data.custom_logo_url is not None:
+            tenant.custom_logo_url = data.custom_logo_url
+        if data.primary_color is not None:
+            if data.primary_color and not (len(data.primary_color) == 7 and data.primary_color.startswith("#")):
+                raise HTTPException(status_code=400, detail="Cor deve ser no formato #RRGGBB.")
+            tenant.primary_color = data.primary_color
+
     await db.commit()
     return {"ok": True}
 

@@ -348,7 +348,7 @@ function AiCreateModal({ onClose }) {
                   </button>
 
                   <p className="text-[11px] text-gray-400 text-center">
-                    A IA analisa todas as colunas e cria KPIs e gráficos posicionados de forma inteligente.
+                    O Jarbis analisa todas as colunas e cria KPIs e gráficos posicionados de forma inteligente.
                   </p>
                 </>
               )}
@@ -988,7 +988,17 @@ export default function DashboardsPage() {
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
                             <span className="text-xs text-gray-400">{r.block_count ?? 0} {r.block_count === 1 ? t('block') : t('blocks')}</span>
                           </div>
-                          <span className="text-xs text-gray-300">{new Date(r.updated_at).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}</span>
+                          <div className="flex items-center gap-2">
+                            {r.is_shared && (
+                              <span className="flex items-center gap-0.5 text-xs text-gray-400" title="Visualizações do link público">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                {r.view_count ?? 0}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-300">{new Date(r.updated_at).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}</span>
+                          </div>
                         </div>
                       </div>
                     </div>

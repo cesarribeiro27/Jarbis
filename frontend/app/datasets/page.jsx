@@ -164,16 +164,50 @@ function ApiDatasetModal({ onClose, onCreated }) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.urlLabel')}</label>
-              <input required type="url" value={form.api_url} onChange={e => handleUrlChange(e.target.value)} placeholder={t('modal.urlPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="text-xs font-medium text-gray-500">{t('modal.urlLabel')}</label>
+                {/* Tooltip de instruções Google Sheets */}
+                <div className="relative group">
+                  <button type="button" className="w-4 h-4 rounded-full bg-gray-100 text-gray-400 hover:bg-violet-100 hover:text-violet-600 text-[10px] font-bold flex items-center justify-center transition-colors">?</button>
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-gray-900 text-white rounded-xl p-3 shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-left">
+                    <p className="text-[11px] font-semibold mb-2 text-violet-300">Como obter o link do Google Sheets:</p>
+                    <ol className="text-[11px] text-gray-300 space-y-1.5 list-none">
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">1.</span>Abra a planilha no Google Sheets</li>
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">2.</span>Clique em <span className="text-white font-medium">Compartilhar</span> (canto superior direito)</li>
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">3.</span>Em "Acesso geral", selecione <span className="text-white font-medium">"Qualquer pessoa com o link"</span></li>
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">4.</span>Clique em <span className="text-white font-medium">Copiar link</span> e cole aqui</li>
+                    </ol>
+                    <div className="mt-2 pt-2 border-t border-gray-700">
+                      <p className="text-[10px] text-gray-500">O Jarbis vai identificar as abas automaticamente.</p>
+                    </div>
+                    {/* Seta */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                  </div>
+                </div>
+              </div>
+              <div className={`relative rounded-lg transition-all ${isGoogleSheets ? 'ring-2 ring-emerald-400' : ''}`}>
+                {isGoogleSheets && (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                  </div>
+                )}
+                <input required type="url" value={form.api_url} onChange={e => handleUrlChange(e.target.value)}
+                  placeholder={isGoogleSheets ? '' : t('modal.urlPlaceholder')}
+                  className={`w-full border rounded-lg py-2 text-sm focus:outline-none dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${isGoogleSheets ? 'pl-9 pr-3 border-emerald-300 bg-emerald-50 focus:ring-2 focus:ring-emerald-400' : 'px-3 border-gray-200 focus:ring-2 focus:ring-violet-400'}`}
+                />
+              </div>
               {isGoogleSheets && (
-                <div className="mt-1 flex items-center gap-2">
-                  <p className="text-[11px] text-violet-600 flex items-center gap-1">
+                <div className="mt-1.5 flex items-center justify-between">
+                  <p className="text-[11px] text-emerald-600 flex items-center gap-1 font-medium">
                     <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     Google Sheets detectado
                   </p>
-                  <button type="button" onClick={fetchSheets} disabled={sheetsLoading} className="text-[11px] text-violet-600 underline hover:text-violet-800 disabled:opacity-50">
-                    {sheetsLoading ? 'Buscando...' : 'Buscar abas'}
+                  <button type="button" onClick={fetchSheets} disabled={sheetsLoading}
+                    className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50 transition-colors">
+                    {sheetsLoading ? 'Buscando abas...' : 'Buscar abas'}
                   </button>
                 </div>
               )}
@@ -660,7 +694,7 @@ export default function DatasetsPage() {
       toast(t('toast.invalidFormat'), 'error')
       return
     }
-    if (file.size > 50 * 1024 * 1024) {
+    if (file.size > 20 * 1024 * 1024) {
       toast(t('toast.fileTooLarge'), 'error')
       return
     }
@@ -834,7 +868,9 @@ export default function DatasetsPage() {
                 Conectar banco de dados
               </button>
               <button onClick={() => setShowGaModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
-                <span className="text-base leading-none">📊</span>
+                <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+                </svg>
                 Google Analytics
               </button>
             </div>
@@ -894,7 +930,9 @@ export default function DatasetsPage() {
                     onClick={() => { setShowNewMenu(false); setShowGaModal(true) }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                   >
-                    <span className="text-base leading-none">📊</span>
+                    <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+                    </svg>
                     Google Analytics
                   </button>
                 </div>

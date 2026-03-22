@@ -3,18 +3,9 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
-
-function LogoMark() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-      <rect width="32" height="32" rx="8" fill="#6D28D9" />
-      <path d="M16 6L26 11.5V20.5L16 26L6 20.5V11.5L16 6Z" fill="white" fillOpacity="0.15" stroke="white" strokeWidth="1.5" />
-      <circle cx="16" cy="16" r="4" fill="white" />
-    </svg>
-  )
-}
 
 function EyeIcon() {
   return (
@@ -111,8 +102,7 @@ function NovaSenhaContent() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <LogoMark />
-            <span className="font-black text-xl tracking-tight text-white">jarbis</span>
+            <LogoWithText size={28} light={true} />
           </Link>
           <h1 className="text-2xl font-black text-white tracking-tight text-center">Nova senha</h1>
           <p className="text-gray-400 text-sm mt-2 text-center">

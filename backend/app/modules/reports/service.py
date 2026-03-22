@@ -53,6 +53,7 @@ class ReportService:
                 "cover_image": r.cover_image,
                 "is_shared": r.is_shared,
                 "block_count": len(r.blocks) if r.blocks else 0,
+                "view_count": r.share_view_count,
                 "language": r.language if hasattr(r, "language") else "pt-BR",
                 "created_at": r.created_at,
                 "updated_at": r.updated_at,

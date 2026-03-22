@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -42,9 +42,8 @@ export default function AffiliateLoginPage() {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <LogoA size={48} color="#fff" light={true} />
-          <h1 className="mt-4 text-2xl font-black text-white tracking-tight">jarbis</h1>
-          <p className="text-gray-500 text-sm mt-1">Portal do Afiliado</p>
+          <LogoWithText size={36} light={true} />
+          <p className="text-gray-500 text-sm mt-3">Portal do Afiliado</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

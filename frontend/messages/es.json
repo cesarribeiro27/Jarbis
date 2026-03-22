@@ -4,13 +4,13 @@
     "features": "Funcionalidades",
     "pricing": "Precios",
     "login": "Iniciar sesión",
-    "trialCta": "Probar gratis — 7 días"
+    "trialCta": "Probar gratis por 7 días"
   },
   "hero": {
-    "badge": "IA incluida en todos los planes — incluso el gratuito",
+    "badge": "Análisis automático en todos los planes, incluso el gratuito",
     "title1": "Tu planilla se convierte en un",
     "title2": "dashboard profesional en 30 segundos.",
-    "subtitle": "Sube tu Excel o CSV y la IA de Jarbis analiza todo: genera KPIs, gráficos e informes automáticamente — sin programación, sin analista.",
+    "subtitle": "Sube tu Excel o CSV y Jarbis analiza todo. Genera KPIs, gráficos e informes en segundos. Sin programación, sin analista de datos.",
     "ctaPrimary": "Empieza gratis ahora",
     "ctaSecondary": "Ver cómo funciona",
     "freeBadge": "7 días gratis · Sin tarjeta · Cancela cuando quieras",
@@ -19,9 +19,9 @@
     "proof3": "Sin programación",
     "upload": {
       "title": "Arrastra tu planilla aquí",
-      "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 5 MB · Sin login",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 10 MB · Sin login",
       "analyzing": "Analizando tu planilla con IA...",
-      "error": "Archivo inválido. Usa CSV o Excel (máx 5 MB).",
+      "error": "Archivo inválido. Usa CSV o Excel (máx 10 MB).",
       "tryAgain": "Intentar de nuevo",
       "orCta": "o",
       "signupLink": "crea tu cuenta gratis"
@@ -90,7 +90,7 @@
         "step": "02",
         "emoji": "🎨",
         "title": "Arma tu panel",
-        "desc": "Arrastra gráficos, tablas e indicadores a la pantalla. La IA puede armarlo automáticamente — tú solo ajustas."
+        "desc": "Arrastra gráficos, tablas e indicadores a la pantalla. Jarbis lo arma automáticamente y tú solo ajustas lo que quieras."
       },
       {
         "step": "03",

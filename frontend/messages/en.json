@@ -4,13 +4,13 @@
     "features": "Features",
     "pricing": "Pricing",
     "login": "Log in",
-    "trialCta": "Try free — 7 days"
+    "trialCta": "Try free for 7 days"
   },
   "hero": {
-    "badge": "AI included in every plan — even the free one",
-    "title1": "Your spreadsheet becomes a",
-    "title2": "professional dashboard in 30 seconds.",
-    "subtitle": "Upload your Excel or CSV and Jarbis AI analyzes everything: generates KPIs, charts and reports automatically — no coding, no analyst.",
+    "badge": "Automatic analysis in every plan, including the free one",
+    "title1": "Your data.",
+    "title2": "Your vision.",
+    "subtitle": "Upload your Excel or CSV and Jarbis turns it into a professional dashboard in seconds. KPIs, charts and insights — no code, no analyst.",
     "ctaPrimary": "Start for free",
     "ctaSecondary": "See how it works",
     "freeBadge": "7 days free · No credit card · Cancel anytime",
@@ -19,9 +19,9 @@
     "proof3": "No coding required",
     "upload": {
       "title": "Drop your spreadsheet here",
-      "subtitle": "CSV, Excel (.xlsx/.xls) · Max 5 MB · No login required",
+      "subtitle": "CSV, Excel (.xlsx/.xls) · Max 10 MB · No login required",
       "analyzing": "Analyzing your spreadsheet with AI...",
-      "error": "Invalid file. Use CSV or Excel (max 5 MB).",
+      "error": "Invalid file. Use CSV or Excel (max 10 MB).",
       "tryAgain": "Try again",
       "orCta": "or",
       "signupLink": "create your free account"
@@ -90,7 +90,7 @@
         "step": "02",
         "emoji": "🎨",
         "title": "Build your dashboard",
-        "desc": "Drag charts, tables, and KPIs onto the canvas. AI can auto-build it — you just tweak."
+        "desc": "Drag charts, tables, and KPIs onto the canvas. Jarbis builds it automatically and you just adjust what you want."
       },
       {
         "step": "03",
@@ -1137,7 +1137,7 @@
     "gallery": {
       "nav": "New Dashboard",
       "title": "Choose a template",
-      "subtitle": "Start from scratch or use a ready-made template — just plug in your data.",
+      "subtitle": "Start from scratch or use a ready-made template. Just plug in your data.",
       "searchPlaceholder": "Search template...",
       "blocksCount": "{n} blocks",
       "blankCanvas": "Blank Canvas"

@@ -135,8 +135,8 @@ function SignupForm() {
           style={{ background: 'radial-gradient(ellipse at 40% 50%, rgba(124,58,237,0.3) 0%, transparent 65%)' }} />
         <div className="relative text-center px-12">
           <LogoA size={64} color="#a78bfa" light={false} />
-          <div className="mt-6 text-5xl font-black text-white tracking-tight leading-tight">
-            jarbis
+          <div className="mt-6 text-5xl font-black text-white leading-tight" style={{ letterSpacing: '-0.05em' }}>
+            jar<span style={{ color: '#A78BFA' }}>b</span>is
           </div>
           <p className="mt-4 text-gray-400 text-lg max-w-xs mx-auto">
             BI embarcado em português, do jeito que o Brasil precisa.

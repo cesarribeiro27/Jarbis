@@ -25,14 +25,18 @@ def _init_stripe() -> bool:
 def _build_price_map() -> None:
     global PRICE_TO_PLAN
     PRICE_TO_PLAN = {
-        # Novos planos
-        settings.stripe_price_solo:      "solo",
-        settings.stripe_price_equipe:    "equipe",
-        settings.stripe_price_ilimitado: "ilimitado",
+        # Planos atuais (mensal)
+        settings.stripe_price_solo:             "essential",
+        settings.stripe_price_equipe:           "pro",
+        settings.stripe_price_ilimitado:        "business",
+        # Planos atuais (anual)
+        settings.stripe_price_solo_annual:      "essential",
+        settings.stripe_price_equipe_annual:    "pro",
+        settings.stripe_price_ilimitado_annual: "business",
         # Legados — para webhooks de subscriptions antigas
-        settings.stripe_price_starter:   "starter",
-        settings.stripe_price_pro:       "professional",
-        settings.stripe_price_enterprise: "enterprise",
+        settings.stripe_price_starter:          "essential",
+        settings.stripe_price_pro:              "pro",
+        settings.stripe_price_enterprise:       "enterprise",
     }
     PRICE_TO_PLAN = {k: v for k, v in PRICE_TO_PLAN.items() if k}
 
@@ -47,6 +51,10 @@ class BillingService:
     async def _get_tenant(self, tenant_id: uuid.UUID) -> Tenant | None:
         return await self.db.scalar(select(Tenant).where(Tenant.id == tenant_id))
 
+    def _customer_display_name(self, tenant: Tenant) -> str:
+        """Nome exibido nas faturas Stripe: billing_name > nome do tenant > 'Jarbis.cc'."""
+        return (tenant.billing_name or tenant.name or "Jarbis.cc").strip()
+
     async def get_or_create_customer(self, tenant: Tenant, email: str) -> str:
         """Retorna stripe_customer_id, criando no Stripe se necessário."""
         if not _init_stripe():
@@ -55,12 +63,21 @@ class BillingService:
             return tenant.stripe_customer_id
         customer = stripe.Customer.create(
             email=email,
-            name=tenant.name,
+            name=self._customer_display_name(tenant),
             metadata={"tenant_id": str(tenant.id)},
         )
         tenant.stripe_customer_id = customer.id
         await self.db.commit()
         return customer.id
+
+    async def update_customer_name(self, tenant: Tenant) -> None:
+        """Atualiza o nome do cliente no Stripe quando billing_name muda."""
+        if not _init_stripe() or not tenant.stripe_customer_id:
+            return
+        stripe.Customer.modify(
+            tenant.stripe_customer_id,
+            name=self._customer_display_name(tenant),
+        )
 
     async def create_checkout_session(
         self,

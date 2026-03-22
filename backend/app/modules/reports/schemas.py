@@ -54,6 +54,7 @@ class ReportSummary(BaseModel):
     cover_image: str | None
     is_shared: bool
     block_count: int
+    view_count: int = 0
     language: str = "pt-BR"
     created_at: datetime
     updated_at: datetime

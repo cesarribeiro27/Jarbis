@@ -116,7 +116,7 @@ function PlanosContent() {
   async function handleUpgrade(plan) {
     setUpgrading(plan.key)
     try {
-      const data = await api.billing.checkoutByPlan(plan.key)
+      const data = await api.billing.checkoutByPlan(plan.key, annual)
       window.location.href = data.checkout_url
     } catch (err) {
       toast(err.message || t('toast.checkoutError'), 'error')

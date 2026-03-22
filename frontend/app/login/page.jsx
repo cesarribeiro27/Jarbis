@@ -189,7 +189,10 @@ export default function LoginPage() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.25) 0%, transparent 70%)' }} />
         <div className="relative text-center px-12">
-          <div className="text-6xl font-black text-white tracking-tight leading-tight mb-4">
+          <div className="flex justify-center mb-8">
+            <LogoWithText size={40} light={true} />
+          </div>
+          <div className="text-6xl font-black text-white leading-tight mb-4" style={{ letterSpacing: '-0.03em' }}>
             {rightTitle[0]}<br />
             <span style={{ background: 'linear-gradient(135deg, #a78bfa, #67e8f9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               {rightTitle[1]}

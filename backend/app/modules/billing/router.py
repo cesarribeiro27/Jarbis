@@ -25,7 +25,8 @@ class CheckoutRequest(BaseModel):
 
 
 class CheckoutByPlanRequest(BaseModel):
-    plan: str  # essential | pro | business | (legados: solo | equipe | ilimitado)
+    plan: str           # essential | pro | business | (legados: solo | equipe | ilimitado)
+    annual: bool = False
 
 
 @router.post("/checkout/plan", summary="Cria sessão de checkout por nome do plano")
@@ -37,18 +38,28 @@ async def create_checkout_by_plan(
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Pagamentos não configurados. Entre em contato com o suporte.")
 
-    plan_map = {
-        # novas chaves (apontam para os mesmos Stripe price IDs)
-        "essential":    settings.stripe_price_solo,
-        "pro":          settings.stripe_price_equipe,
-        "business":     settings.stripe_price_ilimitado,
-        # legadas
-        "solo":         settings.stripe_price_solo,
-        "equipe":       settings.stripe_price_equipe,
-        "ilimitado":    settings.stripe_price_ilimitado,
-        "starter":      settings.stripe_price_starter,
-        "professional": settings.stripe_price_pro,
-    }
+    if data.annual:
+        plan_map = {
+            "essential":    settings.stripe_price_solo_annual or settings.stripe_price_solo,
+            "pro":          settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
+            "business":     settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
+            "solo":         settings.stripe_price_solo_annual or settings.stripe_price_solo,
+            "equipe":       settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
+            "ilimitado":    settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
+            "starter":      settings.stripe_price_starter,
+            "professional": settings.stripe_price_pro,
+        }
+    else:
+        plan_map = {
+            "essential":    settings.stripe_price_solo,
+            "pro":          settings.stripe_price_equipe,
+            "business":     settings.stripe_price_ilimitado,
+            "solo":         settings.stripe_price_solo,
+            "equipe":       settings.stripe_price_equipe,
+            "ilimitado":    settings.stripe_price_ilimitado,
+            "starter":      settings.stripe_price_starter,
+            "professional": settings.stripe_price_pro,
+        }
     price_id = plan_map.get(data.plan, "")
     if not price_id:
         raise HTTPException(status_code=400, detail=f"Plano '{data.plan}' não configurado. Verifique as variáveis de ambiente do Stripe.")
@@ -74,6 +85,10 @@ async def create_checkout(
         settings.stripe_price_solo,
         settings.stripe_price_equipe,
         settings.stripe_price_ilimitado,
+        # anuais
+        settings.stripe_price_solo_annual,
+        settings.stripe_price_equipe_annual,
+        settings.stripe_price_ilimitado_annual,
         # legados
         settings.stripe_price_starter,
         settings.stripe_price_pro,

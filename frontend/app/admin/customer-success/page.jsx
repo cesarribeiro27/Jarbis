@@ -23,8 +23,14 @@ function fmtDate(s) {
   return new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function fmtBRL(v) {
+  if (!v && v !== 0) return '—'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
+}
+
 export default function CustomerSuccessPage() {
   const [data, setData] = useState(null)
+  const [retention, setRetention] = useState(null)
   const [loading, setLoading] = useState(true)
   const [riskOnly, setRiskOnly] = useState(false)
   const [search, setSearch] = useState('')
@@ -35,6 +41,12 @@ export default function CustomerSuccessPage() {
     if (token) h['Authorization'] = `Bearer ${token}`
     return h
   }
+
+  useEffect(() => {
+    const h = authHeaders()
+    fetch(`${API_URL}/admin/metrics/retention`, { credentials: 'include', headers: h })
+      .then(r => r.json()).then(setRetention).catch(() => {})
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -65,6 +77,32 @@ export default function CustomerSuccessPage() {
           <h1 className="text-2xl font-black text-white">Customer Success</h1>
           <p className="text-gray-500 text-sm mt-1">Health score de cada tenant — piores primeiro</p>
         </div>
+
+        {/* Métricas de retenção */}
+        {retention && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-2xl border border-violet-800/40 bg-violet-900/10 p-4">
+              <div className="text-xs text-gray-500 mb-1">MRR</div>
+              <div className="text-xl font-black text-violet-300">{fmtBRL(retention.mrr)}</div>
+              <div className="text-[10px] text-gray-600 mt-0.5">ARR {fmtBRL(retention.arr)}</div>
+            </div>
+            <div className="rounded-2xl border border-gray-800 bg-gray-900/30 p-4">
+              <div className="text-xs text-gray-500 mb-1">ARPA</div>
+              <div className="text-xl font-black text-white">{fmtBRL(retention.arpa)}</div>
+              <div className="text-[10px] text-gray-600 mt-0.5">{retention.paying_tenants} clientes pagantes</div>
+            </div>
+            <div className="rounded-2xl border border-red-800/40 bg-red-900/10 p-4">
+              <div className="text-xs text-gray-500 mb-1">Churn 30d</div>
+              <div className="text-xl font-black text-red-400">{retention.churn_rate_30d?.toFixed(1)}%</div>
+              <div className="text-[10px] text-gray-600 mt-0.5">{retention.churned_last_30d} cancelamento{retention.churned_last_30d !== 1 ? 's' : ''}</div>
+            </div>
+            <div className="rounded-2xl border border-emerald-800/40 bg-emerald-900/10 p-4">
+              <div className="text-xs text-gray-500 mb-1">LTV estimado</div>
+              <div className="text-xl font-black text-emerald-400">{retention.ltv_estimated > 0 ? fmtBRL(retention.ltv_estimated) : '∞'}</div>
+              <div className="text-[10px] text-gray-600 mt-0.5">NRR ~{retention.nrr_estimated?.toFixed(0)}%</div>
+            </div>
+          </div>
+        )}
 
         {/* KPI summary */}
         {!loading && data && (

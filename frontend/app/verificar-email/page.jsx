@@ -90,15 +90,15 @@ function VerificarEmailContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#FAFAF8' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
             <LogoWithText size={32} />
           </Link>
 
-          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
@@ -134,7 +134,7 @@ function VerificarEmailContent() {
                   value={digit}
                   onChange={e => handleChange(i, e.target.value)}
                   onKeyDown={e => handleKeyDown(i, e)}
-                  className="w-12 h-14 text-center text-2xl font-black border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-12 h-14 text-center text-2xl font-black border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
               ))}
             </div>
@@ -142,7 +142,7 @@ function VerificarEmailContent() {
             <button
               type="submit"
               disabled={loading || code.join('').length < 6}
-              className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-violet-600 text-white font-bold py-2.5 rounded-full hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Verificando...' : 'Confirmar email'}
             </button>
@@ -154,7 +154,7 @@ function VerificarEmailContent() {
               <button
                 onClick={handleResend}
                 disabled={resending}
-                className="text-indigo-600 font-semibold hover:underline disabled:opacity-50"
+                className="text-violet-600 font-semibold hover:underline disabled:opacity-50"
               >
                 {resending ? 'Enviando...' : 'Reenviar'}
               </button>
@@ -165,7 +165,7 @@ function VerificarEmailContent() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Email errado?{' '}
-          <Link href="/signup" className="text-indigo-600 font-semibold hover:underline">
+          <Link href="/signup" className="text-violet-600 font-semibold hover:underline">
             Voltar ao cadastro
           </Link>
         </p>

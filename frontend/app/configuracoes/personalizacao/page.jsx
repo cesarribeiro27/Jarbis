@@ -19,9 +19,12 @@ export default function PersonalizacaoPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingBilling, setSavingBilling] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
   const [color, setColor] = useState('#7c3aed')
+  const [billingName, setBillingName] = useState('')
   const [saved, setSaved] = useState(false)
+  const [savedBilling, setSavedBilling] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -34,8 +37,27 @@ export default function PersonalizacaoPage() {
         setData(d)
         setLogoUrl(d.custom_logo_url || '')
         setColor(d.primary_color || '#7c3aed')
+        setBillingName(d.billing_name || '')
       }
     } finally { setLoading(false) }
+  }
+
+  async function saveBilling() {
+    setSavingBilling(true)
+    try {
+      const r = await fetch(`${API_URL}/reports/tenant/customization`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ billing_name: billingName.trim() || null }),
+      })
+      if (r.ok) {
+        setSavedBilling(true)
+        setTimeout(() => setSavedBilling(false), 2500)
+      } else {
+        const err = await r.json()
+        alert(err.detail || 'Erro ao salvar')
+      }
+    } finally { setSavingBilling(false) }
   }
 
   async function save() {
@@ -79,12 +101,38 @@ export default function PersonalizacaoPage() {
 
         {!isEnterprise && (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            White-label está disponível apenas no plano <strong>Ilimitado</strong>.{' '}
+            White-label está disponível apenas no plano <strong>Business</strong> ou superior.{' '}
             <a href="/configuracoes/planos" className="underline font-bold">Fazer upgrade</a>
           </div>
         )}
 
         <div className="space-y-5">
+          {/* Nome na fatura */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5">
+            <h2 className="text-sm font-bold text-gray-800 mb-1">Nome na fatura</h2>
+            <p className="text-xs text-gray-500 mb-3">
+              Como o seu nome aparece nas faturas e no extrato bancário. Se deixar em branco, será usado o nome da sua conta.
+            </p>
+            <input
+              value={billingName}
+              onChange={e => setBillingName(e.target.value)}
+              placeholder="Ex: Minha Empresa Ltda"
+              maxLength={200}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400"
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5">Se vazio, exibe <strong>Jarbis.cc</strong> por padrão.</p>
+            <div className="flex items-center gap-3 mt-3">
+              <button
+                onClick={saveBilling}
+                disabled={savingBilling}
+                className="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition-colors"
+              >
+                {savingBilling ? 'Salvando...' : 'Salvar nome'}
+              </button>
+              {savedBilling && <span className="text-xs text-emerald-600 font-medium">Salvo!</span>}
+            </div>
+          </div>
+
           {/* Logo */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <h2 className="text-sm font-bold text-gray-800 mb-1">Logo personalizada</h2>

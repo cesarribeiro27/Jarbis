@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -51,7 +51,7 @@ function SetPasswordForm() {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <LogoA size={48} color="#fff" light={true} />
+          <LogoWithText size={36} light={true} />
           <h1 className="mt-4 text-2xl font-black text-white tracking-tight">Primeiro Acesso</h1>
           <p className="text-gray-500 text-sm mt-1">Defina sua senha para o portal de afiliados</p>
         </div>

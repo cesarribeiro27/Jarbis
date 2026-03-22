@@ -150,6 +150,8 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [uploadState, setUploadState] = useState('idle') // idle | uploading | done | error
   const [dragOver, setDragOver] = useState(false)
+  const [sheetsUrl, setSheetsUrl] = useState('')
+  const [sheetsState, setSheetsState] = useState('idle') // idle | loading | error
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -238,6 +240,28 @@ export default function LandingPage() {
     handleUploadFile(e.dataTransfer.files?.[0])
   }
 
+  async function handleSheetsConnect(e) {
+    e.preventDefault()
+    if (!sheetsUrl.trim()) return
+    const m = sheetsUrl.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
+    if (!m) { setSheetsState('error'); return }
+    const id = m[1]
+    const gidM = sheetsUrl.match(/[#&?]gid=(\d+)/)
+    const gid = gidM ? gidM[1] : '0'
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
+    setSheetsState('loading')
+    try {
+      const resp = await fetch(csvUrl)
+      if (!resp.ok) throw new Error('fail')
+      const blob = await resp.blob()
+      const file = new File([blob], 'planilha.csv', { type: 'text/csv' })
+      await handleUploadFile(file)
+      setSheetsState('idle')
+    } catch {
+      setSheetsState('error')
+    }
+  }
+
   return (
     <div className="bg-white text-gray-900 antialiased">
 
@@ -254,8 +278,9 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">{t('nav.login')}</Link>
             <LanguageSwitcher />
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link href="/signup" className="bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200 block">
+              <Link href="/signup" className="inline-flex items-center gap-1.5 bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-violet-500 transition-colors shadow-md shadow-violet-600/30 block">
                 {t('nav.trialCta')}
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
               </Link>
             </motion.div>
           </div>
@@ -299,10 +324,18 @@ export default function LandingPage() {
 
         <div className="relative max-w-4xl mx-auto text-center">
 
+          {/* Wordmark */}
+          <motion.div
+            variants={fadeIn} initial="hidden" animate="visible"
+            className="flex justify-center mb-6"
+          >
+            <LogoWithText size={36} light={true} />
+          </motion.div>
+
           {/* Badge */}
           <motion.div
             variants={fadeIn} initial="hidden" animate="visible"
-            className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-8"
+            className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-10"
           >
             <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
             {t('hero.badge')}
@@ -312,7 +345,7 @@ export default function LandingPage() {
           <motion.h1
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.1 }}
-            className="text-5xl sm:text-6xl md:text-8xl font-black text-white tracking-tight leading-[1.0] mb-6"
+            className="text-6xl sm:text-7xl md:text-[108px] font-black text-white leading-[0.95] tracking-[-0.03em] mb-6"
           >
             {t('hero.title1')}<br />
             <motion.span
@@ -328,7 +361,7 @@ export default function LandingPage() {
           <motion.p
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.3 }}
-            className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-lg sm:text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed font-light"
           >
             {t('hero.subtitle')}
           </motion.p>
@@ -384,6 +417,54 @@ export default function LandingPage() {
                 </div>
               )}
             </motion.div>
+            {/* Separador */}
+            <div className="flex items-center gap-3 my-3">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-gray-600 font-medium">ou cole o link do Google Sheets</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Google Sheets link */}
+            <form onSubmit={handleSheetsConnect} className="flex items-stretch gap-2">
+              <div className="relative flex-1">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </div>
+                {/* Tooltip de instruções */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 group z-10">
+                  <div className="w-4 h-4 rounded-full bg-gray-700 text-gray-400 hover:bg-violet-800 hover:text-violet-300 text-[9px] font-bold flex items-center justify-center cursor-default transition-colors">?</div>
+                  <div className="absolute right-0 bottom-full mb-2 w-64 bg-gray-900 text-white rounded-xl p-3 shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-left">
+                    <p className="text-[11px] font-semibold mb-2 text-violet-300">Como obter o link:</p>
+                    <ol className="text-[11px] text-gray-300 space-y-1.5">
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">1.</span>Abra a planilha no Google Sheets</li>
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">2.</span>Clique em <span className="text-white font-medium">Compartilhar</span></li>
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">3.</span>Selecione <span className="text-white font-medium">"Qualquer pessoa com o link"</span></li>
+                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">4.</span>Copie o link e cole aqui</li>
+                    </ol>
+                    <div className="absolute right-3 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                  </div>
+                </div>
+                <input
+                  type="url"
+                  value={sheetsUrl}
+                  onChange={e => { setSheetsUrl(e.target.value); setSheetsState('idle') }}
+                  placeholder="Cole o link do Google Sheets..."
+                  className={`w-full pl-9 pr-8 py-2.5 rounded-xl text-sm border text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${sheetsState === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-white/20 bg-white/5 focus:border-violet-500/50'}`}
+                />
+              </div>
+              <button type="submit" disabled={sheetsState === 'loading' || !sheetsUrl.trim()}
+                className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors shrink-0">
+                {sheetsState === 'loading' ? (
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                ) : 'Conectar'}
+              </button>
+            </form>
+            {sheetsState === 'error' && (
+              <p className="text-[11px] text-red-400 mt-1.5 text-center">Link inválido. Certifique-se de que a planilha está compartilhada como pública.</p>
+            )}
             <p className="text-center text-xs text-gray-600 mt-3">{t('hero.upload.orCta')} <Link href="/signup" className="text-violet-400 hover:text-violet-300 underline">{t('hero.upload.signupLink')}</Link></p>
           </motion.div>
 
@@ -602,73 +683,108 @@ export default function LandingPage() {
           </div>
         </motion.div>
 
-        {/* Fade para a próxima seção */}
-        <div className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(250,250,248,0.6) 60%, #FAFAF8 100%)' }} />
       </section>
 
-      {/* ── ANTES / DEPOIS ── */}
-      <section className="py-20 sm:py-28 px-6" style={{ background: '#FAFAF8' }}>
+      {/* ── DOR / TRANSFORMAÇÃO ── */}
+      <section className="py-20 sm:py-28 px-6" style={{ background: '#0B0A1A' }}>
         <div className="max-w-4xl mx-auto">
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="text-center mb-12"
+            className="text-center mb-14"
           >
-            <motion.p variants={fadeUp} className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('problem.label')}</motion.p>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight">
-              {t('problem.title')}
+            <motion.p variants={fadeUp} className="text-violet-400 font-semibold text-sm mb-4 tracking-wide uppercase">O problema real</motion.p>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-6 leading-tight">
+              Quanto tempo você perdeu<br className="hidden sm:block" /> esta semana com planilhas?
             </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-gray-400 max-w-2xl mx-auto">
+              A maioria dos donos de negócio sabe que precisa de dados. O problema é que ninguém tem tempo para montar relatório.
+            </motion.p>
           </motion.div>
 
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-2 gap-6"
+            className="grid sm:grid-cols-3 gap-4"
           >
-            <motion.div
-              variants={scaleIn}
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-              className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm"
-            >
-              <div className="inline-flex items-center gap-2 bg-red-50 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                {t('problem.beforeBadge')}
-              </div>
-              <motion.ul variants={stagger} className="space-y-4">
-                {problemBefore.map(text => (
-                  <motion.li key={text} variants={fadeUp} className="flex items-start gap-3 text-sm text-gray-600">
-                    <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </div>
-                    {text}
-                  </motion.li>
-                ))}
-              </motion.ul>
-            </motion.div>
+            {[
+              { pain: 'Planilha que só você consegue abrir', fix: 'Dashboard que qualquer um lê no celular' },
+              { pain: 'Dados espalhados em vários arquivos', fix: 'Tudo em um lugar, sempre atualizado' },
+              { pain: 'Relatório que leva horas para ficar pronto', fix: 'Pronto em 30 segundos, sem fórmulas' },
+            ].map(({ pain, fix }) => (
+              <motion.div key={pain} variants={fadeUp} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <p className="text-sm text-gray-600 line-through mb-3 leading-relaxed">{pain}</p>
+                <div className="flex items-start gap-2">
+                  <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <p className="text-sm text-white font-medium leading-relaxed">{fix}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
-            <motion.div
-              variants={scaleIn}
-              whileHover={{ y: -4 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-              className="bg-violet-50 rounded-2xl p-6 sm:p-8 border border-violet-100 shadow-sm"
-            >
-              <div className="inline-flex items-center gap-2 bg-violet-600 text-white text-xs font-bold px-3 py-1.5 rounded-full mb-6">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                {t('problem.afterBadge')}
-              </div>
-              <motion.ul variants={stagger} className="space-y-4">
-                {problemAfter.map(text => (
-                  <motion.li key={text} variants={fadeUp} className="flex items-start gap-3 text-sm text-gray-700">
-                    <div className="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                    {text}
-                  </motion.li>
-                ))}
-              </motion.ul>
+      {/* ── OS DADOS SÃO SEUS — logo após hero, mensagem central ── */}
+      <section className="py-20 sm:py-28 px-6 bg-gray-950">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            variants={stagger} initial="hidden" whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="text-center mb-16"
+          >
+            <motion.div variants={fadeUp} className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 mb-6">
+              <svg className="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
             </motion.div>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-5">
+              Os dados são seus.<br className="hidden sm:block" />
+              <span className="text-violet-400">Sempre.</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              No Jarbis, não somos donos dos seus dados. Somos guardiões temporários enquanto você trabalha com eles. Essa é a nossa essência.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            variants={stagger} initial="hidden" whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid sm:grid-cols-3 gap-6"
+          >
+            {[
+              {
+                icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>),
+                title: 'Isolamento total',
+                body: 'Cada empresa opera em um ambiente completamente isolado. Nenhum cliente enxerga os dados de outro. Por arquitetura, não por configuração.',
+              },
+              {
+                icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>),
+                title: 'Análise sem rastro',
+                body: 'Nenhum dado seu é usado para treinar sistemas. O Jarbis analisa apenas o que você enviou, naquela sessão. A sessão encerra, os dados somem.',
+              },
+              {
+                icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>),
+                title: 'Segurança com responsabilidade',
+                body: 'Tentativas de acessar dados indevidamente são detectadas e investigadas. Protegemos os dados dos nossos clientes com rigor e responsabilidade legal.',
+              },
+            ].map(({ icon, title, body }) => (
+              <motion.div key={title} variants={fadeUp} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/[0.08] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">{icon}</div>
+                <h3 className="text-white font-bold text-base mb-2">{title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{body}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="text-center border-t border-white/10 pt-12 mt-12">
+            <p className="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+              "Confiar nos dados dos nossos clientes é a<br className="hidden sm:block" />
+              <span className="text-violet-400"> razão de existirmos."</span>
+            </p>
+            <p className="text-gray-500 text-sm mt-3">Jarbis, plataforma de BI para PMEs brasileiras</p>
           </motion.div>
         </div>
       </section>
@@ -720,7 +836,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FUNCIONALIDADES ── */}
-      <section id="funcionalidades" className="py-20 sm:py-28 px-6" style={{ background: '#F5F3FF' }}>
+      <section id="funcionalidades" className="py-20 sm:py-28 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible"
@@ -745,18 +861,14 @@ export default function LandingPage() {
               <motion.div
                 key={f.title}
                 variants={scaleIn}
-                whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(109,40,217,0.12)' }}
+                whileHover={{ y: -6, boxShadow: '0 16px 40px rgba(109,40,217,0.08)' }}
                 transition={{ type: 'spring', stiffness: 280 }}
-                className="bg-white rounded-2xl p-7 border border-gray-100 hover:border-violet-200 transition-colors group cursor-default"
+                className="bg-white rounded-2xl p-7 border border-gray-100 hover:border-violet-200 transition-all group cursor-default"
               >
-                <motion.div
-                  whileHover={{ rotate: 8, scale: 1.12 }}
-                  transition={{ type: 'spring', stiffness: 400 }}
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${FEATURE_COLORS[i]}`}
-                >
+                <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center mb-5 text-gray-500 group-hover:bg-violet-50 group-hover:border-violet-100 group-hover:text-violet-600 transition-all">
                   <FeatureIcon index={i} />
-                </motion.div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2 group-hover:text-violet-700 transition-colors">{f.title}</h3>
+                </div>
+                <h3 className="font-bold text-gray-900 text-base mb-2 group-hover:text-violet-700 transition-colors">{f.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
@@ -764,52 +876,90 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── COMPARATIVO ── */}
-      <section id="compare" className="py-20 sm:py-28 px-6 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            variants={stagger} initial="hidden" whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="text-center mb-16"
-          >
-            <motion.p variants={fadeUp} className="text-violet-600 font-semibold text-sm mb-3 tracking-wide uppercase">{t('comparison.label')}</motion.p>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-5">{t('comparison.title')}</motion.h2>
-            <motion.p variants={fadeUp} className="text-lg text-gray-500">{t('comparison.subtitle')}</motion.p>
-          </motion.div>
-          <motion.div
-            variants={fadeUp} initial="hidden" whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
-          >
-            <div className="overflow-x-auto">
-              <table className="min-w-[560px] w-full">
-                <thead>
-                  <tr style={{ background: '#FAFAF8' }} className="border-b border-gray-100">
-                    <th className="text-left px-4 sm:px-6 py-4 text-sm font-semibold text-gray-400">{t('comparison.colFeature')}</th>
-                    <th className="px-4 sm:px-6 py-4 text-center">
-                      <div className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 font-bold text-sm px-3 py-1 rounded-full">
-                        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />Jarbis
-                      </div>
-                    </th>
-                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">{t('comparison.colExcel')}</div></th>
-                    <th className="px-4 sm:px-6 py-4 text-center"><div className="text-sm font-semibold text-gray-400">{t('comparison.colBiCorp')}</div></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonRows.map((row, i) => (
-                    <tr key={row.feature} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-gray-600 font-medium whitespace-nowrap">{row.feature}</td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.jarbis} /></td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.competitor} /></td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center"><ComparisonCell value={row.powerbi} /></td>
-                    </tr>
+      {/* ── EDITOR VISUAL ── */}
+      <section className="py-20 sm:py-28 px-6" style={{ background: '#0B0A1A' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <motion.div
+              variants={stagger} initial="hidden" whileInView="visible"
+              viewport={{ once: true, margin: '-60px' }}
+            >
+              <motion.p variants={fadeUp} className="text-violet-400 font-semibold text-sm mb-4 tracking-wide uppercase">Editor visual</motion.p>
+              <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-black text-white mb-6 leading-tight">
+                Arrasta, solta,<br/>pronto.
+              </motion.h2>
+              <motion.p variants={fadeUp} className="text-gray-400 text-lg leading-relaxed mb-8">
+                O editor do Jarbis foi feito para quem nunca usou uma ferramenta de BI na vida. Sem código, sem fórmulas, sem curva de aprendizado.
+              </motion.p>
+              <motion.div variants={stagger} className="space-y-3">
+                {[
+                  'Arraste gráficos e KPIs direto para o canvas',
+                  'Configure tudo com cliques, sem digitar código',
+                  'O Jarbis sugere as melhores visualizações para seus dados',
+                  'Compartilhe o link e seu cliente vê ao vivo, no celular',
+                ].map(item => (
+                  <motion.div key={item} variants={fadeUp} className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span className="text-gray-300 text-sm leading-relaxed">{item}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Mini mockup do editor */}
+            <motion.div
+              variants={fadeUp} initial="hidden" whileInView="visible"
+              viewport={{ once: true, margin: '-60px' }}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3"
+            >
+              <div className="flex items-center gap-2 pb-3 border-b border-white/10">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                <span className="text-gray-600 text-xs ml-2">Dashboard — Editor Jarbis</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3 col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-violet-400 font-medium">Receita total</span>
+                    <span className="text-[10px] text-emerald-400">+23% este mês</span>
+                  </div>
+                  <div className="text-xl font-bold text-white">R$ 48.920</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-end gap-1">
+                  {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
+                    <div key={i} className="flex-1 bg-violet-500/40 rounded-sm" style={{ height: `${h * 0.5}px` }} />
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-2">
+                  {[['Produto A', 72], ['Produto B', 48], ['Produto C', 31]].map(([name, pct]) => (
+                    <div key={name}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[9px] text-gray-500">{name}</span>
+                        <span className="text-[9px] text-gray-500">{pct}%</span>
+                      </div>
+                      <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-violet-500/60 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex-1 h-8 bg-white/5 border border-dashed border-white/20 rounded-lg flex items-center px-3">
+                  <span className="text-[10px] text-gray-600">+ Arraste um bloco para cá...</span>
+                </div>
+                <div className="h-8 w-8 bg-violet-600 rounded-lg flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16M4 12h16" /></svg>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
+
 
       {/* ── PRICING ── */}
       <section id="precos" className="py-20 sm:py-28 px-6" style={{ background: '#FAFAF8' }}>
@@ -969,89 +1119,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SEGURANÇA & PROPRIEDADE DOS DADOS ── */}
-      <section className="py-20 sm:py-28 px-6 bg-gray-950">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            variants={stagger} initial="hidden" whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="text-center mb-16"
-          >
-            <motion.div variants={fadeUp} className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 mb-6">
-              <svg className="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-            </motion.div>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-5">
-              Os dados são seus.<br className="hidden sm:block" />
-              <span className="text-violet-400">Sempre.</span>
-            </motion.h2>
-            <motion.p variants={fadeUp} className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              No Jarbis, não somos donos dos seus dados — somos guardiões temporários enquanto você trabalha com eles. Essa é a nossa essência.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            variants={stagger} initial="hidden" whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-3 gap-6 mb-16"
-          >
-            {[
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                ),
-                title: 'Isolamento total',
-                body: 'Cada empresa opera em um ambiente completamente isolado. Nenhum cliente enxerga os dados de outro — por arquitetura, não por configuração.',
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                ),
-                title: 'IA sem memória',
-                body: 'Nenhum dado seu é usado para treinar modelos de IA. O Jarbis analisa apenas o que você enviou, apenas naquela sessão. A sessão encerra, os dados somem.',
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                  </svg>
-                ),
-                title: 'Abuso tem consequências',
-                body: 'Tentativas de extrair dados do sistema ou manipular a IA são detectadas, registradas e investigadas. Protegemos os dados dos nossos clientes com rigor e responsabilidade legal.',
-              },
-            ].map(({ icon, title, body }) => (
-              <motion.div
-                key={title}
-                variants={fadeUp}
-                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">
-                  {icon}
-                </div>
-                <h3 className="text-white font-bold text-base mb-2">{title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{body}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            variants={fadeUp} initial="hidden" whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center border-t border-white/10 pt-12"
-          >
-            <p className="text-xl sm:text-2xl font-bold text-white leading-relaxed">
-              "Confiar nos dados dos nossos clientes é a<br className="hidden sm:block" />
-              <span className="text-violet-400"> razão de existirmos."</span>
-            </p>
-            <p className="text-gray-500 text-sm mt-3">— Jarbis, plataforma de BI para PMEs brasileiras</p>
-          </motion.div>
-        </div>
-      </section>
 
       {/* ── CTA FINAL ── */}
       <motion.section
