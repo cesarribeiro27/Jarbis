@@ -504,20 +504,35 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
+  const [dropPos, setDropPos] = useState(null)
   const wrapRef = useRef(null)
+  const btnRef = useRef(null)
   const dsId = block.dataset_id
   const col = block.filter_col
   const currentVal = activeFilters[dsId]?.[col]
   const selectedVals = Array.isArray(currentVal) ? currentVal : (currentVal ? [currentVal] : [])
 
-  // Fecha ao clicar fora
+  // Fecha ao clicar fora e calcula posição do dropdown via portal
+  function openDropdown() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setDropPos({ top: r.bottom + 6, left: r.left, width: r.width })
+    }
+    setOpen(true)
+  }
+
   useEffect(() => {
     if (!open) return
     function handleOut(e) {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
     }
+    function handleScroll() { setOpen(false) }
     document.addEventListener('mousedown', handleOut)
-    return () => document.removeEventListener('mousedown', handleOut)
+    window.addEventListener('scroll', handleScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', handleOut)
+      window.removeEventListener('scroll', handleScroll, true)
+    }
   }, [open])
 
   useEffect(() => {
@@ -557,7 +572,8 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
     <div ref={wrapRef} className="relative flex items-center h-full">
       {/* Trigger — compacto, parece controle secundário */}
       <button
-        onClick={() => setOpen(o => !o)}
+        ref={btnRef}
+        onClick={() => open ? setOpen(false) : openDropdown()}
         className={`flex items-center gap-2 w-full h-full px-3 py-2 text-sm rounded-xl border transition-all ${
           hasActive
             ? 'border-violet-300 bg-violet-50 text-violet-700'
@@ -590,9 +606,12 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
         </svg>
       </button>
 
-      {/* Dropdown flutuante */}
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-[200] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+      {/* Dropdown via portal — renderiza no body, acima de qualquer overflow */}
+      {open && dropPos && createPortal(
+        <div
+          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+        >
           {/* Search */}
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
@@ -661,7 +680,8 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -5062,7 +5082,17 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               </div>
             )}
 
-            {/* Header */}
+            {/* Header — filtros categoriais têm header mínimo para não roubar espaço do controle */}
+            {block.type === 'filter' && !block.config?.date_mode ? (
+              !readOnly && (
+                <div className="drag-handle cursor-grab shrink-0 flex items-center justify-center h-4 opacity-0 group-hover:opacity-30 transition-opacity">
+                  <svg className="w-3 h-2.5 text-gray-500" viewBox="0 0 10 8" fill="currentColor">
+                    <circle cx="2" cy="2" r="1.2"/><circle cx="8" cy="2" r="1.2"/>
+                    <circle cx="2" cy="6" r="1.2"/><circle cx="8" cy="6" r="1.2"/>
+                  </svg>
+                </div>
+              )
+            ) : (
             <div className={`flex items-center gap-2 shrink-0 ${!readOnly ? 'drag-handle cursor-grab active:cursor-grabbing' : ''} ${block.config?.hide_header ? 'px-1 pt-1 pb-0 h-3 overflow-hidden' : 'px-3 pt-3 pb-1.5'}`}>
               {!readOnly && (
                 <svg className={`w-3.5 h-3.5 shrink-0 transition-colors ${isSelected ? 'text-purple-400' : 'text-gray-200 group-hover:text-gray-400'}`} viewBox="0 0 10 16" fill="currentColor">
@@ -5122,9 +5152,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 </button>
               )}
             </div>
+            )} {/* fim do else: header normal */}
 
             {/* Content */}
-            <div className="flex-1 px-3 pb-3 pt-0.5 min-h-0 overflow-hidden">
+            <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' && !block.config?.date_mode ? 'p-2' : 'px-3 pb-3 pt-0.5'}`}>
               <BlockPreview
                 block={block}
                 readOnly={readOnly}
