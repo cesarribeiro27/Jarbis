@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { LogoA } from '../../../components/logos/JarbisLogo'
+import { LogoWithText } from '../../../components/logos/JarbisLogo'
 
 const ReportBuilder = dynamic(() => import('@/components/ReportBuilder'), { ssr: false })
 
@@ -166,8 +166,7 @@ export default function PublicReportPage() {
             <img src={logoUrl} className="h-5 object-contain" alt="Logo" />
           ) : (
             <>
-              <LogoA size={22} color="#6D28D9" />
-              <span className="text-gray-900 font-bold text-sm tracking-tight">jarbis</span>
+              <LogoWithText size={22} />
             </>
           )}
           <span className="text-gray-300 text-sm">·</span>

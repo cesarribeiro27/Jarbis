@@ -569,12 +569,12 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
   }
 
   return (
-    <div ref={wrapRef} className="relative flex items-center h-full">
+    <div ref={wrapRef} className="relative w-full">
       {/* Trigger — compacto, parece controle secundário */}
       <button
         ref={btnRef}
         onClick={() => open ? setOpen(false) : openDropdown()}
-        className={`flex items-center gap-2 w-full h-full px-3 py-2 text-sm rounded-xl border transition-all ${
+        className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm rounded-xl border transition-all ${
           hasActive
             ? 'border-violet-300 bg-violet-50 text-violet-700'
             : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50'
@@ -971,11 +971,11 @@ function DateFilterBlockPreview({ block, globalDateFilter, onGlobalDateFilterCha
   const hasFilter = from || to
 
   return (
-    <div className="h-full flex items-center px-1">
+    <div className="w-full flex items-center px-1">
       <button
         ref={triggerRef}
         onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border transition-all w-full group ${
+        className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all w-full group ${
           hasFilter
             ? 'border-violet-300 bg-violet-50 text-violet-700 hover:border-violet-400'
             : 'border-gray-200 bg-white text-gray-600 hover:border-violet-300 hover:bg-violet-50/30'
@@ -1362,6 +1362,8 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   const canExport = data && data.length > 0 && !['text','filter','slider','image','ai_summary'].includes(block.type)
 
   // Deve ficar ANTES de qualquer return condicional — Regra dos Hooks
+  const [mapTooltip, setMapTooltip] = useState(null) // usado pelo bloco tipo 'map'
+
   const handleCustomEvent = useCallback((eventName, label, value) => {
     if (!eventName) return
     try {
@@ -1768,9 +1770,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'pie') {
-    const pieInner = config.inner_radius_pct != null && config.inner_radius_pct !== '' ? `${config.inner_radius_pct}%` : '22%'
-    const pieOuter = config.outer_radius_pct != null && config.outer_radius_pct !== '' ? `${config.outer_radius_pct}%` : '35%'
-    const pieCY = config.pie_cy != null && config.pie_cy !== '' ? `${config.pie_cy}%` : '54%'
+    const pieInner = config.inner_radius_pct != null && config.inner_radius_pct !== '' ? `${config.inner_radius_pct}%` : '48%'
+    const pieOuter = config.outer_radius_pct != null && config.outer_radius_pct !== '' ? `${config.outer_radius_pct}%` : '75%'
+    const pieCY = config.pie_cy != null && config.pie_cy !== '' ? `${config.pie_cy}%` : '50%'
     const showLegend = config.show_legend !== false
     return (
       <div className="flex flex-col h-full">
@@ -1960,7 +1962,6 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       const t = maxV > minV ? (v - minV) / (maxV - minV) : 0.5
       return `rgba(${Math.round(br)},${Math.round(bg)},${Math.round(bb)},${(0.15 + t * 0.85).toFixed(2)})`
     }
-    const [tooltip, setTooltip] = useState(null)
     return (
       <div className="relative flex items-center justify-center h-full w-full overflow-hidden">
         <svg viewBox="0 0 100 100" className="w-full h-full" style={{ maxHeight: '100%' }}>
@@ -1971,8 +1972,8 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             const r = v != null ? 4.5 : 3
             return (
               <g key={s.uf}
-                onMouseEnter={() => setTooltip({ uf: s.uf, v, x: s.x, y: s.y })}
-                onMouseLeave={() => setTooltip(null)}
+                onMouseEnter={() => setMapTooltip({ uf: s.uf, v, x: s.x, y: s.y })}
+                onMouseLeave={() => setMapTooltip(null)}
                 style={{ cursor: 'pointer' }}
               >
                 <circle cx={s.x} cy={s.y} r={r} fill={stateColor(v)} stroke={v != null ? baseColor : '#d1d5db'} strokeWidth="0.4" opacity="0.9" />
@@ -1980,11 +1981,11 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               </g>
             )
           })}
-          {tooltip && (
+          {mapTooltip && (
             <g>
-              <rect x={Math.min(tooltip.x + 3, 75)} y={tooltip.y - 8} width="20" height="9" rx="1.5" fill="white" stroke="#e5e7eb" strokeWidth="0.5" filter="url(#shadow)"/>
-              <text x={Math.min(tooltip.x + 13, 85)} y={tooltip.y - 4.5} textAnchor="middle" fontSize="2.5" fill="#374151" fontWeight="700">{tooltip.uf}</text>
-              <text x={Math.min(tooltip.x + 13, 85)} y={tooltip.y - 1} textAnchor="middle" fontSize="2" fill="#6b7280">{tooltip.v != null ? fmt(tooltip.v, format, config) : 'sem dados'}</text>
+              <rect x={Math.min(mapTooltip.x + 3, 75)} y={mapTooltip.y - 8} width="20" height="9" rx="1.5" fill="white" stroke="#e5e7eb" strokeWidth="0.5" filter="url(#shadow)"/>
+              <text x={Math.min(mapTooltip.x + 13, 85)} y={mapTooltip.y - 4.5} textAnchor="middle" fontSize="2.5" fill="#374151" fontWeight="700">{mapTooltip.uf}</text>
+              <text x={Math.min(mapTooltip.x + 13, 85)} y={mapTooltip.y - 1} textAnchor="middle" fontSize="2" fill="#6b7280">{mapTooltip.v != null ? fmt(mapTooltip.v, format, config) : 'sem dados'}</text>
             </g>
           )}
         </svg>
@@ -4856,7 +4857,211 @@ function BlockDropZones({ block, draggedColumn, onDrop }) {
   )
 }
 
-export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, onGlobalDateFilterChange = null, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null, onFiltersChange = null, filterResetTrigger = null }) {
+// ─── FloatingBlockToolbar — toolbar flutuante acima do bloco selecionado ──────
+function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction, onAiImprove }) {
+  const [showTypes, setShowTypes] = useState(false)
+  const [showData, setShowData] = useState(false)
+  const [showColors, setShowColors] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+
+  const CHART_TYPES_QUICK = [
+    { type: 'kpi',   label: 'KPI' },
+    { type: 'bar',   label: 'Barras' },
+    { type: 'bar_h', label: 'Barras H' },
+    { type: 'line',  label: 'Linha' },
+    { type: 'area',  label: 'Área' },
+    { type: 'pie',   label: 'Pizza' },
+    { type: 'table', label: 'Tabela' },
+    { type: 'scatter', label: 'Scatter' },
+  ]
+
+  const CHART_COLORS = ['#6D28D9', '#7C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#374151']
+
+  const currentType = BLOCK_TYPES.find(bt => bt.type === block.type)
+  const currentColor = block.config?.chartColor || block.config?.color || '#6D28D9'
+  const ds = datasets.find(d => d.id === block.dataset_id) || datasets[0]
+  const numCols = Object.entries(ds?.column_types || {}).filter(([, t]) => t === 'number').map(([c]) => c)
+  const dimCols = Object.entries(ds?.column_types || {}).filter(([, t]) => t !== 'number').map(([c]) => c)
+
+  function upd(patch) {
+    onChange(blocks.map(b => b.id === block.id ? { ...b, ...patch } : b))
+  }
+
+  function closeAll() { setShowTypes(false); setShowData(false); setShowColors(false) }
+
+  async function handleAiImprove() {
+    if (!onAiImprove || aiLoading) return
+    setAiLoading(true)
+    try { await onAiImprove(block.id) }
+    catch (e) { console.error('[FloatingBlockToolbar] IA improve:', e) }
+    finally { setAiLoading(false) }
+  }
+
+  return (
+    <div
+      className="absolute -top-10 left-0 bg-white rounded-xl shadow-lg border border-gray-200 flex items-center px-1.5 py-1 gap-0.5 z-50"
+      onClick={e => e.stopPropagation()}
+    >
+      {/* Type picker */}
+      <div className="relative">
+        <button
+          onClick={() => { setShowTypes(v => !v); setShowData(false); setShowColors(false) }}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${showTypes ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+          title="Tipo de bloco"
+        >
+          <span className="[&>svg]:w-3.5 [&>svg]:h-3.5 text-gray-500">{TYPE_ICONS[block.type]}</span>
+          <span className="hidden sm:inline max-w-[52px] truncate">{currentType?.label || block.type}</span>
+          <svg className="w-3 h-3 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 9l6 6 6-6"/>
+          </svg>
+        </button>
+        {showTypes && (
+          <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-4 gap-1">
+            {CHART_TYPES_QUICK.map(({ type, label }) => (
+              <button
+                key={type}
+                title={label}
+                onClick={() => { upd({ type }); setShowTypes(false) }}
+                className={`flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] border transition-all ${block.type === type ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-transparent hover:border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+              >
+                <span className="[&>svg]:w-3.5 [&>svg]:h-3.5">{TYPE_ICONS[type]}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0"/>
+
+      {/* Dados */}
+      <div className="relative">
+        <button
+          onClick={() => { setShowData(v => !v); setShowTypes(false); setShowColors(false) }}
+          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${showData ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+          title="Configurar dados"
+        >
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <ellipse cx="12" cy="5" rx="9" ry="3" strokeWidth={2}/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3"/>
+          </svg>
+          <span className="hidden sm:inline">Dados</span>
+        </button>
+        {showData && (
+          <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-3 z-50 space-y-2.5">
+            {datasets.length > 1 && (
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Dataset</label>
+                <select
+                  value={block.dataset_id || ''}
+                  onChange={e => upd({ dataset_id: e.target.value })}
+                  className="w-full text-xs rounded-lg border border-gray-200 px-2 py-1.5 bg-white outline-none focus:border-violet-400"
+                >
+                  {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Dimensão</label>
+              <select
+                value={block.label_col || ''}
+                onChange={e => upd({ label_col: e.target.value || null })}
+                className="w-full text-xs rounded-lg border border-gray-200 px-2 py-1.5 bg-white outline-none focus:border-violet-400"
+              >
+                <option value="">—</option>
+                {dimCols.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Métrica</label>
+              <select
+                value={block.value_col || ''}
+                onChange={e => upd({ value_col: e.target.value || null })}
+                className="w-full text-xs rounded-lg border border-gray-200 px-2 py-1.5 bg-white outline-none focus:border-violet-400"
+              >
+                <option value="">—</option>
+                {numCols.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* IA Improve */}
+      {onAiImprove && (
+        <button
+          onClick={handleAiImprove}
+          disabled={aiLoading || !block.dataset_id}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-gray-500 hover:bg-violet-50 hover:text-violet-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Melhorar com IA"
+        >
+          {aiLoading ? (
+            <svg className="w-3.5 h-3.5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          )}
+          <span className="hidden sm:inline">IA</span>
+        </button>
+      )}
+
+      {/* Color */}
+      <div className="relative">
+        <button
+          onClick={() => { setShowColors(v => !v); setShowTypes(false); setShowData(false) }}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${showColors ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+          title="Cor do bloco"
+        >
+          <span className="w-3.5 h-3.5 rounded-full border border-gray-200 shrink-0" style={{ backgroundColor: currentColor }} />
+        </button>
+        {showColors && (
+          <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 flex flex-wrap gap-1.5 w-[116px]">
+            {CHART_COLORS.map(color => (
+              <button
+                key={color}
+                onClick={() => { upd({ config: { ...block.config, chartColor: color } }); setShowColors(false) }}
+                className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                style={{ backgroundColor: color, borderColor: currentColor === color ? 'white' : 'transparent', outline: currentColor === color ? `2px solid ${color}` : 'none' }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0"/>
+
+      {/* Advanced */}
+      <button
+        onClick={() => { closeAll(); onBlockAction?.(block.id, 'config') }}
+        className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+        title="Configurações avançadas"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+
+      {/* Delete */}
+      <button
+        onClick={() => onChange(blocks.filter(b => b.id !== block.id))}
+        className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+        title="Excluir bloco"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+export default function ReportBuilder({ blocks = [], onChange, readOnly = false, selectedBlockId, onSelectBlock, onBlockAction, datasets = [], sheetConfig = {}, globalDateFilter = {}, onGlobalDateFilterChange = null, shareToken = null, locale = 'pt-BR', bindingMode = false, filterTargetMode = false, filterBlockId = null, onToggleFilterTarget = null, draggedColumn = null, onDropColumn = null, onFiltersChange = null, filterResetTrigger = null, onAiImprove = null }) {
   const t = useTranslations('dashboardEditor')
   const [activeFilters, setActiveFilters] = useState({})
   const [crossFilters, setCrossFilters] = useState({})
@@ -5057,29 +5262,16 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
-            {/* Quick chart type switcher — shown above selected block in edit mode */}
-            {!readOnly && isSelected && ['bar','line','pie','area','bar_h'].includes(block.type) && (
-              <div
-                className="absolute -top-9 left-0 bg-white rounded-lg shadow-lg border border-gray-200 flex items-center px-1 py-1 gap-0.5 z-50"
-                onClick={e => e.stopPropagation()}
-              >
-                {[
-                  { type: 'bar',   icon: TYPE_ICONS.bar,   label: 'Barras' },
-                  { type: 'bar_h', icon: TYPE_ICONS.bar_h, label: 'Barras H.' },
-                  { type: 'line',  icon: TYPE_ICONS.line,  label: 'Linha' },
-                  { type: 'area',  icon: TYPE_ICONS.area,  label: 'Área' },
-                  { type: 'pie',   icon: TYPE_ICONS.pie,   label: 'Pizza' },
-                ].map(({ type, icon, label }) => (
-                  <button
-                    key={type}
-                    title={label}
-                    onClick={() => onChange(blocks.map(b => b.id === block.id ? { ...b, type } : b))}
-                    className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${block.type === type ? 'bg-purple-100 text-purple-700 font-bold' : 'hover:bg-gray-100 text-gray-500'}`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+            {/* Floating block toolbar — shown above selected non-filter blocks */}
+            {!readOnly && isSelected && block.type !== 'filter' && block.type !== 'slider' && (
+              <FloatingBlockToolbar
+                block={block}
+                blocks={blocks}
+                onChange={onChange}
+                datasets={datasets}
+                onBlockAction={onBlockAction}
+                onAiImprove={onAiImprove}
+              />
             )}
 
             {/* Header — todos os filtros (data e categorial) têm header mínimo */}
@@ -5155,7 +5347,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             )} {/* fim do else: header normal */}
 
             {/* Content */}
-            <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' ? 'p-2' : 'px-3 pb-3 pt-0.5'}`}>
+            <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' ? 'px-2 py-1 flex flex-col justify-center' : 'px-3 pb-3 pt-0.5'}`}>
               <BlockPreview
                 block={block}
                 readOnly={readOnly}

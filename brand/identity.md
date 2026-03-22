@@ -90,13 +90,30 @@ Usado em: headers de email, hero sections, banners, CTA buttons premium.
 
 ## Logo
 
-- **Símbolo:** Órbita + ∴ (três pontos em triângulo — símbolo de "portanto/clareza") — ver `logo-preview.html` para referência visual completa
-- **Versão clara (fundo branco):** traços e pontos em `#6D28D9`
-- **Versão escura (fundo violeta/dark):** traços e pontos em `white`
-- **Tamanho mínimo:** 32×32px (36–40px recomendado)
-- **Para emails:** usar `<img src="https://jarbis.cc/logo-email.svg">` — SVG hospedado em `/public/logo-email.svg` (SVG inline é ignorado por Gmail/Outlook)
-- **Nome ao lado:** "jarbis" em minúsculo, font-weight 800, cor branca (em fundos escuros) ou `#1A1A2E` (em fundos claros)
-- **Nunca usar** JARBIS em maiúsculas ou caixa mista "Jarbis" no logotipo inline
+### Símbolo: Cometa ∴ (oficial desde 22/03/2026)
+
+**Conceito:** 3 cometas em órbita anti-horária nos vértices exatos do ∴ (símbolo maçônico "portanto"). Para o mundo: movimento, dados em fluxo, tecnologia viva. Para quem conhece: o ∴ está precisamente posicionado.
+
+**Geometria:**
+- Órbita: círculo r=14, centro (24,24), traço pontilhado `#6D28D9` opacity 0.2
+- Apex ∴ — cometa topo: posição (24,10) · cor `#A78BFA` · rastro de (36,17)
+- Base-dir ∴ — cometa inferior-direito: posição (36,31) · cor `#7C3AED` · rastro de (24,38)
+- Base-esq ∴ — cometa inferior-esquerdo: posição (12,31) · cor `#7C3AED` · rastro de (12,17)
+- Rastros: arcos SVG de 70° com gradiente transparente→cor (`stroke-linecap: round`)
+- Fundo: `rect` 48×48 rx=13 fill `#0B0A1A` (sempre dark — é um app icon contido)
+
+**Componente:** `LogoComet` em `components/logos/JarbisLogo.jsx` · `LogoA` é alias retrocompat.
+
+**Wordmark junto ao ícone:**
+- Texto: `jarbis` em minúsculo · Inter 900 · letter-spacing -0.05em
+- "b" em violeta: `#6D28D9` (fundo claro) ou `#A78BFA` (fundo escuro)
+- Resto do texto: `#1A1A2E` (claro) ou `#ffffff` (escuro)
+
+**Tamanho mínimo:** 20×20px (abaixo disso, usar só os 3 pontos ∴)
+
+**Para emails:** usar `<img src="https://jarbis.cc/logo-email.svg">` — versão flat sem gradiente, compatível com Gmail/Outlook
+
+**Nunca usar** JARBIS em maiúsculas ou caixa mista "Jarbis" no logotipo inline
 
 ---
 

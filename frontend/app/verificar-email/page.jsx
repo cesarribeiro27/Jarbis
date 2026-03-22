@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 function VerificarEmailContent() {
   const router = useRouter()
@@ -94,8 +94,7 @@ function VerificarEmailContent() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <LogoA size={32} color="#6D28D9" />
-            <span className="font-black text-gray-900 text-lg" style={{ letterSpacing: '-0.3px' }}>jarbis</span>
+            <LogoWithText size={32} />
           </Link>
 
           <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">

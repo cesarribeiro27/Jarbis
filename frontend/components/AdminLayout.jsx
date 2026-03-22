@@ -185,7 +185,7 @@ function SidebarContent({ collapsed, onToggleCollapse, onClose, adminEmail, admi
           <LogoA size={28} color="#fff" light={true} className="flex-shrink-0" />
           {!collapsed && (
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-black text-white text-sm tracking-tight">jarbis</span>
+              <span className="font-black text-white text-sm tracking-tight">jar<span style={{ color: '#A78BFA' }}>b</span>is</span>
               <span className="text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md flex-shrink-0">ADMIN</span>
             </div>
           )}
@@ -411,7 +411,7 @@ export default function AdminLayout({ children }) {
             </button>
             <Link href="/admin" className="flex items-center gap-2">
               <LogoA size={24} color="#fff" light={true} />
-              <span className="font-black text-white text-sm">jarbis</span>
+              <span className="font-black text-white text-sm">jar<span style={{ color: '#A78BFA' }}>b</span>is</span>
               <span className="text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
             </Link>
           </header>

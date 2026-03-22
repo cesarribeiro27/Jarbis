@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 const OAUTH_ICONS = {
   google: (
@@ -89,9 +89,8 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-sm">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-8">
-            <LogoA size={32} color="#6D28D9" />
-            <span className="font-black text-xl tracking-tight text-gray-900">jarbis</span>
+          <Link href="/" className="inline-flex items-center mb-8">
+            <LogoWithText size={32} />
           </Link>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-1">{t('title')}</h1>
           <p className="text-gray-500 mb-8">{t('subtitle')}</p>

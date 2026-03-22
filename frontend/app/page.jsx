@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoA, LogoWithText } from '@/components/logos/JarbisLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { getPricing } from '@/i18n/config'
 
@@ -78,14 +78,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.u
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
 
 function NavLogo({ light = false }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <LogoA size={32} light={light} />
-      <span className={`font-black text-[17px] tracking-tight ${light ? 'text-white' : 'text-gray-900'}`}>
-        jarbis
-      </span>
-    </div>
-  )
+  return <LogoWithText size={28} light={light} />
 }
 
 function ComparisonCell({ value }) {
@@ -319,7 +312,7 @@ export default function LandingPage() {
           <motion.h1
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tight leading-[1.05] mb-6"
+            className="text-5xl sm:text-6xl md:text-8xl font-black text-white tracking-tight leading-[1.0] mb-6"
           >
             {t('hero.title1')}<br />
             <motion.span

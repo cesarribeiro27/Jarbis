@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -136,8 +136,7 @@ export default function PreviewPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <LogoA size={28} light />
-            <span className="font-black text-[16px] text-white tracking-tight">jarbis</span>
+            <LogoWithText size={28} light />
           </div>
           <Link
             href={`/signup?ref=preview&token=${token}`}

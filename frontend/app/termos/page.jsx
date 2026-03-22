@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoWithText } from '@/components/logos/JarbisLogo'
 
 export const metadata = {
   title: 'Termos de Uso — Jarbis',
@@ -13,8 +13,7 @@ export default function TermosPage() {
       <header className="border-b border-gray-100 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <LogoA size={28} />
-            <span className="font-black text-[17px] tracking-tight text-gray-900">jarbis</span>
+            <LogoWithText size={28} />
           </Link>
           <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
             Entrar

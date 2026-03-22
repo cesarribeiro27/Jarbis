@@ -93,7 +93,7 @@ export default function AffiliateLayout({ children }) {
             <Link href="/affiliate/dashboard" className="flex items-center gap-2.5">
               <LogoA size={28} color="#fff" light={true} />
               <div>
-                <span className="font-black text-white text-sm tracking-tight">jarbis</span>
+                <span className="font-black text-white text-sm tracking-tight">jar<span style={{ color: '#A78BFA' }}>b</span>is</span>
                 <span className="ml-1.5 text-[10px] font-bold bg-emerald-700 text-white px-1.5 py-0.5 rounded-md">AFILIADO</span>
               </div>
             </Link>

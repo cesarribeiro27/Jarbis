@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { api } from '@/lib/api'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoA, LogoWithText } from '@/components/logos/JarbisLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
 import UpgradeModal from '@/components/UpgradeModal'
@@ -144,8 +144,10 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
     <>
       {/* Logo */}
       <div className={`h-[60px] flex items-center border-b border-gray-100/80 dark:border-gray-800 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
-        <LogoA size={32} className="flex-shrink-0" />
-        {!collapsed && <span className="font-black text-gray-900 dark:text-gray-100 text-[15px] tracking-tight">jarbis</span>}
+        {collapsed
+          ? <LogoA size={32} className="flex-shrink-0" />
+          : <LogoWithText size={28} />
+        }
         {onClose ? (
           <button onClick={onClose} className="ml-auto w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Icons.X />
@@ -497,8 +499,7 @@ export default function AppLayout({ children }) {
         {/* Header mobile */}
         <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <LogoA size={28} />
-            <span className="font-black text-gray-900 dark:text-gray-100 text-sm tracking-tight">jarbis</span>
+            <LogoWithText size={24} />
           </div>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />

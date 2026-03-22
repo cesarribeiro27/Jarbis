@@ -34,7 +34,7 @@ _HEADER_HTML = (
     '<tr>'
     '<td style="vertical-align:middle;">' + _LOGO_HTML + '</td>'
     '<td style="padding-left:10px;vertical-align:middle;">'
-    '<span style="color:white;font-weight:800;font-size:18px;letter-spacing:-0.3px;">jarbis</span>'
+    '<span style="color:white;font-weight:800;font-size:18px;letter-spacing:-1px;">jar<span style="color:#A78BFA;">b</span>is</span>'
     '</td>'
     '</tr>'
     '</table>'

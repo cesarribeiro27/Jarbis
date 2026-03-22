@@ -1153,10 +1153,207 @@ function CommentsPanel({ blocks, onBlocksChange }) {
   )
 }
 
+// ─── AddBlockDialog — "O que quer ver aqui?" (text-to-block) ──────────────────
+function AddBlockDialog({ datasets, onClose, onAddBlock }) {
+  const [dsId, setDsId] = useState(datasets[0]?.id || '')
+  const [text, setText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [showBlankMenu, setShowBlankMenu] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  const selectedDs = datasets.find(d => d.id === dsId)
+  const numCols = Object.entries(selectedDs?.column_types || {}).filter(([, t]) => t === 'number').map(([c]) => c)
+  const dimCols = Object.entries(selectedDs?.column_types || {}).filter(([, t]) => t !== 'number').map(([c]) => c)
+
+  const SUGGESTIONS = [
+    numCols[0] && dimCols[0] && `${numCols[0]} por ${dimCols[0]}`,
+    numCols[0] && dimCols[0] && `top 10 ${dimCols[0]} por ${numCols[0]}`,
+    numCols[0] && `total de ${numCols[0]}`,
+    numCols[1] && dimCols[0] && `${numCols[1]} ao longo do tempo`,
+  ].filter(Boolean).slice(0, 4)
+
+  const BLANK_TYPES = [
+    { type: 'kpi', label: 'KPI' },
+    { type: 'bar', label: 'Barras' },
+    { type: 'line', label: 'Linha' },
+    { type: 'pie', label: 'Pizza' },
+    { type: 'table', label: 'Tabela' },
+    { type: 'text', label: 'Texto' },
+  ]
+
+  async function createWithAI() {
+    const q = text.trim()
+    if (!q || !dsId) return
+    setError(null)
+    setLoading(true)
+    try {
+      const result = await api.reports.aiQuery(dsId, q)
+      const type = result.suggested_chart_type || 'bar'
+      const isGauge = type === 'gauge' || type === 'speedometer'
+      onAddBlock({
+        id: crypto.randomUUID(),
+        type,
+        title: result.suggested_title || q,
+        dataset_id: dsId,
+        label_col: result.query?.label_col || null,
+        value_col: result.query?.value_col || null,
+        agg: result.query?.agg || 'sum',
+        config: {},
+        layout: { x: 0, y: Infinity, w: type === 'kpi' ? 3 : isGauge ? 3 : 6, h: type === 'kpi' ? 2 : isGauge ? 4 : 4 },
+      })
+      onClose()
+    } catch (e) {
+      setError(e.message || 'Erro ao criar bloco com IA.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function createBlank(type) {
+    const isFilter = type === 'filter' || type === 'slider'
+    const isNoData = isFilter || type === 'text' || type === 'image'
+    const isGauge = type === 'gauge' || type === 'speedometer'
+    onAddBlock({
+      id: crypto.randomUUID(),
+      type,
+      title: '',
+      dataset_id: isNoData ? null : dsId,
+      ...(isNoData ? {} : { label_col: null, value_col: null, agg: 'sum' }),
+      config: {},
+      layout: { x: 0, y: Infinity, w: isFilter ? 4 : isGauge ? 3 : type === 'kpi' ? 3 : 6, h: isFilter ? 2 : isGauge ? 4 : type === 'kpi' ? 2 : 4 },
+    })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+              </svg>
+            </div>
+            <span className="font-semibold text-gray-800 text-sm">Adicionar bloco</span>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Dataset selector (only if multiple) */}
+          {datasets.length > 1 && (
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Dataset</label>
+              <select
+                value={dsId}
+                onChange={e => setDsId(e.target.value)}
+                className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2 bg-white outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+              >
+                {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Text input */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">O que quer ver aqui?</label>
+            <textarea
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && text.trim()) { e.preventDefault(); createWithAI() } }}
+              placeholder="Ex: faturamento por mês, top 10 clientes, distribuição por categoria..."
+              rows={2}
+              className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2.5 resize-none outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 placeholder:text-gray-300"
+            />
+          </div>
+
+          {/* Suggestions */}
+          {SUGGESTIONS.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTIONS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setText(s)}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors border border-violet-100"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={createWithAI}
+              disabled={loading || !text.trim() || !dsId}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-violet-200"
+            >
+              {loading ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              )}
+              {loading ? 'Criando...' : 'Criar com IA'}
+            </button>
+
+            {/* Blank block dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowBlankMenu(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Em branco
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+              {showBlankMenu && (
+                <div className="absolute bottom-full right-0 mb-1.5 w-40 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-1">
+                  {BLANK_TYPES.map(bt => (
+                    <button
+                      key={bt.type}
+                      onClick={() => { createBlank(bt.type); setShowBlankMenu(false) }}
+                      className="text-xs text-left px-2.5 py-2 rounded-lg hover:bg-violet-50 hover:text-violet-700 text-gray-700 transition-colors font-medium"
+                    >
+                      {bt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Left Data Tray — painel esquerdo de datasets/colunas no modo de edição ──
 function LeftDataTray({ datasets, onDragStart, onDragEnd, onManageDatasets, onQuickAdd }) {
   const [search, setSearch] = useState('')
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [expandedDatasets, setExpandedDatasets] = useState(() => new Set())
   const [collapsedGroups, setCollapsedGroups] = useState(() => new Set())
 
@@ -1338,6 +1535,7 @@ export default function DashboardDetailPage() {
   const [sidePanel, setSidePanel] = useState(null)
   const [datasets, setDatasets] = useState([])
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [showAddBlockDialog, setShowAddBlockDialog] = useState(false)
   const [canvasConfig, setCanvasConfig] = useState({ bgColor: '', sheetBgColor: '' })
   const [globalDateFilter, setGlobalDateFilter] = useState({ dateCol: '', dateFrom: '', dateTo: '' })
   const [filterSummary, setFilterSummary] = useState({})
@@ -1626,6 +1824,21 @@ export default function DashboardDetailPage() {
     }))
   }
 
+  async function aiImproveBlock(blockId) {
+    const block = blocks.find(b => b.id === blockId)
+    if (!block?.dataset_id) return
+    try {
+      const result = await api.reports.aiQuery(block.dataset_id, block.title || 'melhore este gráfico')
+      setBlocks(blocks.map(b => b.id === blockId ? {
+        ...b,
+        type: result.suggested_chart_type || b.type,
+        label_col: result.query?.label_col || b.label_col,
+        value_col: result.query?.value_col || b.value_col,
+        agg: result.query?.agg || b.agg,
+      } : b))
+    } catch (e) { console.error('[aiImproveBlock]', e) }
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -1872,23 +2085,13 @@ export default function DashboardDetailPage() {
             <span className="hidden sm:inline">{t('templates')}</span>
           </button>
 
-          <div className="relative" ref={addMenuRef}>
-            <button onClick={() => setShowAddMenu(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-xs font-semibold rounded-lg hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16M4 12h16" /></svg>
-              {t('addItem')}
-              <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 9l6 6 6-6" /></svg>
-            </button>
-            {showAddMenu && (
-              <div className="absolute top-full left-0 mt-1.5 w-60 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 p-2 z-50 grid grid-cols-2 gap-0.5">
-                {BLOCK_TYPES.map(bt => (
-                  <button key={bt.type} onClick={() => { addBlock(bt.type); setShowAddMenu(false) }} className="flex flex-col items-start px-2.5 py-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 transition-colors text-left group">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-violet-700">{bt.label}</p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">{bt.desc}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => datasets.length > 0 ? setShowAddBlockDialog(true) : setShowAddMenu(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-xs font-semibold rounded-lg hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16M4 12h16" /></svg>
+            {t('addItem')}
+          </button>
 
           {/* Gerar dashboard com IA */}
           {datasets.length > 0 && (
@@ -2003,14 +2206,6 @@ export default function DashboardDetailPage() {
         )}
 
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left Data Tray — painel de datasets/colunas (drag-and-drop) */}
-          <LeftDataTray
-            datasets={datasets}
-            onDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })}
-            onDragEnd={() => setDraggedColumn(null)}
-            onManageDatasets={() => { setSidePanel('dados'); setSidebarOpen(true) }}
-            onQuickAdd={(col, colType, datasetId) => handleDropColumn('__create__', 'auto', { col, colType, datasetId })}
-          />
 
           <div className="flex-1 overflow-auto p-3 sm:p-6 min-w-0" style={{ backgroundColor: canvasConfig.bgColor || '#f3f4f6' }} onClick={() => setSelectedBlockId(null)}>
             <div className="flex items-center gap-1 mb-4 flex-wrap" onClick={e => e.stopPropagation()}>
@@ -2030,28 +2225,6 @@ export default function DashboardDetailPage() {
             </div>
 
 
-            {/* Banner: colunas não visualizadas */}
-            {unusedCols.length > 0 && (
-              <div className="mb-3 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm">
-                <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                <span className="text-amber-700 flex-1">
-                  <b>{unusedCols.length}</b> coluna{unusedCols.length > 1 ? 's' : ''} sem visualização:{' '}
-                  <span className="font-normal text-amber-600">{unusedCols.slice(0, 3).join(', ')}{unusedCols.length > 3 ? '…' : ''}</span>
-                </span>
-                <button
-                  onClick={handleSuggestBlocks}
-                  disabled={suggestingBlocks}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-60 transition-colors shrink-0"
-                >
-                  {suggestingBlocks ? (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                  )}
-                  {suggestingBlocks ? 'Gerando…' : 'Adicionar com IA'}
-                </button>
-              </div>
-            )}
 
             {/* Banner: blocos com colunas inválidas */}
             {brokenBlockIds.size > 0 && (
@@ -2063,7 +2236,7 @@ export default function DashboardDetailPage() {
               </div>
             )}
 
-            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} onGlobalDateFilterChange={setGlobalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} draggedColumn={draggedColumn} onDropColumn={handleDropColumn} onFiltersChange={setFilterSummary} filterResetTrigger={filterResetTrigger} />
+            <ReportBuilder blocks={blocks} onChange={setBlocks} readOnly={false} selectedBlockId={selectedBlockId} onSelectBlock={id => setSelectedBlockId(id)} onBlockAction={(id, action) => { setSelectedBlockId(id); setSidePanel(action); setSidebarOpen(true) }} datasets={datasets} sheetConfig={{ bgColor: canvasConfig.sheetBgColor }} globalDateFilter={globalDateFilter} onGlobalDateFilterChange={setGlobalDateFilter} bindingMode={bindingMode} filterTargetMode={filterTargetMode} filterBlockId={filterTargetMode ? selectedBlockId : null} onToggleFilterTarget={toggleFilterTarget} draggedColumn={draggedColumn} onDropColumn={handleDropColumn} onFiltersChange={setFilterSummary} filterResetTrigger={filterResetTrigger} onAiImprove={aiImproveBlock} />
           </div>
 
           {/* Backdrop mobile para o sidebar */}
@@ -2126,6 +2299,7 @@ export default function DashboardDetailPage() {
         </div>
         {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
         {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
+        {showAddBlockDialog && <AddBlockDialog datasets={datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
 
         {showVersions && (
           <div className="fixed inset-0 z-50 flex">

@@ -83,7 +83,7 @@ export default function AdminLoginPage() {
         <div className="flex items-center gap-3 mb-10 justify-center">
           <LogoA size={32} color="#a78bfa" />
           <div className="flex items-center gap-2">
-            <span className="font-black text-white text-xl tracking-tight">jarbis</span>
+            <span className="font-black text-white text-xl tracking-tight">jar<span style={{ color: '#A78BFA' }}>b</span>is</span>
             <span className="text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
           </div>
         </div>
