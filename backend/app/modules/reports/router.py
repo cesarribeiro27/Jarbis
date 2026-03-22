@@ -353,9 +353,26 @@ async def preview_sheets(request: Request):
                 stats.append({"col": col, "type": "text",
                               "unique_count": len(set(str(v) for v in vals)), "top": unique[:5]})
 
+        # Gera nome amigável baseado nas colunas (heurística simples)
+        _DOMAIN_HINTS = [
+            (["faturamento", "nota fiscal", "nfse", "nfe", "emissao", "emissão", "tomador", "prestador"], "Notas Fiscais"),
+            (["receita", "venda", "pedido", "produto", "cliente", "ticket"], "Análise de Vendas"),
+            (["despesa", "custo", "gasto", "pagamento", "fornecedor"], "Controle Financeiro"),
+            (["estoque", "inventário", "inventario", "sku", "item"], "Controle de Estoque"),
+            (["lead", "funil", "conversao", "conversão", "pipeline", "crm"], "Pipeline de Vendas"),
+            (["campanha", "mídia", "midia", "impressao", "clique", "ctr", "roas"], "Marketing Digital"),
+            (["funcionario", "funcionário", "colaborador", "rh", "salário", "salario", "cargo"], "Gestão de RH"),
+        ]
+        cols_lower = " ".join(c.lower() for c in columns)
+        ds_name = "Minha Planilha"
+        for hints, label in _DOMAIN_HINTS:
+            if any(h in cols_lower for h in hints):
+                ds_name = label
+                break
+
         temp_token = secrets.token_urlsafe(24)
         preview_data = {
-            "file_name": "planilha_sheets.csv",
+            "file_name": f"{ds_name}.csv",
             "source_type": "sheets",
             "ds_type": "csv",
             "row_count": row_count,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { api } from '@/lib/api'
@@ -676,6 +676,11 @@ export default function NovoDashboardPage() {
   const t = useTranslations('dashboardNovo')
   const tEditor = useTranslations('dashboardEditor')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromPreview = searchParams?.get('from') === 'preview'
+  const previewDatasetId = searchParams?.get('dataset_id') || null
+  const previewDsName = searchParams?.get('ds_name') ? decodeURIComponent(searchParams.get('ds_name')) : null
+
   const [templateSelected, setTemplateSelected] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -691,11 +696,55 @@ export default function NovoDashboardPage() {
   const [layoutKey, setLayoutKey] = useState(0)
   const [globalDateFilter, setGlobalDateFilter] = useState({ dateCol: '', dateFrom: '', dateTo: '' })
   const [showAiPanel, setShowAiPanel] = useState(false)
+  const [autoGenerating, setAutoGenerating] = useState(false)
+  const [autoGenStep, setAutoGenStep] = useState(0)
+  const [autoGenError, setAutoGenError] = useState(null)
   const addMenuRef = useRef()
+  const autoGenDoneRef = useRef(false)
 
   useEffect(() => {
     api.reports.datasets.list().then(setDatasets).catch(() => {})
   }, [])
+
+  // Auto-gerar dashboard quando veio do preview
+  useEffect(() => {
+    if (!fromPreview || !previewDatasetId || autoGenDoneRef.current) return
+    autoGenDoneRef.current = true
+    setTemplateSelected(true)
+    if (previewDsName) setTitle(previewDsName)
+    setAutoGenerating(true)
+
+    const steps = [
+      'Analisando colunas e métricas...',
+      'Identificando padrões relevantes...',
+      'Montando estrutura do dashboard...',
+    ]
+    setAutoGenStep(0)
+    const t1 = setTimeout(() => setAutoGenStep(1), 2500)
+    const t2 = setTimeout(() => setAutoGenStep(2), 5000)
+
+    api.reports.generateDashboard(previewDatasetId, null)
+      .then(async result => {
+        clearTimeout(t1); clearTimeout(t2)
+        const generatedBlocks = (result.blocks || []).map(b => ({
+          ...b,
+          id: b.id || crypto.randomUUID(),
+          dataset_id: previewDatasetId,
+        }))
+        const dashTitle = previewDsName || 'Meu Dashboard'
+        const report = await api.reports.create({
+          title: dashTitle,
+          description: null,
+          blocks: generatedBlocks,
+        })
+        router.replace(`/dashboards/${report.id}`)
+      })
+      .catch(err => {
+        clearTimeout(t1); clearTimeout(t2)
+        setAutoGenError(err.message || 'Erro ao gerar dashboard')
+        setAutoGenerating(false)
+      })
+  }, [fromPreview, previewDatasetId])
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -761,6 +810,53 @@ export default function NovoDashboardPage() {
   }
 
   if (!templateSelected) return <TemplateGallery onSelect={applyTemplate} />
+
+  // Overlay de auto-geração (fluxo preview → signup/login)
+  if (autoGenerating) {
+    const GEN_STEPS = [
+      'Analisando colunas e métricas...',
+      'Identificando padrões relevantes...',
+      'Montando estrutura do dashboard...',
+    ]
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0A1A' }}>
+        <div className="text-center max-w-sm px-6">
+          {autoGenError ? (
+            <>
+              <div className="text-4xl mb-4">⚠️</div>
+              <h2 className="text-white font-bold text-xl mb-2">Não foi possível gerar o dashboard</h2>
+              <p className="text-gray-400 text-sm mb-6">{autoGenError}</p>
+              <button
+                onClick={() => router.push('/dashboards')}
+                className="bg-violet-600 text-white font-bold px-6 py-3 rounded-full hover:bg-violet-500 transition-colors"
+              >
+                Ir para Dashboards
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 mx-auto mb-6 relative">
+                <div className="w-16 h-16 border-2 border-violet-400 border-t-transparent rounded-full animate-spin absolute inset-0" />
+                <div className="w-10 h-10 border-2 border-violet-300/30 border-t-transparent rounded-full animate-spin absolute inset-3" style={{ animationDirection: 'reverse' }} />
+              </div>
+              <div className="inline-flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-full mb-5">
+                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                IA analisando seus dados
+              </div>
+              <h2 className="text-2xl font-black text-white mb-3">Gerando seu dashboard...</h2>
+              <p className="text-violet-300 text-sm font-medium mb-2">{GEN_STEPS[autoGenStep]}</p>
+              <p className="text-gray-500 text-xs">Isso leva alguns segundos</p>
+              <div className="flex justify-center gap-1.5 mt-6">
+                {GEN_STEPS.map((_, i) => (
+                  <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i <= autoGenStep ? 'w-8 bg-violet-400' : 'w-4 bg-gray-700'}`} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   function addBlock(type) {
     const block = newBlock(type)

@@ -110,15 +110,21 @@ function SignupForm() {
 
       // Importa o dataset do preview se o usuário veio da home com arquivo/sheets
       const previewToken = searchParams.get('token') || sessionStorage.getItem('preview_token')
+      let previewDatasetId = null
+      let previewDsName = 'Meu Dashboard'
       if (previewToken && data.tokens?.access_token) {
         try {
-          await api.reports.claimPreview(previewToken)
+          const claimed = await api.reports.claimPreview(previewToken)
+          previewDatasetId = claimed?.dataset_id || null
+          previewDsName = claimed?.name || 'Meu Dashboard'
         } catch {}
         sessionStorage.removeItem('preview_token')
       }
 
       if (data.needs_verification) {
         router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
+      } else if (previewDatasetId) {
+        router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)
       } else {
         router.push('/dashboard')
       }

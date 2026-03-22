@@ -56,19 +56,21 @@ export default function LoginPage() {
       }
       // Importa dataset do preview se o usuário veio de um preview antes de fazer login
       const previewToken = sessionStorage.getItem('preview_token')
+      let previewDatasetId = null
+      let previewDsName = 'Meu Dashboard'
       if (previewToken && data.tokens?.access_token) {
         try {
-          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
-          await fetch(`${apiBase}/reports/preview/${previewToken}/claim`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${data.tokens.access_token}` },
-          })
+          const claimed = await api.reports.claimPreview(previewToken)
+          previewDatasetId = claimed?.dataset_id || null
+          previewDsName = claimed?.name || 'Meu Dashboard'
         } catch {}
         sessionStorage.removeItem('preview_token')
       }
 
       if (data.needs_verification) {
         router.push(`/verificar-email?email=${encodeURIComponent(email)}`)
+      } else if (previewDatasetId) {
+        router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)
       } else {
         router.push('/dashboard')
       }
