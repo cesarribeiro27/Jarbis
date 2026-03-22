@@ -1986,38 +1986,39 @@ async def generate_dashboard_endpoint(
             b["layout"].setdefault("w", default_size["w"])
             b["layout"].setdefault("h", default_size["h"])
 
-    # ── Auto-inserir blocos de filtro no topo ─────────────────────────────────
-    # 1. Coluna de data → sempre adiciona filtro de data
-    # 2. Colunas categóricas com poucos valores únicos (2–15) → filtro de categoria
-    filter_blocks = []
+    # ── Posicionamento narrativo dos filtros ──────────────────────────────────
+    # Filtro de data: SEMPRE no topo, largura total (w=12) — ancora a narrativa
+    # Filtros categoriais: no MEIO da narrativa, após KPIs + gráfico herói temporal,
+    #   próximos aos gráficos de composição que eles filtram
 
+    # Remove filtros que a IA possa ter gerado (controlamos o posicionamento)
+    blocks = [b for b in blocks if b.get("type") != "filter"]
+
+    # Filtro de data — topo, w=12
+    date_filter = []
     if suggested_date_col:
-        filter_blocks.append({
+        date_filter.append({
             "id": str(_uuid.uuid4()),
             "type": "filter",
             "config": {"date_mode": True},
             "dataset_id": str(data.dataset_id),
             "filter_col": suggested_date_col,
             "filter_label": suggested_date_col,
-            "layout": {"w": 4, "h": 2},
+            "layout": {"w": 12, "h": 2},
         })
 
     # Colunas que são identificadores técnicos — NÃO devem virar filtros
     _ID_SIGNALS = ["cnpj", "cpf", "id", "codigo", "código", "chave", "numero", "número",
                    "nfe", "nfse", "rps", "protocolo", "inscricao", "inscrição", "cep",
                    "telefone", "email", "e-mail", "url", "hash", "uuid", "key",
-                   # Endereço/localização — não são dimensões analíticas úteis como filtro
                    "endereco", "endereço", "logradouro", "bairro", "rua", "avenida",
-                   "complemento",
-                   # Texto livre — não são dimensões categóricas
-                   "descricao", "descrição", "observacao", "observação", "obs"]
+                   "complemento", "descricao", "descrição", "observacao", "observação", "obs"]
 
     def _is_identifier_col(col_name: str) -> bool:
         cl = col_name.lower().replace(" ", "_").replace("-", "_")
         return any(sig in cl for sig in _ID_SIGNALS)
 
     def _values_are_codes(top3: list) -> bool:
-        """Retorna True se os valores parecem códigos (1-2 chars ou todos maiúsculos sem espaço)."""
         for v in top3:
             v = str(v).strip()
             if len(v) <= 2:
@@ -2026,7 +2027,8 @@ async def generate_dashboard_endpoint(
                 return True
         return False
 
-    # Até 2 colunas categóricas úteis como filtro de negócio
+    # Filtros categoriais — até 2, colocados no MEIO da narrativa
+    cat_filters = []
     cat_filters_added = 0
     for col, st in col_stats.items():
         if cat_filters_added >= 2:
@@ -2039,17 +2041,33 @@ async def generate_dashboard_endpoint(
             unique = st.get("unique", 0)
             top3 = st.get("top3", [])
             if 2 <= unique <= 20 and not _values_are_codes(top3):
-                filter_blocks.append({
+                cat_filters.append({
                     "id": str(_uuid.uuid4()),
                     "type": "filter",
                     "dataset_id": str(data.dataset_id),
                     "filter_col": col,
                     "filter_label": col,
-                    "layout": {"w": 3, "h": 4},
+                    "layout": {"w": 6, "h": 4},
                 })
                 cat_filters_added += 1
 
-    blocks = filter_blocks + blocks
+    # Ponto de inserção dos filtros categoriais:
+    # → após todos os KPIs e o primeiro gráfico temporal (line/area)
+    # → antes dos gráficos de composição (bubble, bar_h, pie)
+    insert_after = 0
+    found_temporal = False
+    for i, b in enumerate(blocks):
+        if b.get("type") == "kpi":
+            insert_after = i + 1
+        elif b.get("type") in ("line", "area") and not found_temporal:
+            insert_after = i + 1
+            found_temporal = True
+        elif found_temporal:
+            break  # primeiro bloco não-temporal após o herói = ponto certo
+
+    # Ordem narrativa final:
+    # filtro_data → KPIs → gráfico_herói → filtros_categoria → composição → detalhe
+    blocks = date_filter + blocks[:insert_after] + cat_filters + blocks[insert_after:]
 
     return {
         "blocks": blocks,
