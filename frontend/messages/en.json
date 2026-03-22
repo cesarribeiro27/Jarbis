@@ -26,7 +26,7 @@
       "orCta": "or",
       "signupLink": "create your free account"
     },
-    "mockupUrl": "app.jarbis.cc/dashboards",
+    "mockupUrl": "jarbis.cc/dashboards",
     "kpi": {
       "totalSales": "Total Sales",
       "newClients": "New Clients",

@@ -250,6 +250,7 @@ export default function LandingPage() {
     const gid = gidM ? gidM[1] : '0'
     const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
     setSheetsState('loading')
+    setUploadState('idle') // limpa qualquer erro anterior do upload
     try {
       const resp = await fetch(csvUrl)
       if (!resp.ok) throw new Error('fail')
@@ -380,7 +381,7 @@ export default function LandingPage() {
               onChange={onFileChange}
             />
             <motion.div
-              onClick={() => uploadState === 'idle' && fileInputRef.current?.click()}
+              onClick={() => uploadState !== 'uploading' && fileInputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
@@ -450,7 +451,7 @@ export default function LandingPage() {
                 <input
                   type="url"
                   value={sheetsUrl}
-                  onChange={e => { setSheetsUrl(e.target.value); setSheetsState('idle') }}
+                  onChange={e => { setSheetsUrl(e.target.value); setSheetsState('idle'); setUploadState('idle') }}
                   placeholder="Cole o link do Google Sheets..."
                   className={`w-full pl-9 pr-8 py-2.5 rounded-xl text-sm border text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${sheetsState === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-white/20 bg-white/5 focus:border-violet-500/50'}`}
                 />
