@@ -231,11 +231,13 @@ async def preview_upload(
         "sample": rows[:3],
     }
 
-    redis = await get_redis()
-    if redis:
-        import json as _json
+    import json as _json
+    redis = get_redis()
+    try:
         await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, _json.dumps(preview_data, default=str))
         await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, _json.dumps(rows, default=str))
+    finally:
+        await redis.aclose()
 
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -338,10 +340,12 @@ async def preview_sheets(request: Request):
         "sample": rows[:3],
     }
 
-    redis = await get_redis()
-    if redis:
+    redis = get_redis()
+    try:
         await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL, _json.dumps(preview_data, default=str))
         await redis.setex(f"jarbis:preview:{temp_token}:rows", _PREVIEW_TTL, _json.dumps(rows, default=str))
+    finally:
+        await redis.aclose()
 
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -354,10 +358,11 @@ async def preview_sheets(request: Request):
 async def get_preview(token: str):
     """Retorna dados do preview sem autenticação."""
     import json as _json
-    redis = await get_redis()
-    if not redis:
-        raise HTTPException(status_code=503, detail="Serviço indisponível")
-    raw = await redis.get(f"jarbis:preview:{token}")
+    redis = get_redis()
+    try:
+        raw = await redis.get(f"jarbis:preview:{token}")
+    finally:
+        await redis.aclose()
     if not raw:
         raise HTTPException(status_code=404, detail="Preview não encontrado ou expirado")
     return _json.loads(raw)
@@ -380,40 +385,39 @@ async def claim_preview(
     from app.modules.reports.dataset_models import ReportDataset
     from app.modules.reports.dataset_service import _detect_columns
 
-    redis = await get_redis()
-    if not redis:
-        raise HTTPException(status_code=503, detail="Serviço indisponível.")
+    redis = get_redis()
+    try:
+        raw_meta = await redis.get(f"jarbis:preview:{token}")
+        raw_rows = await redis.get(f"jarbis:preview:{token}:rows")
+        if not raw_meta or not raw_rows:
+            raise HTTPException(status_code=404, detail="Preview expirado ou não encontrado.")
 
-    raw_meta = await redis.get(f"jarbis:preview:{token}")
-    raw_rows = await redis.get(f"jarbis:preview:{token}:rows")
-    if not raw_meta or not raw_rows:
-        raise HTTPException(status_code=404, detail="Preview expirado ou não encontrado.")
+        meta = _json.loads(raw_meta)
+        rows = _json.loads(raw_rows)
+        if not rows:
+            raise HTTPException(status_code=400, detail="Preview sem dados.")
 
-    meta = _json.loads(raw_meta)
-    rows = _json.loads(raw_rows)
-    if not rows:
-        raise HTTPException(status_code=400, detail="Preview sem dados.")
+        file_name = meta.get("file_name", "meu-dataset")
+        ds_name = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
+        ds_type = meta.get("ds_type", "csv")
+        columns = _detect_columns(rows)
 
-    file_name = meta.get("file_name", "meu-dataset")
-    ds_name = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
-    ds_type = meta.get("ds_type", "csv")
-    columns = _detect_columns(rows)
+        ds = ReportDataset(
+            tenant_id=current_user.tenant_id,
+            name=ds_name,
+            type=ds_type,
+            rows=rows,
+            columns=columns,
+            row_count=len(rows),
+        )
+        db.add(ds)
+        await db.commit()
+        await db.refresh(ds)
 
-    ds = ReportDataset(
-        tenant_id=current_user.tenant_id,
-        name=ds_name,
-        type=ds_type,
-        rows=rows,
-        columns=columns,
-        row_count=len(rows),
-    )
-    db.add(ds)
-    await db.commit()
-    await db.refresh(ds)
-
-    # Limpa o preview do Redis
-    await redis.delete(f"jarbis:preview:{token}")
-    await redis.delete(f"jarbis:preview:{token}:rows")
+        await redis.delete(f"jarbis:preview:{token}")
+        await redis.delete(f"jarbis:preview:{token}:rows")
+    finally:
+        await redis.aclose()
 
     return {"dataset_id": str(ds.id), "name": ds.name, "row_count": ds.row_count}
 
