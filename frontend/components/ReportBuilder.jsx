@@ -1375,7 +1375,20 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }, [block.id])
 
   if (block.type === 'text') {
-    return <textarea className="w-full h-full text-sm resize-none bg-transparent outline-none" style={{ color: block.config?.text_color || '#4b5563' }} placeholder="Escreva um comentário..." value={block.config?.text || ''} readOnly={readOnly} onChange={e => !readOnly && onTextChange(e.target.value)} />
+    if (readOnly) {
+      const html = block.config?.text || ''
+      const isPlain = !/<[a-z][\s\S]*>/i.test(html)
+      return (
+        <div
+          className="w-full h-full text-sm overflow-auto leading-relaxed whitespace-pre-wrap"
+          style={{ color: block.config?.text_color || '#4b5563' }}
+          dangerouslySetInnerHTML={isPlain ? undefined : { __html: html }}
+        >
+          {isPlain ? html : undefined}
+        </div>
+      )
+    }
+    return <RichTextEditor block={block} onTextChange={onTextChange} />
   }
 
   if (block.type === 'filter') {
@@ -4857,8 +4870,128 @@ function BlockDropZones({ block, draggedColumn, onDrop }) {
   )
 }
 
+// ─── RichTextEditor — contenteditable com suporte a HTML ──────────────────────
+function RichTextEditor({ block, onTextChange }) {
+  const ref = useRef(null)
+  const initializedRef = useRef(false)
+
+  useEffect(() => {
+    if (ref.current && !initializedRef.current) {
+      ref.current.innerHTML = block.config?.text || ''
+      initializedRef.current = true
+    }
+  }, [block.id])
+
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      className="w-full h-full text-sm outline-none overflow-auto leading-relaxed"
+      style={{ color: block.config?.text_color || '#4b5563' }}
+      onInput={e => onTextChange(e.currentTarget.innerHTML)}
+    />
+  )
+}
+
+// ─── FloatingTextToolbar — toolbar de formatação para bloco de texto ──────────
+function FloatingTextToolbar({ block, blocks, onChange }) {
+  const [fontSize, setFontSize] = useState('3')
+
+  function execCmd(cmd, val) {
+    document.execCommand(cmd, false, val ?? null)
+  }
+
+  function updConfig(patch) {
+    onChange(blocks.map(b => b.id === block.id ? { ...b, config: { ...b.config, ...patch } } : b))
+  }
+
+  const btnBase = 'flex items-center justify-center w-7 h-7 rounded-lg text-gray-600 hover:bg-violet-50 hover:text-violet-700 transition-colors text-xs font-semibold'
+  const divider = <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0" />
+
+  return (
+    <div
+      className="absolute -top-11 left-0 bg-white rounded-xl shadow-lg border border-gray-200 flex items-center px-1.5 py-1 gap-0.5 z-50 flex-wrap"
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.preventDefault()}
+    >
+      {/* Negrito */}
+      <button className={btnBase} title="Negrito (Ctrl+B)" onClick={() => execCmd('bold')}>
+        <span className="font-bold">B</span>
+      </button>
+      {/* Itálico */}
+      <button className={btnBase} title="Itálico (Ctrl+I)" onClick={() => execCmd('italic')}>
+        <em>I</em>
+      </button>
+      {/* Sublinhado */}
+      <button className={btnBase} title="Sublinhado (Ctrl+U)" onClick={() => execCmd('underline')}>
+        <span className="underline">U</span>
+      </button>
+      {divider}
+      {/* Tamanho */}
+      <select
+        value={fontSize}
+        onChange={e => { setFontSize(e.target.value); execCmd('fontSize', e.target.value) }}
+        onMouseDown={e => e.stopPropagation()}
+        className="text-[10px] border border-gray-200 rounded-lg px-1 py-1 outline-none focus:border-violet-400 bg-white text-gray-600 cursor-pointer"
+        title="Tamanho"
+      >
+        <option value="1">XS</option>
+        <option value="2">P</option>
+        <option value="3">M</option>
+        <option value="4">G</option>
+        <option value="5">GG</option>
+        <option value="6">XG</option>
+      </select>
+      {divider}
+      {/* Alinhamentos */}
+      <button className={btnBase} title="Alinhar à esquerda" onClick={() => execCmd('justifyLeft')}>
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeWidth={2} d="M4 6h16M4 10h10M4 14h16M4 18h10"/>
+        </svg>
+      </button>
+      <button className={btnBase} title="Centralizar" onClick={() => execCmd('justifyCenter')}>
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeWidth={2} d="M4 6h16M7 10h10M4 14h16M7 18h10"/>
+        </svg>
+      </button>
+      <button className={btnBase} title="Alinhar à direita" onClick={() => execCmd('justifyRight')}>
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeWidth={2} d="M4 6h16M10 10h10M4 14h16M10 18h10"/>
+        </svg>
+      </button>
+      {divider}
+      {/* Lista */}
+      <button className={btnBase} title="Lista com marcadores" onClick={() => execCmd('insertUnorderedList')}>
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+        </svg>
+      </button>
+      {divider}
+      {/* Cor do texto */}
+      <label className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-600 hover:bg-violet-50 hover:text-violet-700 transition-colors cursor-pointer" title="Cor do texto">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10M12 3L5 18h3l2-5h4l2 5h3L12 3z"/>
+        </svg>
+        <input type="color" className="sr-only" defaultValue={block.config?.text_color || '#4b5563'} onChange={e => { updConfig({ text_color: e.target.value }); execCmd('foreColor', e.target.value) }} />
+      </label>
+      {divider}
+      {/* Excluir */}
+      <button
+        className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+        title="Excluir bloco"
+        onClick={() => onChange(blocks.filter(b => b.id !== block.id))}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
+  )
+}
+
 // ─── FloatingBlockToolbar — toolbar flutuante acima do bloco selecionado ──────
-function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction, onAiImprove }) {
+function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction, onAiImprove, onClone }) {
   const [showTypes, setShowTypes] = useState(false)
   const [showData, setShowData] = useState(false)
   const [showColors, setShowColors] = useState(false)
@@ -5046,6 +5179,19 @@ function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction
           <circle cx="12" cy="12" r="3"/>
         </svg>
       </button>
+
+      {/* Duplicate */}
+      {onClone && (
+        <button
+          onClick={() => { closeAll(); onClone() }}
+          className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          title="Duplicar bloco"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </button>
+      )}
 
       {/* Delete */}
       <button
@@ -5262,8 +5408,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
-            {/* Floating block toolbar — shown above selected non-filter blocks */}
-            {!readOnly && isSelected && block.type !== 'filter' && block.type !== 'slider' && (
+            {/* Floating block toolbar — shown above selected non-filter/text blocks */}
+            {!readOnly && isSelected && block.type !== 'filter' && block.type !== 'slider' && block.type !== 'text' && (
               <FloatingBlockToolbar
                 block={block}
                 blocks={blocks}
@@ -5271,13 +5417,18 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 datasets={datasets}
                 onBlockAction={onBlockAction}
                 onAiImprove={onAiImprove}
+                onClone={cloneBlock}
               />
+            )}
+            {/* Floating text toolbar — shown above selected text blocks */}
+            {!readOnly && isSelected && block.type === 'text' && (
+              <FloatingTextToolbar block={block} blocks={blocks} onChange={onChange} />
             )}
 
             {/* Header — todos os filtros (data e categorial) têm header mínimo */}
             {block.type === 'filter' ? (
               !readOnly && (
-                <div className="drag-handle cursor-grab shrink-0 flex items-center justify-center h-4 opacity-0 group-hover:opacity-30 transition-opacity">
+                <div className="drag-handle cursor-grab absolute top-1 left-1/2 -translate-x-1/2 flex items-center justify-center h-3 opacity-0 group-hover:opacity-30 transition-opacity z-10">
                   <svg className="w-3 h-2.5 text-gray-500" viewBox="0 0 10 8" fill="currentColor">
                     <circle cx="2" cy="2" r="1.2"/><circle cx="8" cy="2" r="1.2"/>
                     <circle cx="2" cy="6" r="1.2"/><circle cx="8" cy="6" r="1.2"/>
@@ -5365,39 +5516,6 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               />
             </div>
 
-            {/* Floating toolbar — 3 ações claras abaixo do bloco selecionado */}
-            {!readOnly && isSelected && (
-              <div
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 flex flex-row items-center gap-0.5 px-1 py-1 bg-white border border-gray-200 rounded-xl shadow-[0_4px_16px_rgba(109,40,217,0.12)] z-50"
-                onClick={e => e.stopPropagation()}
-              >
-                <button
-                  title="Editar bloco"
-                  onClick={() => { onSelectBlock?.(block.id); onBlockAction?.(block.id, 'config') }}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-700 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  <span className="text-[9px] font-semibold leading-none">Editar</span>
-                </button>
-                <button
-                  title="Duplicar bloco"
-                  onClick={() => cloneBlock()}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-violet-50 hover:text-violet-700 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                  <span className="text-[9px] font-semibold leading-none">Duplicar</span>
-                </button>
-                <div className="w-px h-8 bg-gray-100" />
-                <button
-                  title="Excluir bloco"
-                  onClick={() => onChange(blocks.filter(b => b.id !== block.id))}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  <span className="text-[9px] font-semibold leading-none">Excluir</span>
-                </button>
-              </div>
-            )}
             {/* Binding Mode — drop zone borders */}
             {bindingMode && !['filter', 'slider', 'text', 'image'].includes(block.type) && isSelected && (
               <div className="absolute inset-0 rounded-lg border-2 border-dashed border-purple-400 pointer-events-none z-10 animate-pulse" />

@@ -197,6 +197,7 @@ export const api = {
     generateDashboard: (datasetId, objetivo) =>
       apiFetch('/reports/generate-dashboard', { method: 'POST', body: JSON.stringify({ dataset_id: datasetId, objetivo: objetivo || null }) }),
     diagnoseDashboard: (reportId) => apiFetch(`/reports/${reportId}/diagnose`, { method: 'POST' }),
+    askDashboard: (reportId, question) => apiFetch(`/reports/${reportId}/ask`, { method: 'POST', body: JSON.stringify({ question }) }),
     suggestBlocks: (reportId, datasetId) => apiFetch(`/reports/${reportId}/suggest-blocks`, { method: 'POST', body: JSON.stringify({ dataset_id: datasetId }) }),
     aiUsage: () => apiFetch('/reports/ai-usage'),
     publicQuery: (token, id, labelCol, valueCol, agg = 'sum', filterCol = null, filterVal = null, dateCol = null, dateFrom = null, dateTo = null) =>

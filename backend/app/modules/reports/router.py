@@ -3728,6 +3728,164 @@ async def diagnose_dashboard_endpoint(
 
 
 @router.post(
+    "/{report_id}/ask",
+    summary="Pergunta livre sobre os dados do dashboard",
+)
+async def ask_dashboard_endpoint(
+    report_id: uuid.UUID,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
+):
+    import json
+    import os
+
+    import anthropic as ant
+
+    from .ai_usage_models import AIUsageLog
+    from .security import check_question_safety
+
+    question = (data.get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="Pergunta não pode ser vazia.")
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    plan = tenant.plan if tenant else "free"
+    check_feature_allowed("ai", plan)
+    await check_ai_query_limit(db, current_user.tenant_id, plan)
+
+    safety = await check_question_safety(
+        question=question, db=db,
+        tenant_id=current_user.tenant_id, user_id=current_user.id, endpoint="ask_dashboard",
+    )
+    if not safety["safe"]:
+        raise HTTPException(status_code=403, detail={"code": "safety_violation", "message": safety["message"]})
+
+    # Resolver report e dataset
+    report = await db.scalar(
+        select(Report).where(Report.id == report_id, Report.tenant_id == effective_tenant_id)
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Dashboard não encontrado")
+
+    all_blocks = []
+    for page in (report.pages or []):
+        all_blocks.extend(page.get("blocks", []))
+    if not all_blocks:
+        all_blocks = report.blocks or []
+
+    dataset_ids = list({b.get("dataset_id") for b in all_blocks if b.get("dataset_id")})
+    if not dataset_ids:
+        raise HTTPException(status_code=422, detail="Dashboard não possui datasets conectados.")
+
+    svc = DatasetService(db)
+    ds = None
+    for did in dataset_ids:
+        try:
+            ds = await svc.get(uuid.UUID(did), effective_tenant_id)
+            if not ds and effective_tenant_id != current_user.tenant_id:
+                ds = await svc.get(uuid.UUID(did), current_user.tenant_id)
+            if ds:
+                break
+        except Exception:
+            continue
+
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key or api_key == "your_key_here":
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
+
+    columns = ds.columns or []
+    rows = ds.rows or []
+    if not rows:
+        try:
+            from app.core.cache import get_redis as _get_redis
+            _redis = _get_redis()
+            _cached = await warp_get_rows(_redis, str(ds.id))
+            if _cached:
+                rows = _cached
+        except Exception:
+            pass
+
+    total_rows = len(rows)
+
+    # Estatísticas das colunas
+    col_stats: dict[str, dict] = {}
+    for col in columns:
+        vals = [r.get(col) for r in rows if r.get(col) is not None
+                and str(r.get(col)).strip().lower() not in (
+                    "", "null", "none", "n/a", "na", "-", "--", "nan")]
+        nums = [float(v) for v in vals if isinstance(v, (int, float))]
+        if nums:
+            col_stats[col] = {
+                "type": "numero",
+                "sum": round(sum(nums), 2),
+                "avg": round(sum(nums) / len(nums), 2),
+                "min": round(min(nums), 2),
+                "max": round(max(nums), 2),
+            }
+        else:
+            uniq = list({str(v) for v in vals[:200]})[:10]
+            col_stats[col] = {"type": "texto", "exemplos": uniq}
+
+    schema_lines = []
+    for col, st in col_stats.items():
+        if st["type"] == "numero":
+            schema_lines.append(
+                f"  {col}: número | total={st['sum']} | média={st['avg']} | min={st['min']} | max={st['max']}"
+            )
+        else:
+            ex = ", ".join(st.get("exemplos", [])[:5])
+            schema_lines.append(f"  {col}: texto | exemplos: {ex}")
+
+    domain_key, domain_tpl = _detect_domain(columns, rows)
+
+    system_prompt = (
+        "Você é um analista de negócios especializado em BI para PMEs brasileiras. "
+        "Responda APENAS com texto simples, direto e objetivo — sem JSON, sem markdown, sem asteriscos. "
+        "Use parágrafos curtos. Seja específico com números quando disponíveis. "
+        "Fale como analista para o dono da empresa, não para um técnico. "
+        "Responda em português brasileiro."
+    )
+
+    user_msg = (
+        f"SETOR: {domain_tpl['name']}\n"
+        f"REGISTROS: {total_rows}\n\n"
+        f"DADOS DISPONÍVEIS:\n" + "\n".join(schema_lines or [f"  {c}" for c in columns[:12]]) + "\n\n"
+        f"PERGUNTA DO USUÁRIO: {question}"
+    )
+
+    client = ant.Anthropic(api_key=api_key)
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=800,
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+
+    answer = msg.content[0].text.strip()
+
+    # Log de uso
+    try:
+        usage = msg.usage
+        log = AIUsageLog(
+            tenant_id=current_user.tenant_id, user_id=current_user.id, dataset_id=ds.id,
+            model="claude-haiku-4-5-20251001",
+            tokens_input=usage.input_tokens, tokens_output=usage.output_tokens,
+            question=question[:200],
+        )
+        db.add(log)
+        await db.commit()
+    except Exception:
+        pass
+
+    return {"question": question, "answer": answer, "domain": domain_key, "domain_name": domain_tpl["name"]}
+
+
+@router.post(
     "/{report_id}/suggest-blocks",
     summary="Sugere novos blocos para colunas ainda não visualizadas no dashboard",
 )

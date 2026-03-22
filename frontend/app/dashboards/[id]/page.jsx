@@ -643,17 +643,30 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
-  const [tab, setTab] = useState('analise') // 'analise' | 'tecnico'
+  const [tab, setTab] = useState(null) // null = tela de escolha | 'analise' | 'perguntar' | 'tecnico'
   const [addedBlocks, setAddedBlocks] = useState(new Set())
   const [exported, setExported] = useState(false)
 
+  // Pergunta livre
+  const [question, setQuestion] = useState('')
+  const [askLoading, setAskLoading] = useState(false)
+  const [askError, setAskError] = useState(null)
+  const [chatHistory, setChatHistory] = useState([])
+  const chatEndRef = useRef(null)
+
   useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatHistory])
+
+  function handleGenerateAuto() {
+    setTab('analise')
+    if (result || loading) return
     setLoading(true)
     api.reports.diagnoseDashboard(reportId)
       .then(setResult)
       .catch(e => setError(e.message || 'Erro ao diagnosticar'))
       .finally(() => setLoading(false))
-  }, [reportId])
+  }
 
   const score = result?.health_score ?? 0
   const scoreColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-amber-500' : 'text-red-500'
@@ -681,7 +694,7 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
     if (!onExportInsights || !result) return
     const insights = result.visual_insights || []
     const lines = insights.map(i => `• ${i}`).join('\n')
-    const text = `📊 Análise IA — ${result.domain_name || 'Dashboard'}\n\n${lines}`
+    const text = `Análise — ${result.domain_name || 'Dashboard'}\n\n${lines}`
     onExportInsights(text)
     setExported(true)
     setTimeout(() => setExported(false), 2500)
@@ -691,6 +704,32 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
     ? new Date(result.previous.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
     : null
 
+  async function handleAsk() {
+    const q = question.trim()
+    if (!q || askLoading) return
+    setAskLoading(true)
+    setAskError(null)
+    setQuestion('')
+    try {
+      const res = await api.reports.askDashboard(reportId, q)
+      setChatHistory(h => [...h, { question: q, answer: res.answer, exported: false }])
+    } catch (e) {
+      setAskError(e.message || 'Erro ao processar pergunta')
+    } finally {
+      setAskLoading(false)
+    }
+  }
+
+  function handleExportAnswer(idx) {
+    if (!onExportInsights) return
+    const item = chatHistory[idx]
+    if (!item) return
+    const text = `Análise — ${item.question}\n\n${item.answer}`
+    onExportInsights(text)
+    setChatHistory(h => h.map((x, i) => i === idx ? { ...x, exported: true } : x))
+    setTimeout(() => setChatHistory(h => h.map((x, i) => i === idx ? { ...x, exported: false } : x)), 2500)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -698,12 +737,12 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            <div className="w-6 h-6 rounded-lg bg-violet-100 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
               </svg>
             </div>
-            <span className="font-semibold text-gray-800 text-sm">Diagnóstico IA</span>
+            <span className="font-semibold text-gray-800 text-sm">Análise</span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -712,18 +751,56 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100 shrink-0">
-          {[{ id: 'analise', label: 'Análise' }, { id: 'tecnico', label: 'Técnico' }].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${tab === t.id ? 'text-amber-700 border-b-2 border-amber-500 bg-amber-50/40' : 'text-gray-500 hover:text-gray-700'}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Tabs — só aparecem após escolha */}
+        {tab !== null && (
+          <div className="flex border-b border-gray-100 shrink-0">
+            {[{ id: 'analise', label: 'Visão geral' }, { id: 'perguntar', label: 'Perguntar' }, { id: 'tecnico', label: 'Técnico' }].map(t => (
+              <button key={t.id}
+                onClick={() => { if (t.id === 'analise') handleGenerateAuto(); else setTab(t.id) }}
+                className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${tab === t.id ? 'text-violet-700 border-b-2 border-violet-500 bg-violet-50/40' : 'text-gray-500 hover:text-gray-700'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+
+          {/* Tela de escolha — aparece antes de qualquer ação */}
+          {tab === null && (
+            <div className="flex flex-col gap-3 py-4">
+              <p className="text-xs text-gray-400 text-center mb-1">O que você quer fazer?</p>
+              <button
+                onClick={handleGenerateAuto}
+                className="flex items-start gap-3 p-4 border border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50/40 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0 group-hover:bg-violet-200 transition-colors">
+                  <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Gerar análise automática</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Análise completa do dashboard com health score, insights e recomendações</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setTab('perguntar')}
+                className="flex items-start gap-3 p-4 border border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50/40 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0 group-hover:bg-violet-200 transition-colors">
+                  <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Fazer uma pergunta</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Pergunte algo específico sobre seus dados — ex: "Como evoluiu o faturamento?"</p>
+                </div>
+              </button>
+            </div>
+          )}
 
           {loading && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -850,6 +927,86 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
             </>
           )}
 
+          {/* Tab: Perguntar */}
+          {tab === 'perguntar' && (
+            <div className="flex flex-col gap-3 flex-1">
+              {/* Histórico de perguntas/respostas */}
+              {chatHistory.length === 0 && !askLoading && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+                  <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Pergunte sobre seus dados</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Ex: "Como evoluiu o faturamento mês a mês?"</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {[
+                      'Qual o produto mais vendido?',
+                      'Evolução do faturamento mês a mês',
+                      'Quais clientes compram mais?',
+                      'Qual período teve melhor desempenho?',
+                    ].map(sugestao => (
+                      <button
+                        key={sugestao}
+                        onClick={() => setQuestion(sugestao)}
+                        className="text-[10px] px-2 py-1 bg-gray-50 border border-gray-200 rounded-full text-gray-500 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                      >
+                        {sugestao}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {chatHistory.map((item, idx) => (
+                <div key={idx} className="flex flex-col gap-2">
+                  {/* Pergunta */}
+                  <div className="flex justify-end">
+                    <div className="bg-violet-600 text-white text-xs px-3 py-2 rounded-2xl rounded-tr-sm max-w-[85%] leading-relaxed">
+                      {item.question}
+                    </div>
+                  </div>
+                  {/* Resposta */}
+                  <div className="flex flex-col gap-1">
+                    <div className="bg-gray-50 border border-gray-100 text-xs px-3 py-2.5 rounded-2xl rounded-tl-sm text-gray-700 leading-relaxed max-w-[95%] whitespace-pre-wrap">
+                      {item.answer}
+                    </div>
+                    {onExportInsights && (
+                      <button
+                        onClick={() => handleExportAnswer(idx)}
+                        className={`self-start flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition-all ${item.exported ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-violet-600 hover:bg-violet-50'}`}
+                      >
+                        {item.exported
+                          ? <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg> Adicionado!</>
+                          : <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg> Adicionar ao dashboard</>
+                        }
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {askLoading && (
+                <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
+                  <svg className="w-4 h-4 animate-spin text-violet-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Analisando...
+                </div>
+              )}
+
+              {askError && (
+                <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600">{askError}</div>
+              )}
+
+              <div ref={chatEndRef} />
+            </div>
+          )}
+
           {result && !loading && tab === 'tecnico' && (
             <>
               {/* Métricas técnicas */}
@@ -903,12 +1060,36 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
           )}
         </div>
 
-        {/* Footer — exportar para dashboard */}
-        {result && !loading && onExportInsights && (
+        {/* Footer — varia por tab */}
+        {tab === 'perguntar' ? (
+          <div className="px-3 py-3 border-t border-gray-100 shrink-0">
+            <div className="flex items-end gap-2">
+              <textarea
+                className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 resize-none outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-100 leading-relaxed placeholder:text-gray-300"
+                placeholder="O que você quer analisar?"
+                rows={2}
+                value={question}
+                onChange={e => setQuestion(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAsk() } }}
+              />
+              <button
+                onClick={handleAsk}
+                disabled={!question.trim() || askLoading}
+                className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Enviar (Enter)"
+              >
+                {askLoading
+                  ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+        ) : (result && !loading && onExportInsights && tab === 'analise') ? (
           <div className="px-4 py-3 border-t border-gray-100 shrink-0">
             <button
               onClick={handleExport}
-              className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 ${exported ? 'bg-green-100 text-green-700' : 'bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100'}`}
+              className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 ${exported ? 'bg-green-100 text-green-700' : 'bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100'}`}
             >
               {exported
                 ? <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg> Adicionado ao dashboard!</>
@@ -916,7 +1097,7 @@ function DiagnosticoPanel({ reportId, onClose, onAddBlock, onExportInsights }) {
               }
             </button>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )
@@ -1887,7 +2068,7 @@ export default function DashboardDetailPage() {
     const block = {
       id: crypto.randomUUID(),
       type: 'text',
-      title: 'Análise IA',
+      title: 'Análise',
       dataset_id: null,
       config: { text: text, is_ai_insight: true },
       layout: { x: 0, y: Infinity, w: 12, h: 3 },
@@ -2105,15 +2286,15 @@ export default function DashboardDetailPage() {
             </button>
           )}
 
-          {/* Diagnóstico BI */}
+          {/* Análise IA */}
           {blocks.length > 0 && (
             <button
               onClick={() => setShowDiagnostico(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-colors"
-              title="Diagnóstico do dashboard"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold rounded-lg hover:bg-violet-100 hover:border-violet-300 transition-colors"
+              title="Análise do dashboard"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-              <span className="hidden sm:inline">Diagnóstico</span>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span className="hidden sm:inline">Análise</span>
             </button>
           )}
 
@@ -2380,9 +2561,9 @@ export default function DashboardDetailPage() {
               {t('ask')}
             </button>
             {blocks.length > 0 && (
-              <button onClick={() => setShowDiagnostico(true)} className="flex items-center gap-1.5 px-3 py-2 border border-amber-200 bg-amber-50 text-amber-700 text-sm rounded-xl hover:bg-amber-100 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                Diagnóstico
+              <button onClick={() => setShowDiagnostico(true)} className="flex items-center gap-1.5 px-3 py-2 border border-violet-200 bg-violet-50 text-violet-700 text-sm rounded-xl hover:bg-violet-100 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Análise
               </button>
             )}
             <button onClick={handleShare} disabled={sharingLoading} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
