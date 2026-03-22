@@ -306,6 +306,7 @@ export default function LandingPage() {
   }
 
   return (
+    <>
     <div className="bg-white text-gray-900 antialiased">
 
       {/* ── NAV ── */}
@@ -1293,5 +1294,6 @@ export default function LandingPage() {
         </div>
       </div>
     )}
+    </>
   )
 }
