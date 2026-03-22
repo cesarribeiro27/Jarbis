@@ -164,7 +164,7 @@ export default function PreviewPage() {
               </div>
               <div className="ml-auto flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
                 <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                IA analisou {colCount} colunas
+                Jarbis analisou {colCount} colunas
               </div>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function PreviewPage() {
             </h2>
 
             <p className="text-gray-400 text-sm mb-2">
-              A IA analisou <strong className="text-white">{rowCount.toLocaleString('pt-BR')} linhas</strong> e {colCount} colunas do seu arquivo.
+              O Jarbis analisou <strong className="text-white">{rowCount.toLocaleString('pt-BR')} linhas</strong> e {colCount} colunas do seu arquivo.
             </p>
             <p className="text-gray-500 text-sm mb-7">
               Crie sua conta para salvar o dashboard, editar os blocos e compartilhar com seu time.
