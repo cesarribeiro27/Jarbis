@@ -4,13 +4,13 @@
     "features": "功能",
     "pricing": "定价",
     "login": "登录",
-    "trialCta": "免费试用 — 7天"
+    "trialCta": "免费试用 - 7天"
   },
   "hero": {
-    "badge": "每个计划均含AI — 包括免费版",
+    "badge": "每个计划均含AI - 包括免费版",
     "title1": "您的电子表格在30秒内",
     "title2": "变成专业仪表板。",
-    "subtitle": "上传您的Excel或CSV，Jarbis AI自动分析所有内容：生成KPI、图表和报告 — 无需编程，无需分析师。",
+    "subtitle": "上传您的Excel或CSV，Jarbis AI自动分析所有内容：生成KPI、图表和报告 - 无需编程，无需分析师。",
     "ctaPrimary": "免费开始",
     "ctaSecondary": "了解如何使用",
     "freeBadge": "7天免费 · 无需信用卡 · 随时取消",
@@ -445,7 +445,7 @@
       "syncError": "同步时出错。",
       "deleteSuccess": "数据集已删除。",
       "deleteError": "删除时出错。",
-      "headersInvalid": "无效标头 — 使用 JSON 格式"
+      "headersInvalid": "无效标头 - 使用 JSON 格式"
     }
   },
   "alerts": {
@@ -768,7 +768,7 @@
       "labelNumericCol": "数字列",
       "labelRange": "范围（最小/最大）",
       "sectionData": "数据",
-      "noDatasets": "没有数据集 — 在“数据”选项卡中添加",
+      "noDatasets": "没有数据集 - 在“数据”选项卡中添加",
       "labelDimension": "尺寸（X轴）",
       "placeholderDimension": "选择尺寸...",
       "optgroupText": "文本/日期",
@@ -837,7 +837,7 @@
       "toggleStacked": "堆叠条",
       "toggleSmooth": "平滑（弯曲）线",
       "labelFillOpacity": "填充不透明度",
-      "labelYAxisLimits": "Y 轴 — 手动限制",
+      "labelYAxisLimits": "Y 轴 - 手动限制",
       "placeholderYMin": "最小（自动）",
       "placeholderYMax": "最大（自动）",
       "labelYAxisTitle": "Y 轴标题",
@@ -932,7 +932,7 @@
     "builder": {
       "emptyHint": "添加块来构建您的仪表板",
       "copyLabel": "（复制）",
-      "tooltipFiltered": "已过滤 — 单击以清除",
+      "tooltipFiltered": "已过滤 - 单击以清除",
       "tooltipLocked": "区块锁定",
       "tooltipExportCsv": "导出 CSV",
       "tooltipData": "数据",

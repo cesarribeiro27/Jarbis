@@ -8,9 +8,9 @@
   },
   "hero": {
     "badge": "Análise automática em todos os planos, incluindo o gratuito",
-    "title1": "Seus dados.",
-    "title2": "Sua visão.",
-    "subtitle": "Sobe seu Excel ou CSV e o Jarbis transforma em dashboards profissionais em segundos. KPIs, gráficos e insights — sem código, sem analista.",
+    "title1": "Sua planilha vira dashboard",
+    "title2": "profissional em 30 segundos.",
+    "subtitle": "Sobe seu Excel ou CSV e o Jarbis analisa tudo. Gera KPIs, gráficos e relatórios em segundos. Sem programação, sem analista de dados.",
     "ctaPrimary": "Comece grátis agora",
     "ctaSecondary": "Ver como funciona",
     "freeBadge": "7 dias grátis · Sem cartão · Cancele quando quiser",
@@ -365,7 +365,7 @@
       "syncError": "Erro ao sincronizar.",
       "deleteSuccess": "Dataset excluído.",
       "deleteError": "Erro ao excluir.",
-      "headersInvalid": "Headers inválidos — use formato JSON"
+      "headersInvalid": "Headers inválidos - use formato JSON"
     }
   },
   "alerts": {
@@ -423,7 +423,7 @@
     "toast": {
       "loadError": "Erro ao carregar alertas.",
       "triggered": "Alerta disparado!",
-      "ok": "Alerta verificado — tudo OK.",
+      "ok": "Alerta verificado - tudo OK.",
       "enabled": "Alerta ativado.",
       "paused": "Alerta pausado.",
       "deleted": "Alerta excluído."
@@ -558,7 +558,7 @@
       "labelDataset": "Dataset:"
     },
     "ai": {
-      "title": "IA — Exploração de dados",
+      "title": "IA - Exploração de dados",
       "clearHistory": "Limpar",
       "noDataset": "Nenhum dataset disponível. Adicione dados primeiro.",
       "datasetLabel": "Dataset",
@@ -634,7 +634,7 @@
       "labelNumericCol": "Coluna numérica",
       "labelRange": "Faixa (mín / máx)",
       "sectionData": "Dados",
-      "noDatasets": "Sem datasets — adicione na aba \"Dados\"",
+      "noDatasets": "Sem datasets - adicione na aba \"Dados\"",
       "labelDimension": "Dimensão (eixo X)",
       "placeholderDimension": "Selecione a dimensão...",
       "optgroupText": "Texto / Data",
@@ -688,7 +688,7 @@
       "toggleStacked": "Barras empilhadas (stacked)",
       "toggleSmooth": "Linha suavizada (curva)",
       "labelFillOpacity": "Opacidade do preenchimento",
-      "labelYAxisLimits": "Eixo Y — limites manuais",
+      "labelYAxisLimits": "Eixo Y - limites manuais",
       "placeholderYMin": "Mín (auto)", "placeholderYMax": "Máx (auto)",
       "labelYAxisTitle": "Título do eixo Y",
       "placeholderYAxisTitle": "Ex: Receita (R$)",
@@ -780,7 +780,7 @@
     "builder": {
       "emptyHint": "Adicione blocos para montar seu dashboard",
       "copyLabel": "(cópia)",
-      "tooltipFiltered": "Filtrado — clique para limpar",
+      "tooltipFiltered": "Filtrado - clique para limpar",
       "tooltipLocked": "Bloco travado",
       "tooltipExportCsv": "Exportar CSV",
       "tooltipData": "Dados",

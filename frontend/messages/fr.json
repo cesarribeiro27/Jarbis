@@ -4,13 +4,13 @@
     "features": "Fonctionnalités",
     "pricing": "Tarifs",
     "login": "Se connecter",
-    "trialCta": "Essai gratuit — 7 jours"
+    "trialCta": "Essai gratuit - 7 jours"
   },
   "hero": {
-    "badge": "IA incluse dans tous les plans — même le gratuit",
+    "badge": "IA incluse dans tous les plans - même le gratuit",
     "title1": "Votre tableur devient un tableau de",
     "title2": "bord professionnel en 30 secondes.",
-    "subtitle": "Importez votre Excel ou CSV et l'IA de Jarbis analyse tout : KPIs, graphiques et rapports générés automatiquement — sans programmation, sans analyste.",
+    "subtitle": "Importez votre Excel ou CSV et l'IA de Jarbis analyse tout : KPIs, graphiques et rapports générés automatiquement - sans programmation, sans analyste.",
     "ctaPrimary": "Commencer gratuitement",
     "ctaSecondary": "Voir comment ça marche",
     "freeBadge": "7 jours gratuits · Sans carte · Annulez quand vous voulez",
@@ -616,7 +616,7 @@
       "labelDataset": "Ensemble de données :"
     },
     "ai": {
-      "title": "IA — Exploration des données",
+      "title": "IA - Exploration des données",
       "clearHistory": "Effacer",
       "noDataset": "Aucun ensemble de données disponible. Ajoutez d'abord les données.",
       "datasetLabel": "Ensemble de données",
@@ -932,7 +932,7 @@
     "builder": {
       "emptyHint": "Ajoutez des blocs pour construire votre tableau de bord",
       "copyLabel": "(copie)",
-      "tooltipFiltered": "Filtré — cliquez pour effacer",
+      "tooltipFiltered": "Filtré - cliquez pour effacer",
       "tooltipLocked": "Bloc verrouillé",
       "tooltipExportCsv": "Exporter au format CSV",
       "tooltipData": "Données",

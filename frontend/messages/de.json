@@ -4,13 +4,13 @@
     "features": "Funktionen",
     "pricing": "Preise",
     "login": "Anmelden",
-    "trialCta": "Kostenlos testen — 7 Tage"
+    "trialCta": "Kostenlos testen - 7 Tage"
   },
   "hero": {
-    "badge": "KI in jedem Plan enthalten — auch im kostenlosen",
+    "badge": "KI in jedem Plan enthalten - auch im kostenlosen",
     "title1": "Ihre Tabelle wird in 30 Sekunden",
     "title2": "zum professionellen Dashboard.",
-    "subtitle": "Laden Sie Ihr Excel oder CSV hoch und die KI von Jarbis analysiert alles: KPIs, Diagramme und Berichte werden automatisch generiert — ohne Programmierung.",
+    "subtitle": "Laden Sie Ihr Excel oder CSV hoch und die KI von Jarbis analysiert alles: KPIs, Diagramme und Berichte werden automatisch generiert - ohne Programmierung.",
     "ctaPrimary": "Kostenlos starten",
     "ctaSecondary": "Sehen wie es funktioniert",
     "freeBadge": "7 Tage kostenlos · Keine Karte · Jederzeit kündbar",
@@ -127,7 +127,7 @@
       },
       {
         "title": "In Ihr System einbetten",
-        "desc": "Fügen Sie den Code in jede Website oder App ein — das Dashboard erscheint mit Ihrem Branding."
+        "desc": "Fügen Sie den Code in jede Website oder App ein - das Dashboard erscheint mit Ihrem Branding."
       }
     ]
   },

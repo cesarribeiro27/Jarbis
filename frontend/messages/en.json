@@ -8,9 +8,9 @@
   },
   "hero": {
     "badge": "Automatic analysis in every plan, including the free one",
-    "title1": "Your data.",
-    "title2": "Your vision.",
-    "subtitle": "Upload your Excel or CSV and Jarbis turns it into a professional dashboard in seconds. KPIs, charts and insights — no code, no analyst.",
+    "title1": "Your spreadsheet becomes a",
+    "title2": "professional dashboard in 30 seconds.",
+    "subtitle": "Upload your Excel or CSV and Jarbis analyzes everything. Generates KPIs, charts and reports in seconds. No coding, no data analyst needed.",
     "ctaPrimary": "Start for free",
     "ctaSecondary": "See how it works",
     "freeBadge": "7 days free · No credit card · Cancel anytime",
@@ -445,7 +445,7 @@
       "syncError": "Error synchronizing.",
       "deleteSuccess": "Dataset deleted.",
       "deleteError": "Error deleting.",
-      "headersInvalid": "Invalid headers — use JSON format"
+      "headersInvalid": "Invalid headers - use JSON format"
     }
   },
   "alerts": {
@@ -503,7 +503,7 @@
     "toast": {
       "loadError": "Error loading alerts.",
       "triggered": "Alert triggered!",
-      "ok": "Alert verified — all OK.",
+      "ok": "Alert verified - all OK.",
       "enabled": "Alert activated.",
       "paused": "Alert paused.",
       "deleted": "Alert deleted."
@@ -616,7 +616,7 @@
       "labelDataset": "Dataset:"
     },
     "ai": {
-      "title": "AI — Data Exploration",
+      "title": "AI - Data Exploration",
       "clearHistory": "Clear",
       "noDataset": "No dataset available. Add data first.",
       "datasetLabel": "Dataset",
@@ -768,7 +768,7 @@
       "labelNumericCol": "Numeric column",
       "labelRange": "Range (min/max)",
       "sectionData": "Data",
-      "noDatasets": "No datasets — add in the \"Data\" tab",
+      "noDatasets": "No datasets - add in the \"Data\" tab",
       "labelDimension": "Dimension (X axis)",
       "placeholderDimension": "Select the dimension...",
       "optgroupText": "Text/Date",
@@ -837,7 +837,7 @@
       "toggleStacked": "Stacked bars",
       "toggleSmooth": "Smoothed (curved) line",
       "labelFillOpacity": "Fill Opacity",
-      "labelYAxisLimits": "Y axis — manual limits",
+      "labelYAxisLimits": "Y axis - manual limits",
       "placeholderYMin": "Min (auto)",
       "placeholderYMax": "Max (auto)",
       "labelYAxisTitle": "Y axis title",
@@ -932,7 +932,7 @@
     "builder": {
       "emptyHint": "Add blocks to build your dashboard",
       "copyLabel": "(copy)",
-      "tooltipFiltered": "Filtered — click to clear",
+      "tooltipFiltered": "Filtered - click to clear",
       "tooltipLocked": "Block locked",
       "tooltipExportCsv": "Export CSV",
       "tooltipData": "Data",

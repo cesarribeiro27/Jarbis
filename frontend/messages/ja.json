@@ -4,13 +4,13 @@
     "features": "機能",
     "pricing": "料金",
     "login": "ログイン",
-    "trialCta": "無料トライアル — 7日間"
+    "trialCta": "無料トライアル - 7日間"
   },
   "hero": {
-    "badge": "全プランにAI搭載 — 無料プランも含む",
+    "badge": "全プランにAI搭載 - 無料プランも含む",
     "title1": "スプレッドシートが30秒で",
     "title2": "プロのダッシュボードに変わります。",
-    "subtitle": "ExcelやCSVをアップロードするだけで、JarbisのAIがすべてを分析：KPI、グラフ、レポートを自動生成 — プログラミング不要。",
+    "subtitle": "ExcelやCSVをアップロードするだけで、JarbisのAIがすべてを分析：KPI、グラフ、レポートを自動生成 - プログラミング不要。",
     "ctaPrimary": "無料で始める",
     "ctaSecondary": "使い方を見る",
     "freeBadge": "7日間無料 · カード不要 · いつでもキャンセル可",
@@ -616,7 +616,7 @@
       "labelDataset": "データセット:"
     },
     "ai": {
-      "title": "AI — データ探索",
+      "title": "AI - データ探索",
       "clearHistory": "クリア",
       "noDataset": "利用可能なデータセットがありません。まずデータを追加します。",
       "datasetLabel": "データセット",
@@ -768,7 +768,7 @@
       "labelNumericCol": "数値列",
       "labelRange": "範囲 (最小/最大)",
       "sectionData": "データ",
-      "noDatasets": "データセットなし — [データ] タブに追加します",
+      "noDatasets": "データセットなし - [データ] タブに追加します",
       "labelDimension": "寸法(X軸)",
       "placeholderDimension": "寸法を選択してください...",
       "optgroupText": "テキスト/日付",
@@ -932,7 +932,7 @@
     "builder": {
       "emptyHint": "ブロックを追加してダッシュボードを構築する",
       "copyLabel": "（コピー）",
-      "tooltipFiltered": "フィルタ済み — クリックしてクリアします",
+      "tooltipFiltered": "フィルタ済み - クリックしてクリアします",
       "tooltipLocked": "ブロックがロックされました",
       "tooltipExportCsv": "CSVのエクスポート",
       "tooltipData": "データ",
