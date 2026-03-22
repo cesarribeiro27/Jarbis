@@ -1237,10 +1237,11 @@ export default function LandingPage() {
           {/* Lista de abas */}
           <div className="px-4 py-4 space-y-2 max-h-72 overflow-y-auto">
             {sheetPicker.sheetsMeta.map((s, i) => {
-              const rows = s.estimated_rows ?? s.row_count ?? null
-              const cols = s.col_count ?? (s.columns ? s.columns.length : null)
-              const isEmpty = s.is_empty || rows === 0
-              const isFormula = s.is_formula_mirror
+              const isEmpty = s.type === 'empty'
+              const isSuggested = s.suggested === true
+              const subtitle = s.reason || (s.row_count > 0
+                ? [s.row_count && `${s.row_count.toLocaleString('pt-BR')} linhas`, s.col_count && `${s.col_count} colunas`].filter(Boolean).join(' · ')
+                : 'Aba vazia')
               return (
                 <button
                   key={s.name}
@@ -1254,22 +1255,20 @@ export default function LandingPage() {
                   className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all flex items-center gap-4 ${
                     isEmpty
                       ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                      : isSuggested
+                      ? 'border-violet-400 bg-violet-50 hover:border-violet-500 cursor-pointer active:scale-[0.99]'
                       : 'border-gray-200 hover:border-violet-400 hover:bg-violet-50 cursor-pointer active:scale-[0.99]'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold ${isEmpty ? 'bg-gray-100 text-gray-400' : 'bg-violet-100 text-violet-700'}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold ${isEmpty ? 'bg-gray-100 text-gray-400' : isSuggested ? 'bg-violet-500 text-white' : 'bg-violet-100 text-violet-700'}`}>
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{s.name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {isEmpty
-                        ? 'Aba vazia'
-                        : isFormula
-                        ? 'Fórmulas espelhadas — pode ter dados'
-                        : [rows != null && `${rows.toLocaleString('pt-BR')} linhas`, cols != null && `${cols} colunas`].filter(Boolean).join(' · ')
-                      }
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{s.name}</p>
+                      {isSuggested && <span className="text-xs bg-violet-100 text-violet-700 font-semibold px-2 py-0.5 rounded-full flex-shrink-0">Recomendada</span>}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{subtitle}</p>
                   </div>
                   {!isEmpty && (
                     <svg className="w-4 h-4 text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
