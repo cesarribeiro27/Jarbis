@@ -2047,7 +2047,7 @@ async def generate_dashboard_endpoint(
                     "dataset_id": str(data.dataset_id),
                     "filter_col": col,
                     "filter_label": col,
-                    "layout": {"w": 6, "h": 4},
+                    "layout": {"w": 6, "h": 2},
                 })
                 cat_filters_added += 1
 
