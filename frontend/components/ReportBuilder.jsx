@@ -5082,8 +5082,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               </div>
             )}
 
-            {/* Header — filtros categoriais têm header mínimo para não roubar espaço do controle */}
-            {block.type === 'filter' && !block.config?.date_mode ? (
+            {/* Header — todos os filtros (data e categorial) têm header mínimo */}
+            {block.type === 'filter' ? (
               !readOnly && (
                 <div className="drag-handle cursor-grab shrink-0 flex items-center justify-center h-4 opacity-0 group-hover:opacity-30 transition-opacity">
                   <svg className="w-3 h-2.5 text-gray-500" viewBox="0 0 10 8" fill="currentColor">
@@ -5155,7 +5155,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             )} {/* fim do else: header normal */}
 
             {/* Content */}
-            <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' && !block.config?.date_mode ? 'p-2' : 'px-3 pb-3 pt-0.5'}`}>
+            <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' ? 'p-2' : 'px-3 pb-3 pt-0.5'}`}>
               <BlockPreview
                 block={block}
                 readOnly={readOnly}
