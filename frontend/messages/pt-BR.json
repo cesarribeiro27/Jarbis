@@ -22,6 +22,7 @@
       "subtitle": "CSV, Excel (.xlsx/.xls) · Máx 10 MB · Sem login necessário",
       "analyzing": "Analisando sua planilha com IA...",
       "error": "Arquivo inválido. Use CSV ou Excel (máx 10 MB).",
+      "errorSize": "Arquivo muito grande. O limite é 10 MB.",
       "tryAgain": "Tentar novamente",
       "orCta": "ou",
       "signupLink": "crie sua conta grátis"

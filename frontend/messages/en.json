@@ -22,6 +22,7 @@
       "subtitle": "CSV, Excel (.xlsx/.xls) · Max 10 MB · No login required",
       "analyzing": "Analyzing your spreadsheet with AI...",
       "error": "Invalid file. Use CSV or Excel (max 10 MB).",
+      "errorSize": "File too large. The limit is 10 MB.",
       "tryAgain": "Try again",
       "orCta": "or",
       "signupLink": "create your free account"

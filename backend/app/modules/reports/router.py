@@ -241,6 +241,82 @@ async def preview_upload(
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
 
+@router.post(
+    "/preview-sheets",
+    summary="Converte URL do Google Sheets em preview anônimo",
+    include_in_schema=False,
+)
+async def preview_sheets(request: Request):
+    """Recebe URL do Google Sheets (pública), busca o CSV server-side e processa igual ao preview-upload."""
+    import httpx
+    import re
+    import json as _json
+    from app.modules.reports.dataset_service import _parse_csv, _detect_columns
+
+    body = await request.json()
+    url = (body.get("url") or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL não informada.")
+
+    m = re.search(r"spreadsheets/d/([a-zA-Z0-9_-]+)", url)
+    if not m:
+        raise HTTPException(status_code=400, detail="URL do Google Sheets inválida.")
+    sheet_id = m.group(1)
+    gid_m = re.search(r"[#&?]gid=(\d+)", url)
+    gid = gid_m.group(1) if gid_m else "0"
+    csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
+            resp = await client.get(csv_url)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Não foi possível acessar a planilha. Verifique se ela está compartilhada como pública.")
+        content = resp.content
+    except httpx.RequestError:
+        raise HTTPException(status_code=400, detail="Erro ao conectar ao Google Sheets. Verifique o link e tente novamente.")
+
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Planilha muito grande (máx 10 MB).")
+
+    try:
+        rows = _parse_csv(content)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Não foi possível ler os dados da planilha.")
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="Planilha vazia ou sem dados.")
+
+    columns = _detect_columns(rows)
+    row_count = len(rows)
+
+    stats = []
+    for col in columns[:6]:
+        vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
+            "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
+            "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
+        )]
+        numeric = [v for v in vals if isinstance(v, (int, float))]
+        if numeric:
+            stats.append({"col": col, "type": "numeric", "sum": round(sum(numeric), 2),
+                          "avg": round(sum(numeric) / len(numeric), 2), "max": max(numeric),
+                          "min": min(numeric), "count": len(numeric)})
+        else:
+            unique = list(dict.fromkeys(str(v) for v in vals[:20]))
+            stats.append({"col": col, "type": "text",
+                          "unique_count": len(set(str(v) for v in vals)), "top": unique[:5]})
+
+    temp_token = secrets.token_urlsafe(24)
+    preview_data = {"file_name": "planilha_sheets.csv", "row_count": row_count,
+                    "columns": columns, "stats": stats, "sample": rows[:3]}
+
+    redis = await get_redis()
+    if redis:
+        await redis.setex(f"jarbis:preview:{temp_token}", _PREVIEW_TTL,
+                          _json.dumps(preview_data, default=str))
+
+    return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
+
+
 @router.get(
     "/preview/{token}",
     summary="Retorna dados do preview anônimo",

@@ -149,9 +149,11 @@ export default function LandingPage() {
   const [annual, setAnnual] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [uploadState, setUploadState] = useState('idle') // idle | uploading | done | error
+  const [uploadError, setUploadError] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [sheetsUrl, setSheetsUrl] = useState('')
   const [sheetsState, setSheetsState] = useState('idle') // idle | loading | error
+  const [sheetsError, setSheetsError] = useState('')
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -212,9 +214,16 @@ export default function LandingPage() {
     const ext = file.name.split('.').pop().toLowerCase()
     if (!['csv', 'xlsx', 'xls'].includes(ext)) {
       setUploadState('error')
+      setUploadError(t('hero.upload.error'))
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadState('error')
+      setUploadError(t('hero.upload.errorSize'))
       return
     }
     setUploadState('uploading')
+    setUploadError('')
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -222,11 +231,15 @@ export default function LandingPage() {
         method: 'POST',
         body: formData,
       })
-      if (!res.ok) throw new Error('upload failed')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'upload failed')
+      }
       const data = await res.json()
       router.push(`/preview/${data.temp_token}`)
-    } catch {
+    } catch (e) {
       setUploadState('error')
+      setUploadError(e.message && e.message !== 'upload failed' ? e.message : t('hero.upload.error'))
     }
   }
 
@@ -243,23 +256,26 @@ export default function LandingPage() {
   async function handleSheetsConnect(e) {
     e.preventDefault()
     if (!sheetsUrl.trim()) return
-    const m = sheetsUrl.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
-    if (!m) { setSheetsState('error'); return }
-    const id = m[1]
-    const gidM = sheetsUrl.match(/[#&?]gid=(\d+)/)
-    const gid = gidM ? gidM[1] : '0'
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
     setSheetsState('loading')
-    setUploadState('idle') // limpa qualquer erro anterior do upload
+    setSheetsError('')
+    setUploadState('idle')
+    setUploadError('')
     try {
-      const resp = await fetch(csvUrl)
-      if (!resp.ok) throw new Error('fail')
-      const blob = await resp.blob()
-      const file = new File([blob], 'planilha.csv', { type: 'text/csv' })
-      await handleUploadFile(file)
+      const res = await fetch(`${API_BASE}/reports/preview-sheets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: sheetsUrl.trim() }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'Erro ao conectar ao Google Sheets.')
+      }
+      const data = await res.json()
       setSheetsState('idle')
-    } catch {
+      router.push(`/preview/${data.temp_token}`)
+    } catch (e) {
       setSheetsState('error')
+      setSheetsError(e.message || 'Verifique se a planilha está compartilhada como pública.')
     }
   }
 
@@ -401,8 +417,8 @@ export default function LandingPage() {
                 </div>
               ) : uploadState === 'error' ? (
                 <div className="flex flex-col items-center gap-2">
-                  <p className="text-sm text-red-400">{t('hero.upload.error')}</p>
-                  <button onClick={(e) => { e.stopPropagation(); setUploadState('idle') }} className="text-xs text-gray-400 underline">{t('hero.upload.tryAgain')}</button>
+                  <p className="text-sm text-red-400">{uploadError || t('hero.upload.error')}</p>
+                  <button onClick={(e) => { e.stopPropagation(); setUploadState('idle'); setUploadError('') }} className="text-xs text-gray-400 underline">{t('hero.upload.tryAgain')}</button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">
@@ -464,7 +480,7 @@ export default function LandingPage() {
               </button>
             </form>
             {sheetsState === 'error' && (
-              <p className="text-[11px] text-red-400 mt-1.5 text-center">Link inválido. Certifique-se de que a planilha está compartilhada como pública.</p>
+              <p className="text-[11px] text-red-400 mt-1.5 text-center">{sheetsError || 'Verifique se a planilha está compartilhada como pública.'}</p>
             )}
             <p className="text-center text-xs text-gray-600 mt-3">{t('hero.upload.orCta')} <Link href="/signup" className="text-violet-400 hover:text-violet-300 underline">{t('hero.upload.signupLink')}</Link></p>
           </motion.div>
