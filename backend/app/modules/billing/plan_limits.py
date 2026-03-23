@@ -105,6 +105,22 @@ PLANS: dict[str, PlanLimits] = {
         allow_white_label=True,
         sla=True,
     ),
+    # ── Plano interno (equipe Jarbis/Mazzel — não contabiliza em MRR nem em pagantes) ──────────
+    "internal": PlanLimits(
+        name="Interno",
+        price_monthly=Decimal("0"),
+        max_dashboards=-1,
+        max_datasets=-1,
+        max_users=-1,
+        max_alerts=-1,
+        max_rows_per_dataset=-1,
+        max_ai_queries_monthly=-1,
+        max_halp_monthly=-1,
+        allow_embed=True,
+        allow_ai=True,
+        allow_white_label=True,
+        sla=True,
+    ),
     # ── Chaves legadas (aliases para os novos planos — compatibilidade com tenants existentes) ──
     "solo": PlanLimits(
         name="Essential",
