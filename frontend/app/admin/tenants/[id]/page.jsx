@@ -7,8 +7,8 @@ import { useAdminRole } from '@/components/AdminLayout'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
-const PLANS = ['free', 'solo', 'equipe', 'ilimitado', 'enterprise']
-const PLAN_LABELS = { free: 'Gratuito', solo: 'Solo', equipe: 'Profissional', ilimitado: 'Equipe', enterprise: 'Enterprise', starter: 'Solo', professional: 'Profissional' }
+const PLANS = ['free', 'solo', 'equipe', 'ilimitado', 'enterprise', 'internal']
+const PLAN_LABELS = { free: 'Gratuito', solo: 'Solo', equipe: 'Profissional', ilimitado: 'Equipe', enterprise: 'Enterprise', starter: 'Solo', professional: 'Profissional', internal: 'Interno (Jarbis)' }
 const ROLE_COLORS = {
   owner: 'bg-violet-900/50 text-violet-300',
   admin: 'bg-blue-900/50 text-blue-300',

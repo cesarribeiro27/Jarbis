@@ -6,13 +6,14 @@ import Link from 'next/link'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
-const PLAN_LABELS = { free: 'Gratuito', solo: 'Solo', equipe: 'Profissional', ilimitado: 'Equipe', enterprise: 'Enterprise', starter: 'Solo', professional: 'Profissional' }
+const PLAN_LABELS = { free: 'Gratuito', solo: 'Solo', equipe: 'Profissional', ilimitado: 'Equipe', enterprise: 'Enterprise', starter: 'Solo', professional: 'Profissional', internal: 'Interno (Jarbis)' }
 const PLAN_COLORS = {
   free: 'bg-gray-700/60 text-gray-300',
   solo: 'bg-blue-900/50 text-blue-300',
   equipe: 'bg-violet-900/50 text-violet-300',
   ilimitado: 'bg-emerald-900/50 text-emerald-300',
   enterprise: 'bg-amber-900/50 text-amber-300',
+  internal: 'bg-rose-900/50 text-rose-300',
 }
 const STATUS_COLORS = {
   active:   'bg-emerald-900/50 text-emerald-300',
