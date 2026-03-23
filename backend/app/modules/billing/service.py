@@ -179,7 +179,6 @@ class BillingService:
                 "metadata": {"tenant_id": str(tenant_id)},
                 "description": descriptor,
             },
-            payment_intent_data={"statement_descriptor": descriptor},
             **session_kwargs,
         )
         return session.url
