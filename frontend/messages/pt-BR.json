@@ -41,7 +41,20 @@
       "organic": "Orgânico",
       "paid": "Pago"
     },
-    "months": ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+    "months": [
+      "Jan",
+      "Fev",
+      "Mar",
+      "Abr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Set",
+      "Out",
+      "Nov",
+      "Dez"
+    ]
   },
   "problem": {
     "label": "O problema",
@@ -127,13 +140,48 @@
     "colExcel": "Excel Manual",
     "colBiCorp": "BI Corporativo",
     "rows": [
-      { "feature": "Preço inicial", "jarbis": "Grátis", "competitor": "\"Grátis\" (caro no tempo)", "powerbi": "R$5.000–15.000/mês" },
-      { "feature": "Tempo para 1° insight", "jarbis": "30 segundos", "competitor": "Horas", "powerbi": "Dias/semanas" },
-      { "feature": "Interface em português", "jarbis": true, "competitor": "Parcial", "powerbi": false },
-      { "feature": "IA em todos os planos", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Precisa de TI ou analista?", "jarbis": false, "competitor": false, "powerbi": true },
-      { "feature": "Incorporar via iframe", "jarbis": true, "competitor": false, "powerbi": "Complexo" },
-      { "feature": "Suporte em português", "jarbis": true, "competitor": false, "powerbi": false }
+      {
+        "feature": "Preço inicial",
+        "jarbis": "Grátis",
+        "competitor": "\"Grátis\" (caro no tempo)",
+        "powerbi": "R$5.000–15.000/mês"
+      },
+      {
+        "feature": "Tempo para 1° insight",
+        "jarbis": "30 segundos",
+        "competitor": "Horas",
+        "powerbi": "Dias/semanas"
+      },
+      {
+        "feature": "Interface em português",
+        "jarbis": true,
+        "competitor": "Parcial",
+        "powerbi": false
+      },
+      {
+        "feature": "IA em todos os planos",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Precisa de TI ou analista?",
+        "jarbis": false,
+        "competitor": false,
+        "powerbi": true
+      },
+      {
+        "feature": "Incorporar via iframe",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": "Complexo"
+      },
+      {
+        "feature": "Suporte em português",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -153,31 +201,65 @@
         "name": "Gratuito",
         "desc": "Para experimentar sem compromisso",
         "cta": "Criar conta grátis",
-        "features": ["2 dashboards", "2 fontes de dados", "1 usuário", "10 consultas IA/mês", "Link público"]
+        "features": [
+          "2 dashboards",
+          "2 fontes de dados",
+          "1 usuário",
+          "10 consultas IA/mês",
+          "Link público"
+        ]
       },
       "essential": {
         "name": "Essential",
         "desc": "Para autônomos e MEIs",
         "cta": "Assinar Essential",
-        "features": ["8 dashboards", "5 fontes de dados", "1 usuário", "60 consultas IA/mês", "3 alertas", "Incorporar no site"]
+        "features": [
+          "8 dashboards",
+          "5 fontes de dados",
+          "1 usuário",
+          "60 consultas IA/mês",
+          "3 alertas",
+          "Incorporar no site"
+        ]
       },
       "pro": {
         "name": "Pro",
         "desc": "Para pequenas empresas",
         "cta": "Assinar Pro",
-        "features": ["20 dashboards", "15 fontes de dados", "1 usuário", "225 consultas IA/mês", "10 alertas", "Incorporar no site"]
+        "features": [
+          "20 dashboards",
+          "15 fontes de dados",
+          "1 usuário",
+          "225 consultas IA/mês",
+          "10 alertas",
+          "Incorporar no site"
+        ]
       },
       "business": {
         "name": "Business",
         "desc": "Para empresas em crescimento",
         "cta": "Assinar Business",
-        "features": ["50 dashboards", "30 fontes de dados", "5 usuários", "550 consultas IA/mês", "30 alertas", "Marca própria", "Incorporar no site"]
+        "features": [
+          "50 dashboards",
+          "30 fontes de dados",
+          "5 usuários",
+          "550 consultas IA/mês",
+          "30 alertas",
+          "Marca própria",
+          "Incorporar no site"
+        ]
       },
       "enterprise": {
         "name": "Enterprise",
         "desc": "Para grandes operações",
         "cta": "Falar com comercial",
-        "features": ["Tudo ilimitado", "Usuários ilimitados", "SLA garantido em contrato", "Gerente de conta dedicado", "Onboarding personalizado"]
+        "features": [
+          "Tudo ilimitado",
+          "Usuários ilimitados",
+          "SLA garantido em contrato",
+          "Gerente de conta dedicado",
+          "Onboarding personalizado"
+        ]
       }
     }
   },
@@ -266,11 +348,26 @@
     "hasAccount": "Já tem conta?",
     "loginLink": "Entrar",
     "bullets": [
-      { "icon": "⚡", "text": "Setup em 2 minutos" },
-      { "icon": "🌐", "text": "Interface no seu idioma" },
-      { "icon": "🔒", "text": "Dados seguros na nuvem" },
-      { "icon": "💳", "text": "Sem cartão de crédito" },
-      { "icon": "🤖", "text": "IA nativa integrada" }
+      {
+        "icon": "⚡",
+        "text": "Setup em 2 minutos"
+      },
+      {
+        "icon": "🌐",
+        "text": "Interface no seu idioma"
+      },
+      {
+        "icon": "🔒",
+        "text": "Dados seguros na nuvem"
+      },
+      {
+        "icon": "💳",
+        "text": "Sem cartão de crédito"
+      },
+      {
+        "icon": "🤖",
+        "text": "IA nativa integrada"
+      }
     ]
   },
   "app": {
@@ -447,7 +544,8 @@
     "signupLink": "Criar conta grátis",
     "errorDefault": "Credenciais inválidas",
     "rightTitle": "Dados que\ngeram decisões",
-    "rightSubtitle": "BI embarcado em português, do jeito que o Brasil precisa."
+    "rightSubtitle": "BI embarcado em português, do jeito que o Brasil precisa.",
+    "forgotPassword": "Esqueci minha senha"
   },
   "dashboards": {
     "title": "Dashboards",
@@ -602,8 +700,12 @@
       "title": "Ambiente do dashboard",
       "quickTheme": "Tema rápido",
       "themes": {
-        "default": "Padrão", "night": "Noite", "ocean": "Oceano",
-        "forest": "Floresta", "sunset": "Pôr do sol", "lavender": "Lavanda"
+        "default": "Padrão",
+        "night": "Noite",
+        "ocean": "Oceano",
+        "forest": "Floresta",
+        "sunset": "Pôr do sol",
+        "lavender": "Lavanda"
       },
       "sheetColor": "Cor da folha",
       "bgColor": "Cor de fundo do canvas",
@@ -624,7 +726,9 @@
       "labelUpload": "Ou fazer upload",
       "uploadClick": "Clique para selecionar",
       "labelAdjust": "Ajuste",
-      "btnContain": "Conter", "btnCover": "Cobrir", "btnStretch": "Esticar",
+      "btnContain": "Conter",
+      "btnCover": "Cobrir",
+      "btnStretch": "Esticar",
       "sectionFilter": "Filtro",
       "labelDataSource": "Fonte de dados",
       "placeholderDataset": "Selecione um dataset...",
@@ -641,7 +745,11 @@
       "optgroupText": "Texto / Data",
       "optgroupNumbers": "Números",
       "labelGranularity": "Granularidade de data",
-      "btnDay": "Dia", "btnWeek": "Sem", "btnMonth": "Mês", "btnQuarter": "Trim", "btnYear": "Ano",
+      "btnDay": "Dia",
+      "btnWeek": "Sem",
+      "btnMonth": "Mês",
+      "btnQuarter": "Trim",
+      "btnYear": "Ano",
       "labelMetric": "Métrica (eixo Y)",
       "placeholderMetric": "Selecione a métrica...",
       "optgroupOther": "Outros",
@@ -650,11 +758,17 @@
       "sectionVisual": "Visual",
       "labelValueFormat": "Formato do valor",
       "labelPrefixSuffix": "Prefixo / Sufixo",
-      "placeholderPrefix": "Prefixo", "placeholderSuffix": "Sufixo",
+      "placeholderPrefix": "Prefixo",
+      "placeholderSuffix": "Sufixo",
       "labelAlignment": "Alinhamento",
-      "btnLeft": "Esq", "btnCenter": "Centro", "btnRight": "Dir",
+      "btnLeft": "Esq",
+      "btnCenter": "Centro",
+      "btnRight": "Dir",
       "labelNumberSize": "Tamanho do número",
-      "btnSizeS": "P", "btnSizeM": "M", "btnSizeL": "G", "btnSizeXL": "XG",
+      "btnSizeS": "P",
+      "btnSizeM": "M",
+      "btnSizeL": "G",
+      "btnSizeXL": "XG",
       "labelSubtitle": "Subtítulo / rótulo secundário",
       "placeholderSubtitle": "Ex: Total acumulado no período",
       "labelIcon": "Ícone / Emoji",
@@ -667,7 +781,8 @@
       "hintDelta": "Valor positivo = ↑ verde · negativo = ↓ vermelho",
       "labelAutoDelta": "Delta automático (período anterior)",
       "hintAutoDelta": "Calcula variação automaticamente quando filtro de período estiver ativo.",
-      "labelMin": "Mínimo", "labelMax": "Máximo",
+      "labelMin": "Mínimo",
+      "labelMax": "Máximo",
       "labelArcColor": "Cor do arco",
       "labelMainColor": "Cor principal (linha / série única)",
       "labelColorPalette": "Paleta de cores",
@@ -681,8 +796,12 @@
       "labelBorderWidth": "Espessura da borda (px)",
       "labelCornerRadius": "Arredondamento dos cantos (px)",
       "labelShadow": "Sombra",
-      "btnShadowAuto": "Auto", "btnShadowNone": "Nenhuma", "btnShadowLight": "Leve",
-      "btnShadowMedium": "Média", "btnShadowStrong": "Forte", "btnShadowIntense": "Intensa",
+      "btnShadowAuto": "Auto",
+      "btnShadowNone": "Nenhuma",
+      "btnShadowLight": "Leve",
+      "btnShadowMedium": "Média",
+      "btnShadowStrong": "Forte",
+      "btnShadowIntense": "Intensa",
       "sectionChart": "Gráfico",
       "toggleShowValues": "Mostrar valores nos dados",
       "toggleShowLegend": "Mostrar legenda",
@@ -690,7 +809,8 @@
       "toggleSmooth": "Linha suavizada (curva)",
       "labelFillOpacity": "Opacidade do preenchimento",
       "labelYAxisLimits": "Eixo Y - limites manuais",
-      "placeholderYMin": "Mín (auto)", "placeholderYMax": "Máx (auto)",
+      "placeholderYMin": "Mín (auto)",
+      "placeholderYMax": "Máx (auto)",
       "labelYAxisTitle": "Título do eixo Y",
       "placeholderYAxisTitle": "Ex: Receita (R$)",
       "labelXAxisTitle": "Título do eixo X",
@@ -708,31 +828,41 @@
       "hintCrossFilter": "Ao clicar em um elemento, filtra os outros blocos do mesmo dataset.",
       "sectionConditional": "Formatação condicional",
       "hintConditional": "Valor ≥ OK → cor OK · valor ≥ Alerta → cor Alerta · abaixo do Alerta → cor Crítico",
-      "labelOkThreshold": "Limite OK (≥)", "placeholderOk": "Ex: 50000",
-      "labelAlertThreshold": "Limite Alerta (≥)", "placeholderAlert": "Ex: 20000",
+      "labelOkThreshold": "Limite OK (≥)",
+      "placeholderOk": "Ex: 50000",
+      "labelAlertThreshold": "Limite Alerta (≥)",
+      "placeholderAlert": "Ex: 20000",
       "labelCritical": "Abaixo do Alerta = Crítico",
       "labelAutomatic": "automático",
       "sectionTable": "Estilo da tabela",
       "labelValueCol": "Coluna de valor",
-      "btnBar": "Barra", "btnBadge": "Badge", "btnSimple": "Simples",
+      "btnBar": "Barra",
+      "btnBadge": "Badge",
+      "btnSimple": "Simples",
       "labelBarColor": "Cor da barra",
       "labelHiddenCols": "Colunas ocultas",
       "togglePagination": "Paginação",
       "labelRowsPerPage": "Linhas por página",
       "sectionRowHighlight": "Destaque de linha",
       "labelHighlightWhen": "Destacar quando valor",
-      "optionGreater": "> maior que", "optionLess": "< menor que",
+      "optionGreater": "> maior que",
+      "optionLess": "< menor que",
       "placeholderThreshold": "Limite",
       "labelHighlightColor": "Cor de destaque",
       "sectionSorting": "Ordenação e Ranking",
       "labelSortBy": "Ordenar por valor",
-      "btnOriginal": "Original", "btnDesc": "Maior → menor", "btnAsc": "Menor → maior",
-      "labelTopN": "Mostrar top N (0 = todos)", "placeholderTopN": "Ex: 10",
+      "btnOriginal": "Original",
+      "btnDesc": "Maior → menor",
+      "btnAsc": "Menor → maior",
+      "labelTopN": "Mostrar top N (0 = todos)",
+      "placeholderTopN": "Ex: 10",
       "sectionLine": "Linha",
       "toggleShowDots": "Mostrar marcadores nos pontos",
       "sectionReference": "Linha de referência",
-      "labelRefValue": "Valor (deixe vazio para ocultar)", "placeholderRefValue": "Ex: 100000",
-      "labelRefLabel": "Rótulo", "placeholderRefLabel": "Ex: Meta",
+      "labelRefValue": "Valor (deixe vazio para ocultar)",
+      "placeholderRefValue": "Ex: 100000",
+      "labelRefLabel": "Rótulo",
+      "placeholderRefLabel": "Ex: Meta",
       "sectionLayout": "Layout do bloco",
       "toggleLockPosition": "Travar posição e tamanho",
       "hintLockPosition": "Quando travado, o bloco não pode ser arrastado nem redimensionado.",
@@ -792,23 +922,74 @@
       "tooltipDelete": "Excluir"
     },
     "blockTypes": {
-      "kpi":         { "label": "KPI",         "desc": "Número em destaque" },
-      "bar":         { "label": "Barras",       "desc": "Comparar categorias" },
-      "bar_h":       { "label": "Barras H",     "desc": "Barras horizontais" },
-      "area":        { "label": "Área",         "desc": "Evolução acumulada" },
-      "line":        { "label": "Linhas",       "desc": "Evolução no tempo" },
-      "pie":         { "label": "Pizza",        "desc": "Distribuição %" },
-      "combo":       { "label": "Combo",        "desc": "Barra + linha" },
-      "gauge":       { "label": "Gauge",        "desc": "Indicador circular" },
-      "speedometer": { "label": "Velocímetro",  "desc": "Indicador semicircular" },
-      "treemap":     { "label": "Treemap",      "desc": "Hierarquia por área" },
-      "bubble":      { "label": "Bolhas",       "desc": "Dispersão por volume" },
-      "scatter":     { "label": "Dispersão",    "desc": "Correlação XY" },
-      "table":       { "label": "Tabela",       "desc": "Dados em linhas" },
-      "text":        { "label": "Texto",        "desc": "Comentários" },
-      "filter":      { "label": "Filtro",       "desc": "Filtrar dados" },
-      "slider":      { "label": "Slider",       "desc": "Filtro por faixa" },
-      "image":       { "label": "Imagem",       "desc": "Foto ou logo" }
+      "kpi": {
+        "label": "KPI",
+        "desc": "Número em destaque"
+      },
+      "bar": {
+        "label": "Barras",
+        "desc": "Comparar categorias"
+      },
+      "bar_h": {
+        "label": "Barras H",
+        "desc": "Barras horizontais"
+      },
+      "area": {
+        "label": "Área",
+        "desc": "Evolução acumulada"
+      },
+      "line": {
+        "label": "Linhas",
+        "desc": "Evolução no tempo"
+      },
+      "pie": {
+        "label": "Pizza",
+        "desc": "Distribuição %"
+      },
+      "combo": {
+        "label": "Combo",
+        "desc": "Barra + linha"
+      },
+      "gauge": {
+        "label": "Gauge",
+        "desc": "Indicador circular"
+      },
+      "speedometer": {
+        "label": "Velocímetro",
+        "desc": "Indicador semicircular"
+      },
+      "treemap": {
+        "label": "Treemap",
+        "desc": "Hierarquia por área"
+      },
+      "bubble": {
+        "label": "Bolhas",
+        "desc": "Dispersão por volume"
+      },
+      "scatter": {
+        "label": "Dispersão",
+        "desc": "Correlação XY"
+      },
+      "table": {
+        "label": "Tabela",
+        "desc": "Dados em linhas"
+      },
+      "text": {
+        "label": "Texto",
+        "desc": "Comentários"
+      },
+      "filter": {
+        "label": "Filtro",
+        "desc": "Filtrar dados"
+      },
+      "slider": {
+        "label": "Slider",
+        "desc": "Filtro por faixa"
+      },
+      "image": {
+        "label": "Imagem",
+        "desc": "Foto ou logo"
+      }
     }
   },
   "configuracoes": {
@@ -938,14 +1119,85 @@
       "portalError": "Erro ao abrir portal."
     },
     "plans": {
-      "free":       { "name": "Free",       "desc": "Para experimentar",            "f1": "2 dashboards", "f2": "2 fontes de dados", "f3": "1 usuário", "f4": "10 consultas IA/mês" },
-      "essential":  { "name": "Essential",  "desc": "Para autônomos e MEIs",        "f1": "8 dashboards", "f2": "5 fontes de dados", "f3": "1 usuário", "f4": "3 alertas", "f5": "60 consultas IA/mês", "f6": "Incorporar no site" },
-      "pro":        { "name": "Pro",        "desc": "Para pequenas empresas",       "f1": "20 dashboards", "f2": "15 fontes de dados", "f3": "1 usuário", "f4": "10 alertas", "f5": "225 consultas IA/mês", "f6": "Incorporar no site" },
-      "business":   { "name": "Business",   "desc": "Para empresas em crescimento", "f1": "50 dashboards", "f2": "30 fontes de dados", "f3": "5 usuários", "f4": "30 alertas", "f5": "550 consultas IA/mês", "f6": "Marca própria", "f7": "Incorporar no site" },
-      "enterprise": { "name": "Enterprise", "desc": "Para grandes operações",       "f1": "Tudo do Business", "f2": "Usuários ilimitados", "f3": "SLA garantido em contrato", "f4": "Gerente de conta dedicado", "f5": "Onboarding personalizado" },
-      "solo":       { "name": "Essential",  "desc": "Para autônomos e MEIs",        "f1": "8 dashboards", "f2": "5 fontes de dados", "f3": "1 usuário", "f4": "3 alertas", "f5": "60 consultas IA/mês", "f6": "Incorporar no site" },
-      "equipe":     { "name": "Pro",        "desc": "Para pequenas empresas",       "f1": "20 dashboards", "f2": "15 fontes de dados", "f3": "1 usuário", "f4": "10 alertas", "f5": "225 consultas IA/mês", "f6": "Incorporar no site" },
-      "ilimitado":  { "name": "Business",   "desc": "Para empresas em crescimento", "f1": "50 dashboards", "f2": "30 fontes de dados", "f3": "5 usuários", "f4": "30 alertas", "f5": "550 consultas IA/mês", "f6": "Marca própria", "f7": "Incorporar no site" }
+      "free": {
+        "name": "Free",
+        "desc": "Para experimentar",
+        "f1": "2 dashboards",
+        "f2": "2 fontes de dados",
+        "f3": "1 usuário",
+        "f4": "10 consultas IA/mês"
+      },
+      "essential": {
+        "name": "Essential",
+        "desc": "Para autônomos e MEIs",
+        "f1": "8 dashboards",
+        "f2": "5 fontes de dados",
+        "f3": "1 usuário",
+        "f4": "3 alertas",
+        "f5": "60 consultas IA/mês",
+        "f6": "Incorporar no site"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Para pequenas empresas",
+        "f1": "20 dashboards",
+        "f2": "15 fontes de dados",
+        "f3": "1 usuário",
+        "f4": "10 alertas",
+        "f5": "225 consultas IA/mês",
+        "f6": "Incorporar no site"
+      },
+      "business": {
+        "name": "Business",
+        "desc": "Para empresas em crescimento",
+        "f1": "50 dashboards",
+        "f2": "30 fontes de dados",
+        "f3": "5 usuários",
+        "f4": "30 alertas",
+        "f5": "550 consultas IA/mês",
+        "f6": "Marca própria",
+        "f7": "Incorporar no site"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "Para grandes operações",
+        "f1": "Tudo do Business",
+        "f2": "Usuários ilimitados",
+        "f3": "SLA garantido em contrato",
+        "f4": "Gerente de conta dedicado",
+        "f5": "Onboarding personalizado"
+      },
+      "solo": {
+        "name": "Essential",
+        "desc": "Para autônomos e MEIs",
+        "f1": "8 dashboards",
+        "f2": "5 fontes de dados",
+        "f3": "1 usuário",
+        "f4": "3 alertas",
+        "f5": "60 consultas IA/mês",
+        "f6": "Incorporar no site"
+      },
+      "equipe": {
+        "name": "Pro",
+        "desc": "Para pequenas empresas",
+        "f1": "20 dashboards",
+        "f2": "15 fontes de dados",
+        "f3": "1 usuário",
+        "f4": "10 alertas",
+        "f5": "225 consultas IA/mês",
+        "f6": "Incorporar no site"
+      },
+      "ilimitado": {
+        "name": "Business",
+        "desc": "Para empresas em crescimento",
+        "f1": "50 dashboards",
+        "f2": "30 fontes de dados",
+        "f3": "5 usuários",
+        "f4": "30 alertas",
+        "f5": "550 consultas IA/mês",
+        "f6": "Marca própria",
+        "f7": "Incorporar no site"
+      }
     }
   },
   "usuarios": {

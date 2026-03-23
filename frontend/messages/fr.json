@@ -139,13 +139,48 @@
     "colExcel": "Tableur Manuel",
     "colBiCorp": "BI Entreprise",
     "rows": [
-      { "feature": "Prix de départ", "jarbis": "Gratuit", "competitor": "\"Gratuit\" (coûteux en temps)", "powerbi": "5 000–15 000 $/mois" },
-      { "feature": "Temps au 1er insight", "jarbis": "30 secondes", "competitor": "Heures", "powerbi": "Jours/semaines" },
-      { "feature": "IA dans tous les plans", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Intégrer via iframe", "jarbis": true, "competitor": false, "powerbi": "Complexe" },
-      { "feature": "Nécessite un service IT?", "jarbis": false, "competitor": false, "powerbi": true },
-      { "feature": "Configuration en minutes", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Sans carte pour l'essai", "jarbis": true, "competitor": false, "powerbi": false }
+      {
+        "feature": "Prix de départ",
+        "jarbis": "Gratuit",
+        "competitor": "\"Gratuit\" (coûteux en temps)",
+        "powerbi": "5 000–15 000 $/mois"
+      },
+      {
+        "feature": "Temps au 1er insight",
+        "jarbis": "30 secondes",
+        "competitor": "Heures",
+        "powerbi": "Jours/semaines"
+      },
+      {
+        "feature": "IA dans tous les plans",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Intégrer via iframe",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": "Complexe"
+      },
+      {
+        "feature": "Nécessite un service IT?",
+        "jarbis": false,
+        "competitor": false,
+        "powerbi": true
+      },
+      {
+        "feature": "Configuration en minutes",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Sans carte pour l'essai",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -350,7 +385,8 @@
     "signupLink": "Créer un compte gratuit",
     "errorDefault": "Identifiants invalides",
     "rightTitle": "Des données qui\ngénèrent des décisions",
-    "rightSubtitle": "BI embarqué dans votre langue, comme vous en avez besoin."
+    "rightSubtitle": "BI embarqué dans votre langue, comme vous en avez besoin.",
+    "forgotPassword": "Mot de passe oublié"
   },
   "app": {
     "nav": {
@@ -1047,9 +1083,23 @@
       "adding": "Veuillez patienter...",
       "sectionTitle": "Packs d'extension",
       "sectionDesc": "Ajoutez des ressources à votre forfait actuel",
-      "completo": { "title": "Pack Complet", "feature1": "+1 utilisateur", "feature2": "+5 tableaux de bord", "feature3": "+3 sources de données", "active": "actif" },
-      "dash": { "title": "Pack Tableaux de Bord", "feature": "+5 tableaux de bord", "active": "tableaux actifs" },
-      "dataset": { "title": "Pack Sources de Données", "feature": "+3 sources de données", "active": "sources actives" }
+      "completo": {
+        "title": "Pack Complet",
+        "feature1": "+1 utilisateur",
+        "feature2": "+5 tableaux de bord",
+        "feature3": "+3 sources de données",
+        "active": "actif"
+      },
+      "dash": {
+        "title": "Pack Tableaux de Bord",
+        "feature": "+5 tableaux de bord",
+        "active": "tableaux actifs"
+      },
+      "dataset": {
+        "title": "Pack Sources de Données",
+        "feature": "+3 sources de données",
+        "active": "sources actives"
+      }
     },
     "toast": {
       "success": "Abonnement activé avec succès ! Votre forfait a été mis à jour.",
@@ -1061,14 +1111,85 @@
       "portalError": "Erreur lors de l'ouverture du portail."
     },
     "plans": {
-      "free":       { "name": "Free",       "desc": "Pour essayer",                       "f1": "2 tableaux de bord", "f2": "2 sources", "f3": "1 utilisateur", "f4": "10 requêtes IA/mois" },
-      "essential":  { "name": "Essential",  "desc": "Pour les freelances et PME",         "f1": "8 tableaux de bord", "f2": "5 sources", "f3": "1 utilisateur", "f4": "3 alertes", "f5": "60 requêtes IA/mois", "f6": "Intégrer au site" },
-      "pro":        { "name": "Pro",        "desc": "Pour les petites entreprises",       "f1": "20 tableaux de bord", "f2": "15 sources", "f3": "1 utilisateur", "f4": "10 alertes", "f5": "225 requêtes IA/mois", "f6": "Intégrer au site" },
-      "business":   { "name": "Business",   "desc": "Pour les entreprises en croissance", "f1": "50 tableaux de bord", "f2": "30 sources", "f3": "5 utilisateurs", "f4": "30 alertes", "f5": "550 requêtes IA/mois", "f6": "Marque blanche", "f7": "Intégrer au site" },
-      "enterprise": { "name": "Enterprise", "desc": "Pour les grandes opérations",        "f1": "Tout de Business", "f2": "Utilisateurs illimités", "f3": "SLA garanti par contrat", "f4": "Gestionnaire de compte dédié", "f5": "Onboarding personnalisé" },
-      "solo":       { "name": "Essential",  "desc": "Pour les freelances et PME",         "f1": "8 tableaux de bord", "f2": "5 sources", "f3": "1 utilisateur", "f4": "3 alertes", "f5": "60 requêtes IA/mois", "f6": "Intégrer au site" },
-      "equipe":     { "name": "Pro",        "desc": "Pour les petites entreprises",       "f1": "20 tableaux de bord", "f2": "15 sources", "f3": "1 utilisateur", "f4": "10 alertes", "f5": "225 requêtes IA/mois", "f6": "Intégrer au site" },
-      "ilimitado":  { "name": "Business",   "desc": "Pour les entreprises en croissance", "f1": "50 tableaux de bord", "f2": "30 sources", "f3": "5 utilisateurs", "f4": "30 alertes", "f5": "550 requêtes IA/mois", "f6": "Marque blanche", "f7": "Intégrer au site" }
+      "free": {
+        "name": "Free",
+        "desc": "Pour essayer",
+        "f1": "2 tableaux de bord",
+        "f2": "2 sources",
+        "f3": "1 utilisateur",
+        "f4": "10 requêtes IA/mois"
+      },
+      "essential": {
+        "name": "Essential",
+        "desc": "Pour les freelances et PME",
+        "f1": "8 tableaux de bord",
+        "f2": "5 sources",
+        "f3": "1 utilisateur",
+        "f4": "3 alertes",
+        "f5": "60 requêtes IA/mois",
+        "f6": "Intégrer au site"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Pour les petites entreprises",
+        "f1": "20 tableaux de bord",
+        "f2": "15 sources",
+        "f3": "1 utilisateur",
+        "f4": "10 alertes",
+        "f5": "225 requêtes IA/mois",
+        "f6": "Intégrer au site"
+      },
+      "business": {
+        "name": "Business",
+        "desc": "Pour les entreprises en croissance",
+        "f1": "50 tableaux de bord",
+        "f2": "30 sources",
+        "f3": "5 utilisateurs",
+        "f4": "30 alertes",
+        "f5": "550 requêtes IA/mois",
+        "f6": "Marque blanche",
+        "f7": "Intégrer au site"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "Pour les grandes opérations",
+        "f1": "Tout de Business",
+        "f2": "Utilisateurs illimités",
+        "f3": "SLA garanti par contrat",
+        "f4": "Gestionnaire de compte dédié",
+        "f5": "Onboarding personnalisé"
+      },
+      "solo": {
+        "name": "Essential",
+        "desc": "Pour les freelances et PME",
+        "f1": "8 tableaux de bord",
+        "f2": "5 sources",
+        "f3": "1 utilisateur",
+        "f4": "3 alertes",
+        "f5": "60 requêtes IA/mois",
+        "f6": "Intégrer au site"
+      },
+      "equipe": {
+        "name": "Pro",
+        "desc": "Pour les petites entreprises",
+        "f1": "20 tableaux de bord",
+        "f2": "15 sources",
+        "f3": "1 utilisateur",
+        "f4": "10 alertes",
+        "f5": "225 requêtes IA/mois",
+        "f6": "Intégrer au site"
+      },
+      "ilimitado": {
+        "name": "Business",
+        "desc": "Pour les entreprises en croissance",
+        "f1": "50 tableaux de bord",
+        "f2": "30 sources",
+        "f3": "5 utilisateurs",
+        "f4": "30 alertes",
+        "f5": "550 requêtes IA/mois",
+        "f6": "Marque blanche",
+        "f7": "Intégrer au site"
+      }
     }
   },
   "usuarios": {

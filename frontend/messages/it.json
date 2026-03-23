@@ -139,13 +139,48 @@
     "colExcel": "Foglio Manuale",
     "colBiCorp": "BI Aziendale",
     "rows": [
-      { "feature": "Prezzo iniziale", "jarbis": "Gratis", "competitor": "\"Gratis\" (costoso in tempo)", "powerbi": "5.000–15.000 $/mese" },
-      { "feature": "Tempo al 1° insight", "jarbis": "30 secondi", "competitor": "Ore", "powerbi": "Giorni/settimane" },
-      { "feature": "IA in tutti i piani", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Incorporare via iframe", "jarbis": true, "competitor": false, "powerbi": "Complesso" },
-      { "feature": "Richiede IT/analista?", "jarbis": false, "competitor": false, "powerbi": true },
-      { "feature": "Configurazione in minuti", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Nessuna carta per il trial", "jarbis": true, "competitor": false, "powerbi": false }
+      {
+        "feature": "Prezzo iniziale",
+        "jarbis": "Gratis",
+        "competitor": "\"Gratis\" (costoso in tempo)",
+        "powerbi": "5.000–15.000 $/mese"
+      },
+      {
+        "feature": "Tempo al 1° insight",
+        "jarbis": "30 secondi",
+        "competitor": "Ore",
+        "powerbi": "Giorni/settimane"
+      },
+      {
+        "feature": "IA in tutti i piani",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Incorporare via iframe",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": "Complesso"
+      },
+      {
+        "feature": "Richiede IT/analista?",
+        "jarbis": false,
+        "competitor": false,
+        "powerbi": true
+      },
+      {
+        "feature": "Configurazione in minuti",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Nessuna carta per il trial",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -350,7 +385,8 @@
     "signupLink": "Crea account gratuito",
     "errorDefault": "Credenziali non valide",
     "rightTitle": "Dati che\ngenerano decisioni",
-    "rightSubtitle": "BI incorporato nella tua lingua, come ne hai bisogno."
+    "rightSubtitle": "BI incorporato nella tua lingua, come ne hai bisogno.",
+    "forgotPassword": "Password dimenticata"
   },
   "app": {
     "nav": {
@@ -1047,9 +1083,23 @@
       "adding": "Attendere...",
       "sectionTitle": "Pacchetti di Espansione",
       "sectionDesc": "Aggiungi risorse al tuo piano attuale",
-      "completo": { "title": "Pacchetto Completo", "feature1": "+1 utente extra", "feature2": "+5 dashboard", "feature3": "+3 fonti dati", "active": "attivo" },
-      "dash": { "title": "Pacchetto Dashboard", "feature": "+5 dashboard", "active": "dashboard attivi" },
-      "dataset": { "title": "Pacchetto Fonti Dati", "feature": "+3 fonti dati", "active": "fonti attive" }
+      "completo": {
+        "title": "Pacchetto Completo",
+        "feature1": "+1 utente extra",
+        "feature2": "+5 dashboard",
+        "feature3": "+3 fonti dati",
+        "active": "attivo"
+      },
+      "dash": {
+        "title": "Pacchetto Dashboard",
+        "feature": "+5 dashboard",
+        "active": "dashboard attivi"
+      },
+      "dataset": {
+        "title": "Pacchetto Fonti Dati",
+        "feature": "+3 fonti dati",
+        "active": "fonti attive"
+      }
     },
     "toast": {
       "success": "Abbonamento attivato con successo! Il tuo piano è stato aggiornato.",
@@ -1061,14 +1111,85 @@
       "portalError": "Errore durante l'apertura del portale."
     },
     "plans": {
-      "free":       { "name": "Free",       "desc": "Per provare",                    "f1": "2 dashboard", "f2": "2 fonti dati", "f3": "1 utente", "f4": "10 query IA/mese" },
-      "essential":  { "name": "Essential",  "desc": "Per freelance e PMI",            "f1": "8 dashboard", "f2": "5 fonti dati", "f3": "1 utente", "f4": "3 avvisi", "f5": "60 query IA/mese", "f6": "Incorpora nel sito" },
-      "pro":        { "name": "Pro",        "desc": "Per le piccole imprese",         "f1": "20 dashboard", "f2": "15 fonti dati", "f3": "1 utente", "f4": "10 avvisi", "f5": "225 query IA/mese", "f6": "Incorpora nel sito" },
-      "business":   { "name": "Business",   "desc": "Per le aziende in crescita",     "f1": "50 dashboard", "f2": "30 fonti dati", "f3": "5 utenti", "f4": "30 avvisi", "f5": "550 query IA/mese", "f6": "White label", "f7": "Incorpora nel sito" },
-      "enterprise": { "name": "Enterprise", "desc": "Per grandi operazioni",          "f1": "Tutto di Business", "f2": "Utenti illimitati", "f3": "SLA garantito per contratto", "f4": "Account manager dedicato", "f5": "Onboarding personalizzato" },
-      "solo":       { "name": "Essential",  "desc": "Per freelance e PMI",            "f1": "8 dashboard", "f2": "5 fonti dati", "f3": "1 utente", "f4": "3 avvisi", "f5": "60 query IA/mese", "f6": "Incorpora nel sito" },
-      "equipe":     { "name": "Pro",        "desc": "Per le piccole imprese",         "f1": "20 dashboard", "f2": "15 fonti dati", "f3": "1 utente", "f4": "10 avvisi", "f5": "225 query IA/mese", "f6": "Incorpora nel sito" },
-      "ilimitado":  { "name": "Business",   "desc": "Per le aziende in crescita",     "f1": "50 dashboard", "f2": "30 fonti dati", "f3": "5 utenti", "f4": "30 avvisi", "f5": "550 query IA/mese", "f6": "White label", "f7": "Incorpora nel sito" }
+      "free": {
+        "name": "Free",
+        "desc": "Per provare",
+        "f1": "2 dashboard",
+        "f2": "2 fonti dati",
+        "f3": "1 utente",
+        "f4": "10 query IA/mese"
+      },
+      "essential": {
+        "name": "Essential",
+        "desc": "Per freelance e PMI",
+        "f1": "8 dashboard",
+        "f2": "5 fonti dati",
+        "f3": "1 utente",
+        "f4": "3 avvisi",
+        "f5": "60 query IA/mese",
+        "f6": "Incorpora nel sito"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Per le piccole imprese",
+        "f1": "20 dashboard",
+        "f2": "15 fonti dati",
+        "f3": "1 utente",
+        "f4": "10 avvisi",
+        "f5": "225 query IA/mese",
+        "f6": "Incorpora nel sito"
+      },
+      "business": {
+        "name": "Business",
+        "desc": "Per le aziende in crescita",
+        "f1": "50 dashboard",
+        "f2": "30 fonti dati",
+        "f3": "5 utenti",
+        "f4": "30 avvisi",
+        "f5": "550 query IA/mese",
+        "f6": "White label",
+        "f7": "Incorpora nel sito"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "Per grandi operazioni",
+        "f1": "Tutto di Business",
+        "f2": "Utenti illimitati",
+        "f3": "SLA garantito per contratto",
+        "f4": "Account manager dedicato",
+        "f5": "Onboarding personalizzato"
+      },
+      "solo": {
+        "name": "Essential",
+        "desc": "Per freelance e PMI",
+        "f1": "8 dashboard",
+        "f2": "5 fonti dati",
+        "f3": "1 utente",
+        "f4": "3 avvisi",
+        "f5": "60 query IA/mese",
+        "f6": "Incorpora nel sito"
+      },
+      "equipe": {
+        "name": "Pro",
+        "desc": "Per le piccole imprese",
+        "f1": "20 dashboard",
+        "f2": "15 fonti dati",
+        "f3": "1 utente",
+        "f4": "10 avvisi",
+        "f5": "225 query IA/mese",
+        "f6": "Incorpora nel sito"
+      },
+      "ilimitado": {
+        "name": "Business",
+        "desc": "Per le aziende in crescita",
+        "f1": "50 dashboard",
+        "f2": "30 fonti dati",
+        "f3": "5 utenti",
+        "f4": "30 avvisi",
+        "f5": "550 query IA/mese",
+        "f6": "White label",
+        "f7": "Incorpora nel sito"
+      }
     }
   },
   "usuarios": {

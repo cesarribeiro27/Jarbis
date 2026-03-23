@@ -139,13 +139,48 @@
     "colExcel": "Planilla Manual",
     "colBiCorp": "BI Corporativo",
     "rows": [
-      { "feature": "Precio inicial", "jarbis": "Gratis", "competitor": "\"Gratis\" (caro en tiempo)", "powerbi": "$5,000–15,000/mes" },
-      { "feature": "Tiempo al 1er insight", "jarbis": "30 segundos", "competitor": "Horas", "powerbi": "Días/semanas" },
-      { "feature": "IA en todos los planes", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Incrustar via iframe", "jarbis": true, "competitor": false, "powerbi": "Complejo" },
-      { "feature": "¿Necesita TI?", "jarbis": false, "competitor": false, "powerbi": true },
-      { "feature": "Setup en minutos", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "Sin tarjeta en el trial", "jarbis": true, "competitor": false, "powerbi": false }
+      {
+        "feature": "Precio inicial",
+        "jarbis": "Gratis",
+        "competitor": "\"Gratis\" (caro en tiempo)",
+        "powerbi": "$5,000–15,000/mes"
+      },
+      {
+        "feature": "Tiempo al 1er insight",
+        "jarbis": "30 segundos",
+        "competitor": "Horas",
+        "powerbi": "Días/semanas"
+      },
+      {
+        "feature": "IA en todos los planes",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Incrustar via iframe",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": "Complejo"
+      },
+      {
+        "feature": "¿Necesita TI?",
+        "jarbis": false,
+        "competitor": false,
+        "powerbi": true
+      },
+      {
+        "feature": "Setup en minutos",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "Sin tarjeta en el trial",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -369,7 +404,8 @@
     "signupLink": "Crear cuenta gratis",
     "errorDefault": "Credenciales inválidas",
     "rightTitle": "Datos que\ngeneran decisiones",
-    "rightSubtitle": "BI embebido en tu idioma, como lo necesitas."
+    "rightSubtitle": "BI embebido en tu idioma, como lo necesitas.",
+    "forgotPassword": "Olvidé mi contraseña"
   },
   "dashboard": {
     "stats": {
@@ -1047,9 +1083,23 @@
       "adding": "Por favor espere...",
       "sectionTitle": "Paquetes de Expansión",
       "sectionDesc": "Añade recursos a tu plan actual",
-      "completo": { "title": "Paquete Completo", "feature1": "+1 usuario extra", "feature2": "+5 paneles", "feature3": "+3 fuentes de datos", "active": "activo" },
-      "dash": { "title": "Paquete Paneles", "feature": "+5 paneles", "active": "paneles activos" },
-      "dataset": { "title": "Paquete Fuentes", "feature": "+3 fuentes de datos", "active": "fuentes activas" }
+      "completo": {
+        "title": "Paquete Completo",
+        "feature1": "+1 usuario extra",
+        "feature2": "+5 paneles",
+        "feature3": "+3 fuentes de datos",
+        "active": "activo"
+      },
+      "dash": {
+        "title": "Paquete Paneles",
+        "feature": "+5 paneles",
+        "active": "paneles activos"
+      },
+      "dataset": {
+        "title": "Paquete Fuentes",
+        "feature": "+3 fuentes de datos",
+        "active": "fuentes activas"
+      }
     },
     "toast": {
       "success": "¡Suscripción activada exitosamente! Tu plan ha sido actualizado.",
@@ -1061,14 +1111,85 @@
       "portalError": "Error al abrir el portal."
     },
     "plans": {
-      "free":       { "name": "Free",       "desc": "Para probar",                      "f1": "2 paneles", "f2": "2 fuentes de datos", "f3": "1 usuario", "f4": "10 consultas IA/mes" },
-      "essential":  { "name": "Essential",  "desc": "Para autónomos y pymes",           "f1": "8 paneles", "f2": "5 fuentes de datos", "f3": "1 usuario", "f4": "3 alertas", "f5": "60 consultas IA/mes", "f6": "Incrustar en sitio" },
-      "pro":        { "name": "Pro",        "desc": "Para pequeñas empresas",           "f1": "20 paneles", "f2": "15 fuentes de datos", "f3": "1 usuario", "f4": "10 alertas", "f5": "225 consultas IA/mes", "f6": "Incrustar en sitio" },
-      "business":   { "name": "Business",   "desc": "Para empresas en crecimiento",     "f1": "50 paneles", "f2": "30 fuentes de datos", "f3": "5 usuarios", "f4": "30 alertas", "f5": "550 consultas IA/mes", "f6": "Marca blanca", "f7": "Incrustar en sitio" },
-      "enterprise": { "name": "Enterprise", "desc": "Para grandes operaciones",         "f1": "Todo de Business", "f2": "Usuarios ilimitados", "f3": "SLA garantizado por contrato", "f4": "Gestor de cuenta dedicado", "f5": "Onboarding personalizado" },
-      "solo":       { "name": "Essential",  "desc": "Para autónomos y pymes",           "f1": "8 paneles", "f2": "5 fuentes de datos", "f3": "1 usuario", "f4": "3 alertas", "f5": "60 consultas IA/mes", "f6": "Incrustar en sitio" },
-      "equipe":     { "name": "Pro",        "desc": "Para pequeñas empresas",           "f1": "20 paneles", "f2": "15 fuentes de datos", "f3": "1 usuario", "f4": "10 alertas", "f5": "225 consultas IA/mes", "f6": "Incrustar en sitio" },
-      "ilimitado":  { "name": "Business",   "desc": "Para empresas en crecimiento",     "f1": "50 paneles", "f2": "30 fuentes de datos", "f3": "5 usuarios", "f4": "30 alertas", "f5": "550 consultas IA/mes", "f6": "Marca blanca", "f7": "Incrustar en sitio" }
+      "free": {
+        "name": "Free",
+        "desc": "Para probar",
+        "f1": "2 paneles",
+        "f2": "2 fuentes de datos",
+        "f3": "1 usuario",
+        "f4": "10 consultas IA/mes"
+      },
+      "essential": {
+        "name": "Essential",
+        "desc": "Para autónomos y pymes",
+        "f1": "8 paneles",
+        "f2": "5 fuentes de datos",
+        "f3": "1 usuario",
+        "f4": "3 alertas",
+        "f5": "60 consultas IA/mes",
+        "f6": "Incrustar en sitio"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Para pequeñas empresas",
+        "f1": "20 paneles",
+        "f2": "15 fuentes de datos",
+        "f3": "1 usuario",
+        "f4": "10 alertas",
+        "f5": "225 consultas IA/mes",
+        "f6": "Incrustar en sitio"
+      },
+      "business": {
+        "name": "Business",
+        "desc": "Para empresas en crecimiento",
+        "f1": "50 paneles",
+        "f2": "30 fuentes de datos",
+        "f3": "5 usuarios",
+        "f4": "30 alertas",
+        "f5": "550 consultas IA/mes",
+        "f6": "Marca blanca",
+        "f7": "Incrustar en sitio"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "Para grandes operaciones",
+        "f1": "Todo de Business",
+        "f2": "Usuarios ilimitados",
+        "f3": "SLA garantizado por contrato",
+        "f4": "Gestor de cuenta dedicado",
+        "f5": "Onboarding personalizado"
+      },
+      "solo": {
+        "name": "Essential",
+        "desc": "Para autónomos y pymes",
+        "f1": "8 paneles",
+        "f2": "5 fuentes de datos",
+        "f3": "1 usuario",
+        "f4": "3 alertas",
+        "f5": "60 consultas IA/mes",
+        "f6": "Incrustar en sitio"
+      },
+      "equipe": {
+        "name": "Pro",
+        "desc": "Para pequeñas empresas",
+        "f1": "20 paneles",
+        "f2": "15 fuentes de datos",
+        "f3": "1 usuario",
+        "f4": "10 alertas",
+        "f5": "225 consultas IA/mes",
+        "f6": "Incrustar en sitio"
+      },
+      "ilimitado": {
+        "name": "Business",
+        "desc": "Para empresas en crecimiento",
+        "f1": "50 paneles",
+        "f2": "30 fuentes de datos",
+        "f3": "5 usuarios",
+        "f4": "30 alertas",
+        "f5": "550 consultas IA/mes",
+        "f6": "Marca blanca",
+        "f7": "Incrustar en sitio"
+      }
     }
   },
   "usuarios": {

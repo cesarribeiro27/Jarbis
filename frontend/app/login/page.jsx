@@ -162,7 +162,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-semibold text-gray-700">{t('passwordLabel')}</label>
                 <Link href="/recuperar-senha" className="text-xs text-violet-600 hover:text-violet-700 hover:underline">
-                  Esqueci minha senha
+                  {t('forgotPassword')}
                 </Link>
               </div>
               <div className="relative">

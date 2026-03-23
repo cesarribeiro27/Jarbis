@@ -139,13 +139,48 @@
     "colExcel": "手动电子表格",
     "colBiCorp": "企业BI",
     "rows": [
-      { "feature": "起始价格", "jarbis": "免费", "competitor": "\"免费\"(时间成本高)", "powerbi": "5,000–15,000美元/月" },
-      { "feature": "首个洞察所需时间", "jarbis": "30秒", "competitor": "数小时", "powerbi": "数天/数周" },
-      { "feature": "所有计划含AI", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "iframe嵌入", "jarbis": true, "competitor": false, "powerbi": "复杂" },
-      { "feature": "需要IT部门?", "jarbis": false, "competitor": false, "powerbi": true },
-      { "feature": "几分钟完成设置", "jarbis": true, "competitor": false, "powerbi": false },
-      { "feature": "试用无需信用卡", "jarbis": true, "competitor": false, "powerbi": false }
+      {
+        "feature": "起始价格",
+        "jarbis": "免费",
+        "competitor": "\"免费\"(时间成本高)",
+        "powerbi": "5,000–15,000美元/月"
+      },
+      {
+        "feature": "首个洞察所需时间",
+        "jarbis": "30秒",
+        "competitor": "数小时",
+        "powerbi": "数天/数周"
+      },
+      {
+        "feature": "所有计划含AI",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "iframe嵌入",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": "复杂"
+      },
+      {
+        "feature": "需要IT部门?",
+        "jarbis": false,
+        "competitor": false,
+        "powerbi": true
+      },
+      {
+        "feature": "几分钟完成设置",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      },
+      {
+        "feature": "试用无需信用卡",
+        "jarbis": true,
+        "competitor": false,
+        "powerbi": false
+      }
     ]
   },
   "pricing": {
@@ -350,7 +385,8 @@
     "signupLink": "创建免费账户",
     "errorDefault": "凭据无效",
     "rightTitle": "驱动决策的\n数据",
-    "rightSubtitle": "以您的语言提供嵌入式BI，满足您的需求。"
+    "rightSubtitle": "以您的语言提供嵌入式BI，满足您的需求。",
+    "forgotPassword": "忘记密码"
   },
   "app": {
     "nav": {
@@ -1047,9 +1083,23 @@
       "adding": "请稍候...",
       "sectionTitle": "扩展套餐",
       "sectionDesc": "为当前计划添加资源",
-      "completo": { "title": "完整套餐", "feature1": "+1 个额外用户", "feature2": "+5 个仪表板", "feature3": "+3 个数据源", "active": "有效" },
-      "dash": { "title": "仪表板套餐", "feature": "+5 个仪表板", "active": "个活跃仪表板" },
-      "dataset": { "title": "数据源套餐", "feature": "+3 个数据源", "active": "个活跃数据源" }
+      "completo": {
+        "title": "完整套餐",
+        "feature1": "+1 个额外用户",
+        "feature2": "+5 个仪表板",
+        "feature3": "+3 个数据源",
+        "active": "有效"
+      },
+      "dash": {
+        "title": "仪表板套餐",
+        "feature": "+5 个仪表板",
+        "active": "个活跃仪表板"
+      },
+      "dataset": {
+        "title": "数据源套餐",
+        "feature": "+3 个数据源",
+        "active": "个活跃数据源"
+      }
     },
     "toast": {
       "success": "订阅激活成功！您的计划已更新。",
@@ -1061,14 +1111,85 @@
       "portalError": "打开门户时出错。"
     },
     "plans": {
-      "free":       { "name": "Free",       "desc": "用于体验",        "f1": "2 个仪表板", "f2": "2 个数据源", "f3": "1 个用户", "f4": "AI 10次/月" },
-      "essential":  { "name": "Essential",  "desc": "适合自由职业者",  "f1": "8 个仪表板", "f2": "5 个数据源", "f3": "1 个用户", "f4": "3 条提醒", "f5": "AI 60次/月", "f6": "嵌入网站" },
-      "pro":        { "name": "Pro",        "desc": "适合小型企业",    "f1": "20 个仪表板", "f2": "15 个数据源", "f3": "1 个用户", "f4": "10 条提醒", "f5": "AI 225次/月", "f6": "嵌入网站" },
-      "business":   { "name": "Business",   "desc": "适合成长中的企业","f1": "50 个仪表板", "f2": "30 个数据源", "f3": "5 个用户", "f4": "30 条提醒", "f5": "AI 550次/月", "f6": "白标", "f7": "嵌入网站" },
-      "enterprise": { "name": "Enterprise", "desc": "适合大型运营",    "f1": "Business全部功能", "f2": "无限用户", "f3": "合同保障SLA", "f4": "专属客户经理", "f5": "定制化入驻" },
-      "solo":       { "name": "Essential",  "desc": "适合自由职业者",  "f1": "8 个仪表板", "f2": "5 个数据源", "f3": "1 个用户", "f4": "3 条提醒", "f5": "AI 60次/月", "f6": "嵌入网站" },
-      "equipe":     { "name": "Pro",        "desc": "适合小型企业",    "f1": "20 个仪表板", "f2": "15 个数据源", "f3": "1 个用户", "f4": "10 条提醒", "f5": "AI 225次/月", "f6": "嵌入网站" },
-      "ilimitado":  { "name": "Business",   "desc": "适合成长中的企业","f1": "50 个仪表板", "f2": "30 个数据源", "f3": "5 个用户", "f4": "30 条提醒", "f5": "AI 550次/月", "f6": "白标", "f7": "嵌入网站" }
+      "free": {
+        "name": "Free",
+        "desc": "用于体验",
+        "f1": "2 个仪表板",
+        "f2": "2 个数据源",
+        "f3": "1 个用户",
+        "f4": "AI 10次/月"
+      },
+      "essential": {
+        "name": "Essential",
+        "desc": "适合自由职业者",
+        "f1": "8 个仪表板",
+        "f2": "5 个数据源",
+        "f3": "1 个用户",
+        "f4": "3 条提醒",
+        "f5": "AI 60次/月",
+        "f6": "嵌入网站"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "适合小型企业",
+        "f1": "20 个仪表板",
+        "f2": "15 个数据源",
+        "f3": "1 个用户",
+        "f4": "10 条提醒",
+        "f5": "AI 225次/月",
+        "f6": "嵌入网站"
+      },
+      "business": {
+        "name": "Business",
+        "desc": "适合成长中的企业",
+        "f1": "50 个仪表板",
+        "f2": "30 个数据源",
+        "f3": "5 个用户",
+        "f4": "30 条提醒",
+        "f5": "AI 550次/月",
+        "f6": "白标",
+        "f7": "嵌入网站"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "适合大型运营",
+        "f1": "Business全部功能",
+        "f2": "无限用户",
+        "f3": "合同保障SLA",
+        "f4": "专属客户经理",
+        "f5": "定制化入驻"
+      },
+      "solo": {
+        "name": "Essential",
+        "desc": "适合自由职业者",
+        "f1": "8 个仪表板",
+        "f2": "5 个数据源",
+        "f3": "1 个用户",
+        "f4": "3 条提醒",
+        "f5": "AI 60次/月",
+        "f6": "嵌入网站"
+      },
+      "equipe": {
+        "name": "Pro",
+        "desc": "适合小型企业",
+        "f1": "20 个仪表板",
+        "f2": "15 个数据源",
+        "f3": "1 个用户",
+        "f4": "10 条提醒",
+        "f5": "AI 225次/月",
+        "f6": "嵌入网站"
+      },
+      "ilimitado": {
+        "name": "Business",
+        "desc": "适合成长中的企业",
+        "f1": "50 个仪表板",
+        "f2": "30 个数据源",
+        "f3": "5 个用户",
+        "f4": "30 条提醒",
+        "f5": "AI 550次/月",
+        "f6": "白标",
+        "f7": "嵌入网站"
+      }
     }
   },
   "usuarios": {
