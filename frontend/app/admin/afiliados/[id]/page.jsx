@@ -42,7 +42,7 @@ export default function AdminAfiliadoDetailPage() {
   const [paymentMsg, setPaymentMsg] = useState(null)
 
   function authHeaders() {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : ''
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
     return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   }
 

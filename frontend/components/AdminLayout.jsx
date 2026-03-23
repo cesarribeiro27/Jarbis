@@ -307,7 +307,7 @@ export default function AdminLayout({ children }) {
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
     if (!token) { router.replace('/admin/login'); return }
 
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -336,7 +336,7 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (!adminRole) return
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
     if (!token) return
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
 

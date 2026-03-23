@@ -56,7 +56,7 @@ export default function AdminTenantsPage() {
   const pageSize = 20
 
   function authHeaders() {
-    const token = localStorage.getItem('jarbis_token')
+    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
     if (token) h['Authorization'] = `Bearer ${token}`
     return h
@@ -83,7 +83,7 @@ export default function AdminTenantsPage() {
 
   // Carrega health scores uma vez (independente do filtro)
   useEffect(() => {
-    const token = localStorage.getItem('jarbis_token')
+    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
     if (token) h['Authorization'] = `Bearer ${token}`
     fetch(`${API_URL}/admin/customer-success?limit=500`, { credentials: 'include', headers: h })

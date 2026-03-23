@@ -1070,7 +1070,8 @@
       "dashboards": "Cruscotti",
       "datasets": "Fonti dei dati",
       "users": "Utenti",
-      "alerts": "Avvisi"
+      "alerts": "Avvisi",
+      "rows": "Dataset più grande"
     },
     "addon": {
       "title": "Pacchetto di espansione",

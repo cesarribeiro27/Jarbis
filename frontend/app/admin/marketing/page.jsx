@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : ''
+  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 }
 

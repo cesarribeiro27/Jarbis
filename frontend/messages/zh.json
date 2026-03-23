@@ -1070,7 +1070,8 @@
       "dashboards": "仪表板",
       "datasets": "数据来源",
       "users": "用户",
-      "alerts": "警报"
+      "alerts": "警报",
+      "rows": "最大数据集"
     },
     "addon": {
       "title": "扩展包",

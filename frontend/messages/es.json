@@ -1070,7 +1070,8 @@
       "dashboards": "Paneles de control",
       "datasets": "Fuentes de datos",
       "users": "Usuarios",
-      "alerts": "Alertas"
+      "alerts": "Alertas",
+      "rows": "Dataset más grande"
     },
     "addon": {
       "title": "Paquete de expansión",

@@ -1070,7 +1070,8 @@
       "dashboards": "Tableaux de bord",
       "datasets": "Sources de données",
       "users": "Utilisateurs",
-      "alerts": "Alertes"
+      "alerts": "Alertes",
+      "rows": "Jeu de données le plus grand"
     },
     "addon": {
       "title": "Pack d'extension",

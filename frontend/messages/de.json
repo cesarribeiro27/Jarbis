@@ -1070,7 +1070,8 @@
       "dashboards": "Dashboards",
       "datasets": "Datenquellen",
       "users": "Benutzer",
-      "alerts": "Warnungen"
+      "alerts": "Warnungen",
+      "rows": "Größter Datensatz"
     },
     "addon": {
       "title": "Erweiterungspaket",

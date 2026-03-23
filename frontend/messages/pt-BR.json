@@ -1072,7 +1072,8 @@
       "dashboards": "Dashboards",
       "datasets": "Fontes de dados",
       "users": "Usuários",
-      "alerts": "Alertas"
+      "alerts": "Alertas",
+      "rows": "Maior dataset"
     },
     "addon": {
       "title": "Pack de Expansão",

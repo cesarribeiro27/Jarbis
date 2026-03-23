@@ -90,7 +90,7 @@ export default function AdminTenantDetailPage() {
   const [fiscalMsg, setFiscalMsg] = useState(null)
 
   function authHeaders() {
-    const token = localStorage.getItem('jarbis_token')
+    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
     if (token) h['Authorization'] = `Bearer ${token}`
     return h

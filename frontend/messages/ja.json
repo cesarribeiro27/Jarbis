@@ -1070,7 +1070,8 @@
       "dashboards": "ダッシュボード",
       "datasets": "データソース",
       "users": "ユーザー",
-      "alerts": "アラート"
+      "alerts": "アラート",
+      "rows": "最大データセット"
     },
     "addon": {
       "title": "拡張パック",

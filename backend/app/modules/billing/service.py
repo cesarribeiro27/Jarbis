@@ -563,6 +563,12 @@ class BillingService:
         alert_count = await self.db.scalar(
             select(func.count()).select_from(ReportAlert).where(ReportAlert.tenant_id == tenant_id)
         ) or 0
+        max_row_count = await self.db.scalar(
+            select(func.max(ReportDataset.row_count)).where(
+                ReportDataset.tenant_id == tenant_id,
+                ReportDataset.is_demo.is_(False),
+            )
+        ) or 0
 
         return {
             "plan": plan,
@@ -581,5 +587,6 @@ class BillingService:
                 "datasets": ds_count,
                 "users": user_count,
                 "alerts": alert_count,
+                "rows": max_row_count,
             },
         }

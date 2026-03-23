@@ -1071,7 +1071,8 @@
       "dashboards": "Dashboards",
       "datasets": "Data Sources",
       "users": "Users",
-      "alerts": "Alerts"
+      "alerts": "Alerts",
+      "rows": "Largest dataset"
     },
     "addon": {
       "title": "Expansion Pack",
