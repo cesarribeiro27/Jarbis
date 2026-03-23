@@ -55,6 +55,7 @@ class Settings(BaseSettings):
 
     # --- Stripe ---
     stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""   # STRIPE_PUBLISHABLE_KEY
     stripe_webhook_secret: str = ""
     # Planos — cobrança mensal
     stripe_price_essential: str = ""   # STRIPE_PRICE_ESSENTIAL

@@ -183,6 +183,60 @@ class BillingService:
         )
         return session.url
 
+    async def create_subscription_intent(
+        self,
+        tenant_id: uuid.UUID,
+        user_email: str,
+        price_id: str,
+        coupon_code: str = "",
+    ) -> dict:
+        """Cria uma subscription incompleta e retorna o client_secret para Stripe Elements."""
+        if not _init_stripe():
+            raise ValueError("Stripe não configurado.")
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+
+        customer_id = await self.get_or_create_customer(tenant, user_email)
+
+        # Cancela subscription incompleta anterior se houver
+        if tenant.stripe_subscription_id:
+            try:
+                existing = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
+                if existing.status == "incomplete":
+                    stripe.Subscription.cancel(tenant.stripe_subscription_id)
+                    tenant.stripe_subscription_id = None
+                    await self.db.commit()
+            except Exception:
+                pass
+
+        create_kwargs: dict = {
+            "customer": customer_id,
+            "items": [{"price": price_id}],
+            "payment_behavior": "default_incomplete",
+            "payment_settings": {"save_default_payment_method": "on_subscription"},
+            "expand": ["latest_invoice.payment_intent"],
+            "metadata": {"tenant_id": str(tenant_id)},
+        }
+
+        if coupon_code:
+            codes = stripe.PromotionCode.list(code=coupon_code.strip().upper(), active=True, limit=1)
+            if not codes.data:
+                raise ValueError(f"Cupom '{coupon_code}' inválido ou expirado.")
+            create_kwargs["discounts"] = [{"promotion_code": codes.data[0].id}]
+
+        subscription = stripe.Subscription.create(**create_kwargs)
+
+        # Salva subscription_id no tenant
+        tenant.stripe_subscription_id = subscription.id
+        tenant.subscription_status = "incomplete"
+        await self.db.commit()
+
+        return {
+            "subscription_id": subscription.id,
+            "client_secret": subscription.latest_invoice.payment_intent.client_secret,
+        }
+
     async def create_addon_checkout_session(
         self,
         tenant_id: uuid.UUID,
@@ -417,12 +471,19 @@ class BillingService:
         status = subscription.get("status", "active")
         tenant.subscription_status = status
 
+        # Salva subscription_id caso ainda não esteja (criação via Elements)
+        sub_id = subscription["id"]
+        if not tenant.stripe_subscription_id:
+            tenant.stripe_subscription_id = sub_id
+
         items = subscription.get("items", {}).get("data", [])
-        if items:
+        # Só ativa o plano quando pagamento confirmado — ignora status incomplete
+        if items and status in ("active", "trialing", "past_due"):
             price_id = items[0]["price"]["id"]
             plan = PRICE_TO_PLAN.get(price_id)
             if plan:
                 tenant.plan = plan
+                tenant.trial_ends_at = None  # encerra trial ao ativar
 
         if status == "canceled":
             tenant.plan = "free"

@@ -40,6 +40,48 @@ class BillingNameRequest(BaseModel):
     billing_name: str = ""
 
 
+class SubscriptionIntentRequest(BaseModel):
+    plan: str
+    annual: bool = False
+    coupon_code: str = ""
+
+
+@router.post("/subscription-intent", summary="Cria subscription intent para Stripe Elements")
+async def create_subscription_intent(
+    data: SubscriptionIntentRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Pagamentos não configurados.")
+
+    if data.annual:
+        plan_map = {
+            "essential": settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "pro":        settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "business":   settings.stripe_price_business_annual or settings.stripe_price_business,
+        }
+    else:
+        plan_map = {
+            "essential": settings.stripe_price_essential,
+            "pro":        settings.stripe_price_pro,
+            "business":   settings.stripe_price_business,
+        }
+
+    price_id = plan_map.get(data.plan, "")
+    if not price_id:
+        raise HTTPException(status_code=400, detail=f"Plano '{data.plan}' não configurado.")
+
+    try:
+        svc = BillingService(db)
+        result = await svc.create_subscription_intent(
+            current_user.tenant_id, current_user.email, price_id, data.coupon_code
+        )
+        return {**result, "publishable_key": settings.stripe_publishable_key}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/checkout/plan", summary="Cria sessão de checkout por nome do plano")
 async def create_checkout_by_plan(
     data: CheckoutByPlanRequest,

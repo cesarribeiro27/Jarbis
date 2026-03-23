@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^5.6.1",
+    "@stripe/stripe-js": "^8.11.0",
     "d3-hierarchy": "^3.1.2",
     "d3-scale-chromatic": "^3.1.0",
     "framer-motion": "^12.38.0",
