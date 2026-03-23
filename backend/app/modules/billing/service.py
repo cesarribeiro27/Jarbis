@@ -243,27 +243,38 @@ class BillingService:
         await self.db.commit()
 
         # Stripe API >= 2025-03-31: invoice.payment_intent removido.
-        # Busca o PaymentIntent separadamente via invoice.payments.
+        # Retrieve da invoice com payments expandido para obter o client_secret.
         invoice_id = subscription.latest_invoice
         if not invoice_id:
             raise ValueError("Fatura não encontrada para esta assinatura.")
 
-        invoice = stripe.Invoice.retrieve(invoice_id)
-        payments_list = getattr(invoice, "payments", None)
-        if payments_list and payments_list.data:
-            pi_id = payments_list.data[0].payment
+        invoice = stripe.Invoice.retrieve(invoice_id, expand=["payments.data.payment"])
+
+        payments_data = (
+            invoice.payments.data
+            if getattr(invoice, "payments", None) and invoice.payments.data
+            else []
+        )
+
+        if payments_data:
+            payment_obj = payments_data[0].payment
+            # payment_obj pode ser objeto expandido ou string ID
+            if isinstance(payment_obj, str):
+                pi = stripe.PaymentIntent.retrieve(payment_obj)
+                client_secret = pi.client_secret
+            else:
+                client_secret = payment_obj.client_secret
         else:
-            # Fallback: API mais antiga ou invoice sem payments ainda
+            # Fallback para versões antigas da API
             pi_id = getattr(invoice, "payment_intent", None)
-
-        if not pi_id:
-            raise ValueError("Não foi possível criar a intenção de pagamento. Tente novamente.")
-
-        pi = stripe.PaymentIntent.retrieve(pi_id)
+            if not pi_id:
+                raise ValueError("Não foi possível criar a intenção de pagamento. Tente novamente.")
+            pi = stripe.PaymentIntent.retrieve(pi_id) if isinstance(pi_id, str) else pi_id
+            client_secret = pi.client_secret
 
         return {
             "subscription_id": subscription.id,
-            "client_secret": pi.client_secret,
+            "client_secret": client_secret,
         }
 
     async def create_addon_checkout_session(
