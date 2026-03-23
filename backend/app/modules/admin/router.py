@@ -349,6 +349,7 @@ async def admin_metrics(
         select(func.count()).select_from(Tenant).where(
             Tenant.is_active == True,  # noqa: E712
             Tenant.subscription_status == "active",
+            Tenant.plan.notin_(["free", "internal"]),
         )
     ) or 0
     conversion_base = paid_count + (trial_tenants or 0)
@@ -1729,7 +1730,7 @@ async def admin_marketing_dashboard(
         select(func.count()).select_from(Tenant)
         .where(
             Tenant.subscription_status == "active",
-            Tenant.plan.notin_(["free"]),
+            Tenant.plan.notin_(["free", "internal"]),
         )
     ) or 0
 

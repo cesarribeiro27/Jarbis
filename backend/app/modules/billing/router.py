@@ -29,6 +29,15 @@ class CheckoutByPlanRequest(BaseModel):
     annual: bool = False
 
 
+class UpgradeRequest(BaseModel):
+    plan: str
+    annual: bool = False
+
+
+class BillingNameRequest(BaseModel):
+    billing_name: str = ""
+
+
 @router.post("/checkout/plan", summary="Cria sessão de checkout por nome do plano")
 async def create_checkout_by_plan(
     data: CheckoutByPlanRequest,
@@ -101,6 +110,65 @@ async def create_checkout(
         svc = BillingService(db)
         url = await svc.create_checkout_session(current_user.tenant_id, current_user.email, data.price_id)
         return {"checkout_url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/upgrade", summary="Upgrade/downgrade de plano com proration imediata")
+async def upgrade_plan(
+    data: UpgradeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Modifica a assinatura ativa com proration imediata (cobra/credita a diferença).
+    Retorna {'ok': True} se bem-sucedido.
+    Retorna {'checkout_url': url} se o tenant não tiver assinatura ativa (novo checkout).
+    """
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Pagamentos não configurados.")
+
+    if data.annual:
+        plan_map = {
+            "essential": settings.stripe_price_solo_annual or settings.stripe_price_solo,
+            "pro":        settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
+            "business":   settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
+            "solo":       settings.stripe_price_solo_annual or settings.stripe_price_solo,
+            "equipe":     settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
+            "ilimitado":  settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
+        }
+    else:
+        plan_map = {
+            "essential": settings.stripe_price_solo,
+            "pro":        settings.stripe_price_equipe,
+            "business":   settings.stripe_price_ilimitado,
+            "solo":       settings.stripe_price_solo,
+            "equipe":     settings.stripe_price_equipe,
+            "ilimitado":  settings.stripe_price_ilimitado,
+        }
+
+    price_id = plan_map.get(data.plan, "")
+    if not price_id:
+        raise HTTPException(status_code=400, detail=f"Plano '{data.plan}' não configurado.")
+
+    try:
+        svc = BillingService(db)
+        result = await svc.upgrade_subscription(current_user.tenant_id, current_user.email, price_id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.patch("/billing-name", summary="Salva o nome que aparece na fatura do cartão")
+async def update_billing_name(
+    data: BillingNameRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        svc = BillingService(db)
+        await svc.update_billing_name(current_user.tenant_id, data.billing_name)
+        return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

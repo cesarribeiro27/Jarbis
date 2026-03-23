@@ -233,5 +233,7 @@ export const api = {
     addonDatasetCheckout: () => apiFetch('/billing/addon/dataset/checkout', { method: 'POST' }),
     addonAiCheckout: () => apiFetch('/billing/addon/ai/checkout', { method: 'POST' }),
     addonRowsCheckout: () => apiFetch('/billing/addon/rows/checkout', { method: 'POST' }),
+    upgrade: (plan, annual = false) => apiFetch('/billing/upgrade', { method: 'POST', body: JSON.stringify({ plan, annual }) }),
+    setBillingName: (billing_name) => apiFetch('/billing/billing-name', { method: 'PATCH', body: JSON.stringify({ billing_name }) }),
   },
 }

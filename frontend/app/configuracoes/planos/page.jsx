@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { useTranslations } from 'next-intl'
+import CheckoutModal from '@/components/CheckoutModal'
 
 // ─── Dados dos planos ─────────────────────────────────────────────────────────
 
@@ -98,6 +99,7 @@ function PlanosContent() {
   const [addonDashLoading, setAddonDashLoading] = useState(false)
   const [addonDatasetLoading, setAddonDatasetLoading] = useState(false)
   const [addonAiLoading, setAddonAiLoading] = useState(false)
+  const [checkoutModal, setCheckoutModal] = useState(null) // { plan, annual }
 
   useEffect(() => {
     if (searchParams.get('success') === '1') {
@@ -113,15 +115,14 @@ function PlanosContent() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleUpgrade(plan) {
-    setUpgrading(plan.key)
-    try {
-      const data = await api.billing.checkoutByPlan(plan.key, annual)
-      window.location.href = data.checkout_url
-    } catch (err) {
-      toast(err.message || t('toast.checkoutError'), 'error')
-      setUpgrading(null)
-    }
+  function handleUpgrade(plan) {
+    setCheckoutModal({ plan, annual })
+  }
+
+  function handleCheckoutSuccess() {
+    // Recarrega o status após upgrade imediato (proration)
+    setStatus(null)
+    api.billing.status().then(setStatus).catch(() => {})
   }
 
   async function handleAddon() {
@@ -385,16 +386,13 @@ function PlanosContent() {
                     ) : (
                       <button
                         onClick={() => handleUpgrade(plan)}
-                        disabled={!!upgrading}
-                        className={`w-full py-2.5 rounded-full font-bold text-xs transition-colors disabled:opacity-50 ${
+                        className={`w-full py-2.5 rounded-full font-bold text-xs transition-colors ${
                           plan.highlight
                             ? 'bg-violet-600 text-white hover:bg-violet-700'
                             : 'bg-gray-900 text-white hover:bg-gray-700'
                         }`}
                       >
-                        {upgrading === plan.key
-                          ? t('redirecting')
-                          : isUpgrade ? t('doUpgrade') : t('changePlan')}
+                        {isUpgrade ? t('doUpgrade') : t('changePlan')}
                       </button>
                     )}
                   </div>
@@ -519,6 +517,15 @@ function PlanosContent() {
           </>
         )}
       </div>
+      {checkoutModal && (
+        <CheckoutModal
+          plan={checkoutModal.plan}
+          annual={checkoutModal.annual}
+          hasActiveSubscription={!!(status?.has_stripe && status?.subscription_status === 'active')}
+          onClose={() => setCheckoutModal(null)}
+          onSuccess={handleCheckoutSuccess}
+        />
+      )}
     </AppLayout>
   )
 }

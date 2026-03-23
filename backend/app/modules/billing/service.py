@@ -79,6 +79,62 @@ class BillingService:
             name=self._customer_display_name(tenant),
         )
 
+    def _statement_descriptor(self, tenant: Tenant) -> str:
+        """Texto que aparece na fatura do cartão do cliente (máx 22 chars, sem < > ' " \)."""
+        raw = (tenant.billing_name or "JARBIS.CC").strip()
+        # Remove chars inválidos para statement_descriptor
+        safe = "".join(c for c in raw if c not in "<>'\"\\")
+        return (safe or "JARBIS.CC")[:22].upper()
+
+    async def update_billing_name(self, tenant_id: uuid.UUID, billing_name: str) -> None:
+        """Salva o billing_name no tenant e sincroniza com o Stripe."""
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+        name = (billing_name or "").strip()[:200]
+        tenant.billing_name = name or None
+        await self.db.commit()
+        await self.update_customer_name(tenant)
+
+    async def upgrade_subscription(
+        self,
+        tenant_id: uuid.UUID,
+        user_email: str,
+        new_price_id: str,
+    ) -> dict:
+        """
+        Se o tenant tiver assinatura ativa, modifica o plano com proration imediata.
+        Se não tiver, cria novo checkout session e retorna {'checkout_url': url}.
+        """
+        if not _init_stripe():
+            raise ValueError("Stripe não configurado.")
+        tenant = await self._get_tenant(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant não encontrado.")
+
+        # Sem assinatura ativa → novo checkout
+        if not tenant.stripe_subscription_id:
+            url = await self.create_checkout_session(tenant_id, user_email, new_price_id)
+            return {"checkout_url": url}
+
+        sub = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
+        current_price_id = sub["items"]["data"][0]["price"]["id"]
+
+        # Mesmo price_id → nada a fazer
+        if current_price_id == new_price_id:
+            return {"ok": True, "unchanged": True}
+
+        item_id = sub["items"]["data"][0]["id"]
+
+        # Modifica a subscription e emite fatura imediata com a proration
+        stripe.Subscription.modify(
+            tenant.stripe_subscription_id,
+            items=[{"id": item_id, "price": new_price_id}],
+            proration_behavior="always_invoice",
+        )
+        # O webhook customer.subscription.updated atualizará o plano no banco
+        return {"ok": True}
+
     async def create_checkout_session(
         self,
         tenant_id: uuid.UUID,
@@ -93,6 +149,7 @@ class BillingService:
             raise ValueError("Tenant não encontrado.")
 
         customer_id = await self.get_or_create_customer(tenant, user_email)
+        descriptor = self._statement_descriptor(tenant)
 
         session = stripe.checkout.Session.create(
             customer=customer_id,
@@ -101,7 +158,11 @@ class BillingService:
             success_url=f"{settings.frontend_url}/configuracoes/planos?success=1",
             cancel_url=f"{settings.frontend_url}/configuracoes/planos?canceled=1",
             metadata={"tenant_id": str(tenant_id)},
-            subscription_data={"metadata": {"tenant_id": str(tenant_id)}},
+            subscription_data={
+                "metadata": {"tenant_id": str(tenant_id)},
+                "description": descriptor,
+            },
+            payment_intent_data={"statement_descriptor": descriptor},
             allow_promotion_codes=True,
         )
         return session.url
