@@ -54,8 +54,13 @@ export default function LoginPage() {
       if (data.trial_days_remaining != null) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
       }
+      if (data.needs_verification) {
+        router.push(`/verificar-email?email=${encodeURIComponent(email)}`)
+        return
+      }
+
       // Importa dataset do preview se o usuário veio de um preview antes de fazer login
-      const previewToken = sessionStorage.getItem('preview_token')
+      const previewToken = sessionStorage.getItem('preview_token') || localStorage.getItem('pending_preview_token')
       let previewDatasetId = null
       let previewDsName = 'Meu Dashboard'
       if (previewToken && data.tokens?.access_token) {
@@ -67,23 +72,13 @@ export default function LoginPage() {
           console.warn('[login] claimPreview falhou:', err?.message)
         }
         sessionStorage.removeItem('preview_token')
+        localStorage.removeItem('pending_preview_token')
       }
 
-      if (data.needs_verification) {
-        router.push(`/verificar-email?email=${encodeURIComponent(email)}`)
-      } else if (previewDatasetId) {
+      if (previewDatasetId) {
         router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)
       } else {
-        // Verifica dashboard pendente de usuário que precisou verificar email antes
-        const pendingDatasetId = sessionStorage.getItem('pending_dashboard_dataset_id')
-        const pendingDsName = sessionStorage.getItem('pending_dashboard_ds_name')
-        if (pendingDatasetId) {
-          sessionStorage.removeItem('pending_dashboard_dataset_id')
-          sessionStorage.removeItem('pending_dashboard_ds_name')
-          router.push(`/dashboards/novo?from=preview&dataset_id=${pendingDatasetId}&ds_name=${encodeURIComponent(pendingDsName || 'Meu Dashboard')}`)
-        } else {
-          router.push('/dashboard')
-        }
+        router.push('/dashboard')
       }
     } catch (err) {
       setError(err.message || t('errorDefault'))

@@ -60,13 +60,37 @@ function VerificarEmailContent() {
     setError('')
     try {
       const data = await api.verifyEmail(email, fullCode)
-      if (data.tokens?.access_token) {
-        localStorage.setItem('jarbis_token', data.tokens.access_token)
+      const accessToken = data.tokens?.access_token
+      if (accessToken) {
+        localStorage.setItem('jarbis_token', accessToken)
       }
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       if (data.trial_days_remaining !== null && data.trial_days_remaining !== undefined) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
       }
+
+      // Verifica se há preview pendente para reclamar (veio da home antes de criar conta)
+      const pendingPreviewToken = localStorage.getItem('pending_preview_token')
+      if (pendingPreviewToken && accessToken) {
+        localStorage.removeItem('pending_preview_token')
+        try {
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+          const res = await fetch(`${apiBase}/reports/preview/${pendingPreviewToken}/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          })
+          if (res.ok) {
+            const claimed = await res.json()
+            if (claimed?.dataset_id) {
+              router.push(`/dashboards/novo?from=preview&dataset_id=${claimed.dataset_id}&ds_name=${encodeURIComponent(claimed.name || 'Meu Dashboard')}`)
+              return
+            }
+          }
+        } catch (err) {
+          console.warn('[verificar-email] claimPreview falhou:', err?.message)
+        }
+      }
+
       router.push('/dashboard')
     } catch (err) {
       setError(err.message || 'Código inválido ou expirado.')

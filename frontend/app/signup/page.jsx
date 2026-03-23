@@ -108,8 +108,18 @@ function SignupForm() {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
       }
 
-      // Importa o dataset do preview se o usuário veio da home com arquivo/sheets
       const previewToken = searchParams.get('token') || sessionStorage.getItem('preview_token')
+
+      if (data.needs_verification) {
+        // Sem token ainda — preserva o preview_token no localStorage para reclamar após verificação
+        if (previewToken) {
+          localStorage.setItem('pending_preview_token', previewToken)
+        }
+        router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
+        return
+      }
+
+      // Tem token: tenta reclamar o preview imediatamente
       let previewDatasetId = null
       let previewDsName = 'Meu Dashboard'
       if (previewToken && data.tokens?.access_token) {
@@ -123,14 +133,7 @@ function SignupForm() {
         sessionStorage.removeItem('preview_token')
       }
 
-      if (data.needs_verification) {
-        // Preserva o dataset para depois que o usuário verificar o email e fizer login
-        if (previewDatasetId) {
-          sessionStorage.setItem('pending_dashboard_dataset_id', previewDatasetId)
-          sessionStorage.setItem('pending_dashboard_ds_name', previewDsName)
-        }
-        router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
-      } else if (previewDatasetId) {
+      if (previewDatasetId) {
         router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)
       } else {
         router.push('/dashboard')
