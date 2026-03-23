@@ -226,7 +226,7 @@ class BillingService:
             "items": [{"price": price_id}],
             "payment_behavior": "default_incomplete",
             "payment_settings": {"save_default_payment_method": "on_subscription"},
-            "expand": ["latest_invoice.payment_intent"],
+            "expand": ["latest_invoice.payments.data.payment"],
             "metadata": {"tenant_id": str(tenant_id)},
         }
 
@@ -243,9 +243,15 @@ class BillingService:
         tenant.subscription_status = "incomplete"
         await self.db.commit()
 
+        # Stripe API >= 2025-03-31: invoice.payment_intent removido, usar invoice.payments
+        payments = subscription.latest_invoice.payments.data if subscription.latest_invoice else []
+        if not payments:
+            raise ValueError("Não foi possível criar a intenção de pagamento. Tente novamente.")
+        client_secret = payments[0].payment.client_secret
+
         return {
             "subscription_id": subscription.id,
-            "client_secret": subscription.latest_invoice.payment_intent.client_secret,
+            "client_secret": client_secret,
         }
 
     async def create_addon_checkout_session(
