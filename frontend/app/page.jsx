@@ -258,11 +258,17 @@ export default function LandingPage() {
           const { sheets, sheets_meta } = await res.json()
           if (sheets && sheets.length > 1) {
             setUploadState('idle')
-            setSheetPicker({ file, sheets, sheetsMeta: sheets_meta || sheets.map(s => ({ name: s })) })
+            setSheetPicker({ file, sheets, sheetsMeta: sheets_meta || sheets.map(s => ({ name: s, type: 'unknown', row_count: null, col_count: null, suggested: false, reason: '' })) })
             return
           }
+          // Só 1 aba: prossegue direto
+        } else {
+          // Endpoint falhou: prossegue normalmente sem picker
+          console.warn('preview-excel-sheets status:', res.status)
         }
-      } catch {}
+      } catch (err) {
+        console.warn('preview-excel-sheets error:', err)
+      }
       // Falhou ao ler abas ou tem só 1 aba: prossegue normalmente
     }
 

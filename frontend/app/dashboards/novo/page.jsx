@@ -726,16 +726,23 @@ export default function NovoDashboardPage() {
     api.reports.generateDashboard(previewDatasetId, null)
       .then(async result => {
         clearTimeout(t1); clearTimeout(t2)
-        const generatedBlocks = (result.blocks || []).map(b => ({
-          ...b,
-          id: b.id || crypto.randomUUID(),
-          dataset_id: previewDatasetId,
-        }))
+
+        // Calcula x,y para cada bloco fazendo pack em grid de 12 colunas
+        let curX = 0, curY = 0, rowH = 0
+        const generatedBlocks = (result.blocks || []).map(b => {
+          const w = b.layout?.w ?? 6
+          const h = b.layout?.h ?? 3
+          if (curX + w > 12) { curX = 0; curY += rowH; rowH = 0 }
+          const x = curX; const y = curY
+          curX += w; rowH = Math.max(rowH, h)
+          return { ...b, id: b.id || crypto.randomUUID(), dataset_id: previewDatasetId, layout: { x, y, w, h } }
+        })
+
         const dashTitle = previewDsName || 'Meu Dashboard'
         const report = await api.reports.create({
           title: dashTitle,
           description: null,
-          blocks: generatedBlocks,
+          pages: [{ id: crypto.randomUUID(), title: 'Página 1', blocks: generatedBlocks }],
         })
         router.replace(`/dashboards/${report.id}`)
       })
