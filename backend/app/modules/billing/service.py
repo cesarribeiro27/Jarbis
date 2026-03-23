@@ -106,6 +106,7 @@ class BillingService:
         tenant_id: uuid.UUID,
         user_email: str,
         new_price_id: str,
+        coupon_code: str = "",
     ) -> dict:
         """
         Se o tenant tiver assinatura ativa, modifica o plano com proration imediata.
@@ -119,7 +120,7 @@ class BillingService:
 
         # Sem assinatura ativa → novo checkout
         if not tenant.stripe_subscription_id:
-            url = await self.create_checkout_session(tenant_id, user_email, new_price_id)
+            url = await self.create_checkout_session(tenant_id, user_email, new_price_id, coupon_code)
             return {"checkout_url": url}
 
         sub = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
@@ -145,6 +146,7 @@ class BillingService:
         tenant_id: uuid.UUID,
         user_email: str,
         price_id: str,
+        coupon_code: str = "",
     ) -> str:
         """Cria sessão de checkout e retorna a URL."""
         if not _init_stripe():
@@ -155,6 +157,16 @@ class BillingService:
 
         customer_id = await self.get_or_create_customer(tenant, user_email)
         descriptor = self._statement_descriptor(tenant)
+
+        # Resolve cupom de desconto se informado
+        session_kwargs: dict = {}
+        if coupon_code:
+            codes = stripe.PromotionCode.list(code=coupon_code.strip().upper(), active=True, limit=1)
+            if not codes.data:
+                raise ValueError(f"Cupom '{coupon_code}' inválido ou expirado.")
+            session_kwargs["discounts"] = [{"promotion_code": codes.data[0].id}]
+        else:
+            session_kwargs["allow_promotion_codes"] = True
 
         session = stripe.checkout.Session.create(
             customer=customer_id,
@@ -168,7 +180,7 @@ class BillingService:
                 "description": descriptor,
             },
             payment_intent_data={"statement_descriptor": descriptor},
-            allow_promotion_codes=True,
+            **session_kwargs,
         )
         return session.url
 

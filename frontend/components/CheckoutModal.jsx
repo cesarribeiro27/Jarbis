@@ -28,6 +28,7 @@ const PLAN_DISPLAY = {
 export default function CheckoutModal({ plan, annual, hasActiveSubscription, onClose, onSuccess }) {
   const toast = useToast()
   const [billingName, setBillingName] = useState('')
+  const [couponCode, setCouponCode] = useState('')
   const [loading, setLoading] = useState(false)
 
   const display = PLAN_DISPLAY[plan.key] || { name: plan.key, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' }
@@ -43,7 +44,7 @@ export default function CheckoutModal({ plan, annual, hasActiveSubscription, onC
       await api.billing.setBillingName(nameToSave)
 
       // 2. Upgrade (proration) ou novo checkout
-      const result = await api.billing.upgrade(plan.key, annual)
+      const result = await api.billing.upgrade(plan.key, annual, couponCode.trim())
 
       if (result.checkout_url) {
         // Sem assinatura ativa: redireciona para Stripe
@@ -122,6 +123,22 @@ export default function CheckoutModal({ plan, annual, hasActiveSubscription, onC
 
         {/* Formulário */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          {/* Campo de cupom de desconto */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Cupom de desconto
+              <span className="ml-1.5 text-xs font-normal text-gray-400">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={couponCode}
+              onChange={e => setCouponCode(e.target.value.toUpperCase())}
+              maxLength={32}
+              placeholder="Ex: JARBIS20"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono tracking-wide uppercase"
+            />
+          </div>
+
           {/* Campo de billing name */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">

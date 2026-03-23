@@ -27,11 +27,13 @@ class CheckoutRequest(BaseModel):
 class CheckoutByPlanRequest(BaseModel):
     plan: str           # essential | pro | business | (legados: solo | equipe | ilimitado)
     annual: bool = False
+    coupon_code: str = ""
 
 
 class UpgradeRequest(BaseModel):
     plan: str
     annual: bool = False
+    coupon_code: str = ""
 
 
 class BillingNameRequest(BaseModel):
@@ -77,7 +79,7 @@ async def create_checkout_by_plan(
 
     try:
         svc = BillingService(db)
-        url = await svc.create_checkout_session(current_user.tenant_id, current_user.email, price_id)
+        url = await svc.create_checkout_session(current_user.tenant_id, current_user.email, price_id, data.coupon_code)
         return {"checkout_url": url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -159,7 +161,7 @@ async def upgrade_plan(
 
     try:
         svc = BillingService(db)
-        result = await svc.upgrade_subscription(current_user.tenant_id, current_user.email, price_id)
+        result = await svc.upgrade_subscription(current_user.tenant_id, current_user.email, price_id, data.coupon_code)
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
