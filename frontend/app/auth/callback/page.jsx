@@ -4,6 +4,8 @@ import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+
 function OAuthCallback() {
   const router = useRouter()
   const params = useSearchParams()
@@ -18,20 +20,60 @@ function OAuthCallback() {
       return
     }
 
-    if (token) {
+    if (!token) {
+      router.replace('/login')
+      return
+    }
+
+    async function finishAuth() {
       localStorage.setItem('jarbis_token', token)
       if (userRaw) {
         try {
           const user = JSON.parse(decodeURIComponent(userRaw))
           localStorage.setItem('jarbis_user', JSON.stringify(user))
-        } catch {
-          // ignore parse error
-        }
+        } catch {}
       }
+
+      // Claim preview se o usuário veio da home com arquivo/sheets
+      const previewToken = sessionStorage.getItem('preview_token')
+      if (previewToken) {
+        try {
+          const res = await fetch(`${API_BASE}/reports/preview/${previewToken}/claim`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (res.ok) {
+            const claimed = await res.json()
+            sessionStorage.removeItem('preview_token')
+            if (claimed?.dataset_id) {
+              router.replace(
+                `/dashboards/novo?from=preview&dataset_id=${claimed.dataset_id}&ds_name=${encodeURIComponent(claimed.name || 'Meu Dashboard')}`
+              )
+              return
+            }
+          }
+        } catch (e) {
+          console.warn('[oauth] claimPreview falhou:', e?.message)
+        }
+        sessionStorage.removeItem('preview_token')
+      }
+
+      // Verificar se há dashboard pendente (usuário que precisou verificar email)
+      const pendingDatasetId = sessionStorage.getItem('pending_dashboard_dataset_id')
+      const pendingDsName = sessionStorage.getItem('pending_dashboard_ds_name')
+      if (pendingDatasetId) {
+        sessionStorage.removeItem('pending_dashboard_dataset_id')
+        sessionStorage.removeItem('pending_dashboard_ds_name')
+        router.replace(
+          `/dashboards/novo?from=preview&dataset_id=${pendingDatasetId}&ds_name=${encodeURIComponent(pendingDsName || 'Meu Dashboard')}`
+        )
+        return
+      }
+
       router.replace('/dashboard')
-    } else {
-      router.replace('/login')
     }
+
+    finishAuth()
   }, [params, router])
 
   return (

@@ -224,6 +224,41 @@ async def preview_excel_sheets(file: Annotated[UploadFile, File()]):
 
 
 @router.post(
+    "/preview-google-sheets-tabs",
+    summary="Lista abas de Google Sheets para preview anônimo — sem autenticação",
+    include_in_schema=False,
+)
+async def preview_google_sheets_tabs(request: Request):
+    """Recebe URL do Google Sheets pública e retorna as abas com metadados de qualidade. Sem autenticação."""
+    import re
+    body = await request.json()
+    url = (body.get("url") or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL não informada.")
+    m = re.search(r"spreadsheets/d/([a-zA-Z0-9_-]+)", url)
+    if not m:
+        raise HTTPException(status_code=400, detail="URL do Google Sheets inválida.")
+    spreadsheet_id = m.group(1)
+    export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
+            resp = await client.get(export_url)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Não foi possível baixar a planilha. Verifique se está pública.")
+        import io
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(resp.content), read_only=True, data_only=True)
+        sheets_meta = [_analyze_sheet(wb[name]) for name in wb.sheetnames]
+        wb.close()
+        _enrich_formula_mirrors(resp.content, sheets_meta)
+        return {"sheets": [s["name"] for s in sheets_meta], "sheets_meta": sheets_meta}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao ler planilha: {e}")
+
+
+@router.post(
     "/preview-upload",
     summary="Upload anônimo para preview — sem autenticação",
     include_in_schema=False,
@@ -320,6 +355,7 @@ async def preview_sheets(request: Request, db: AsyncSession = Depends(get_db)):
 
     body = await request.json()
     url = (body.get("url") or "").strip()
+    sheet_name = (body.get("sheet_name") or "").strip() or None
     if not url:
         raise HTTPException(status_code=400, detail="URL não informada.")
 
@@ -331,12 +367,18 @@ async def preview_sheets(request: Request, db: AsyncSession = Depends(get_db)):
     gid = gid_m.group(1) if gid_m else "0"
 
     # Tenta dois formatos de URL de exportação:
-    # 1. export?format=csv (requer publicar na web)
-    # 2. gviz/tq?tqx=out:csv (funciona com "qualquer pessoa com o link")
-    csv_urls = [
-        f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&gid={gid}",
-        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}",
-    ]
+    # 1. gviz/tq com sheet_name (se fornecido) ou gid (funciona com "qualquer pessoa com o link")
+    # 2. export?format=csv (requer publicar na web)
+    if sheet_name:
+        csv_urls = [
+            f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}",
+            f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&sheet={sheet_name}",
+        ]
+    else:
+        csv_urls = [
+            f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&gid={gid}",
+            f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}",
+        ]
     _HEADERS = {
         "User-Agent": "Mozilla/5.0 (compatible; Jarbis/1.0; +https://jarbis.cc)",
         "Accept": "text/csv,text/plain,*/*",

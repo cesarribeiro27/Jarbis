@@ -74,7 +74,16 @@ export default function LoginPage() {
       } else if (previewDatasetId) {
         router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)
       } else {
-        router.push('/dashboard')
+        // Verifica dashboard pendente de usuário que precisou verificar email antes
+        const pendingDatasetId = sessionStorage.getItem('pending_dashboard_dataset_id')
+        const pendingDsName = sessionStorage.getItem('pending_dashboard_ds_name')
+        if (pendingDatasetId) {
+          sessionStorage.removeItem('pending_dashboard_dataset_id')
+          sessionStorage.removeItem('pending_dashboard_ds_name')
+          router.push(`/dashboards/novo?from=preview&dataset_id=${pendingDatasetId}&ds_name=${encodeURIComponent(pendingDsName || 'Meu Dashboard')}`)
+        } else {
+          router.push('/dashboard')
+        }
       }
     } catch (err) {
       setError(err.message || t('errorDefault'))

@@ -76,13 +76,42 @@ function ExcelSheetPickerModal({ sheets, sheetsMeta = [], onConfirm, onClose }) 
 function ApiDatasetModal({ onClose, onCreated }) {
   const t = useTranslations('datasets')
   const toast = useToast()
+  const [tab, setTab] = useState('sheets') // 'sheets' | 'api'
   const [form, setForm] = useState({ name: '', api_url: '', method: 'GET', headers: '', body: '', refresh_interval_minutes: '', sync_mode: 'replace' })
+  const [sheetsUrl, setSheetsUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [sheets, setSheets] = useState([])
   const [sheetsMeta, setSheetsMeta] = useState([])
   const [selectedSheet, setSelectedSheet] = useState('')
   const [sheetsLoading, setSheetsLoading] = useState(false)
+
+  // Auto-fetch abas quando URL Google Sheets é colada
+  useEffect(() => {
+    const isSheets = sheetsUrl.includes('docs.google.com/spreadsheets')
+    if (!isSheets || !sheetsUrl.trim()) {
+      setSheets([])
+      setSelectedSheet('')
+      return
+    }
+    setSheetsLoading(true)
+    setError(null)
+    const timer = setTimeout(async () => {
+      try {
+        const result = await api.reports.datasets.fetchGoogleSheets(sheetsUrl)
+        const meta = result.sheets_meta || []
+        setSheets(result.sheets || [])
+        setSheetsMeta(meta)
+        const suggested = meta.find(s => s.suggested)
+        setSelectedSheet(suggested?.name || result.sheets?.[0] || '')
+      } catch (e) {
+        setError(e.message)
+      } finally {
+        setSheetsLoading(false)
+      }
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [sheetsUrl])
 
   function normalizeUrl(url, sheet) {
     const m = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
@@ -96,51 +125,36 @@ function ApiDatasetModal({ onClose, onCreated }) {
     return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`
   }
 
-  function handleUrlChange(url) {
-    setForm(f => ({ ...f, api_url: url }))
-    setSheets([])
-    setSelectedSheet('')
-  }
-
-  async function fetchSheets() {
-    setSheetsLoading(true)
-    setError(null)
-    try {
-      const result = await api.reports.datasets.fetchGoogleSheets(form.api_url)
-      const meta = result.sheets_meta || []
-      setSheets(result.sheets || [])
-      setSheetsMeta(meta)
-      // Auto-selecionar a aba sugerida (banco de dados)
-      const suggested = meta.find(s => s.suggested)
-      const first = result.sheets?.[0] || ''
-      setSelectedSheet(suggested?.name || first)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setSheetsLoading(false)
-    }
-  }
-
-  const isGoogleSheets = form.api_url.includes('docs.google.com/spreadsheets')
-  const normalizedUrl = isGoogleSheets ? normalizeUrl(form.api_url, selectedSheet) : form.api_url
-
   async function submit(e) {
     e.preventDefault()
     setLoading(true); setError(null)
     try {
-      let headers = {}
-      if (form.headers.trim()) {
-        try { headers = JSON.parse(form.headers) } catch { setError(t('toast.headersInvalid')); setLoading(false); return }
+      if (tab === 'sheets') {
+        const finalUrl = normalizeUrl(sheetsUrl, selectedSheet)
+        const ds = await api.reports.datasets.createApi({
+          name: form.name, api_url: finalUrl, method: 'GET',
+          headers: {}, body: null,
+          refresh_interval_minutes: form.refresh_interval_minutes ? parseInt(form.refresh_interval_minutes) : null,
+          sync_mode: form.sync_mode || 'replace',
+        })
+        onCreated(ds)
+        onClose()
+        toast(t('toast.connected'), 'success')
+      } else {
+        let headers = {}
+        if (form.headers.trim()) {
+          try { headers = JSON.parse(form.headers) } catch { setError(t('toast.headersInvalid')); setLoading(false); return }
+        }
+        const ds = await api.reports.datasets.createApi({
+          name: form.name, api_url: form.api_url, method: form.method,
+          headers, body: form.body || null,
+          refresh_interval_minutes: form.refresh_interval_minutes ? parseInt(form.refresh_interval_minutes) : null,
+          sync_mode: form.sync_mode || 'replace',
+        })
+        onCreated(ds)
+        onClose()
+        toast(t('toast.connected'), 'success')
       }
-      const ds = await api.reports.datasets.createApi({
-        name: form.name, api_url: normalizedUrl, method: form.method,
-        headers, body: form.body || null,
-        refresh_interval_minutes: form.refresh_interval_minutes ? parseInt(form.refresh_interval_minutes) : null,
-        sync_mode: form.sync_mode || 'replace',
-      })
-      onCreated(ds)
-      onClose()
-      toast(t('toast.connected'), 'success')
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
@@ -150,75 +164,99 @@ function ApiDatasetModal({ onClose, onCreated }) {
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
           <div>
-            <h2 className="font-semibold text-gray-800 dark:text-gray-200">{t('modal.title')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{t('modal.subtitle')}</p>
+            <h2 className="font-semibold text-gray-800 dark:text-gray-200">Conectar fonte de dados</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Importe dados de uma planilha ou endpoint REST</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100 dark:border-gray-700 px-6 pt-4">
+          <button
+            type="button"
+            onClick={() => setTab('sheets')}
+            className={`flex items-center gap-2 pb-3 px-1 text-sm font-semibold border-b-2 transition-colors mr-6 ${tab === 'sheets' ? 'border-violet-500 text-violet-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Google Sheets
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('api')}
+            className={`flex items-center gap-2 pb-3 px-1 text-sm font-semibold border-b-2 transition-colors ${tab === 'api' ? 'border-violet-500 text-violet-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            API REST
+          </button>
+        </div>
+
         <form onSubmit={submit} className="p-6 flex flex-col gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.nameLabel')}</label>
             <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('modal.namePlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" autoFocus />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="text-xs font-medium text-gray-500">{t('modal.urlLabel')}</label>
-                {/* Tooltip de instruções Google Sheets */}
-                <div className="relative group">
-                  <button type="button" className="w-4 h-4 rounded-full bg-gray-100 text-gray-400 hover:bg-violet-100 hover:text-violet-600 text-[10px] font-bold flex items-center justify-center transition-colors">?</button>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-gray-900 text-white rounded-xl p-3 shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-left">
-                    <p className="text-[11px] font-semibold mb-2 text-violet-300">Como obter o link do Google Sheets:</p>
-                    <ol className="text-[11px] text-gray-300 space-y-1.5 list-none">
-                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">1.</span>Abra a planilha no Google Sheets</li>
-                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">2.</span>Clique em <span className="text-white font-medium">Compartilhar</span> (canto superior direito)</li>
-                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">3.</span>Em "Acesso geral", selecione <span className="text-white font-medium">"Qualquer pessoa com o link"</span></li>
-                      <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">4.</span>Clique em <span className="text-white font-medium">Copiar link</span> e cole aqui</li>
-                    </ol>
-                    <div className="mt-2 pt-2 border-t border-gray-700">
-                      <p className="text-[10px] text-gray-500">O Jarbis vai identificar as abas automaticamente.</p>
+
+          {tab === 'sheets' ? (
+            <>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-500">URL do Google Sheets</label>
+                  <div className="relative group">
+                    <button type="button" className="w-4 h-4 rounded-full bg-gray-100 text-gray-400 hover:bg-violet-100 hover:text-violet-600 text-[10px] font-bold flex items-center justify-center transition-colors">?</button>
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-gray-900 text-white rounded-xl p-3 shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-left">
+                      <p className="text-[11px] font-semibold mb-2 text-violet-300">Como obter o link do Google Sheets:</p>
+                      <ol className="text-[11px] text-gray-300 space-y-1.5 list-none">
+                        <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">1.</span>Abra a planilha no Google Sheets</li>
+                        <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">2.</span>Clique em <span className="text-white font-medium">Compartilhar</span> (canto superior direito)</li>
+                        <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">3.</span>Em "Acesso geral", selecione <span className="text-white font-medium">"Qualquer pessoa com o link"</span></li>
+                        <li className="flex gap-1.5"><span className="text-violet-400 font-bold shrink-0">4.</span>Clique em <span className="text-white font-medium">Copiar link</span> e cole aqui</li>
+                      </ol>
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
                     </div>
-                    {/* Seta */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
                   </div>
                 </div>
-              </div>
-              <div className={`relative rounded-lg transition-all ${isGoogleSheets ? 'ring-2 ring-emerald-400' : ''}`}>
-                {isGoogleSheets && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-                    </svg>
-                  </div>
-                )}
-                <input required type="url" value={form.api_url} onChange={e => handleUrlChange(e.target.value)}
-                  placeholder={isGoogleSheets ? '' : t('modal.urlPlaceholder')}
-                  className={`w-full border rounded-lg py-2 text-sm focus:outline-none dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${isGoogleSheets ? 'pl-9 pr-3 border-emerald-300 bg-emerald-50 focus:ring-2 focus:ring-emerald-400' : 'px-3 border-gray-200 focus:ring-2 focus:ring-violet-400'}`}
-                />
-              </div>
-              {isGoogleSheets && (
-                <div className="mt-1.5 flex items-center justify-between">
-                  <p className="text-[11px] text-emerald-600 flex items-center gap-1 font-medium">
-                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Google Sheets detectado
+                <div className={`relative rounded-lg transition-all ${sheetsUrl.includes('docs.google.com/spreadsheets') ? 'ring-2 ring-emerald-400' : ''}`}>
+                  {sheetsUrl.includes('docs.google.com/spreadsheets') && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                      </svg>
+                    </div>
+                  )}
+                  <input
+                    required={tab === 'sheets'}
+                    type="url"
+                    value={sheetsUrl}
+                    onChange={e => setSheetsUrl(e.target.value)}
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    className={`w-full border rounded-lg py-2 text-sm focus:outline-none dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 ${sheetsUrl.includes('docs.google.com/spreadsheets') ? 'pl-9 pr-3 border-emerald-300 bg-emerald-50 focus:ring-2 focus:ring-emerald-400' : 'px-3 border-gray-200 focus:ring-2 focus:ring-violet-400'}`}
+                  />
+                </div>
+                {sheetsLoading && (
+                  <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1.5">
+                    <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    Buscando abas...
                   </p>
-                  <button type="button" onClick={fetchSheets} disabled={sheetsLoading}
-                    className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 px-2.5 py-1 rounded-lg font-medium disabled:opacity-50 transition-colors">
-                    {sheetsLoading ? 'Buscando abas...' : 'Buscar abas'}
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
+
               {sheets.length > 0 && (
-                <div className="mt-2 flex flex-col gap-1">
+                <div className="flex flex-col gap-1">
                   {!sheetsMeta.some(s => s.suggested) && sheetsMeta.length > 0 && (
                     <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
                       Nenhuma aba parece ser um banco de dados.{' '}
                       <a href="/datasets/boas-praticas" target="_blank" className="underline">Ver boas práticas</a>
                     </div>
                   )}
+                  <p className="text-xs font-medium text-gray-500 mb-1">{sheets.length} aba{sheets.length > 1 ? 's' : ''} encontrada{sheets.length > 1 ? 's' : ''} - escolha qual importar:</p>
                   {sheets.map((s, i) => {
                     const meta = sheetsMeta[i] || {}
                     const isSelected = selectedSheet === s
@@ -234,7 +272,7 @@ function ApiDatasetModal({ onClose, onCreated }) {
                         <div className="flex items-center gap-2 min-w-0">
                           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-violet-500' : 'bg-gray-300'}`} />
                           <span className="text-xs text-gray-800 truncate">{s}</span>
-                          {meta.suggested && <span className="text-[9px] text-emerald-600 shrink-0">✦</span>}
+                          {meta.suggested && <span className="text-[9px] text-emerald-600 shrink-0">✦ sugerida</span>}
                         </div>
                         {meta.type === 'data' && <span className="text-[10px] text-emerald-600 shrink-0">banco de dados</span>}
                         {meta.type === 'summary' && <span className="text-[10px] text-amber-600 shrink-0">resumo</span>}
@@ -244,35 +282,56 @@ function ApiDatasetModal({ onClose, onCreated }) {
                   })}
                 </div>
               )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.methodLabel')}</label>
-              <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                <option>GET</option><option>POST</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.headersLabel')}</label>
-            <textarea value={form.headers} onChange={e => setForm(f => ({ ...f, headers: e.target.value }))} placeholder={'{"Authorization": "Bearer token"}'} rows={2} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.intervalLabel')}</label>
-            <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Modo de sincronização</label>
-            <select
-              value={form.sync_mode || 'replace'}
-              onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="replace">Substituir (replace) — apaga e reimporta tudo</option>
-              <option value="append">Acumular (append) — adiciona novas linhas</option>
-            </select>
-          </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.intervalLabel')}</label>
+                <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Modo de sincronização</label>
+                <select value={form.sync_mode || 'replace'} onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="replace">Substituir (replace) — apaga e reimporta tudo</option>
+                  <option value="append">Acumular (append) — adiciona novas linhas</option>
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.urlLabel')}</label>
+                  <input required={tab === 'api'} type="url" value={form.api_url} onChange={e => setForm(f => ({ ...f, api_url: e.target.value }))}
+                    placeholder={t('modal.urlPlaceholder')}
+                    className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.methodLabel')}</label>
+                  <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                    <option>GET</option><option>POST</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.headersLabel')}</label>
+                <textarea value={form.headers} onChange={e => setForm(f => ({ ...f, headers: e.target.value }))} placeholder={'{"Authorization": "Bearer token"}'} rows={2} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('modal.intervalLabel')}</label>
+                <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Modo de sincronização</label>
+                <select value={form.sync_mode || 'replace'} onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="replace">Substituir (replace) — apaga e reimporta tudo</option>
+                  <option value="append">Acumular (append) — adiciona novas linhas</option>
+                </select>
+              </div>
+            </>
+          )}
+
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>}
-          <button type="submit" disabled={loading} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
+          <button type="submit" disabled={loading || (tab === 'sheets' && sheetsLoading)} className="w-full px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors">
             {loading ? t('modal.connecting') : t('modal.connectBtn')}
           </button>
         </form>

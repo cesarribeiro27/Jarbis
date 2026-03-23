@@ -124,6 +124,11 @@ function SignupForm() {
       }
 
       if (data.needs_verification) {
+        // Preserva o dataset para depois que o usuário verificar o email e fizer login
+        if (previewDatasetId) {
+          sessionStorage.setItem('pending_dashboard_dataset_id', previewDatasetId)
+          sessionStorage.setItem('pending_dashboard_ds_name', previewDsName)
+        }
         router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
       } else if (previewDatasetId) {
         router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)

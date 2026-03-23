@@ -154,7 +154,8 @@ export default function LandingPage() {
   const [sheetsUrl, setSheetsUrl] = useState('')
   const [sheetsState, setSheetsState] = useState('idle') // idle | loading | error
   const [sheetsError, setSheetsError] = useState('')
-  const [sheetPicker, setSheetPicker] = useState(null) // { file, sheets, sheetsMeta } | null
+  const [sheetPicker, setSheetPicker] = useState(null) // { type:'excel'|'sheets', file?, url?, sheets, sheetsMeta } | null
+  const [sheetsTabState, setSheetsTabState] = useState('idle') // idle | detecting | ready
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -172,6 +173,38 @@ export default function LandingPage() {
       if (val) sessionStorage.setItem(key, val)
     })
   }, [])
+
+  // Auto-detecta abas quando o usuário cola uma URL do Google Sheets
+  useEffect(() => {
+    const isSheets = sheetsUrl.includes('docs.google.com/spreadsheets')
+    if (!isSheets || !sheetsUrl.trim()) {
+      setSheetsTabState('idle')
+      setSheetPicker(null)
+      return
+    }
+    setSheetsTabState('detecting')
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/reports/preview-google-sheets-tabs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: sheetsUrl.trim() }),
+        })
+        if (!res.ok) { setSheetsTabState('idle'); return }
+        const data = await res.json()
+        const sheets = data.sheets || []
+        const sheetsMeta = data.sheets_meta || sheets.map(s => ({ name: s, type: 'unknown', suggested: false }))
+        setSheetsTabState('ready')
+        if (sheets.length > 1) {
+          setSheetPicker({ type: 'sheets', url: sheetsUrl.trim(), sheets, sheetsMeta })
+        }
+        // 1 aba: já pronto, não precisa modal
+      } catch {
+        setSheetsTabState('idle')
+      }
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [sheetsUrl])
 
   const pricing = getPricing(locale)
 
@@ -258,7 +291,7 @@ export default function LandingPage() {
           const { sheets, sheets_meta } = await res.json()
           if (sheets && sheets.length > 1) {
             setUploadState('idle')
-            setSheetPicker({ file, sheets, sheetsMeta: sheets_meta || sheets.map(s => ({ name: s, type: 'unknown', row_count: null, col_count: null, suggested: false, reason: '' })) })
+            setSheetPicker({ type: 'excel', file, sheets, sheetsMeta: sheets_meta || sheets.map(s => ({ name: s, type: 'unknown', row_count: null, col_count: null, suggested: false, reason: '' })) })
             return
           }
           // Só 1 aba: prossegue direto
@@ -285,18 +318,21 @@ export default function LandingPage() {
     handleUploadFile(e.dataTransfer.files?.[0])
   }
 
-  async function handleSheetsConnect(e) {
-    e.preventDefault()
-    if (!sheetsUrl.trim()) return
+  async function handleSheetsConnect(e, overrideUrl, sheetName) {
+    if (e) e.preventDefault()
+    const url = overrideUrl || sheetsUrl.trim()
+    if (!url) return
     setSheetsState('loading')
     setSheetsError('')
     setUploadState('idle')
     setUploadError('')
     try {
+      const body = { url }
+      if (sheetName) body.sheet_name = sheetName
       const res = await fetch(`${API_BASE}/reports/preview-sheets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: sheetsUrl.trim() }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -500,7 +536,7 @@ export default function LandingPage() {
                 <input
                   type="url"
                   value={sheetsUrl}
-                  onChange={e => { setSheetsUrl(e.target.value); setSheetsState('idle'); setUploadState('idle') }}
+                  onChange={e => { setSheetsUrl(e.target.value); setSheetsState('idle'); setUploadState('idle'); setSheetsTabState('idle') }}
                   placeholder="Cole o link do Google Sheets..."
                   className={`w-full pl-9 pr-8 py-2.5 rounded-xl text-sm border text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${sheetsState === 'error' ? 'border-red-500/50 bg-red-500/10' : 'border-white/20 bg-white/5 focus:border-violet-500/50'}`}
                 />
@@ -512,6 +548,18 @@ export default function LandingPage() {
                 ) : 'Conectar'}
               </button>
             </form>
+            {sheetsTabState === 'detecting' && (
+              <p className="text-[11px] text-gray-400 mt-1.5 flex items-center justify-center gap-1.5">
+                <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                Buscando abas...
+              </p>
+            )}
+            {sheetsTabState === 'ready' && sheetPicker === null && (
+              <p className="text-[11px] text-emerald-400 mt-1.5 flex items-center justify-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                Planilha encontrada
+              </p>
+            )}
             {sheetsState === 'error' && (
               <p className="text-[11px] text-red-400 mt-1.5 text-center">{sheetsError || 'Verifique se a planilha está compartilhada como pública.'}</p>
             )}
@@ -1235,7 +1283,9 @@ export default function LandingPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-gray-900">Qual aba contém seus dados?</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{sheetPicker.file.name} · {sheetPicker.sheets.length} abas encontradas</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {sheetPicker.type === 'excel' ? sheetPicker.file.name : 'Google Sheets'} · {sheetPicker.sheets.length} abas encontradas
+                </p>
               </div>
             </div>
           </div>
@@ -1253,9 +1303,16 @@ export default function LandingPage() {
                   key={s.name}
                   onClick={() => {
                     if (isEmpty) return
-                    const f = sheetPicker.file
-                    setSheetPicker(null)
-                    doUpload(f, s.name)
+                    if (sheetPicker.type === 'excel') {
+                      const f = sheetPicker.file
+                      setSheetPicker(null)
+                      doUpload(f, s.name)
+                    } else {
+                      const url = sheetPicker.url
+                      setSheetPicker(null)
+                      setSheetsTabState('idle')
+                      handleSheetsConnect(null, url, s.name)
+                    }
                   }}
                   disabled={isEmpty}
                   className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all flex items-center gap-4 ${
@@ -1290,7 +1347,7 @@ export default function LandingPage() {
           <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
             <p className="text-xs text-gray-400">Clique na aba que contém sua tabela principal</p>
             <button
-              onClick={() => { setSheetPicker(null); setUploadState('idle') }}
+              onClick={() => { setSheetPicker(null); setUploadState('idle'); setSheetsTabState('idle') }}
               className="text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium"
             >
               Cancelar

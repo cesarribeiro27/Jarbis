@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
@@ -673,7 +673,7 @@ function TemplateGallery({ onSelect }) {
   )
 }
 
-export default function NovoDashboardPage() {
+function NovoDashboardContent() {
   const t = useTranslations('dashboardNovo')
   const tEditor = useTranslations('dashboardEditor')
   const router = useRouter()
@@ -847,11 +847,11 @@ export default function NovoDashboardPage() {
                 <div className="w-16 h-16 border-2 border-violet-400 border-t-transparent rounded-full animate-spin absolute inset-0" />
                 <div className="w-10 h-10 border-2 border-violet-300/30 border-t-transparent rounded-full animate-spin absolute inset-3" style={{ animationDirection: 'reverse' }} />
               </div>
-              <div className="inline-flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-full mb-5">
-                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                IA analisando seus dados
+              <div className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-5">
+                <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
+                Jarbis IA
               </div>
-              <h2 className="text-2xl font-black text-white mb-3">Gerando seu dashboard...</h2>
+              <h2 className="text-2xl font-black text-white mb-3">Jarbis está gerando seu Dashboard</h2>
               <p className="text-violet-300 text-sm font-medium mb-2">{GEN_STEPS[autoGenStep]}</p>
               <p className="text-gray-500 text-xs">Isso leva alguns segundos</p>
               <div className="flex justify-center gap-1.5 mt-6">
@@ -1018,5 +1018,17 @@ export default function NovoDashboardPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function NovoDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0A1A' }}>
+        <div className="w-8 h-8 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <NovoDashboardContent />
+    </Suspense>
   )
 }
