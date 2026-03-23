@@ -157,29 +157,51 @@ async def _bump_dataset_version(redis, dataset_id: str) -> None:
 
 _PREVIEW_TTL = 86400  # 24 horas
 
-# Cache em memória para preview (Railway roda instância única; sem Redis configurado)
+# Armazenamento persistente de preview no PostgreSQL (sobrevive a restarts/redeploys)
+# A tabela preview_sessions é criada pela migration zb3c4d5e6f7a
 import time as _time
-_PREVIEW_CACHE: dict[str, tuple[str, float]] = {}  # key -> (json_str, expires_at)
+from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+from sqlalchemy import text as _text
 
 
-def _preview_set(key: str, value: str, ttl: int = _PREVIEW_TTL) -> None:
-    _PREVIEW_CACHE[key] = (value, _time.time() + ttl)
+async def _preview_set(token: str, meta_json: str, rows_json: str, db: "AsyncSession", ttl: int = _PREVIEW_TTL) -> None:
+    expires_at = _dt.now(_tz.utc) + _td(seconds=ttl)
+    await db.execute(
+        _text("""
+            INSERT INTO preview_sessions (token, meta_json, rows_json, expires_at)
+            VALUES (:token, :meta, :rows, :exp)
+            ON CONFLICT (token) DO UPDATE SET meta_json=:meta, rows_json=:rows, expires_at=:exp
+        """),
+        {"token": token, "meta": meta_json, "rows": rows_json, "exp": expires_at},
+    )
+    await db.commit()
 
 
-def _preview_get(key: str) -> str | None:
-    entry = _PREVIEW_CACHE.get(key)
-    if entry is None:
-        return None
-    v, exp = entry
-    if _time.time() > exp:
-        _PREVIEW_CACHE.pop(key, None)
-        return None
-    return v
+async def _preview_get_both(token: str, db: "AsyncSession") -> tuple[str | None, str | None]:
+    """Retorna (meta_json, rows_json) ou (None, None) se não encontrado/expirado."""
+    row = await db.execute(
+        _text("SELECT meta_json, rows_json FROM preview_sessions WHERE token=:t AND expires_at > now()"),
+        {"t": token},
+    )
+    result = row.fetchone()
+    if result is None:
+        return None, None
+    return result[0], result[1]
 
 
-def _preview_del(*keys: str) -> None:
-    for k in keys:
-        _PREVIEW_CACHE.pop(k, None)
+async def _preview_del(token: str, db: "AsyncSession") -> None:
+    await db.execute(_text("DELETE FROM preview_sessions WHERE token=:t"), {"t": token})
+    await db.commit()
+
+
+async def _preview_get_meta(token: str, db: "AsyncSession") -> str | None:
+    """Retorna apenas meta_json (para GET preview/{token})."""
+    row = await db.execute(
+        _text("SELECT meta_json FROM preview_sessions WHERE token=:t AND expires_at > now()"),
+        {"t": token},
+    )
+    result = row.fetchone()
+    return result[0] if result else None
 
 
 @router.post(
@@ -212,6 +234,7 @@ async def preview_excel_sheets(file: Annotated[UploadFile, File()]):
 async def preview_upload(
     file: Annotated[UploadFile, File()],
     sheet_name: str | None = Form(None),
+    db: AsyncSession = Depends(get_db),
 ):
     """Recebe arquivo CSV/Excel sem autenticação.
     Analisa, gera estatísticas e armazena em Redis com TTL 24h.
@@ -280,8 +303,7 @@ async def preview_upload(
     import json as _json
     meta_json = _json.dumps(_sanitize_for_json(preview_data))
     rows_json = _json.dumps(_sanitize_for_json(rows))
-    _preview_set(f"jarbis:preview:{temp_token}", meta_json)
-    _preview_set(f"jarbis:preview:{temp_token}:rows", rows_json)
+    await _preview_set(temp_token, meta_json, rows_json, db)
 
     return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -291,7 +313,7 @@ async def preview_upload(
     summary="Converte URL do Google Sheets em preview anônimo",
     include_in_schema=False,
 )
-async def preview_sheets(request: Request):
+async def preview_sheets(request: Request, db: AsyncSession = Depends(get_db)):
     """Recebe URL do Google Sheets (pública), busca o CSV server-side e processa igual ao preview-upload."""
     import httpx
     import re
@@ -405,8 +427,7 @@ async def preview_sheets(request: Request):
 
         meta_json = _json.dumps(_sanitize_for_json(preview_data))
         rows_json = _json.dumps(_sanitize_for_json(rows))
-        _preview_set(f"jarbis:preview:{temp_token}", meta_json)
-        _preview_set(f"jarbis:preview:{temp_token}:rows", rows_json)
+        await _preview_set(temp_token, meta_json, rows_json, db)
 
         return {"temp_token": temp_token, "row_count": row_count, "columns": columns}
 
@@ -422,10 +443,10 @@ async def preview_sheets(request: Request):
     summary="Retorna dados do preview anônimo",
     include_in_schema=False,
 )
-async def get_preview(token: str):
+async def get_preview(token: str, db: AsyncSession = Depends(get_db)):
     """Retorna dados do preview sem autenticação."""
     import json as _json
-    raw = _preview_get(f"jarbis:preview:{token}")
+    raw = await _preview_get_meta(token, db)
     if not raw:
         raise HTTPException(status_code=404, detail="Preview não encontrado ou expirado")
     return _json.loads(raw)
@@ -448,8 +469,7 @@ async def claim_preview(
     from app.modules.reports.dataset_models import ReportDataset
     from app.modules.reports.dataset_service import _detect_columns
 
-    raw_meta = _preview_get(f"jarbis:preview:{token}")
-    raw_rows = _preview_get(f"jarbis:preview:{token}:rows")
+    raw_meta, raw_rows = await _preview_get_both(token, db)
     if not raw_meta or not raw_rows:
         raise HTTPException(status_code=404, detail="Preview expirado ou não encontrado.")
 
@@ -459,6 +479,8 @@ async def claim_preview(
         raise HTTPException(status_code=400, detail="Preview sem dados.")
 
     file_name = meta.get("file_name", "meu-dataset")
+    # Usa o nome amigável gerado nas heurísticas de domínio (ex: "Notas Fiscais")
+    # Fallback: nome do arquivo sem extensão
     ds_name = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
     ds_type = meta.get("ds_type", "csv")
     columns = _detect_columns(rows)
@@ -475,7 +497,7 @@ async def claim_preview(
     await db.commit()
     await db.refresh(ds)
 
-    _preview_del(f"jarbis:preview:{token}", f"jarbis:preview:{token}:rows")
+    await _preview_del(token, db)
 
     return {"dataset_id": str(ds.id), "name": ds.name, "row_count": ds.row_count}
 
