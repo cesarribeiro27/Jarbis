@@ -78,9 +78,8 @@ class Settings(BaseSettings):
     stripe_price_addon_dataset: str = ""    # Pack Datasets (+3 datasets, R$19/mês)
     stripe_price_addon_ai: str = ""         # Pack IA (+50 perguntas, R$19/mês)
     stripe_price_addon_rows: str = ""       # Pack Linhas (+100k linhas/dataset, R$49/mês)
-    # Planos legados (mantidos para webhooks de subscriptions antigas)
+    # Legados extras (mantidos para webhooks de subscriptions antigas)
     stripe_price_starter: str = ""
-    stripe_price_pro: str = ""
     stripe_price_enterprise: str = ""
     frontend_url: str = "https://jarbis.cc"
     backend_url: str = "https://jarbis-production.up.railway.app"
