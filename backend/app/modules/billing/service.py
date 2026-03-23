@@ -243,38 +243,34 @@ class BillingService:
         await self.db.commit()
 
         # Stripe API >= 2025-03-31: invoice.payment_intent removido.
-        # Retrieve da invoice com payments expandido para obter o client_secret.
+        # Estrutura correta: invoice.payments.data[0].payment.payment_intent.client_secret
         invoice_id = subscription.latest_invoice
         if not invoice_id:
             raise ValueError("Fatura não encontrada para esta assinatura.")
 
-        invoice = stripe.Invoice.retrieve(invoice_id, expand=["payments.data.payment"])
-
-        payments_data = (
-            invoice.payments.data
-            if getattr(invoice, "payments", None) and invoice.payments.data
-            else []
+        # Expand: payments → cada item → sub-objeto payment → payment_intent (PaymentIntent)
+        invoice = stripe.Invoice.retrieve(
+            invoice_id,
+            expand=["payments.data.payment.payment_intent"],
         )
 
-        if payments_data:
-            payment_obj = payments_data[0].payment
-            # payment_obj pode ser objeto expandido ou string ID
-            if isinstance(payment_obj, str):
-                pi = stripe.PaymentIntent.retrieve(payment_obj)
-                client_secret = pi.client_secret
-            else:
-                client_secret = payment_obj.client_secret
-        else:
-            # Fallback para versões antigas da API
-            pi_id = getattr(invoice, "payment_intent", None)
-            if not pi_id:
-                raise ValueError("Não foi possível criar a intenção de pagamento. Tente novamente.")
-            pi = stripe.PaymentIntent.retrieve(pi_id) if isinstance(pi_id, str) else pi_id
-            client_secret = pi.client_secret
+        payments_data = invoice.payments.data if getattr(invoice, "payments", None) else []
+        if not payments_data:
+            raise ValueError("Nenhuma tentativa de pagamento encontrada para esta fatura.")
+
+        payment_obj = payments_data[0].payment        # InvoicePayment.Payment
+        pi = payment_obj.payment_intent               # PaymentIntent (expandido)
+
+        # Se não veio expandido, busca separadamente pelo ID
+        if isinstance(pi, str):
+            pi = stripe.PaymentIntent.retrieve(pi)
+
+        if not pi or not pi.client_secret:
+            raise ValueError("PaymentIntent sem client_secret. Tente novamente.")
 
         return {
             "subscription_id": subscription.id,
-            "client_secret": client_secret,
+            "client_secret": pi.client_secret,
         }
 
     async def create_addon_checkout_session(
