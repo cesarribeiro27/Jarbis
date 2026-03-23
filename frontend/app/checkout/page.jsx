@@ -221,21 +221,33 @@ function CheckoutContent() {
   const monthlyPrice = annual ? +(plan.monthlyPrice * 0.8).toFixed(2) : plan.monthlyPrice
   const annualTotal  = annual ? +(monthlyPrice * 12).toFixed(2) : null
 
+  const [detailsError, setDetailsError] = useState('')
+
   async function handleDetailsSubmit(e) {
     e.preventDefault()
     setLoading(true)
+    setDetailsError('')
     try {
       const nameToSave = billingName.trim().toUpperCase() || 'JARBIS.CC'
       await api.billing.setBillingName(nameToSave)
 
       const intent = await api.billing.subscriptionIntent(planKey, annual, couponCode.trim())
-      const stripe = await loadStripe(intent.publishable_key)
+
+      // publishable_key vem do backend; NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY como fallback
+      const pk = intent.publishable_key || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+      if (!pk) throw new Error('Chave Stripe não configurada. Entre em contato com o suporte.')
+
+      const stripe = await loadStripe(pk)
+      if (!stripe) throw new Error('Não foi possível carregar o formulário de pagamento.')
+
       setStripeInstance(stripe)
       setClientSecret(intent.client_secret)
       setStep('payment')
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
-      toast(err.message || 'Erro ao processar. Tente novamente.', 'error')
+      const msg = err.message || 'Erro ao processar. Tente novamente.'
+      setDetailsError(msg)
+      toast(msg, 'error')
     } finally {
       setLoading(false)
     }
@@ -386,6 +398,15 @@ function CheckoutContent() {
                     Como aparece na fatura do cartão. Padrão: <span className="font-mono font-semibold">JARBIS.CC</span>
                   </p>
                 </div>
+
+                {detailsError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {detailsError}
+                  </div>
+                )}
 
                 <button
                   type="submit"
