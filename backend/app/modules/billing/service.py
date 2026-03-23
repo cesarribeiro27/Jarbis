@@ -197,6 +197,17 @@ class BillingService:
         if not tenant:
             raise ValueError("Tenant não encontrado.")
 
+        # Guard: assinatura ativa deve usar upgrade, não novo intent
+        if tenant.subscription_status in ("active", "trialing") and tenant.stripe_subscription_id:
+            try:
+                existing = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
+                if existing.status in ("active", "trialing"):
+                    raise ValueError("Você já possui uma assinatura ativa. Use o fluxo de upgrade.")
+            except ValueError:
+                raise
+            except Exception:
+                pass
+
         customer_id = await self.get_or_create_customer(tenant, user_email)
 
         # Cancela subscription incompleta anterior se houver

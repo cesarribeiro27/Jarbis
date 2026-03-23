@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
@@ -89,6 +89,7 @@ function planRank(key) {
 function PlanosContent() {
   const t = useTranslations('planos')
   const searchParams = useSearchParams()
+  const router = useRouter()
   const toast = useToast()
   const [status, setStatus]             = useState(null)
   const [loading, setLoading]           = useState(true)
@@ -116,7 +117,14 @@ function PlanosContent() {
   }, [])
 
   function handleUpgrade(plan) {
-    setCheckoutModal({ plan, annual })
+    const hasActive = !!(status?.has_stripe && status?.subscription_status === 'active')
+    if (hasActive) {
+      // Assinante ativo — usa modal de proration (sem precisar redigitar cartão)
+      setCheckoutModal({ plan, annual })
+    } else {
+      // Novo assinante — redireciona para página de checkout com identidade Jarbis
+      router.push(`/checkout?plan=${plan.key}&annual=${annual}`)
+    }
   }
 
   function handleCheckoutSuccess() {
