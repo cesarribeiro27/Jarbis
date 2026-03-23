@@ -54,30 +54,30 @@ MAIN_PLANS = [
     {
         "name": "Jarbis Essential",
         "description": "Plano Essential: 8 dashboards, 5 fontes de dados, 1 usuario, IA inclusa",
-        "env_monthly": "STRIPE_PRICE_SOLO",
-        "env_annual":  "STRIPE_PRICE_SOLO_ANNUAL",
-        "next_monthly": "NEXT_PUBLIC_STRIPE_PRICE_SOLO",
-        "next_annual":  "NEXT_PUBLIC_STRIPE_PRICE_SOLO_ANNUAL",
+        "env_monthly": "STRIPE_PRICE_ESSENTIAL",
+        "env_annual":  "STRIPE_PRICE_ESSENTIAL_ANNUAL",
+        "next_monthly": "NEXT_PUBLIC_STRIPE_PRICE_ESSENTIAL",
+        "next_annual":  "NEXT_PUBLIC_STRIPE_PRICE_ESSENTIAL_ANNUAL",
         "monthly_cents": 9700,    # R$97,00
         "annual_cents":  93120,   # R$931,20 (R$77,60/mes x 12)
     },
     {
         "name": "Jarbis Pro",
         "description": "Plano Pro: 20 dashboards, 15 fontes de dados, 1 usuario, IA inclusa, embed",
-        "env_monthly": "STRIPE_PRICE_EQUIPE",
-        "env_annual":  "STRIPE_PRICE_EQUIPE_ANNUAL",
-        "next_monthly": "NEXT_PUBLIC_STRIPE_PRICE_EQUIPE",
-        "next_annual":  "NEXT_PUBLIC_STRIPE_PRICE_EQUIPE_ANNUAL",
+        "env_monthly": "STRIPE_PRICE_PRO",
+        "env_annual":  "STRIPE_PRICE_PRO_ANNUAL",
+        "next_monthly": "NEXT_PUBLIC_STRIPE_PRICE_PRO",
+        "next_annual":  "NEXT_PUBLIC_STRIPE_PRICE_PRO_ANNUAL",
         "monthly_cents": 24700,   # R$247,00
         "annual_cents":  237120,  # R$2.371,20 (R$197,60/mes x 12)
     },
     {
         "name": "Jarbis Business",
         "description": "Plano Business: 50 dashboards, 30 fontes de dados, 5 usuarios, white-label, IA inclusa",
-        "env_monthly": "STRIPE_PRICE_ILIMITADO",
-        "env_annual":  "STRIPE_PRICE_ILIMITADO_ANNUAL",
-        "next_monthly": "NEXT_PUBLIC_STRIPE_PRICE_ILIMITADO",
-        "next_annual":  "NEXT_PUBLIC_STRIPE_PRICE_ILIMITADO_ANNUAL",
+        "env_monthly": "STRIPE_PRICE_BUSINESS",
+        "env_annual":  "STRIPE_PRICE_BUSINESS_ANNUAL",
+        "next_monthly": "NEXT_PUBLIC_STRIPE_PRICE_BUSINESS",
+        "next_annual":  "NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_ANNUAL",
         "monthly_cents": 69700,   # R$697,00
         "annual_cents":  669120,  # R$6.691,20 (R$557,60/mes x 12)
     },

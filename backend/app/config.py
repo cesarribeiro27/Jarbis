@@ -56,11 +56,18 @@ class Settings(BaseSettings):
     # --- Stripe ---
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
-    # Planos novos — cobrança mensal
+    # Planos — cobrança mensal
+    stripe_price_essential: str = ""   # STRIPE_PRICE_ESSENTIAL
+    stripe_price_pro: str = ""         # STRIPE_PRICE_PRO
+    stripe_price_business: str = ""    # STRIPE_PRICE_BUSINESS
+    # Planos — cobrança anual (20% desconto)
+    stripe_price_essential_annual: str = ""   # STRIPE_PRICE_ESSENTIAL_ANNUAL
+    stripe_price_pro_annual: str = ""         # STRIPE_PRICE_PRO_ANNUAL
+    stripe_price_business_annual: str = ""    # STRIPE_PRICE_BUSINESS_ANNUAL
+    # Legados — mantidos para webhooks de subscriptions antigas (SOLO/EQUIPE/ILIMITADO)
     stripe_price_solo: str = ""
     stripe_price_equipe: str = ""
     stripe_price_ilimitado: str = ""
-    # Planos novos — cobrança anual (20% desconto)
     stripe_price_solo_annual: str = ""
     stripe_price_equipe_annual: str = ""
     stripe_price_ilimitado_annual: str = ""

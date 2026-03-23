@@ -49,23 +49,25 @@ async def create_checkout_by_plan(
 
     if data.annual:
         plan_map = {
-            "essential":    settings.stripe_price_solo_annual or settings.stripe_price_solo,
-            "pro":          settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
-            "business":     settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
-            "solo":         settings.stripe_price_solo_annual or settings.stripe_price_solo,
-            "equipe":       settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
-            "ilimitado":    settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
+            "essential":    settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "pro":          settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "business":     settings.stripe_price_business_annual or settings.stripe_price_business,
+            # legados
+            "solo":         settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "equipe":       settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "ilimitado":    settings.stripe_price_business_annual or settings.stripe_price_business,
             "starter":      settings.stripe_price_starter,
             "professional": settings.stripe_price_pro,
         }
     else:
         plan_map = {
-            "essential":    settings.stripe_price_solo,
-            "pro":          settings.stripe_price_equipe,
-            "business":     settings.stripe_price_ilimitado,
-            "solo":         settings.stripe_price_solo,
-            "equipe":       settings.stripe_price_equipe,
-            "ilimitado":    settings.stripe_price_ilimitado,
+            "essential":    settings.stripe_price_essential,
+            "pro":          settings.stripe_price_pro,
+            "business":     settings.stripe_price_business,
+            # legados
+            "solo":         settings.stripe_price_essential,
+            "equipe":       settings.stripe_price_pro,
+            "ilimitado":    settings.stripe_price_business,
             "starter":      settings.stripe_price_starter,
             "professional": settings.stripe_price_pro,
         }
@@ -91,16 +93,20 @@ async def create_checkout(
         raise HTTPException(status_code=503, detail="Pagamentos não configurados. Entre em contato com o suporte.")
 
     valid_prices = {
+        settings.stripe_price_essential,
+        settings.stripe_price_pro,
+        settings.stripe_price_business,
+        settings.stripe_price_essential_annual,
+        settings.stripe_price_pro_annual,
+        settings.stripe_price_business_annual,
+        # legados
         settings.stripe_price_solo,
         settings.stripe_price_equipe,
         settings.stripe_price_ilimitado,
-        # anuais
         settings.stripe_price_solo_annual,
         settings.stripe_price_equipe_annual,
         settings.stripe_price_ilimitado_annual,
-        # legados
         settings.stripe_price_starter,
-        settings.stripe_price_pro,
         settings.stripe_price_enterprise,
     } - {""}
     if data.price_id not in valid_prices:
@@ -130,21 +136,21 @@ async def upgrade_plan(
 
     if data.annual:
         plan_map = {
-            "essential": settings.stripe_price_solo_annual or settings.stripe_price_solo,
-            "pro":        settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
-            "business":   settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
-            "solo":       settings.stripe_price_solo_annual or settings.stripe_price_solo,
-            "equipe":     settings.stripe_price_equipe_annual or settings.stripe_price_equipe,
-            "ilimitado":  settings.stripe_price_ilimitado_annual or settings.stripe_price_ilimitado,
+            "essential": settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "pro":        settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "business":   settings.stripe_price_business_annual or settings.stripe_price_business,
+            "solo":       settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "equipe":     settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "ilimitado":  settings.stripe_price_business_annual or settings.stripe_price_business,
         }
     else:
         plan_map = {
-            "essential": settings.stripe_price_solo,
-            "pro":        settings.stripe_price_equipe,
-            "business":   settings.stripe_price_ilimitado,
-            "solo":       settings.stripe_price_solo,
-            "equipe":     settings.stripe_price_equipe,
-            "ilimitado":  settings.stripe_price_ilimitado,
+            "essential": settings.stripe_price_essential,
+            "pro":        settings.stripe_price_pro,
+            "business":   settings.stripe_price_business,
+            "solo":       settings.stripe_price_essential,
+            "equipe":     settings.stripe_price_pro,
+            "ilimitado":  settings.stripe_price_business,
         }
 
     price_id = plan_map.get(data.plan, "")

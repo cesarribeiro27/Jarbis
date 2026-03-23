@@ -26,16 +26,21 @@ def _build_price_map() -> None:
     global PRICE_TO_PLAN
     PRICE_TO_PLAN = {
         # Planos atuais (mensal)
+        settings.stripe_price_essential:        "essential",
+        settings.stripe_price_pro:              "pro",
+        settings.stripe_price_business:         "business",
+        # Planos atuais (anual)
+        settings.stripe_price_essential_annual: "essential",
+        settings.stripe_price_pro_annual:       "pro",
+        settings.stripe_price_business_annual:  "business",
+        # Legados — para webhooks de subscriptions com price IDs antigos
         settings.stripe_price_solo:             "essential",
         settings.stripe_price_equipe:           "pro",
         settings.stripe_price_ilimitado:        "business",
-        # Planos atuais (anual)
         settings.stripe_price_solo_annual:      "essential",
         settings.stripe_price_equipe_annual:    "pro",
         settings.stripe_price_ilimitado_annual: "business",
-        # Legados — para webhooks de subscriptions antigas
         settings.stripe_price_starter:          "essential",
-        settings.stripe_price_pro:              "pro",
         settings.stripe_price_enterprise:       "enterprise",
     }
     PRICE_TO_PLAN = {k: v for k, v in PRICE_TO_PLAN.items() if k}
