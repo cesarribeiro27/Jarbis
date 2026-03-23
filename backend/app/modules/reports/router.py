@@ -8,8 +8,6 @@ PUT    /reports/{id}                    — atualiza relatório
 DELETE /reports/{id}                    — remove relatório
 POST   /reports/{id}/share              — gera link de compartilhamento
 GET    /reports/public/{token}          — acesso público via token
-GET    /reports/data/{source}           — dados de uma fonte pré-definida (legado)
-
 GET    /reports/datasets                — lista datasets do tenant
 POST   /reports/datasets/upload         — upload CSV/Excel
 POST   /reports/datasets/api            — cria dataset via API
@@ -159,7 +157,6 @@ _PREVIEW_TTL = 86400  # 24 horas
 
 # Armazenamento persistente de preview no PostgreSQL (sobrevive a restarts/redeploys)
 # A tabela preview_sessions é criada pela migration zb3c4d5e6f7a
-import time as _time
 from datetime import datetime as _dt, timezone as _tz, timedelta as _td
 from sqlalchemy import text as _text
 
@@ -538,41 +535,6 @@ async def list_reports(
     reports = await service.list(current_user.tenant_id)
     return [ReportSummary(**r) for r in reports]
 
-
-@router.get(
-    "/data/{source}",
-    summary="Dados de uma fonte para widgets",
-)
-async def get_data_source(
-    source: str,
-    date_from: str | None = None,
-    date_to: str | None = None,
-    meio: str | None = None,
-    anunciante: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """
-    Retorna dados no formato [{label, value}] prontos para uso em widgets de gráfico.
-
-    Fontes disponíveis: items_by_meio, investment_by_meio, investment_by_client,
-    investment_by_month, top_vehicles, material_by_status, pi_by_status,
-    items_by_uf, vehicles_by_type, vehicles_by_uf, vehicles_by_status,
-    municipios_by_regiao.
-    """
-    filters = {}
-    if date_from:
-        filters["date_from"] = date_from
-    if date_to:
-        filters["date_to"] = date_to
-    if meio:
-        filters["meio"] = meio
-    if anunciante:
-        filters["anunciante"] = anunciante
-
-    service = ReportService(db)
-    items = await service.get_data_source(source, current_user.tenant_id, filters=filters)
-    return items
 
 
 # ---------------------------------------------------------------------------
@@ -1177,14 +1139,13 @@ async def set_dataset_schedule(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    from datetime import datetime as _dt, timedelta as _td, timezone as _tz2
     svc = DatasetService(db)
     ds = await svc.get(dataset_id, current_user.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
     ds.refresh_interval_minutes = data.refresh_interval_minutes
     if data.refresh_interval_minutes:
-        ds.next_refresh_at = _dt.now(_tz2.utc) + _td(minutes=data.refresh_interval_minutes)
+        ds.next_refresh_at = _dt.now(_tz.utc) + _td(minutes=data.refresh_interval_minutes)
     else:
         ds.next_refresh_at = None
     await db.commit()

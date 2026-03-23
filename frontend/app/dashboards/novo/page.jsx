@@ -37,6 +37,7 @@ function newBlock(type) {
   const isFilter = type === 'filter'
   const isNoData = isFilter || type === 'text' || type === 'image'
   const col = isFilter ? (counter % 6) * 2 : (counter % 4) * 3
+  counter++
   return {
     id: crypto.randomUUID(),
     type,
@@ -893,7 +894,11 @@ export default function NovoDashboardPage() {
     if (!title.trim()) { setError(t('editor.titleRequired')); return }
     setSaving(true); setError('')
     try {
-      const report = await api.reports.create({ title, description: description || null, blocks: sanitizeBlocks(blocks) })
+      const report = await api.reports.create({
+        title,
+        description: description || null,
+        pages: [{ id: crypto.randomUUID(), title: 'Página 1', blocks: sanitizeBlocks(blocks) }],
+      })
       router.push(`/dashboards/${report.id}`)
     } catch (err) {
       setError(err.message)

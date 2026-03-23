@@ -160,8 +160,7 @@ async def _refresh_loop():
                                 email_type=email_type,
                                 recipient_email=owner.email,
                             ))
-                if True:  # flush lifecycle logs
-                    await db.commit()
+                await db.commit()
 
                 # ── Digest mensal (1º de cada mês às ~00:00 UTC) ──────────────────
                 if today.day == 1:
@@ -251,49 +250,6 @@ async def health_check():
     return {"status": "ok", "version": settings.app_version}
 
 
-@app.get("/debug/dataset-sample/{dataset_id}", tags=["Sistema"])
-async def debug_dataset_sample(dataset_id: str):
-    from sqlalchemy import text
-    from app.database import AsyncSessionLocal
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            text("SELECT rows FROM report_datasets WHERE id = :id"),
-            {"id": dataset_id}
-        )
-        row = result.fetchone()
-        if not row or not row[0]:
-            return {"error": "not found"}
-        rows = row[0]
-        sample = rows[:3] if len(rows) >= 3 else rows
-        # Get column stats for numeric-looking columns
-        if rows:
-            first = rows[0]
-            stats = {}
-            for col, val in first.items():
-                if val is not None and str(val).replace('.','').replace('-','').replace(',','').isdigit():
-                    vals = [r.get(col) for r in rows if r.get(col) is not None]
-                    try:
-                        nums = [float(str(v).replace(',','.')) for v in vals]
-                        stats[col] = {"count": len(nums), "sum": round(sum(nums), 4), "sample": val}
-                    except Exception:
-                        pass
-            return {"total_rows": len(rows), "sample": sample, "numeric_stats": stats}
-    return {"error": "failed"}
-
-
-@app.get("/debug/schema", tags=["Sistema"])
-async def debug_schema():
-    from sqlalchemy import text
-    from app.database import AsyncSessionLocal
-    async with AsyncSessionLocal() as db:
-        cols_result = await db.execute(text(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'tenants' ORDER BY ordinal_position"
-        ))
-        cols = [r[0] for r in cols_result.fetchall()]
-        rev_result = await db.execute(text("SELECT version_num FROM alembic_version"))
-        rev = rev_result.scalar()
-    return {"alembic_version": rev, "tenant_columns": cols, "count": len(cols)}
 
 
 @app.get("/", tags=["Sistema"])

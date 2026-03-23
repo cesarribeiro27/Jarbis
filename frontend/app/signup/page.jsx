@@ -117,7 +117,9 @@ function SignupForm() {
           const claimed = await api.reports.claimPreview(previewToken)
           previewDatasetId = claimed?.dataset_id || null
           previewDsName = claimed?.name || 'Meu Dashboard'
-        } catch {}
+        } catch (err) {
+          console.warn('[signup] claimPreview falhou:', err?.message)
+        }
         sessionStorage.removeItem('preview_token')
       }
 

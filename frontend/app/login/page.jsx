@@ -63,7 +63,9 @@ export default function LoginPage() {
           const claimed = await api.reports.claimPreview(previewToken)
           previewDatasetId = claimed?.dataset_id || null
           previewDsName = claimed?.name || 'Meu Dashboard'
-        } catch {}
+        } catch (err) {
+          console.warn('[login] claimPreview falhou:', err?.message)
+        }
         sessionStorage.removeItem('preview_token')
       }
 

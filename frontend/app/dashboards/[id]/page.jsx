@@ -76,6 +76,7 @@ function newBlock(type, blockTypes) {
   const col = isFilter ? (counter % 6) * 2 : (counter % 4) * 3
   const w = isFilter ? 2 : isGauge ? 3 : 3
   const h = isFilter ? 2 : isGauge ? 4 : 2
+  counter++
   return {
     id: crypto.randomUUID(),
     type,
@@ -661,7 +662,13 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
 
   useEffect(() => {
     api.reports.diagnoseHistory(reportId)
-      .then(setHistory)
+      .then(data => {
+        setHistory(data)
+        // Se existe análise anterior, carrega automaticamente a mais recente
+        if (data?.length > 0) {
+          loadSnapshot(data[0])
+        }
+      })
       .catch(() => {})
       .finally(() => setHistoryLoading(false))
   }, [reportId])
