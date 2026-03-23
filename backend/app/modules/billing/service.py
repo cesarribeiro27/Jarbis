@@ -659,6 +659,10 @@ class BillingService:
             "subscription_status": tenant.subscription_status,
             "trial_days_remaining": tenant.trial_days_remaining,
             "has_stripe": bool(tenant.stripe_customer_id),
+            "has_active_subscription": bool(
+                tenant.stripe_subscription_id
+                and tenant.subscription_status in ("active", "trialing")
+            ),
             "addon_packs": addon_packs,
             "addon_dashboards": addon_dashboards,
             "addon_datasets": addon_datasets,

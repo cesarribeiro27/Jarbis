@@ -117,12 +117,11 @@ function PlanosContent() {
   }, [])
 
   function handleUpgrade(plan) {
-    const hasActive = !!(status?.has_stripe && status?.subscription_status === 'active')
-    if (hasActive) {
-      // Assinante ativo — usa modal de proration (sem precisar redigitar cartão)
+    if (status?.has_active_subscription) {
+      // Assinante ativo com subscription real no Stripe — usa modal de proration
       setCheckoutModal({ plan, annual })
     } else {
-      // Novo assinante — redireciona para página de checkout com identidade Jarbis
+      // Sem assinatura ativa — redireciona para página de checkout
       router.push(`/checkout?plan=${plan.key}&annual=${annual}`)
     }
   }
@@ -530,7 +529,7 @@ function PlanosContent() {
         <CheckoutModal
           plan={checkoutModal.plan}
           annual={checkoutModal.annual}
-          hasActiveSubscription={!!(status?.has_stripe && status?.subscription_status === 'active')}
+          hasActiveSubscription={!!status?.has_active_subscription}
           onClose={() => setCheckoutModal(null)}
           onSuccess={handleCheckoutSuccess}
         />
