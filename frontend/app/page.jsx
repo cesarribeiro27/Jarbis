@@ -430,7 +430,7 @@ export default function LandingPage() {
           {/* Badge */}
           <motion.div
             variants={fadeIn} initial="hidden" animate="visible"
-            className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-10"
+            className="inline-flex flex-wrap items-center justify-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-10 max-w-xs sm:max-w-none"
           >
             <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
             {t('hero.badge')}
@@ -440,7 +440,7 @@ export default function LandingPage() {
           <motion.h1
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.1 }}
-            className="text-6xl sm:text-8xl md:text-[120px] font-black text-white leading-[0.9] tracking-[-0.04em] mb-8"
+            className="text-5xl sm:text-7xl md:text-[100px] lg:text-[120px] font-black text-white leading-[0.9] tracking-[-0.04em] mb-8"
           >
             {t('hero.title1')}<br />
             <motion.span
@@ -520,7 +520,7 @@ export default function LandingPage() {
             </div>
 
             {/* Google Sheets link */}
-            <form onSubmit={handleSheetsConnect} className="flex items-stretch gap-2">
+            <form onSubmit={handleSheetsConnect} className="flex flex-col sm:flex-row items-stretch gap-2">
               <div className="relative flex-1">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -551,7 +551,7 @@ export default function LandingPage() {
                 />
               </div>
               <button type="submit" disabled={sheetsState === 'loading' || !sheetsUrl.trim()}
-                className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors shrink-0">
+                className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors sm:shrink-0 w-full sm:w-auto">
                 {sheetsState === 'loading' ? (
                   <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                 ) : 'Conectar'}
@@ -812,7 +812,7 @@ export default function LandingPage() {
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-3 gap-4"
+            className="grid md:grid-cols-3 gap-4"
           >
             {[
               { pain: 'Planilha que só você consegue abrir', fix: 'Dashboard que qualquer um lê no celular' },
@@ -858,7 +858,7 @@ export default function LandingPage() {
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-3 gap-6"
+            className="grid md:grid-cols-3 gap-6"
           >
             {[
               {
@@ -986,7 +986,7 @@ export default function LandingPage() {
       {/* ── EDITOR VISUAL ── */}
       <section className="py-20 sm:py-28 px-6" style={{ background: '#0B0A1A' }}>
         <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
             <motion.div
               variants={stagger} initial="hidden" whileInView="visible"
               viewport={{ once: true, margin: '-60px' }}
@@ -1099,7 +1099,7 @@ export default function LandingPage() {
           <motion.div
             variants={staggerFast} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
           >
             {PLAN_KEYS.map((key) => {
               const cfg = PLAN_CONFIG[key]
@@ -1270,7 +1270,7 @@ export default function LandingPage() {
               {t('footer.madeBy')} <strong className="text-gray-600">{t('footer.company')}</strong>
             </span>
           </div>
-          <div className="flex gap-6 text-sm text-gray-400">
+          <div className="flex flex-wrap gap-4 sm:gap-6 text-sm text-gray-400 justify-center md:justify-start">
             <Link href="/termos" className="hover:text-gray-700 transition-colors">{t('footer.terms')}</Link>
             <Link href="/privacidade" className="hover:text-gray-700 transition-colors">{t('footer.privacy')}</Link>
             <Link href="/login" className="hover:text-gray-700 transition-colors">{t('footer.login')}</Link>
