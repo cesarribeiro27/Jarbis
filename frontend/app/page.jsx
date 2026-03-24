@@ -440,7 +440,7 @@ export default function LandingPage() {
           <motion.h1
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.1 }}
-            className="text-5xl sm:text-7xl md:text-[100px] lg:text-[120px] font-black text-white leading-[0.9] tracking-[-0.04em] mb-8"
+            className="text-6xl sm:text-8xl md:text-[120px] font-black text-white leading-[0.9] tracking-[-0.04em] mb-8"
           >
             {t('hero.title1')}<br />
             <motion.span
