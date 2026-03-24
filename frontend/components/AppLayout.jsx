@@ -459,7 +459,7 @@ export default function AppLayout({ children }) {
   const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, onBellClick: () => setNotifOpen(o => !o) }
 
   return (
-    <div className="flex h-screen bg-[#f8f7fc] dark:bg-gray-950">
+    <div className="flex h-screen bg-[#f8f7fc] dark:bg-gray-950 overflow-x-hidden">
 
       {/* ── Sidebar desktop (md+) ── */}
       <aside
