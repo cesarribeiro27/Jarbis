@@ -5632,13 +5632,17 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   useEffect(() => {
     if (!sheetRef.current) return
+    let debounceId = null
     const observer = new ResizeObserver(entries => {
       for (const entry of entries) {
-        setGridWidth(entry.contentRect.width)
+        clearTimeout(debounceId)
+        debounceId = setTimeout(() => {
+          setGridWidth(entry.contentRect.width)
+        }, 200)
       }
     })
     observer.observe(sheetRef.current)
-    return () => observer.disconnect()
+    return () => { observer.disconnect(); clearTimeout(debounceId) }
   }, [])
 
   useEffect(() => {
