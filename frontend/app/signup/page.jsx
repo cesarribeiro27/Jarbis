@@ -68,6 +68,9 @@ function SignupForm() {
     // Persiste o preview token no sessionStorage para sobreviver ao OAuth redirect
     const pt = searchParams.get('token')
     if (pt) sessionStorage.setItem('preview_token', pt)
+    // Persiste o plano escolhido na home para redirecionar ao checkout após cadastro/verificação
+    const plan = searchParams.get('plan')
+    if (plan) sessionStorage.setItem('pending_plan', plan)
   }, [searchParams])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -110,10 +113,16 @@ function SignupForm() {
 
       const previewToken = searchParams.get('token') || sessionStorage.getItem('preview_token')
 
+      const pendingPlan = sessionStorage.getItem('pending_plan')
+
       if (data.needs_verification) {
-        // Sem token ainda — preserva o preview_token no localStorage para reclamar após verificação
+        // Sem token ainda — preserva pending_preview_token e pending_plan no localStorage para reclamar após verificação
         if (previewToken) {
           localStorage.setItem('pending_preview_token', previewToken)
+        }
+        if (pendingPlan) {
+          localStorage.setItem('pending_plan', pendingPlan)
+          sessionStorage.removeItem('pending_plan')
         }
         router.push(`/verificar-email?email=${encodeURIComponent(form.email)}`)
         return
@@ -133,7 +142,11 @@ function SignupForm() {
         sessionStorage.removeItem('preview_token')
       }
 
-      if (previewDatasetId) {
+      // Plano escolhido na home tem prioridade sobre o preview
+      if (pendingPlan) {
+        sessionStorage.removeItem('pending_plan')
+        router.push(`/checkout?plan=${pendingPlan}`)
+      } else if (previewDatasetId) {
         router.push(`/dashboards/novo?from=preview&dataset_id=${previewDatasetId}&ds_name=${encodeURIComponent(previewDsName)}`)
       } else {
         router.push('/dashboard')

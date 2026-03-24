@@ -69,8 +69,26 @@ function VerificarEmailContent() {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
       }
 
-      // Verifica se há preview pendente para reclamar (veio da home antes de criar conta)
+      // Plano escolhido na home — redireciona para checkout e tenta reclamar preview em background
+      const pendingPlan = localStorage.getItem('pending_plan')
       const pendingPreviewToken = localStorage.getItem('pending_preview_token')
+
+      if (pendingPlan) {
+        localStorage.removeItem('pending_plan')
+        // Tenta reclamar o preview em background (sem bloquear o redirect)
+        if (pendingPreviewToken && accessToken) {
+          localStorage.removeItem('pending_preview_token')
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+          fetch(`${apiBase}/reports/preview/${pendingPreviewToken}/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          }).catch(() => {})
+        }
+        router.push(`/checkout?plan=${pendingPlan}`)
+        return
+      }
+
+      // Sem plano — verifica preview pendente para reclamar (veio da home antes de criar conta)
       if (pendingPreviewToken && accessToken) {
         localStorage.removeItem('pending_preview_token')
         try {

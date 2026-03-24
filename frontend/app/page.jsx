@@ -164,6 +164,15 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  function handlePlanCta(key) {
+    const token = localStorage.getItem('jarbis_token')
+    if (token) {
+      router.push(`/checkout?plan=${key}`)
+    } else {
+      router.push(`/signup?plan=${key}`)
+    }
+  }
+
   // Preserva UTMs no sessionStorage para o signup capturar mesmo após navegação interna
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -1171,11 +1180,14 @@ export default function LandingPage() {
                       {plan.cta}
                     </a>
                   ) : (
-                    <Link href="/signup" className={`block text-center py-2.5 rounded-full font-bold text-xs transition-colors ${
-                      cfg.highlight ? 'bg-white text-violet-700 hover:bg-violet-50' : key === 'free' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-700'
-                    }`}>
+                    <button
+                      onClick={() => key === 'free' ? router.push('/signup') : handlePlanCta(key)}
+                      className={`w-full text-center py-2.5 rounded-full font-bold text-xs transition-colors ${
+                        cfg.highlight ? 'bg-white text-violet-700 hover:bg-violet-50' : key === 'free' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-700'
+                      }`}
+                    >
                       {plan.cta}
-                    </Link>
+                    </button>
                   )}
                 </motion.div>
               )
