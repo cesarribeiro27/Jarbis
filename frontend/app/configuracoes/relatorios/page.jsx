@@ -181,7 +181,7 @@ export default function RelatoriosAgendadosPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Relatórios Agendados</h1>

@@ -18,7 +18,7 @@ export default function QueryLogsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Query Logs</h1>
         {loading ? (
           <div className="text-gray-500">Carregando...</div>

@@ -91,7 +91,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-2xl mx-auto space-y-4">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4">
         <div className="mb-2">
           <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">{t('title')}</h1>
           <p className="text-sm text-gray-400 mt-1">{t('subtitle')}</p>

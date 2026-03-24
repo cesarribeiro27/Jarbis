@@ -86,7 +86,7 @@ export default function WebhooksPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-xl font-black text-gray-900">Webhooks</h1>
           <p className="text-sm text-gray-500 mt-1">Receba notificações HTTP em tempo real quando eventos acontecerem no Jarbis.</p>

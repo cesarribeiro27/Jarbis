@@ -4,7 +4,7 @@ import AppLayout from "@/components/AppLayout";
 export default function SDKPage() {
   return (
     <AppLayout>
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">SDK React</h1>
         <p className="text-gray-500 mb-6">Embeba dashboards Jarbis em qualquer aplicação React.</p>
 

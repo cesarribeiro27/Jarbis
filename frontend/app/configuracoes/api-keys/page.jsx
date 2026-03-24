@@ -67,7 +67,7 @@ export default function ApiKeysPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>

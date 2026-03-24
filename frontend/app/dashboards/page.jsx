@@ -703,9 +703,9 @@ export default function DashboardsPage() {
           </div>
         )}
 
-        <div className="flex gap-6">
-          {/* Collections sidebar */}
-          <div className="w-48 flex-shrink-0" onClick={() => setCollectionMenu(null)}>
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+          {/* Collections sidebar — oculta no mobile */}
+          <div className="hidden md:block w-48 flex-shrink-0" onClick={() => setCollectionMenu(null)}>
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-2">Pastas</p>
             <div className="space-y-0.5">
               <button
@@ -767,6 +767,29 @@ export default function DashboardsPage() {
 
           {/* Dashboard grid */}
           <div className="flex-1 min-w-0">
+
+            {/* Collections chips — mobile only */}
+            {collections.length > 0 && (
+              <div className="md:hidden flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-4 scrollbar-none">
+                <button
+                  onClick={() => setActiveCollection(null)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${!activeCollection ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}
+                >
+                  Todos
+                </button>
+                {collections.map(col => (
+                  <button
+                    key={col.id}
+                    onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)}
+                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${activeCollection === col.id ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color || '#7c3aed' }} />
+                    {col.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loading && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[1,2,3].map(i => <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 h-52 animate-pulse" />)}

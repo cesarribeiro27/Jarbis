@@ -88,7 +88,7 @@ export default function FiscalPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-4 sm:p-6 max-w-2xl mx-auto">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse mb-4 w-48" />
           <div className="space-y-4">
             {[1,2,3,4].map(i => <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />)}

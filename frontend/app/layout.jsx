@@ -17,6 +17,11 @@ export const metadata = {
   description: 'Dashboards profissionais, analytics avançado e relatórios interativos. Simples de configurar, poderoso para crescer.',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
 export default async function RootLayout({ children }) {
   const locale = await getLocale()
   const messages = await getMessages()

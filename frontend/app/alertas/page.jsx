@@ -183,8 +183,8 @@ export default function AlertasPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-3">
               {t('title')}

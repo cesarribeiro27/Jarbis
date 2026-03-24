@@ -296,7 +296,7 @@ export default function DatasetDetailPage() {
       <div className="flex flex-col h-full min-h-screen bg-[#FAFAF8] dark:bg-gray-900">
 
         {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4">
           <div className="flex items-center gap-3 mb-1">
             <button
               onClick={() => router.push('/datasets')}

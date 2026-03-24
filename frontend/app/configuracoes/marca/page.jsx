@@ -106,7 +106,7 @@ export default function MarcaPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="p-6 max-w-2xl mx-auto space-y-4">
+        <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4">
           {[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl animate-pulse" />)}
         </div>
       </AppLayout>
