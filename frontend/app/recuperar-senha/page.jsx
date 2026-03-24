@@ -68,7 +68,7 @@ export default function RecuperarSenhaPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="seu@email.com"
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
+                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-base text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
               />
             </div>
             <button

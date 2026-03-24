@@ -221,7 +221,7 @@ function SignupForm() {
                 value={form.name}
                 onChange={set('name')}
                 required
-                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
+                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
                 placeholder={t('namePlaceholder')}
               />
             </div>
@@ -232,7 +232,7 @@ function SignupForm() {
                 value={form.email}
                 onChange={set('email')}
                 required
-                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
+                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
                 placeholder={t('emailPlaceholder')}
               />
             </div>
@@ -245,7 +245,7 @@ function SignupForm() {
                   onChange={set('password')}
                   required
                   minLength={8}
-                  className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
+                  className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 pr-11 text-base focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
                   placeholder={t('passwordPlaceholder')}
                 />
                 <button type="button" onClick={() => setShowPass(v => !v)}
@@ -276,7 +276,7 @@ function SignupForm() {
                   value={form.confirm}
                   onChange={set('confirm')}
                   required
-                  className={`w-full border bg-white rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-shadow ${
+                  className={`w-full border bg-white rounded-xl px-4 py-3 pr-11 text-base focus:outline-none focus:ring-2 focus:border-transparent transition-shadow ${
                     confirmStatus === 'mismatch'
                       ? 'border-red-400 focus:ring-red-400'
                       : confirmStatus === 'match'

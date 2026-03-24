@@ -158,7 +158,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
+                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
                 placeholder={t('emailPlaceholder')}
               />
             </div>
@@ -175,7 +175,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
+                  className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 pr-11 text-base focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-shadow"
                   placeholder={t('passwordPlaceholder')}
                 />
                 <button type="button" onClick={() => setShowPass(v => !v)}
