@@ -494,7 +494,7 @@ export default function AppLayout({ children }) {
       )}
 
       {/* ── Main ── */}
-      <main className="flex-1 overflow-y-auto flex flex-col min-w-0 pb-16 md:pb-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0 pb-16 md:pb-0">
 
         {/* Header mobile */}
         <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30 flex-shrink-0">
@@ -558,14 +558,14 @@ export default function AppLayout({ children }) {
 
         {/* Banner de pagamento pendente */}
         {pastDue && (
-          <div className="px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0 bg-red-50 text-red-700 border-b border-red-100">
+          <div className="px-4 py-2 text-sm font-medium flex flex-wrap items-center justify-center gap-x-2 gap-y-1 flex-shrink-0 bg-red-50 text-red-700 border-b border-red-100">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span>Pagamento pendente. Atualize seu método de pagamento para não perder o acesso.</span>
+            <span className="text-center">Pagamento pendente. Atualize seu método de pagamento para não perder o acesso.</span>
             <button
               onClick={async () => { try { const r = await api.billing.portal(); if (r?.url) window.open(r.url, '_blank') } catch {} }}
-              className="underline font-bold ml-1 whitespace-nowrap"
+              className="underline font-bold"
             >
               Gerenciar pagamento
             </button>
@@ -574,7 +574,7 @@ export default function AppLayout({ children }) {
 
         {/* Banner de trial */}
         {showTrial && (
-          <div className={`px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0 ${
+          <div className={`px-4 py-2 text-sm font-medium flex flex-wrap items-center justify-center gap-x-2 gap-y-1 flex-shrink-0 ${
             trialDays <= 2
               ? 'bg-red-50 text-red-700 border-b border-red-100'
               : 'bg-amber-50 text-amber-700 border-b border-amber-100'
@@ -585,7 +585,7 @@ export default function AppLayout({ children }) {
                 ? t('trialExpired')
                 : t('trialDays', { days: trialDays })}
             </span>
-            <Link href="/configuracoes/planos" className="underline font-bold ml-1 whitespace-nowrap">{t('trialCta')}</Link>
+            <Link href="/configuracoes/planos" className="underline font-bold">{t('trialCta')}</Link>
           </div>
         )}
 

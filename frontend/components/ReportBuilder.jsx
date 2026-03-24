@@ -440,6 +440,15 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
     if (['text', 'filter', 'slider', 'image', 'ai_summary'].includes(block.type)) return
     if (!isUUID(block.dataset_id)) { setData(block.static_data || null); return }
 
+    let cancelled = false
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        cancelled = true
+        setLoading(false)
+        setError('Tempo limite excedido. Recarregue a página.')
+      }
+    }, 30000)
+
     // ── Modo fórmula: dois seletores com agregações independentes ───────────
     if (block.type === 'kpi' && block.config?.formula_mode && block.config?.formula_col_a && block.config?.formula_col_b) {
       setLoading(true); setError(null)
@@ -451,6 +460,7 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
           .then(res => (res?.data || res)?.[0]?.value ?? 0).catch(() => 0),
       ])
         .then(([a, b]) => {
+          if (cancelled) return
           const op = block.config.formula_op || '/'
           let result
           if (op === '+') result = a + b
@@ -460,9 +470,9 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
           if (block.config.formula_multiply_100) result *= 100
           setData([{ label: 'formula', value: isFinite(result) ? result : 0 }])
         })
-        .catch(e => setError(e.message))
-        .finally(() => setLoading(false))
-      return
+        .catch(e => { if (!cancelled) setError(e.message) })
+        .finally(() => { if (!cancelled) { clearTimeout(timeoutId); setLoading(false) } })
+      return () => { cancelled = true; clearTimeout(timeoutId) }
     }
 
     // ── Modo expressão: busca cada [coluna] separadamente e avalia ─────────
@@ -470,7 +480,7 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       const expr = block.config.expression.trim()
       const tokens = [...expr.matchAll(/\[([^\]]+)\]/g)].map(m => m[1])
       const unique = [...new Set(tokens)]
-      if (!unique.length) { setData([]); return }
+      if (!unique.length) { clearTimeout(timeoutId); setData([]); return }
       setLoading(true); setError(null)
       const fetches = unique.map(col =>
         api.reports.datasets.queryV2(block.dataset_id, {
@@ -484,13 +494,14 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       )
       Promise.all(fetches)
         .then(results => {
+          if (cancelled) return
           const vals = Object.fromEntries(results.map(r => [r.col, r.value]))
           const evaluated = evaluateExpression(expr, vals)
           setData([{ label: 'expr', value: isFinite(evaluated) ? evaluated : 0 }])
         })
-        .catch(e => setError(e.message))
-        .finally(() => setLoading(false))
-      return
+        .catch(e => { if (!cancelled) setError(e.message) })
+        .finally(() => { if (!cancelled) { clearTimeout(timeoutId); setLoading(false) } })
+      return () => { cancelled = true; clearTimeout(timeoutId) }
     }
 
     // For pivot, require at least row_col and value_col configured
@@ -498,31 +509,31 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       const cfg = block.config || {}
       const rowCol = cfg.row_col || block.label_col
       const valCol = cfg.value_col || block.value_col
-      if (!rowCol || !valCol) { setData(block.static_data || null); return }
+      if (!rowCol || !valCol) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     } else if (block.type === 'gantt') {
       const cfg = block.config || {}
-      if (!cfg.task_col || !cfg.start_col || !cfg.end_col) { setData(block.static_data || null); return }
+      if (!cfg.task_col || !cfg.start_col || !cfg.end_col) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     } else if (block.type === 'table') {
-      if (!block.label_col || !block.value_col) { setData(null); return }
+      if (!block.label_col || !block.value_col) { clearTimeout(timeoutId); setData(null); return }
     } else if (block.type === 'sankey') {
       const cfg = block.config || {}
-      if (!cfg.source_col || !cfg.target_col || !cfg.value_col) { setData(block.static_data || null); return }
+      if (!cfg.source_col || !cfg.target_col || !cfg.value_col) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     } else if (block.type === 'candlestick') {
       const cfg = block.config || {}
-      if (!cfg.date_col || !cfg.open_col || !cfg.high_col || !cfg.low_col || !cfg.close_col) { setData(block.static_data || null); return }
+      if (!cfg.date_col || !cfg.open_col || !cfg.high_col || !cfg.low_col || !cfg.close_col) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     } else if (block.type === 'boxplot') {
       const cfg = block.config || {}
-      if (!cfg.value_col) { setData(block.static_data || null); return }
+      if (!cfg.value_col) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     } else if (block.type === 'meta') {
       // Meta: se tem valor manual do realizado, não busca dataset
-      if (block.config?.meta_actual != null && block.config.meta_actual !== '') { setData([]); return }
-      if (!block.value_col) { setData([]); return }
+      if (block.config?.meta_actual != null && block.config.meta_actual !== '') { clearTimeout(timeoutId); setData([]); return }
+      if (!block.value_col) { clearTimeout(timeoutId); setData([]); return }
     } else if (['kpi', 'gauge', 'speedometer', 'bullet'].includes(block.type)) {
       // KPI em modo manual (valor fixo): não busca dataset
-      if (block.type === 'kpi' && block.config?.manual_value != null && block.config.manual_value !== '') { setData([]); return }
-      if (!block.value_col) { setData(block.static_data || null); return }
+      if (block.type === 'kpi' && block.config?.manual_value != null && block.config.manual_value !== '') { clearTimeout(timeoutId); setData([]); return }
+      if (!block.value_col) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     } else {
-      if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
+      if (!block.label_col || !block.value_col) { clearTimeout(timeoutId); setData(block.static_data || null); return }
     }
     setLoading(true); setError(null)
     // Pivot fetches raw rows (agg=none) with all relevant columns
@@ -579,8 +590,12 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
       ? api.reports.publicQueryV2(shareToken, block.dataset_id, effectiveReq)
       : api.reports.datasets.queryV2(block.dataset_id, effectiveReq)
     queryFn
-      .then(result => setData(result?.data || result || []))
+      .then(result => {
+        if (cancelled) return
+        setData(result?.data || result || [])
+      })
       .catch(e => {
+        if (cancelled) return
         // Se o bloco tem static_data, sempre usa como fallback silencioso quando a query falha
         if (block.static_data) {
           setData(block.static_data)
@@ -589,7 +604,8 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
           setError(e.message)
         }
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (!cancelled) { clearTimeout(timeoutId); setLoading(false) } })
+    return () => { cancelled = true; clearTimeout(timeoutId) }
   }, [key, block.type])
 
   return { data, loading, error }
