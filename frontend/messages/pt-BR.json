@@ -8,13 +8,13 @@
   },
   "hero": {
     "badge": "Sem código · Sem analista · 7 dias grátis",
-    "title1": "Seus dados.",
-    "title2": "Sua visão.",
-    "subtitle": "Transforme planilhas em dashboards profissionais em segundos. Sobe um arquivo ou conecta sua planilha — o Jarbis faz o resto.",
+    "title1": "Sua planilha vira dashboard",
+    "title2": "profissional em 30 segundos.",
+    "subtitle": "Sobe seu Excel ou CSV e o Jarbis analisa tudo. Gera KPIs, gráficos e relatórios em segundos. Sem programação, sem analista de dados.",
     "ctaPrimary": "Criar minha conta grátis",
     "ctaSecondary": "Ver como funciona",
     "freeBadge": "7 dias grátis · Sem cartão · Cancele quando quiser",
-    "proof1": "Pronto em menos de 5 minutos",
+    "proof1": "Configuração em 5 minutos",
     "proof2": "Grátis para começar",
     "proof3": "Suporte em português",
     "upload": {
