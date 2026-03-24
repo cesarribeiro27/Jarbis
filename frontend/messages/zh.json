@@ -1100,6 +1100,18 @@
         "title": "数据源套餐",
         "feature": "+3 个数据源",
         "active": "个活跃数据源"
+      },
+      "ai": {
+        "title": "AI套餐",
+        "feature1": "每月+50次AI查询",
+        "feature2": "额外助手查询",
+        "active": "个活跃套餐"
+      },
+      "rows": {
+        "title": "行数套餐",
+        "feature1": "每个数据集+10万行",
+        "feature2": "扩展每个数据源的数据限制",
+        "active": "个活跃套餐"
       }
     },
     "toast": {

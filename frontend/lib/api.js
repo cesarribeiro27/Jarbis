@@ -234,7 +234,7 @@ export const api = {
     addonAiCheckout: () => apiFetch('/billing/addon/ai/checkout', { method: 'POST' }),
     addonRowsCheckout: () => apiFetch('/billing/addon/rows/checkout', { method: 'POST' }),
     upgrade: (plan, annual = false, coupon_code = '') => apiFetch('/billing/upgrade', { method: 'POST', body: JSON.stringify({ plan, annual, coupon_code }) }),
-    subscriptionIntent: (plan, annual = false, coupon_code = '') => apiFetch('/billing/subscription-intent', { method: 'POST', body: JSON.stringify({ plan, annual, coupon_code }) }),
+    subscriptionIntent: (payload) => apiFetch('/billing/subscription-intent', { method: 'POST', body: JSON.stringify(payload) }),
     setBillingName: (billing_name) => apiFetch('/billing/billing-name', { method: 'PATCH', body: JSON.stringify({ billing_name }) }),
   },
 }

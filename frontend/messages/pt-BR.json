@@ -1108,6 +1108,12 @@
         "feature1": "+50 perguntas de IA/mês",
         "feature2": "Consultas extras ao assistente",
         "active": "packs ativos"
+      },
+      "rows": {
+        "title": "Pack Linhas",
+        "feature1": "+100k linhas por dataset",
+        "feature2": "Expanda o limite de dados por fonte",
+        "active": "packs ativos"
       }
     },
     "toast": {

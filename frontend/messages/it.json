@@ -1100,6 +1100,18 @@
         "title": "Pacchetto Fonti Dati",
         "feature": "+3 fonti dati",
         "active": "fonti attive"
+      },
+      "ai": {
+        "title": "Pacchetto IA",
+        "feature1": "+50 domande IA/mese",
+        "feature2": "Domande extra all'assistente",
+        "active": "pacchetti attivi"
+      },
+      "rows": {
+        "title": "Pacchetto Righe",
+        "feature1": "+100k righe per dataset",
+        "feature2": "Espandi il limite dati per fonte",
+        "active": "pacchetti attivi"
       }
     },
     "toast": {

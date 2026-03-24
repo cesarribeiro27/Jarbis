@@ -41,9 +41,43 @@ class BillingNameRequest(BaseModel):
 
 
 class SubscriptionIntentRequest(BaseModel):
-    plan: str
+    plan: str = ""        # essential | pro | business (e legados)
+    addon: str = ""       # completo | dash | dataset | ai | rows
     annual: bool = False
     coupon_code: str = ""
+
+
+def _resolve_price_id(data: SubscriptionIntentRequest) -> str:
+    """Resolve plan ou addon para o price_id do Stripe."""
+    if data.addon:
+        addon_map = {
+            "completo": settings.stripe_price_addon,
+            "dash":     settings.stripe_price_addon_dash,
+            "dataset":  settings.stripe_price_addon_dataset,
+            "ai":       settings.stripe_price_addon_ai,
+            "rows":     settings.stripe_price_addon_rows,
+        }
+        return addon_map.get(data.addon, "")
+
+    if data.annual:
+        plan_map = {
+            "essential": settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "pro":        settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "business":   settings.stripe_price_business_annual or settings.stripe_price_business,
+            "solo":       settings.stripe_price_essential_annual or settings.stripe_price_essential,
+            "equipe":     settings.stripe_price_pro_annual or settings.stripe_price_pro,
+            "ilimitado":  settings.stripe_price_business_annual or settings.stripe_price_business,
+        }
+    else:
+        plan_map = {
+            "essential": settings.stripe_price_essential,
+            "pro":        settings.stripe_price_pro,
+            "business":   settings.stripe_price_business,
+            "solo":       settings.stripe_price_essential,
+            "equipe":     settings.stripe_price_pro,
+            "ilimitado":  settings.stripe_price_business,
+        }
+    return plan_map.get(data.plan, "")
 
 
 @router.post("/subscription-intent", summary="Cria subscription intent para Stripe Elements")
@@ -54,23 +88,13 @@ async def create_subscription_intent(
 ):
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Pagamentos não configurados.")
+    if not data.plan and not data.addon:
+        raise HTTPException(status_code=400, detail="Informe um plano ou add-on.")
 
-    if data.annual:
-        plan_map = {
-            "essential": settings.stripe_price_essential_annual or settings.stripe_price_essential,
-            "pro":        settings.stripe_price_pro_annual or settings.stripe_price_pro,
-            "business":   settings.stripe_price_business_annual or settings.stripe_price_business,
-        }
-    else:
-        plan_map = {
-            "essential": settings.stripe_price_essential,
-            "pro":        settings.stripe_price_pro,
-            "business":   settings.stripe_price_business,
-        }
-
-    price_id = plan_map.get(data.plan, "")
+    price_id = _resolve_price_id(data)
     if not price_id:
-        raise HTTPException(status_code=400, detail=f"Plano '{data.plan}' não configurado.")
+        item = data.addon or data.plan
+        raise HTTPException(status_code=400, detail=f"'{item}' não configurado. Verifique as variáveis do Stripe.")
 
     try:
         svc = BillingService(db)

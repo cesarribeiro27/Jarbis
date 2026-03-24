@@ -1100,6 +1100,18 @@
         "title": "Datenquellen-Paket",
         "feature": "+3 Datenquellen",
         "active": "aktive Quellen"
+      },
+      "ai": {
+        "title": "KI-Paket",
+        "feature1": "+50 KI-Anfragen/Monat",
+        "feature2": "Zusätzliche Assistentenanfragen",
+        "active": "aktive Pakete"
+      },
+      "rows": {
+        "title": "Zeilen-Paket",
+        "feature1": "+100k Zeilen pro Dataset",
+        "feature2": "Datenlimit pro Quelle erweitern",
+        "active": "aktive Pakete"
       }
     },
     "toast": {

@@ -1107,6 +1107,12 @@
         "feature1": "+50 AI queries/month",
         "feature2": "Extra assistant queries",
         "active": "active packs"
+      },
+      "rows": {
+        "title": "Rows Pack",
+        "feature1": "+100k rows per dataset",
+        "feature2": "Expand the data limit per source",
+        "active": "active packs"
       }
     },
     "toast": {

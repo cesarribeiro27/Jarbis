@@ -1100,6 +1100,18 @@
         "title": "Paquete Fuentes",
         "feature": "+3 fuentes de datos",
         "active": "fuentes activas"
+      },
+      "ai": {
+        "title": "Paquete IA",
+        "feature1": "+50 consultas IA/mes",
+        "feature2": "Consultas extra al asistente",
+        "active": "paquetes activos"
+      },
+      "rows": {
+        "title": "Paquete Filas",
+        "feature1": "+100k filas por dataset",
+        "feature2": "Amplía el límite de datos por fuente",
+        "active": "paquetes activos"
       }
     },
     "toast": {

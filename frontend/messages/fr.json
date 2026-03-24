@@ -1100,6 +1100,18 @@
         "title": "Pack Sources de Données",
         "feature": "+3 sources de données",
         "active": "sources actives"
+      },
+      "ai": {
+        "title": "Pack IA",
+        "feature1": "+50 requêtes IA/mois",
+        "feature2": "Requêtes supplémentaires à l'assistant",
+        "active": "packs actifs"
+      },
+      "rows": {
+        "title": "Pack Lignes",
+        "feature1": "+100k lignes par dataset",
+        "feature2": "Augmentez la limite de données par source",
+        "active": "packs actifs"
       }
     },
     "toast": {

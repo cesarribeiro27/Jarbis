@@ -96,11 +96,55 @@ function PlanosContent() {
   const [upgrading, setUpgrading]       = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [annual, setAnnual]             = useState(false)
-  const [addonLoading, setAddonLoading] = useState(false)
-  const [addonDashLoading, setAddonDashLoading] = useState(false)
-  const [addonDatasetLoading, setAddonDatasetLoading] = useState(false)
-  const [addonAiLoading, setAddonAiLoading] = useState(false)
   const [checkoutModal, setCheckoutModal] = useState(null) // { plan, annual }
+
+  // ─── Add-ons ──────────────────────────────────────────────────────────────
+  const ADDONS = [
+    {
+      key: 'completo',
+      price: 49,
+      icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>,
+      featureKeys: ['addon.completo.feature1', 'addon.completo.feature2', 'addon.completo.feature3'],
+      activeCount: () => status?.addon_packs,
+      activeKey: 'addon.completo.active',
+    },
+    {
+      key: 'dash',
+      price: 29,
+      icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+      featureKeys: ['addon.dash.feature'],
+      activeCount: () => status?.addon_dashboards,
+      activeKey: 'addon.dash.active',
+    },
+    {
+      key: 'dataset',
+      price: 19,
+      icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
+      featureKeys: ['addon.dataset.feature'],
+      activeCount: () => status?.addon_datasets,
+      activeKey: 'addon.dataset.active',
+    },
+    {
+      key: 'ai',
+      price: 19,
+      icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/></svg>,
+      featureKeys: ['addon.ai.feature1', 'addon.ai.feature2'],
+      activeCount: () => status?.addon_ai_queries,
+      activeKey: 'addon.ai.active',
+    },
+    {
+      key: 'rows',
+      price: 49,
+      icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M3 12h18M3 18h18"/><rect x="2" y="3" width="20" height="18" rx="2"/></svg>,
+      featureKeys: ['addon.rows.feature1', 'addon.rows.feature2'],
+      activeCount: () => status?.addon_rows_packs,
+      activeKey: 'addon.rows.active',
+    },
+  ]
+
+  function handleAddonCheckout(key) {
+    router.push(`/checkout?addon=${key}`)
+  }
 
   useEffect(() => {
     if (searchParams.get('success') === '1') {
@@ -130,50 +174,6 @@ function PlanosContent() {
     // Recarrega o status após upgrade imediato (proration)
     setStatus(null)
     api.billing.status().then(setStatus).catch(() => {})
-  }
-
-  async function handleAddon() {
-    setAddonLoading(true)
-    try {
-      const data = await api.billing.addonCheckout()
-      window.location.href = data.checkout_url
-    } catch (err) {
-      toast(err.message || t('toast.addonError'), 'warn')
-      setAddonLoading(false)
-    }
-  }
-
-  async function handleAddonDash() {
-    setAddonDashLoading(true)
-    try {
-      const data = await api.billing.addonDashCheckout()
-      window.location.href = data.checkout_url
-    } catch (err) {
-      toast(err.message || t('toast.addonError'), 'warn')
-      setAddonDashLoading(false)
-    }
-  }
-
-  async function handleAddonDataset() {
-    setAddonDatasetLoading(true)
-    try {
-      const data = await api.billing.addonDatasetCheckout()
-      window.location.href = data.checkout_url
-    } catch (err) {
-      toast(err.message || t('toast.addonError'), 'warn')
-      setAddonDatasetLoading(false)
-    }
-  }
-
-  async function handleAddonAi() {
-    setAddonAiLoading(true)
-    try {
-      const data = await api.billing.addonAiCheckout()
-      window.location.href = data.checkout_url
-    } catch (err) {
-      toast(err.message || t('toast.addonError'), 'warn')
-      setAddonAiLoading(false)
-    }
   }
 
   async function handlePortal() {
@@ -412,112 +412,51 @@ function PlanosContent() {
               {annual ? t('annualNote') : t('monthlyNote')}
             </p>
 
-            {/* Cards de add-on — visível apenas em planos pagos */}
+            {/* Packs de Expansão — visível apenas em planos pagos */}
             {isPaid && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
                   <svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
                   <h3 className="font-black text-gray-900 dark:text-gray-100">{t('addon.sectionTitle')}</h3>
                   <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('addon.sectionDesc')}</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Pack Completo */}
-                  <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 border border-violet-200 dark:border-violet-700/50 rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-4 h-4 text-violet-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                      <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.completo.title')}</span>
-                    </div>
-                    <p className="text-2xl font-black text-violet-600 dark:text-violet-400 mt-1">R$49<span className="text-xs text-gray-400 font-normal">/mês</span></p>
-                    <ul className="mt-3 space-y-1 flex-1">
-                      {[t('addon.completo.feature1'), t('addon.completo.feature2'), t('addon.completo.feature3')].map(f => (
-                        <li key={f} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                          <svg className="w-3 h-3 text-violet-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    {status?.addon_packs > 0 && (
-                      <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-2">✓ {status.addon_packs} {t('addon.completo.active')}</p>
-                    )}
-                    <button onClick={handleAddon} disabled={addonLoading} className="mt-4 w-full py-2 bg-violet-600 text-white font-bold text-xs rounded-full hover:bg-violet-700 transition-colors disabled:opacity-50">
-                      {addonLoading ? t('addon.adding') : t('addon.addPack')}
-                    </button>
-                  </div>
-
-                  {/* Pack Dashboards */}
-                  <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700/50 rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                      <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.dash.title')}</span>
-                    </div>
-                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">R$29<span className="text-xs text-gray-400 font-normal">/mês</span></p>
-                    <ul className="mt-3 space-y-1 flex-1">
-                      <li className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                        <svg className="w-3 h-3 text-blue-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                        {t('addon.dash.feature')}
-                      </li>
-                    </ul>
-                    {status?.addon_dashboards > 0 && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-2">✓ +{status.addon_dashboards} {t('addon.dash.active')}</p>
-                    )}
-                    <button onClick={handleAddonDash} disabled={addonDashLoading} className="mt-4 w-full py-2 bg-blue-600 text-white font-bold text-xs rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50">
-                      {addonDashLoading ? t('addon.adding') : t('addon.addPack')}
-                    </button>
-                  </div>
-
-                  {/* Pack Datasets */}
-                  <div className="bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700/50 rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-                      <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.dataset.title')}</span>
-                    </div>
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">R$19<span className="text-xs text-gray-400 font-normal">/mês</span></p>
-                    <ul className="mt-3 space-y-1 flex-1">
-                      <li className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                        <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                        {t('addon.dataset.feature')}
-                      </li>
-                    </ul>
-                    {status?.addon_datasets > 0 && (
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-2">✓ +{status.addon_datasets} {t('addon.dataset.active')}</p>
-                    )}
-                    <button onClick={handleAddonDataset} disabled={addonDatasetLoading} className="mt-4 w-full py-2 bg-emerald-600 text-white font-bold text-xs rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                      {addonDatasetLoading ? t('addon.adding') : t('addon.addPack')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Segunda linha: Pack IA */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                  {/* Pack IA */}
-                  <div className="bg-gradient-to-br from-fuchsia-50 to-violet-50 dark:from-fuchsia-900/20 dark:to-violet-900/20 border border-fuchsia-200 dark:border-fuchsia-700/50 rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-4 h-4 text-fuchsia-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 0 2h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1 0-2h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/></svg>
-                      <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t('addon.ai.title')}</span>
-                    </div>
-                    <p className="text-2xl font-black text-fuchsia-600 dark:text-fuchsia-400 mt-1">R$19<span className="text-xs text-gray-400 font-normal">/mês</span></p>
-                    <ul className="mt-3 space-y-1 flex-1">
-                      {[t('addon.ai.feature1'), t('addon.ai.feature2')].map(f => (
-                        <li key={f} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                          <svg className="w-3 h-3 text-fuchsia-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    {status?.addon_ai_queries > 0 && (
-                      <p className="text-xs text-fuchsia-600 dark:text-fuchsia-400 font-semibold mt-2">✓ {status.addon_ai_queries} {t('addon.ai.active')}</p>
-                    )}
-                    <button onClick={handleAddonAi} disabled={addonAiLoading} className="mt-4 w-full py-2 bg-fuchsia-600 text-white font-bold text-xs rounded-full hover:bg-fuchsia-700 transition-colors disabled:opacity-50">
-                      {addonAiLoading ? t('addon.adding') : t('addon.addPack')}
-                    </button>
-                  </div>
-
-                  {/* Nota sobre upgrade */}
-                  <div className="bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-600 rounded-2xl p-5 flex flex-col justify-center items-center text-center">
-                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Muitos add-ons?</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Com 3 ou mais add-ons, o próximo plano pode sair mais barato e com mais recursos.</p>
-                    <a href="/configuracoes/planos" className="text-xs font-bold text-violet-600 hover:text-violet-700">Ver comparativo de planos →</a>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {ADDONS.map(addon => {
+                    const activeCount = addon.activeCount()
+                    return (
+                      <div
+                        key={addon.key}
+                        className="bg-white dark:bg-gray-800 border border-violet-200 dark:border-violet-700/50 rounded-2xl p-5 flex flex-col"
+                      >
+                        <div className="flex items-center gap-2 mb-1 text-violet-600">
+                          {addon.icon}
+                          <span className="font-black text-gray-900 dark:text-gray-100 text-sm">{t(`addon.${addon.key}.title`)}</span>
+                        </div>
+                        <p className="text-2xl font-black text-violet-600 dark:text-violet-400 mt-1">
+                          R${addon.price}<span className="text-xs text-gray-400 font-normal">/mês</span>
+                        </p>
+                        <ul className="mt-3 space-y-1 flex-1">
+                          {addon.featureKeys.map(fk => (
+                            <li key={fk} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                              <svg className="w-3 h-3 text-violet-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                              {t(fk)}
+                            </li>
+                          ))}
+                        </ul>
+                        {activeCount > 0 && (
+                          <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-2">
+                            ✓ {activeCount} {t(addon.activeKey)}
+                          </p>
+                        )}
+                        <button
+                          onClick={() => handleAddonCheckout(addon.key)}
+                          className="mt-4 w-full py-2 bg-violet-600 text-white font-bold text-xs rounded-full hover:bg-violet-700 transition-colors"
+                        >
+                          {t('addon.addPack')}
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
