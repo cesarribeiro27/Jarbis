@@ -5716,9 +5716,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
     })
   }
 
-  // isMobile based on viewport width — threshold matches AppLayout's lg: breakpoint (1024px)
-  // iPhones max out at 932px landscape; only tablets/desktops reach 1024px+
-  const isMobile = viewportWidth < 1024
+  // isMobile controls single-column vs multi-column layout
+  // 768px = portrait phones stack, landscape phones (768-932px) get multi-column
+  // AppLayout uses lg(1024px) so sidebar never interferes with this
+  const isMobile = viewportWidth < 768
   const layout = isMobile
     ? [...blocks]
         .sort((a, b) => {
