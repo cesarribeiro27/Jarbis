@@ -118,6 +118,7 @@ class BulkExtendTrialInput(BaseModel):
 class CampaignEmailInput(BaseModel):
     subject: str
     body_html: str
+    raw_html: bool = False                   # True = envia body_html como HTML completo, sem wrapper
     segment_plan: str | None = None          # ex: "starter" — None = todos
     segment_status: str | None = None        # ex: "trial" — None = todos
     segment_trial_days_max: int | None = None  # só tenants com trial ≤ N dias
@@ -2303,7 +2304,7 @@ async def send_email_campaign(
     sent = 0
     failed = 0
     for tenant_name, owner_email in recipients:
-        html = _build_campaign_html(body.subject, body.body_html, tenant_name)
+        html = body.body_html if body.raw_html else _build_campaign_html(body.subject, body.body_html, tenant_name)
         ok = await send_admin_email(owner_email, body.subject, html)
         if ok:
             sent += 1
