@@ -40,6 +40,23 @@ class BillingNameRequest(BaseModel):
     billing_name: str = ""
 
 
+class FiscalProfileRequest(BaseModel):
+    fiscal_type: str = ""          # "pf" | "pj"
+    cpf: str = ""                  # somente PF
+    cnpj: str = ""                 # somente PJ
+    razao_social: str = ""         # nome completo (PF) ou razão social (PJ)
+    fiscal_email: str = ""
+    inscricao_municipal: str = ""
+    inscricao_estadual: str = ""
+    cep: str = ""
+    logradouro: str = ""
+    numero: str = ""
+    complemento: str = ""
+    bairro: str = ""
+    cidade: str = ""
+    estado: str = ""
+
+
 class SubscriptionIntentRequest(BaseModel):
     plan: str = ""        # essential | pro | business (e legados)
     addon: str = ""       # completo | dash | dataset | ai | rows
@@ -231,6 +248,56 @@ async def upgrade_plan(
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/fiscal-profile", summary="Retorna os dados fiscais do tenant para emissão de NF-e")
+async def get_fiscal_profile(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select
+    from app.modules.tenants.models import Tenant
+    result = await db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+    return {
+        "fiscal_type":         tenant.fiscal_type or "",
+        "cpf":                 tenant.cpf or "",
+        "cnpj":                tenant.cnpj or "",
+        "razao_social":        tenant.razao_social or "",
+        "fiscal_email":        tenant.fiscal_email or "",
+        "inscricao_municipal": tenant.inscricao_municipal or "",
+        "inscricao_estadual":  tenant.inscricao_estadual or "",
+        "cep":                 tenant.cep or "",
+        "logradouro":          tenant.logradouro or "",
+        "numero":              tenant.numero or "",
+        "complemento":         tenant.complemento or "",
+        "bairro":              tenant.bairro or "",
+        "cidade":              tenant.cidade or "",
+        "estado":              tenant.estado or "",
+    }
+
+
+@router.patch("/fiscal-profile", summary="Salva os dados fiscais do tenant para emissão de NF-e")
+async def update_fiscal_profile(
+    data: FiscalProfileRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select
+    from app.modules.tenants.models import Tenant
+    result = await db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+    for field in ["fiscal_type", "cpf", "cnpj", "razao_social", "fiscal_email",
+                  "inscricao_municipal", "inscricao_estadual", "cep", "logradouro",
+                  "numero", "complemento", "bairro", "cidade", "estado"]:
+        val = getattr(data, field, "")
+        setattr(tenant, field, val if val else None)
+    await db.commit()
+    return {"ok": True}
 
 
 @router.patch("/billing-name", summary="Salva o nome que aparece na fatura do cartão")

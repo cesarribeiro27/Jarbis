@@ -326,6 +326,19 @@ export default function ConfiguracoesPage() {
               Personalizar
             </Link>
           </div>
+
+          <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4">
+            <div>
+              <h2 className="font-bold text-gray-800 dark:text-gray-200">Dados Fiscais</h2>
+              <p className="text-sm text-gray-500 mt-0.5">CPF/CNPJ e endereço para emissão de Nota Fiscal de Serviço (NFS-e)</p>
+            </div>
+            <Link
+              href="/configuracoes/fiscal"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Editar
+            </Link>
+          </div>
         </div>
       </div>
     </AppLayout>

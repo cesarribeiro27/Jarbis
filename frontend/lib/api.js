@@ -236,5 +236,7 @@ export const api = {
     upgrade: (plan, annual = false, coupon_code = '') => apiFetch('/billing/upgrade', { method: 'POST', body: JSON.stringify({ plan, annual, coupon_code }) }),
     subscriptionIntent: (payload) => apiFetch('/billing/subscription-intent', { method: 'POST', body: JSON.stringify(payload) }),
     setBillingName: (billing_name) => apiFetch('/billing/billing-name', { method: 'PATCH', body: JSON.stringify({ billing_name }) }),
+    getFiscalProfile: () => apiFetch('/billing/fiscal-profile'),
+    saveFiscalProfile: (data) => apiFetch('/billing/fiscal-profile', { method: 'PATCH', body: JSON.stringify(data) }),
   },
 }

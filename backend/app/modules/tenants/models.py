@@ -62,8 +62,12 @@ class Tenant(Base):
     utm_content: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Variação do anúncio")
 
     # ── Dados fiscais (para emissão de NF-e) ─────────────────────────────────
-    cnpj: Mapped[str | None] = mapped_column(String(18), nullable=True, comment="CNPJ formatado: XX.XXX.XXX/XXXX-XX")
-    razao_social: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    fiscal_type: Mapped[str | None] = mapped_column(String(2), nullable=True, comment="Tipo de pessoa: pf (CPF) ou pj (CNPJ)")
+    cpf: Mapped[str | None] = mapped_column(String(14), nullable=True, comment="CPF formatado: XXX.XXX.XXX-XX (somente Pessoa Física)")
+    cnpj: Mapped[str | None] = mapped_column(String(18), nullable=True, comment="CNPJ formatado: XX.XXX.XXX/XXXX-XX (somente Pessoa Jurídica)")
+    razao_social: Mapped[str | None] = mapped_column(String(300), nullable=True, comment="Nome completo (PF) ou Razão Social (PJ)")
+    fiscal_email: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="Email para envio da NF-e (pode ser diferente do email da conta)")
+    inscricao_municipal: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="Inscrição Municipal — usada para NFS-e (ex: Nota Fiscal Paulistana)")
     inscricao_estadual: Mapped[str | None] = mapped_column(String(50), nullable=True)
     cep: Mapped[str | None] = mapped_column(String(9), nullable=True)
     logradouro: Mapped[str | None] = mapped_column(String(300), nullable=True)

@@ -265,10 +265,67 @@ function CheckoutContent() {
   const [detailsError, setDetailsError] = useState('')
   const [stripeInstance, setStripeInstance] = useState(null)
   const [clientSecret, setClientSecret]     = useState(null)
+  const [cepLoading, setCepLoading]         = useState(false)
+
+  const [fiscal, setFiscal] = useState({
+    fiscal_type: 'pj',
+    cpf: '', cnpj: '', razao_social: '', fiscal_email: '',
+    cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
+  })
+
+  function setFiscalField(field) {
+    return (e) => setFiscal(f => ({ ...f, [field]: e.target.value }))
+  }
+
+  function applyMask(value, type) {
+    const digits = value.replace(/\D/g, '')
+    if (type === 'cpf') {
+      return digits.slice(0, 11)
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    }
+    if (type === 'cnpj') {
+      return digits.slice(0, 14)
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})$/, '$1-$2')
+    }
+    if (type === 'cep') {
+      return digits.slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2')
+    }
+    return value
+  }
+
+  async function fetchViaCep() {
+    const cepDigits = fiscal.cep.replace(/\D/g, '')
+    if (cepDigits.length !== 8) return
+    setCepLoading(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`)
+      const data = await res.json()
+      if (!data.erro) {
+        setFiscal(f => ({
+          ...f,
+          logradouro: data.logradouro || f.logradouro,
+          bairro:     data.bairro     || f.bairro,
+          cidade:     data.localidade || f.cidade,
+          estado:     data.uf         || f.estado,
+        }))
+      }
+    } catch { /* silently ignore */ } finally {
+      setCepLoading(false)
+    }
+  }
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-    if (!token) router.replace('/login')
+    if (!token) { router.replace('/login'); return }
+    // Carrega perfil fiscal existente para pré-preencher
+    api.billing.getFiscalProfile()
+      .then(data => setFiscal(f => ({ ...f, ...data })))
+      .catch(() => {})
   }, [])
 
   if (!product) {
@@ -288,7 +345,10 @@ function CheckoutContent() {
     setDetailsError('')
     try {
       const nameToSave = billingName.trim().toUpperCase() || 'JARBIS.CC'
-      await api.billing.setBillingName(nameToSave)
+      await Promise.all([
+        api.billing.setBillingName(nameToSave),
+        api.billing.saveFiscalProfile(fiscal),
+      ])
 
       const payload = isAddon
         ? { addon: addonKey, coupon_code: couponCode.trim() }
@@ -392,6 +452,124 @@ function CheckoutContent() {
                     maxLength={22} placeholder="JARBIS.CC"
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono tracking-wide uppercase" />
                   <p className="text-xs text-gray-400 mt-1.5">Como aparece na fatura. Padrão: <span className="font-mono font-semibold">JARBIS.CC</span></p>
+                </div>
+
+                {/* ── Dados para Nota Fiscal ─────────────────────────────── */}
+                <div className="border-t border-gray-100 pt-5">
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-4">Dados para Nota Fiscal</p>
+
+                  {/* PF / PJ toggle */}
+                  <div className="flex gap-2 mb-4">
+                    {[['pj', 'Pessoa Jurídica (CNPJ)'], ['pf', 'Pessoa Física (CPF)']].map(([val, label]) => (
+                      <button key={val} type="button"
+                        onClick={() => setFiscal(f => ({ ...f, fiscal_type: val }))}
+                        className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-colors ${fiscal.fiscal_type === val ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Documento */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        {fiscal.fiscal_type === 'pf' ? 'CPF' : 'CNPJ'}
+                      </label>
+                      <input
+                        type="text" inputMode="numeric"
+                        value={fiscal.fiscal_type === 'pf' ? fiscal.cpf : fiscal.cnpj}
+                        onChange={e => {
+                          const masked = applyMask(e.target.value, fiscal.fiscal_type === 'pf' ? 'cpf' : 'cnpj')
+                          setFiscal(f => ({ ...f, [fiscal.fiscal_type === 'pf' ? 'cpf' : 'cnpj']: masked }))
+                        }}
+                        placeholder={fiscal.fiscal_type === 'pf' ? '000.000.000-00' : '00.000.000/0000-00'}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono"
+                      />
+                    </div>
+
+                    {/* Nome / Razão Social */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        {fiscal.fiscal_type === 'pf' ? 'Nome completo' : 'Razão Social'}
+                      </label>
+                      <input type="text" value={fiscal.razao_social} onChange={setFiscalField('razao_social')}
+                        placeholder={fiscal.fiscal_type === 'pf' ? 'João da Silva' : 'Empresa Ltda'}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                    </div>
+
+                    {/* Email para NF */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Email para receber a NF <span className="text-xs font-normal text-gray-400">(pode ser diferente do email da conta)</span>
+                      </label>
+                      <input type="email" value={fiscal.fiscal_email} onChange={setFiscalField('fiscal_email')}
+                        placeholder="financeiro@empresa.com.br"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                    </div>
+
+                    {/* CEP */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">CEP</label>
+                      <div className="flex gap-2">
+                        <input type="text" inputMode="numeric" value={fiscal.cep}
+                          onChange={e => setFiscal(f => ({ ...f, cep: applyMask(e.target.value, 'cep') }))}
+                          placeholder="00000-000" maxLength={9}
+                          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono" />
+                        <button type="button" onClick={fetchViaCep} disabled={cepLoading || fiscal.cep.replace(/\D/g,'').length !== 8}
+                          className="px-4 py-2.5 border border-violet-300 text-violet-600 text-xs font-bold rounded-xl hover:bg-violet-50 transition-colors disabled:opacity-40 whitespace-nowrap">
+                          {cepLoading ? '...' : 'Buscar'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Logradouro + Número */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Logradouro</label>
+                        <input type="text" value={fiscal.logradouro} onChange={setFiscalField('logradouro')}
+                          placeholder="Rua das Flores"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Número</label>
+                        <input type="text" value={fiscal.numero} onChange={setFiscalField('numero')}
+                          placeholder="100"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                      </div>
+                    </div>
+
+                    {/* Complemento + Bairro */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Complemento <span className="text-xs font-normal text-gray-400">(opcional)</span></label>
+                        <input type="text" value={fiscal.complemento} onChange={setFiscalField('complemento')}
+                          placeholder="Sala 3"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bairro</label>
+                        <input type="text" value={fiscal.bairro} onChange={setFiscalField('bairro')}
+                          placeholder="Centro"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                      </div>
+                    </div>
+
+                    {/* Cidade + Estado */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cidade</label>
+                        <input type="text" value={fiscal.cidade} onChange={setFiscalField('cidade')}
+                          placeholder="São Paulo"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Estado</label>
+                        <input type="text" value={fiscal.estado} onChange={setFiscalField('estado')}
+                          placeholder="SP" maxLength={2}
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent uppercase" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {detailsError && (

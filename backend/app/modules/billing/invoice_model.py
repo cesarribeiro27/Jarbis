@@ -54,6 +54,14 @@ class Invoice(Base):
         String(50), nullable=True,
         comment="Plano do tenant no momento da cobrança"
     )
+    # ── Nota Fiscal ───────────────────────────────────────────────────────────
+    nf_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pendente",
+        comment="Status da NF-e: pendente | emitida | dispensada | erro"
+    )
+    nf_numero: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="Número da NF-e emitida")
+    nf_emitida_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="Data/hora de emissão da NF-e")
+    nf_link: Mapped[str | None] = mapped_column(Text, nullable=True, comment="URL da NF-e para download/consulta")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     def __repr__(self) -> str:
