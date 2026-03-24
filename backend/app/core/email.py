@@ -27,26 +27,26 @@ _LOGO_HTML = (
 )
 
 _HEADER_HTML = (
-    # Fundo dark com glow radial — mesmo padrão da tela de login
-    '<div style="background:#0B0A1A;padding:40px 32px 36px;text-align:center;border-radius:16px 16px 0 0;">'
-    # Glow via camada com gradiente radial (Gmail/Apple Mail suportam; Outlook mostra dark sólido — ok)
-    '<div style="background:radial-gradient(ellipse at 50% 40%,rgba(124,58,237,0.40) 0%,transparent 70%);padding:0;margin:-40px -32px 0;height:0;">&zwnj;</div>'
-    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:0;">'
-    '<tr><td align="center" style="padding-bottom:16px;">'
-    '<table cellpadding="0" cellspacing="0" border="0">'
+    # bgcolor como atributo HTML (não só CSS) protege contra dark mode do Gmail
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0B0A1A" '
+    'style="background:#0B0A1A;border-radius:16px 16px 0 0;">'
+    '<tr><td align="center" style="padding:40px 32px 36px;background:#0B0A1A;" bgcolor="#0B0A1A">'
+    '<table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">'
     '<tr>'
     '<td style="vertical-align:middle;">' + _LOGO_HTML + '</td>'
     '<td style="padding-left:12px;vertical-align:middle;">'
-    '<span style="color:#ffffff;font-weight:900;font-size:22px;letter-spacing:-0.05em;">jar<span style="color:#A78BFA;">b</span>is</span>'
+    '<span style="color:#ffffff;font-weight:900;font-size:22px;letter-spacing:-0.05em;">'
+    'jar<span style="color:#A78BFA;">b</span>is</span>'
     '</td>'
     '</tr>'
     '</table>'
-    '</td></tr>'
-    '<tr><td align="center">'
-    '<div style="width:40px;height:1px;background:rgba(167,139,250,0.30);margin:0 auto 14px;"></div>'
+    '<table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">'
+    '<tr><td width="40" height="1" bgcolor="#4C3880" style="background:#4C3880;font-size:0;line-height:0;">&nbsp;</td></tr>'
+    '</table>'
+    '<p style="margin:0;font-size:12px;font-weight:600;color:#A78BFA;letter-spacing:0.12em;text-transform:uppercase;">'
+    'Novidades da plataforma</p>'
     '</td></tr>'
     '</table>'
-    '</div>'
 )
 
 _FOOTER_HTML = """

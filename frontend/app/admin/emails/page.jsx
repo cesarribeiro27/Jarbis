@@ -54,14 +54,23 @@ const TEMPLATES = [
     <tr><td align="center">
       <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
         <tr>
-          <td style="border-radius:16px 16px 0 0;overflow:hidden;background:#0B0A1A;padding:44px 32px 40px;text-align:center;position:relative;">
-            <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%, rgba(124,58,237,0.45) 0%, transparent 70%);pointer-events:none;"></div>
-            <div style="position:relative;display:inline-flex;align-items:center;gap:12px;margin-bottom:20px;">
-              <img src="https://jarbis.cc/logo-email.svg" alt="jarbis" width="44" height="44" style="display:block;border-radius:11px;" />
-              <span style="font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-0.05em;">jar<span style="color:#A78BFA;">b</span>is</span>
-            </div>
-            <div style="position:relative;width:48px;height:1px;background:rgba(167,139,250,0.3);margin:0 auto 20px;"></div>
-            <p style="position:relative;margin:0;font-size:13px;font-weight:600;color:rgba(167,139,250,0.85);letter-spacing:0.12em;text-transform:uppercase;">Novidades da plataforma</p>
+          <td bgcolor="#0B0A1A" style="background:#0B0A1A;border-radius:16px 16px 0 0;padding:40px 32px 36px;text-align:center;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+              <tr>
+                <td align="center">
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="vertical-align:middle;"><img src="https://jarbis.cc/logo-email.svg" alt="jarbis" width="40" height="40" style="display:block;border-radius:10px;" /></td>
+                      <td style="padding-left:12px;vertical-align:middle;"><span style="color:#ffffff;font-weight:900;font-size:22px;letter-spacing:-0.05em;">jar<span style="color:#A78BFA;">b</span>is</span></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 14px;">
+              <tr><td width="40" height="1" bgcolor="#4C3880" style="background:#4C3880;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+            <p style="margin:0;font-size:12px;font-weight:600;color:#A78BFA;letter-spacing:0.12em;text-transform:uppercase;">Novidades da plataforma</p>
           </td>
         </tr>
         <tr>
