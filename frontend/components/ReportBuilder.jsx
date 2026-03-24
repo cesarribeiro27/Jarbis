@@ -1757,17 +1757,24 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     else if (config.threshold_ok != null && config.threshold_ok !== '' && total >= parseFloat(config.threshold_ok)) valueColor = '#10b981'
     const autoFormat = (format === 'currency' && Math.abs(total) >= 10000) ? 'compact_currency' : format
     const sizeMap = { lg: '18px', xl: '20px', '2xl': '24px', '4xl': '31px' }
-    const valueFontSize = sizeMap[config.size || '4xl'] || '31px'
+    const baseFontSize = parseInt(sizeMap[config.size || '4xl'] || '31px')
     const delta = config.delta != null && config.delta !== '' ? String(config.delta) : null
     const deltaNum = delta ? parseFloat(delta) : null
     const deltaPositive = deltaNum != null ? deltaNum >= 0 : null
     const isDefaultVsMonth = !config.delta_label ||
       Object.values(VIEWER_STRINGS).some(s => s.vsMonth === config.delta_label)
     const deltaLabel = isDefaultVsMonth ? vs.vsMonth : config.delta_label
+    const formattedValue = autoFormat === 'compact_currency' ? fmtCompactCurrency(total) : fmt(total, format, config)
+    const charLen = formattedValue.length
+    const scaledSize = charLen <= 8 ? baseFontSize
+      : charLen <= 11 ? Math.max(16, Math.round(baseFontSize * 0.78))
+      : charLen <= 14 ? Math.max(14, Math.round(baseFontSize * 0.62))
+      : Math.max(12, Math.round(baseFontSize * 0.52))
+    const valueFontSize = `${scaledSize}px`
     return (
       <div className="flex flex-col gap-0 pt-0.5">
-        <p className="font-black leading-none tracking-tight tabular-nums" style={{ color: valueColor, fontSize: valueFontSize }}>
-          {autoFormat === 'compact_currency' ? fmtCompactCurrency(total) : fmt(total, format, config)}
+        <p className="font-black leading-none tracking-tight tabular-nums overflow-hidden" style={{ color: valueColor, fontSize: valueFontSize }}>
+          {formattedValue}
         </p>
         {delta && (
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
