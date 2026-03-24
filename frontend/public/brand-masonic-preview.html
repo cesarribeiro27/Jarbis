@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jarbis — Icon Concepts</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F3F2FF;
+    color: #1A1A2E;
+    padding: 56px 24px 100px;
+  }
+
+  .wordmark { font-family:'Inter',sans-serif; font-weight:900; letter-spacing:-0.05em; color:#1A1A2E; line-height:1; }
+  .wordmark .b { color:#6D28D9; }
+  .wordmark-w { font-family:'Inter',sans-serif; font-weight:900; letter-spacing:-0.05em; color:#fff; line-height:1; }
+  .wordmark-w .b { color:#A78BFA; }
+
+  .page-title { text-align:center; margin-bottom:72px; }
+  .page-title p { font-size:12px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:#6D28D9; margin-bottom:10px; }
+  .page-title h1 { font-size:36px; font-weight:900; letter-spacing:-0.04em; }
+  .page-title small { font-size:14px; color:#6B7280; margin-top:8px; display:block; }
+
+  .section { max-width:1040px; margin:0 auto 80px; }
+  .sec-label { font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#8B5CF6; margin-bottom:5px; }
+  .sec-title { font-size:22px; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; }
+  .sec-desc { font-size:13px; color:#6B7280; margin-bottom:32px; line-height:1.6; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:20px; }
+
+  .card {
+    background:white; border:1.5px solid #E2E8F0; border-radius:20px;
+    padding:40px 20px 28px; display:flex; flex-direction:column; align-items:center;
+    gap:22px; cursor:pointer; transition:all .2s; position:relative;
+  }
+  .card:hover { border-color:#6D28D9; box-shadow:0 10px 36px rgba(109,40,217,.13); transform:translateY(-3px); }
+  .card.featured { border-color:#6D28D9; box-shadow:0 0 0 3px rgba(109,40,217,.15); }
+
+  .tag {
+    position:absolute; top:-11px; left:50%; transform:translateX(-50%);
+    font-size:10px; font-weight:800; letter-spacing:.1em; padding:4px 14px;
+    border-radius:100px; white-space:nowrap; color:white;
+  }
+  .tag.violet { background:#6D28D9; }
+  .tag.dark   { background:#1A1A2E; }
+
+  .card-name { font-size:14px; font-weight:800; letter-spacing:-.01em; text-align:center; }
+  .card-desc { font-size:12px; color:#6B7280; text-align:center; line-height:1.65; }
+
+  /* sizes strip */
+  .sizes { display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap; justify-content:center; }
+  .si { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .si span { font-size:10px; color:#9CA3AF; font-weight:600; }
+
+  /* combo row */
+  .combo { display:flex; align-items:center; gap:12px; }
+
+  /* divider */
+  .divider { height:1px; background:#E2E8F0; max-width:1040px; margin:80px auto; }
+
+  /* hero preview */
+  .hero {
+    background:#0B0A1A; border-radius:22px; padding:52px 40px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  .hero::before {
+    content:''; position:absolute; top:-100px; left:50%; transform:translateX(-50%);
+    width:700px; height:380px;
+    background:radial-gradient(ellipse, rgba(109,40,217,.28) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .nav-sim {
+    position:relative; z-index:1; display:flex; align-items:center;
+    justify-content:space-between; max-width:680px; margin:0 auto 52px;
+    padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .hero-h1 {
+    position:relative; z-index:1; font-size:clamp(36px,6vw,68px);
+    font-weight:900; letter-spacing:-.05em; color:white; line-height:1.0; margin-bottom:18px;
+  }
+  .hero-h1 span {
+    background:linear-gradient(135deg,#a78bfa,#818cf8,#67e8f9);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .hero-sub { position:relative; z-index:1; font-size:16px; color:rgba(255,255,255,.45); margin-bottom:32px; }
+  .cta-row { position:relative; z-index:1; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-main { background:#6D28D9; color:white; font-weight:800; font-size:14px; padding:14px 32px; border-radius:100px; border:none; cursor:pointer; font-family:'Inter',sans-serif; }
+  .btn-ghost { background:rgba(255,255,255,.06); color:rgba(255,255,255,.65); font-weight:600; font-size:14px; padding:14px 32px; border-radius:100px; border:1px solid rgba(255,255,255,.1); cursor:pointer; font-family:'Inter',sans-serif; }
+
+  .note { background:#EDE9FE; border-left:3px solid #6D28D9; border-radius:10px; padding:16px 20px; font-size:13px; color:#5B21B6; margin-top:24px; line-height:1.65; }
+
+  .combo-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:600px){ .combo-grid { grid-template-columns:1fr; } }
+  .combo-card { border-radius:16px; padding:28px 32px; display:flex; flex-direction:column; gap:22px; border:1.5px solid #E2E8F0; background:white; }
+  .combo-card.dark { background:#0B0A1A; border-color:rgba(255,255,255,.07); }
+  .combo-row { display:flex; align-items:center; gap:12px; border-bottom:1px solid #F1F5F9; padding-bottom:18px; }
+  .combo-row:last-child { border-bottom:none; padding-bottom:0; }
+  .combo-row.dark-sep { border-color:rgba(255,255,255,.05); }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <p>Identidade Visual — Conceitos de Ícone</p>
+  <h1>O ∴ que só quem sabe, vê.</h1>
+  <small>Abstrato para todos. Legível para quem é irmão.</small>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CONCEITOS DE ÍCONE
+══════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-label">4 conceitos</div>
+  <div class="sec-title">Ícones com ∴ integrado</div>
+  <div class="sec-desc">
+    Em todos os conceitos, os 3 pontos do ∴ estão presentes na posição correta —<br/>
+    1 acima no centro, 2 abaixo à esquerda e à direita. O resto do ícone é tecnologia e dados.
+  </div>
+
+  <div class="grid">
+
+    <!-- ────── CONCEITO 1: TRINDADE DE DADOS ────── -->
+    <div class="card featured">
+      <div class="tag violet">★ RECOMENDADO</div>
+
+      <!-- Icon hero -->
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+
+        <!-- Linhas de conexão entre os 3 nós (finas, elegantes) -->
+        <!-- topo → inferior esquerdo -->
+        <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+        <!-- topo → inferior direito -->
+        <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+        <!-- inferior esquerdo → inferior direito -->
+        <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+
+        <!-- Halo externo sutil no ponto superior (mais importante) -->
+        <circle cx="24" cy="13" r="5.5" fill="#6D28D9" opacity=".15"/>
+
+        <!-- ∴ — 3 nós em triângulo -->
+        <!-- Topo (apex) — maior, mais luminoso -->
+        <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+        <circle cx="24" cy="13" r="1.8" fill="white"/>
+
+        <!-- Inferior esquerdo -->
+        <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+        <circle cx="14" cy="32" r="1.5" fill="white"/>
+
+        <!-- Inferior direito -->
+        <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+        <circle cx="34" cy="32" r="1.5" fill="white"/>
+      </svg>
+
+      <!-- Tamanhos -->
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+            <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+            <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+            <circle cx="24" cy="13" r="5.5" fill="#6D28D9" opacity=".15"/>
+            <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+            <circle cx="24" cy="13" r="1.8" fill="white"/>
+            <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+            <circle cx="14" cy="32" r="1.5" fill="white"/>
+            <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+            <circle cx="34" cy="32" r="1.5" fill="white"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+            <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+            <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+            <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+            <circle cx="24" cy="13" r="1.8" fill="white"/>
+            <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+            <circle cx="14" cy="32" r="1.5" fill="white"/>
+            <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+            <circle cx="34" cy="32" r="1.5" fill="white"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <circle cx="24" cy="13" r="4" fill="#A78BFA"/>
+            <circle cx="14" cy="32" r="3.2" fill="#6D28D9"/>
+            <circle cx="34" cy="32" r="3.2" fill="#6D28D9"/>
+          </svg>
+          <span>20px</span>
+        </div>
+        <div class="si">
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <circle cx="24" cy="13" r="5" fill="#A78BFA"/>
+            <circle cx="14" cy="32" r="4" fill="#6D28D9"/>
+            <circle cx="34" cy="32" r="4" fill="#6D28D9"/>
+          </svg>
+          <span>16px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Trindade"</div>
+      <div class="card-desc">
+        3 nós conectados por linhas finas de dados. Para o mundo: rede / grafo / BI.
+        Para o irmão: <strong>∴</strong> imediatamente. Fundo dark, nó superior em violeta claro — hierarquia visual clara.
+      </div>
+    </div>
+
+    <!-- ────── CONCEITO 2: ASCENSÃO ────── -->
+    <div class="card">
+      <div class="tag dark">DADOS + ∴</div>
+
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+
+        <!-- Linha de tendência ascendente (sparkline) passando pelos 3 pontos -->
+        <polyline points="14,32 24,14 34,32" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Base horizontal sutil -->
+        <line x1="10" y1="36" x2="38" y2="36" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-linecap="round"/>
+
+        <!-- ∴ — 3 pontos como marcadores de dados na sparkline -->
+        <!-- Apex (topo — ponto máximo da linha) -->
+        <circle cx="24" cy="14" r="4" fill="white"/>
+        <circle cx="24" cy="14" r="2" fill="#6D28D9"/>
+
+        <!-- Inferior esquerdo -->
+        <circle cx="14" cy="32" r="3.2" fill="rgba(255,255,255,.9)"/>
+        <circle cx="14" cy="32" r="1.5" fill="#6D28D9"/>
+
+        <!-- Inferior direito -->
+        <circle cx="34" cy="32" r="3.2" fill="rgba(255,255,255,.9)"/>
+        <circle cx="34" cy="32" r="1.5" fill="#6D28D9"/>
+      </svg>
+
+      <!-- Tamanhos -->
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+            <polyline points="14,32 24,14 34,32" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="10" y1="36" x2="38" y2="36" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="24" cy="14" r="4" fill="white"/>
+            <circle cx="24" cy="14" r="2" fill="#6D28D9"/>
+            <circle cx="14" cy="32" r="3.2" fill="rgba(255,255,255,.9)"/>
+            <circle cx="14" cy="32" r="1.5" fill="#6D28D9"/>
+            <circle cx="34" cy="32" r="3.2" fill="rgba(255,255,255,.9)"/>
+            <circle cx="34" cy="32" r="1.5" fill="#6D28D9"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+            <polyline points="14,32 24,14 34,32" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="24" cy="14" r="4" fill="white"/>
+            <circle cx="24" cy="14" r="2" fill="#6D28D9"/>
+            <circle cx="14" cy="32" r="3.2" fill="rgba(255,255,255,.9)"/>
+            <circle cx="14" cy="32" r="1.5" fill="#6D28D9"/>
+            <circle cx="34" cy="32" r="3.2" fill="rgba(255,255,255,.9)"/>
+            <circle cx="34" cy="32" r="1.5" fill="#6D28D9"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+            <circle cx="24" cy="14" r="5" fill="white"/>
+            <circle cx="14" cy="32" r="4" fill="rgba(255,255,255,.9)"/>
+            <circle cx="34" cy="32" r="4" fill="rgba(255,255,255,.9)"/>
+          </svg>
+          <span>20px</span>
+        </div>
+        <div class="si">
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+            <circle cx="24" cy="14" r="6" fill="white"/>
+            <circle cx="14" cy="32" r="4.5" fill="rgba(255,255,255,.85)"/>
+            <circle cx="34" cy="32" r="4.5" fill="rgba(255,255,255,.85)"/>
+          </svg>
+          <span>16px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Ascensão"</div>
+      <div class="card-desc">
+        Sparkline em forma de V invertido (crescimento) com os <strong>∴ como marcadores de dados</strong>. Para o mundo: gráfico de linha com 3 pontos de referência. Para o irmão: triângulo ∴ instantâneo.
+      </div>
+    </div>
+
+    <!-- ────── CONCEITO 3: ÓRBITA EVOLUÍDA ────── -->
+    <div class="card">
+      <div class="tag dark">ORBIT + ∴</div>
+
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+
+        <!-- Anel orbital elegante (elipse leve) -->
+        <ellipse cx="24" cy="24" rx="16" ry="13" stroke="#6D28D9" stroke-width="1" opacity=".3" stroke-dasharray="3 2.5"/>
+
+        <!-- Arco ativo — do ponto superior ao inferior esquerdo -->
+        <path d="M24 11 A13 13 0 1 0 10 32" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".8"/>
+
+        <!-- ∴ — 3 nós distribuídos na órbita nas posições exatas -->
+        <!-- Topo (apex ∴) — satélite principal -->
+        <circle cx="24" cy="11" r="4" fill="#A78BFA"/>
+        <circle cx="24" cy="11" r="2" fill="white"/>
+
+        <!-- Inferior esquerdo ∴ -->
+        <circle cx="10" cy="32" r="3.2" fill="#6D28D9"/>
+        <circle cx="10" cy="32" r="1.5" fill="rgba(255,255,255,.8)"/>
+
+        <!-- Inferior direito ∴ — ponto de chegada do arco (mais sutil) -->
+        <circle cx="38" cy="32" r="2.5" fill="#6D28D9" opacity=".7"/>
+        <circle cx="38" cy="32" r="1.2" fill="rgba(255,255,255,.6)"/>
+      </svg>
+
+      <!-- Tamanhos -->
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <ellipse cx="24" cy="24" rx="16" ry="13" stroke="#6D28D9" stroke-width="1" opacity=".3" stroke-dasharray="3 2.5"/>
+            <path d="M24 11 A13 13 0 1 0 10 32" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".8"/>
+            <circle cx="24" cy="11" r="4" fill="#A78BFA"/>
+            <circle cx="24" cy="11" r="2" fill="white"/>
+            <circle cx="10" cy="32" r="3.2" fill="#6D28D9"/>
+            <circle cx="10" cy="32" r="1.5" fill="rgba(255,255,255,.8)"/>
+            <circle cx="38" cy="32" r="2.5" fill="#6D28D9" opacity=".7"/>
+            <circle cx="38" cy="32" r="1.2" fill="rgba(255,255,255,.6)"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <path d="M24 11 A13 13 0 1 0 10 32" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".8"/>
+            <circle cx="24" cy="11" r="4" fill="#A78BFA"/>
+            <circle cx="24" cy="11" r="2" fill="white"/>
+            <circle cx="10" cy="32" r="3.2" fill="#6D28D9"/>
+            <circle cx="10" cy="32" r="1.5" fill="rgba(255,255,255,.8)"/>
+            <circle cx="38" cy="32" r="2.5" fill="#6D28D9" opacity=".7"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <circle cx="24" cy="11" r="5" fill="#A78BFA"/>
+            <circle cx="10" cy="32" r="4" fill="#6D28D9"/>
+            <circle cx="38" cy="32" r="3.5" fill="#6D28D9" opacity=".7"/>
+          </svg>
+          <span>20px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Órbita ∴"</div>
+      <div class="card-desc">
+        Evolução do LogoA — a órbita continua, mas os <strong>3 satélites</strong> estão agora nos vértices exatos do ∴. Quem não é maçom vê dados em órbita. Quem é, reconhece na hora.
+      </div>
+    </div>
+
+    <!-- ────── CONCEITO 4: PRISMA ────── -->
+    <div class="card">
+      <div class="tag dark">GEOMETRIC</div>
+
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+
+        <!-- Triângulo preenchido suave (prisma) — forma de fundo -->
+        <polygon points="24,10 10,36 38,36" fill="#6D28D9" opacity=".12"/>
+
+        <!-- Bordas do triângulo em gradiente de opacidade -->
+        <!-- Esquerda (topo → inferior esq) -->
+        <line x1="24" y1="10" x2="10" y2="36" stroke="#7C3AED" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+        <!-- Direita (topo → inferior dir) -->
+        <line x1="24" y1="10" x2="38" y2="36" stroke="#7C3AED" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+        <!-- Base (mais sutil) -->
+        <line x1="10" y1="36" x2="38" y2="36" stroke="#6D28D9" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+
+        <!-- Linha de refração interna (prisma → luz → dados) -->
+        <line x1="24" y1="10" x2="24" y2="36" stroke="rgba(167,139,250,.4)" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 2"/>
+
+        <!-- ∴ — Os 3 vértices do prisma -->
+        <!-- Apex -->
+        <circle cx="24" cy="10" r="4.5" fill="#A78BFA"/>
+        <circle cx="24" cy="10" r="2.2" fill="white"/>
+
+        <!-- Base esquerda -->
+        <circle cx="10" cy="36" r="3.5" fill="#6D28D9"/>
+        <circle cx="10" cy="36" r="1.8" fill="rgba(255,255,255,.85)"/>
+
+        <!-- Base direita -->
+        <circle cx="38" cy="36" r="3.5" fill="#6D28D9"/>
+        <circle cx="38" cy="36" r="1.8" fill="rgba(255,255,255,.85)"/>
+      </svg>
+
+      <!-- Tamanhos -->
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <polygon points="24,10 10,36 38,36" fill="#6D28D9" opacity=".12"/>
+            <line x1="24" y1="10" x2="10" y2="36" stroke="#7C3AED" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+            <line x1="24" y1="10" x2="38" y2="36" stroke="#7C3AED" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+            <line x1="10" y1="36" x2="38" y2="36" stroke="#6D28D9" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+            <circle cx="24" cy="10" r="4.5" fill="#A78BFA"/>
+            <circle cx="24" cy="10" r="2.2" fill="white"/>
+            <circle cx="10" cy="36" r="3.5" fill="#6D28D9"/>
+            <circle cx="10" cy="36" r="1.8" fill="rgba(255,255,255,.85)"/>
+            <circle cx="38" cy="36" r="3.5" fill="#6D28D9"/>
+            <circle cx="38" cy="36" r="1.8" fill="rgba(255,255,255,.85)"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <polygon points="24,10 10,36 38,36" fill="#6D28D9" opacity=".12"/>
+            <line x1="24" y1="10" x2="10" y2="36" stroke="#7C3AED" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+            <line x1="24" y1="10" x2="38" y2="36" stroke="#7C3AED" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+            <line x1="10" y1="36" x2="38" y2="36" stroke="#6D28D9" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+            <circle cx="24" cy="10" r="4.5" fill="#A78BFA"/>
+            <circle cx="24" cy="10" r="2.2" fill="white"/>
+            <circle cx="10" cy="36" r="3.5" fill="#6D28D9"/>
+            <circle cx="10" cy="36" r="1.8" fill="rgba(255,255,255,.85)"/>
+            <circle cx="38" cy="36" r="3.5" fill="#6D28D9"/>
+            <circle cx="38" cy="36" r="1.8" fill="rgba(255,255,255,.85)"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <circle cx="24" cy="10" r="5.5" fill="#A78BFA"/>
+            <circle cx="10" cy="36" r="4.2" fill="#6D28D9"/>
+            <circle cx="38" cy="36" r="4.2" fill="#6D28D9"/>
+          </svg>
+          <span>20px</span>
+        </div>
+        <div class="si">
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+            <circle cx="24" cy="10" r="7" fill="#A78BFA"/>
+            <circle cx="10" cy="36" r="5" fill="#6D28D9"/>
+            <circle cx="38" cy="36" r="5" fill="#6D28D9"/>
+          </svg>
+          <span>16px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Prisma"</div>
+      <div class="card-desc">
+        Triângulo geométrico translúcido — prisma de luz/dados. Para o mundo: geometria tech / forma de cristal. Para o irmão: <strong>∴</strong> nos 3 vértices, triângulo sagrado presente na estrutura.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    💡 <strong>Meu favorito para o Jarbis:</strong> <strong>"Trindade"</strong> — 3 nós de dados conectados por linhas finas em fundo dark. É o mais abstrato de todos (parece um grafo/rede de dados), mas o ∴ está lá com precisão. Em 16px, os 3 pontos brilham sozinhos. Em 64px+, quem é irmão reconhece na hora. <br/><br/>
+    O <strong>"Ascensão"</strong> é a segunda opção mais forte — sparkline em V invertido com os 3 pontos como marcadores. Lê-se como "crescimento de dados" e o ∴ está embutido na forma do gráfico.
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     LOGO COMPLETO: ÍCONE + WORDMARK
+══════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-label">Sistema completo</div>
+  <div class="sec-title">Ícone + Wordmark "jar<span style="color:#6D28D9;">b</span>is"</div>
+  <div class="sec-desc">Usando o Conceito "Trindade" (recomendado). Fundo claro e escuro, todos os tamanhos.</div>
+
+  <div class="combo-grid">
+
+    <!-- LIGHT -->
+    <div class="combo-card">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9CA3AF;margin-bottom:8px;">Fundo claro</div>
+      <div class="combo-row">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+          <circle cx="24" cy="13" r="5.5" fill="#6D28D9" opacity=".15"/>
+          <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+          <circle cx="24" cy="13" r="1.8" fill="white"/>
+          <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="14" cy="32" r="1.5" fill="white"/>
+          <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="1.5" fill="white"/>
+        </svg>
+        <span class="wordmark" style="font-size:28px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+          <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+          <circle cx="24" cy="13" r="1.8" fill="white"/>
+          <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="14" cy="32" r="1.5" fill="white"/>
+          <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="1.5" fill="white"/>
+        </svg>
+        <span class="wordmark" style="font-size:19px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row" style="border-bottom:none; padding-bottom:0;">
+        <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <circle cx="24" cy="13" r="5" fill="#A78BFA"/>
+          <circle cx="14" cy="32" r="4" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="4" fill="#6D28D9"/>
+        </svg>
+        <span class="wordmark" style="font-size:13px;">jar<span class="b">b</span>is</span>
+      </div>
+    </div>
+
+    <!-- DARK -->
+    <div class="combo-card dark">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:8px;">Fundo escuro</div>
+      <div class="combo-row dark-sep">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+          <circle cx="24" cy="13" r="5.5" fill="#6D28D9" opacity=".2"/>
+          <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+          <circle cx="24" cy="13" r="1.8" fill="white"/>
+          <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="14" cy="32" r="1.5" fill="white"/>
+          <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="1.5" fill="white"/>
+        </svg>
+        <span class="wordmark-w" style="font-size:28px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row dark-sep">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+          <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+          <circle cx="24" cy="13" r="1.8" fill="white"/>
+          <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="14" cy="32" r="1.5" fill="white"/>
+          <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="1.5" fill="white"/>
+        </svg>
+        <span class="wordmark-w" style="font-size:19px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row" style="border-bottom:none; padding-bottom:0;">
+        <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <circle cx="24" cy="13" r="5" fill="#A78BFA"/>
+          <circle cx="14" cy="32" r="4" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="4" fill="#6D28D9"/>
+        </svg>
+        <span class="wordmark-w" style="font-size:13px;">jar<span class="b">b</span>is</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     HERO PREVIEW
+══════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-label">Contexto real</div>
+  <div class="sec-title">Como fica na landing page</div>
+
+  <div class="hero">
+    <!-- Nav -->
+    <div class="nav-sim">
+      <div class="combo">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+          <line x1="24" y1="13" x2="14" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="24" y1="13" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".5"/>
+          <line x1="14" y1="32" x2="34" y2="32" stroke="#6D28D9" stroke-width="1" opacity=".35"/>
+          <circle cx="24" cy="13" r="3.5" fill="#A78BFA"/>
+          <circle cx="24" cy="13" r="1.8" fill="white"/>
+          <circle cx="14" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="14" cy="32" r="1.5" fill="white"/>
+          <circle cx="34" cy="32" r="3" fill="#6D28D9"/>
+          <circle cx="34" cy="32" r="1.5" fill="white"/>
+        </svg>
+        <span class="wordmark-w" style="font-size:17px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div style="display:flex;gap:24px;align-items:center;">
+        <span style="font-size:13px;color:rgba(255,255,255,.4);">Como funciona</span>
+        <span style="font-size:13px;color:rgba(255,255,255,.4);">Preços</span>
+        <div class="btn-main" style="font-size:13px;padding:9px 22px;">Começar grátis</div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div style="position:relative;z-index:1;">
+      <div style="display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(124,58,237,.4);background:rgba(124,58,237,.1);color:#A78BFA;font-size:12px;font-weight:600;padding:6px 16px;border-radius:100px;margin-bottom:28px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#7C3AED;display:inline-block;"></span>
+        BI embarcado para PMEs brasileiras
+      </div>
+      <h1 class="hero-h1">Seus dados.<br/><span>Sua visão.</span></h1>
+      <p class="hero-sub">Faça upload de uma planilha e tenha dashboards interativos em segundos.</p>
+      <div class="cta-row">
+        <button class="btn-main">Começar grátis — 7 dias</button>
+        <button class="btn-ghost">Ver demonstração</button>
+      </div>
+      <div style="margin-top:24px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:rgba(255,255,255,.25);">✦ Sem cartão de crédito</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.25);">✦ Setup em 2 minutos</span>
+        <span style="font-size:12px;color:rgba(255,255,255,.25);">✦ Dados 100% seus</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;color:#9CA3AF;font-size:12px;padding-top:48px;border-top:1px solid #E2E8F0;max-width:1040px;margin:0 auto;">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+    <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="13" fill="#0F0E1C"/>
+      <circle cx="24" cy="13" r="4" fill="#A78BFA"/>
+      <circle cx="14" cy="32" r="3.2" fill="#6D28D9"/>
+      <circle cx="34" cy="32" r="3.2" fill="#6D28D9"/>
+    </svg>
+    <span style="font-weight:900;font-size:15px;letter-spacing:-.05em;font-family:'Inter',sans-serif;">jar<span style="color:#6D28D9;">b</span>is</span>
+  </div>
+  <p>Brand Masonic Preview · Identidade Visual 2026 · Mazzel Tech · ∴</p>
+</div>
+
+</body>
+</html>

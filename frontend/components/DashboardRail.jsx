@@ -99,12 +99,12 @@ export default function DashboardRail({
             onClick={btn.onClick}
             disabled={btn.disabled}
             title={btn.label}
-            className={`relative flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-[11px] transition-all duration-150 ${
+            className={`relative flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-xl transition-all duration-150 ${
               btn.active
-                ? 'bg-[#ede9fe] text-[#7c3aed]'
+                ? 'bg-[#ede9fe] text-[#6D28D9]'
                 : btn.disabled
                 ? 'text-gray-200 cursor-not-allowed'
-                : 'text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6]'
+                : 'text-[#94A3B8] hover:text-[#1A1A2E] hover:bg-[#f5f3ff]'
             }`}
           >
             {btn.badge != null && (
@@ -113,7 +113,7 @@ export default function DashboardRail({
               </span>
             )}
             {btn.icon}
-            <span className="text-[9px] font-semibold leading-none">{btn.label}</span>
+            <span className="text-[10px] font-semibold leading-none">{btn.label}</span>
           </button>
         ))}
       </div>
@@ -121,7 +121,7 @@ export default function DashboardRail({
       <div className="flex flex-col items-center gap-[3px] w-full">
         <button
           title={t('rail.helpTitle')}
-          className="flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-[11px] text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+          className="flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-xl text-[#94A3B8] hover:text-[#1A1A2E] hover:bg-[#f5f3ff] transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" /></svg>
           <span className="text-[9px] font-semibold leading-none">{t('rail.help')}</span>
@@ -129,7 +129,7 @@ export default function DashboardRail({
         <button
           title={sidebarOpen ? t('rail.closePanel') : t('rail.openPanel')}
           onClick={() => { if (sidebarOpen) { setSidebarOpen(false); setSidePanel(null) } else if (sidePanel) setSidebarOpen(true) }}
-          className="flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-[11px] text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+          className="flex flex-col items-center justify-center gap-[3px] w-[50px] py-[14px] rounded-xl text-[#94A3B8] hover:text-[#1A1A2E] hover:bg-[#f5f3ff] transition-colors"
         >
           <svg className={`w-5 h-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" /></svg>
           <span className="text-[9px] font-semibold leading-none">{sidebarOpen ? t('rail.close') : t('rail.open')}</span>

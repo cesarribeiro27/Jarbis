@@ -14,6 +14,7 @@
 import { useState } from 'react'
 import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel } from '@/components/ReportBuilder'
 import { LogoA, LogoB, LogoC, LogoD, LogoE, LogoWithText } from '@/components/logos/JarbisLogo'
+import ReportBuilder from '@/components/ReportBuilder'
 
 // ---------------------------------------------------------------------------
 // Dados mock para o lab
@@ -458,6 +459,290 @@ function TabLogos() {
 }
 
 // ---------------------------------------------------------------------------
+// Sub-aba: Templates de Dashboard
+// ---------------------------------------------------------------------------
+
+const MES_LABELS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+const TEMPLATES = {
+  financeiro: {
+    label: 'Financeiro',
+    desc: 'Receita, margem, MRR e distribuição de despesas',
+    sheetConfig: { bgColor: '#f5f5f7', sheetBgColor: '#ffffff' },
+    blocks: [
+      {
+        id: 'f-kpi1', type: 'kpi', title: 'Receita Total',
+        static_data: [{ value: 285400 }],
+        config: { format: 'currency', accent_color: '#10b981', delta: '12.4', delta_label: 'vs mês anterior' },
+        layout: { x: 0, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'f-kpi2', type: 'kpi', title: 'MRR',
+        static_data: [{ value: 23783 }],
+        config: { format: 'currency', accent_color: '#6366f1', delta: '5.2', delta_label: 'vs mês anterior' },
+        layout: { x: 4, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'f-kpi3', type: 'kpi', title: 'Margem Bruta',
+        static_data: [{ value: 68.2 }],
+        config: { format: 'percent', accent_color: '#f59e0b', delta: '-1.8', delta_label: 'vs mês anterior' },
+        layout: { x: 8, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'f-bar1', type: 'bar', title: 'Receita por Mês',
+        label_col: 'label', value_col: 'value',
+        static_data: MES_LABELS.map((m, i) => ({ label: m, value: [180000, 195000, 210000, 198000, 225000, 248000, 235000, 262000, 271000, 258000, 279000, 285400][i] })),
+        config: { format: 'currency', color: '#6366f1' },
+        layout: { x: 0, y: 2, w: 8, h: 5 },
+      },
+      {
+        id: 'f-pie1', type: 'pie', title: 'Distribuição de Despesas',
+        label_col: 'label', value_col: 'value',
+        static_data: [
+          { label: 'Pessoal', value: 42 },
+          { label: 'Infra', value: 18 },
+          { label: 'Marketing', value: 15 },
+          { label: 'G&A', value: 14 },
+          { label: 'Outros', value: 11 },
+        ],
+        config: { format: 'percent', show_legend: true },
+        layout: { x: 8, y: 2, w: 4, h: 5 },
+      },
+      {
+        id: 'f-area1', type: 'area', title: 'Evolução do MRR',
+        label_col: 'label', value_col: 'value',
+        static_data: MES_LABELS.map((m, i) => ({ label: m, value: [14200, 15800, 17100, 17900, 18700, 19800, 20400, 21200, 21900, 22500, 23100, 23783][i] })),
+        config: { format: 'currency', color: '#10b981' },
+        layout: { x: 0, y: 7, w: 12, h: 4 },
+      },
+    ],
+  },
+
+  vendas: {
+    label: 'Vendas',
+    desc: 'Pipeline, ticket médio, top produtos e funil de conversão',
+    sheetConfig: { bgColor: '#f5f5f7', sheetBgColor: '#ffffff' },
+    blocks: [
+      {
+        id: 'v-kpi1', type: 'kpi', title: 'Total de Vendas',
+        static_data: [{ value: 1842 }],
+        config: { format: 'number', accent_color: '#6366f1', delta: '8.7', delta_label: 'vs mês anterior' },
+        layout: { x: 0, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'v-kpi2', type: 'kpi', title: 'Ticket Médio',
+        static_data: [{ value: 1547 }],
+        config: { format: 'currency', accent_color: '#10b981', delta: '3.1', delta_label: 'vs mês anterior' },
+        layout: { x: 4, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'v-kpi3', type: 'kpi', title: 'Taxa de Conversão',
+        static_data: [{ value: 18.4 }],
+        config: { format: 'percent', accent_color: '#f59e0b', delta: '-0.6', delta_label: 'vs mês anterior' },
+        layout: { x: 8, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'v-barh1', type: 'bar_h', title: 'Top 8 Produtos',
+        label_col: 'label', value_col: 'value',
+        static_data: [
+          { label: 'Plano Profissional', value: 482 },
+          { label: 'Plano Starter', value: 318 },
+          { label: 'Add-on IA', value: 241 },
+          { label: 'Plano Enterprise', value: 189 },
+          { label: 'Add-on Datasets', value: 167 },
+          { label: 'Add-on Dashboards', value: 143 },
+          { label: 'Plano Free', value: 98 },
+          { label: 'Consultoria', value: 54 },
+        ],
+        config: { format: 'number', sort_by: 'desc' },
+        layout: { x: 0, y: 2, w: 7, h: 6 },
+      },
+      {
+        id: 'v-funnel1', type: 'funnel', title: 'Funil de Vendas',
+        label_col: 'label', value_col: 'value',
+        static_data: [
+          { label: 'Visitantes', value: 12800 },
+          { label: 'Leads', value: 3840 },
+          { label: 'Qualificados', value: 1152 },
+          { label: 'Propostas', value: 460 },
+          { label: 'Fechados', value: 207 },
+        ],
+        config: {},
+        layout: { x: 7, y: 2, w: 5, h: 6 },
+      },
+      {
+        id: 'v-line1', type: 'line', title: 'Vendas por Semana (últimas 12)',
+        label_col: 'label', value_col: 'value',
+        static_data: Array.from({ length: 12 }, (_, i) => ({ label: `S${i + 1}`, value: Math.round(320 + Math.sin(i * 0.8) * 80 + i * 15) })),
+        config: { format: 'number', color: '#6366f1' },
+        layout: { x: 0, y: 8, w: 12, h: 4 },
+      },
+    ],
+  },
+
+  ecommerce: {
+    label: 'E-commerce',
+    desc: 'GMV, pedidos, canais de aquisição e status',
+    sheetConfig: { bgColor: '#f5f5f7', sheetBgColor: '#ffffff' },
+    blocks: [
+      {
+        id: 'e-kpi1', type: 'kpi', title: 'GMV',
+        static_data: [{ value: 1284000 }],
+        config: { format: 'currency', accent_color: '#6366f1', delta: '22.1', delta_label: 'vs mês anterior' },
+        layout: { x: 0, y: 0, w: 3, h: 2 },
+      },
+      {
+        id: 'e-kpi2', type: 'kpi', title: 'Pedidos',
+        static_data: [{ value: 4217 }],
+        config: { format: 'number', accent_color: '#10b981', delta: '14.5', delta_label: 'vs mês anterior' },
+        layout: { x: 3, y: 0, w: 3, h: 2 },
+      },
+      {
+        id: 'e-kpi3', type: 'kpi', title: 'CAC',
+        static_data: [{ value: 87 }],
+        config: { format: 'currency', accent_color: '#ef4444', delta: '-8.2', delta_label: 'vs mês anterior' },
+        layout: { x: 6, y: 0, w: 3, h: 2 },
+      },
+      {
+        id: 'e-kpi4', type: 'kpi', title: 'LTV Médio',
+        static_data: [{ value: 1840 }],
+        config: { format: 'currency', accent_color: '#f59e0b', delta: '6.8', delta_label: 'vs mês anterior' },
+        layout: { x: 9, y: 0, w: 3, h: 2 },
+      },
+      {
+        id: 'e-area1', type: 'area', title: 'Receita por Canal',
+        label_col: 'label', value_col: 'value',
+        static_data: MES_LABELS.map((m, i) => ({ label: m, value: [48000, 52000, 61000, 58000, 67000, 74000, 71000, 82000, 88000, 85000, 96000, 104000][i] })),
+        config: { format: 'currency', color: '#6366f1' },
+        layout: { x: 0, y: 2, w: 8, h: 5 },
+      },
+      {
+        id: 'e-pie1', type: 'pie', title: 'Status dos Pedidos',
+        label_col: 'label', value_col: 'value',
+        static_data: [
+          { label: 'Entregues', value: 3481 },
+          { label: 'Em trânsito', value: 518 },
+          { label: 'Devolvidos', value: 147 },
+          { label: 'Cancelados', value: 71 },
+        ],
+        config: { show_legend: true },
+        layout: { x: 8, y: 2, w: 4, h: 5 },
+      },
+      {
+        id: 'e-bar1', type: 'bar', title: 'Conversão por Campanha',
+        label_col: 'label', value_col: 'value',
+        static_data: [
+          { label: 'Google Ads', value: 8.4 },
+          { label: 'Instagram', value: 6.1 },
+          { label: 'Email MKT', value: 12.7 },
+          { label: 'Afiliados', value: 9.8 },
+          { label: 'Orgânico', value: 4.2 },
+          { label: 'YouTube', value: 5.5 },
+        ],
+        config: { format: 'percent' },
+        layout: { x: 0, y: 7, w: 12, h: 4 },
+      },
+    ],
+  },
+
+  rh: {
+    label: 'RH & Ops',
+    desc: 'Headcount, turnover, NPS e distribuição por área',
+    sheetConfig: { bgColor: '#f5f5f7', sheetBgColor: '#ffffff' },
+    blocks: [
+      {
+        id: 'r-kpi1', type: 'kpi', title: 'Headcount',
+        static_data: [{ value: 247 }],
+        config: { format: 'number', accent_color: '#6366f1', delta: '3.8', delta_label: 'vs trimestre anterior' },
+        layout: { x: 0, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'r-kpi2', type: 'kpi', title: 'Turnover (%)',
+        static_data: [{ value: 8.4 }],
+        config: { format: 'percent', accent_color: '#ef4444', delta: '-1.2', delta_label: 'vs trimestre anterior' },
+        layout: { x: 4, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'r-kpi3', type: 'kpi', title: 'eNPS',
+        static_data: [{ value: 42 }],
+        config: { format: 'number', accent_color: '#10b981', delta: '7', delta_label: 'vs trimestre anterior' },
+        layout: { x: 8, y: 0, w: 4, h: 2 },
+      },
+      {
+        id: 'r-bar1', type: 'bar', title: 'Headcount por Departamento',
+        label_col: 'label', value_col: 'value',
+        static_data: [
+          { label: 'Engenharia', value: 68 },
+          { label: 'Comercial', value: 52 },
+          { label: 'Customer Success', value: 41 },
+          { label: 'Marketing', value: 28 },
+          { label: 'Produto', value: 24 },
+          { label: 'G&A', value: 19 },
+          { label: 'Dados', value: 15 },
+        ],
+        config: { format: 'number' },
+        layout: { x: 0, y: 2, w: 7, h: 5 },
+      },
+      {
+        id: 'r-gauge1', type: 'gauge', title: 'Meta de Contratações (Trim)',
+        value_col: 'value',
+        static_data: [{ value: 73 }],
+        config: { format: 'percent', color: '#6366f1', min: 0, max: 100 },
+        layout: { x: 7, y: 2, w: 5, h: 5 },
+      },
+      {
+        id: 'r-line1', type: 'line', title: 'Turnover Mensal (%)',
+        label_col: 'label', value_col: 'value',
+        static_data: MES_LABELS.map((m, i) => ({ label: m, value: [11.2, 10.8, 10.1, 9.7, 9.4, 9.1, 9.6, 8.8, 8.4, 8.1, 8.6, 8.4][i] })),
+        config: { format: 'percent', color: '#ef4444' },
+        layout: { x: 0, y: 7, w: 12, h: 4 },
+      },
+    ],
+  },
+}
+
+function TabTemplates() {
+  const [activeTemplate, setActiveTemplate] = useState('financeiro')
+  const tpl = TEMPLATES[activeTemplate]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 flex-wrap">
+        {Object.entries(TEMPLATES).map(([key, t]) => (
+          <button
+            key={key}
+            onClick={() => setActiveTemplate(key)}
+            className={`flex flex-col px-4 py-2.5 rounded-xl border text-left transition-all ${
+              activeTemplate === key
+                ? 'border-violet-400 bg-violet-50 text-violet-700 shadow-sm'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <span className="text-sm font-bold">{t.label}</span>
+            <span className="text-[10px] text-gray-400 mt-0.5 max-w-[180px]">{t.desc}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
+        <strong>Lab de calibração:</strong> todos os blocos abaixo usam dados simulados via <code>static_data</code>. Ajuste o ReportBuilder e veja o resultado aqui em tempo real.
+      </div>
+
+      <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style={{ minHeight: 620, backgroundColor: tpl.sheetConfig.bgColor }}>
+        <ReportBuilder
+          key={activeTemplate}
+          blocks={tpl.blocks}
+          readOnly
+          datasets={[]}
+          sheetConfig={tpl.sheetConfig}
+          globalDateFilter={{}}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Página principal do Lab
 // ---------------------------------------------------------------------------
 export default function UILabPage() {
@@ -468,6 +753,7 @@ export default function UILabPage() {
     { id: 'cards', label: 'Cards & Blocos', icon: '▦' },
     { id: 'canvas', label: 'Canvas', icon: '◻' },
     { id: 'logos', label: 'Logo Gallery', icon: '✦' },
+    { id: 'templates', label: 'Templates', icon: '◈' },
   ]
 
   return (
@@ -515,6 +801,7 @@ export default function UILabPage() {
         {tab === 'cards' && <TabCards />}
         {tab === 'canvas' && <TabCanvas />}
         {tab === 'logos' && <TabLogos />}
+        {tab === 'templates' && <TabTemplates />}
       </div>
     </div>
   )

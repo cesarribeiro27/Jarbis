@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
-import { LogoA, LogoWithText } from '@/components/logos/JarbisLogo'
+import { LogoComet, LogoWithText } from '@/components/logos/JarbisLogo'
 
 function EyeIcon({ open }) {
   return open ? (
@@ -176,7 +176,7 @@ function SignupForm() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 40% 50%, rgba(124,58,237,0.3) 0%, transparent 65%)' }} />
         <div className="relative text-center px-12">
-          <LogoA size={64} color="#a78bfa" light={false} />
+          <LogoComet size={64} light={true} />
           <div className="mt-6 text-5xl font-black text-white leading-tight" style={{ letterSpacing: '-0.05em' }}>
             jar<span style={{ color: '#A78BFA' }}>b</span>is
           </div>

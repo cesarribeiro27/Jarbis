@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jarbis — Abstract Icons</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0D0C1A;color:#F1F5F9;padding:56px 24px 100px}
+
+.wm  {font-family:'Inter',sans-serif;font-weight:900;letter-spacing:-.05em;color:#fff;line-height:1}
+.wm .b{color:#A78BFA}
+.wml {font-family:'Inter',sans-serif;font-weight:900;letter-spacing:-.05em;color:#1A1A2E;line-height:1}
+.wml .b{color:#6D28D9}
+
+.page-title{text-align:center;margin-bottom:72px}
+.page-title p{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#7C3AED;margin-bottom:10px}
+.page-title h1{font-size:36px;font-weight:900;letter-spacing:-.04em;color:white}
+.page-title small{font-size:14px;color:#6B7280;margin-top:8px;display:block}
+
+.section{max-width:1040px;margin:0 auto 80px}
+.sec-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7C3AED;margin-bottom:5px}
+.sec-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;color:white}
+.sec-desc{font-size:13px;color:#6B7280;margin-bottom:32px;line-height:1.6}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+
+.card{
+  background:#13111F;border:1.5px solid rgba(255,255,255,.07);border-radius:20px;
+  padding:40px 20px 28px;display:flex;flex-direction:column;align-items:center;
+  gap:20px;cursor:pointer;transition:all .2s;position:relative
+}
+.card:hover{border-color:#6D28D9;box-shadow:0 10px 40px rgba(109,40,217,.2);transform:translateY(-3px)}
+.card.featured{border-color:#7C3AED;box-shadow:0 0 0 3px rgba(124,58,237,.2)}
+
+.tag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;letter-spacing:.1em;padding:4px 14px;border-radius:100px;white-space:nowrap;color:white}
+.tag.v{background:#6D28D9}
+.tag.d{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+
+.card-name{font-size:14px;font-weight:800;letter-spacing:-.01em;text-align:center;color:white}
+.card-desc{font-size:12px;color:#6B7280;text-align:center;line-height:1.65}
+
+.sizes{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;justify-content:center}
+.si{display:flex;flex-direction:column;align-items:center;gap:6px}
+.si span{font-size:10px;color:#4B5563;font-weight:600}
+
+.divider{height:1px;background:rgba(255,255,255,.06);max-width:1040px;margin:72px auto}
+
+.combo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.combo-grid{grid-template-columns:1fr}}
+.combo-card{border-radius:16px;padding:28px 32px;display:flex;flex-direction:column;gap:20px;border:1.5px solid rgba(255,255,255,.06);background:#13111F}
+.combo-card.light{background:white;border-color:#E2E8F0}
+.combo-row{display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:18px}
+.combo-row.light-sep{border-color:#F1F5F9}
+.combo-row:last-child{border-bottom:none;padding-bottom:0}
+
+.note{background:rgba(109,40,217,.15);border-left:3px solid #7C3AED;border-radius:10px;padding:16px 20px;font-size:13px;color:#C4B5FD;margin-top:24px;line-height:1.65}
+
+/* Hero preview */
+.hero{background:#0B0A1A;border-radius:22px;padding:52px 40px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:700px;height:380px;background:radial-gradient(ellipse,rgba(109,40,217,.25) 0%,transparent 70%);pointer-events:none}
+.nav-sim{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:680px;margin:0 auto 48px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.06)}
+.hero-h1{position:relative;z-index:1;font-size:clamp(36px,6vw,64px);font-weight:900;letter-spacing:-.05em;color:white;line-height:1.0;margin-bottom:16px}
+.hero-h1 span{background:linear-gradient(135deg,#a78bfa,#818cf8,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{position:relative;z-index:1;font-size:16px;color:rgba(255,255,255,.4);margin-bottom:28px}
+.btn-main{background:#6D28D9;color:white;font-weight:800;font-size:14px;padding:14px 32px;border-radius:100px;border:none;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-ghost{background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-weight:600;font-size:14px;padding:14px 32px;border-radius:100px;border:1px solid rgba(255,255,255,.08);cursor:pointer;font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <p>Identidade Visual — Ícones Abstratos</p>
+  <h1>O ∴ que só quem sabe, vê.</h1>
+  <small>4 direções. Todas abstratas. Todas com o símbolo presente.</small>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CONCEITOS
+══════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-label">4 conceitos</div>
+  <div class="sec-title">Abstratos com ∴ embutido</div>
+  <div class="sec-desc">Os 3 pontos estão sempre nos vértices corretos do ∴ — 1 acima no centro, 2 abaixo.<br/>O que envolve cada ponto é o que define o estilo.</div>
+
+  <div class="grid">
+
+    <!-- ──────────────────────────────────────
+         CONCEITO 1 — COMETA (pedido do César)
+    ─────────────────────────────────────── -->
+    <div class="card featured">
+      <div class="tag v">★ COMETAS EM ÓRBITA</div>
+
+      <!--
+        Círculo: centro (24,24) r=14
+        Pontos ∴ na órbita (120° entre si):
+          Apex top    → θ=-90° → (24,10)
+          Base-dir    → θ= 30° → (36,31)
+          Base-esq    → θ=150° → (12,31)
+        Rastros: arco 70° atrás de cada cometa (sentido anti-horário)
+          Tail top    → de (36,17) até (24,10)
+          Tail dir    → de (24,38) até (36,31)
+          Tail esq    → de (12,17) até (12,31)
+      -->
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <defs>
+          <!-- Gradiente rastro 1: upper-right → top -->
+          <linearGradient id="c1t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/>
+          </linearGradient>
+          <!-- Gradiente rastro 2: bottom → bottom-right -->
+          <linearGradient id="c1t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/>
+          </linearGradient>
+          <!-- Gradiente rastro 3: upper-left → lower-left -->
+          <linearGradient id="c1t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Fundo -->
+        <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+
+        <!-- Órbita sutil -->
+        <circle cx="24" cy="24" r="14" stroke="#6D28D9" stroke-width=".5" stroke-dasharray="2 3" opacity=".2"/>
+
+        <!-- RASTROS — arcos suaves no círculo de órbita -->
+        <!-- Rastro cometa apex (upper-right → top) -->
+        <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#c1t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <!-- Rastro cometa base-dir (bottom → bottom-right) -->
+        <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#c1t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <!-- Rastro cometa base-esq (upper-left → lower-left) -->
+        <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#c1t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+        <!-- ∴ — COMETAS (pontos brilhantes no fim de cada rastro) -->
+        <!-- Apex — mais luminoso (ponto principal do ∴) -->
+        <circle cx="24" cy="10" r="3.8" fill="#A78BFA" opacity=".25"/>
+        <circle cx="24" cy="10" r="2.6" fill="#A78BFA"/>
+        <circle cx="24" cy="10" r="1.2" fill="white"/>
+
+        <!-- Base direita -->
+        <circle cx="36" cy="31" r="3" fill="#7C3AED" opacity=".2"/>
+        <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/>
+        <circle cx="36" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+
+        <!-- Base esquerda -->
+        <circle cx="12" cy="31" r="3" fill="#7C3AED" opacity=".2"/>
+        <circle cx="12" cy="31" r="2.2" fill="#7C3AED"/>
+        <circle cx="12" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+      </svg>
+
+      <!-- Tamanhos -->
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <linearGradient id="s1t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+              <linearGradient id="s1t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+              <linearGradient id="s1t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            </defs>
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="24" r="14" stroke="#6D28D9" stroke-width=".5" stroke-dasharray="2 3" opacity=".2"/>
+            <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#s1t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#s1t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#s1t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="24" cy="10" r="3.8" fill="#A78BFA" opacity=".25"/>
+            <circle cx="24" cy="10" r="2.6" fill="#A78BFA"/><circle cx="24" cy="10" r="1.2" fill="white"/>
+            <circle cx="36" cy="31" r="3" fill="#7C3AED" opacity=".2"/>
+            <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/><circle cx="36" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+            <circle cx="12" cy="31" r="3" fill="#7C3AED" opacity=".2"/>
+            <circle cx="12" cy="31" r="2.2" fill="#7C3AED"/><circle cx="12" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <linearGradient id="m1t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+              <linearGradient id="m1t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+              <linearGradient id="m1t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            </defs>
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#m1t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#m1t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#m1t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="24" cy="10" r="2.8" fill="#A78BFA"/><circle cx="24" cy="10" r="1.2" fill="white"/>
+            <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/><circle cx="36" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+            <circle cx="12" cy="31" r="2.2" fill="#7C3AED"/><circle cx="12" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="10" r="4" fill="#A78BFA"/>
+            <circle cx="36" cy="31" r="3.2" fill="#7C3AED"/>
+            <circle cx="12" cy="31" r="3.2" fill="#7C3AED"/>
+          </svg>
+          <span>20px</span>
+        </div>
+        <div class="si">
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="10" r="6" fill="#A78BFA"/>
+            <circle cx="36" cy="31" r="4.5" fill="#7C3AED"/>
+            <circle cx="12" cy="31" r="4.5" fill="#7C3AED"/>
+          </svg>
+          <span>16px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Cometa"</div>
+      <div class="card-desc">3 cometas girando em órbita anti-horária. O rastro é o arco da trajetória, gradiente de transparente ao brilhante. Para o mundo: movimento / dados em fluxo. Para o irmão: ∴ na posição exata dos 3 corpos celestes.</div>
+    </div>
+
+    <!-- ──────────────────────────────────────
+         CONCEITO 2 — NEBULA
+    ─────────────────────────────────────── -->
+    <div class="card">
+      <div class="tag d">NEBULA</div>
+
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <defs>
+          <!-- Halos de glow para cada ponto ∴ -->
+          <radialGradient id="n1g1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#A78BFA" stop-opacity=".5"/>
+            <stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="n1g2" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#6D28D9" stop-opacity=".45"/>
+            <stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="n1g3" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#6D28D9" stop-opacity=".45"/>
+            <stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+
+        <!-- Halos grandes (nebula glow) nos ∴ -->
+        <!-- Apex ∴ - halo grande -->
+        <circle cx="24" cy="13" r="12" fill="url(#n1g1)"/>
+        <!-- Base-dir ∴ -->
+        <circle cx="34" cy="32" r="10" fill="url(#n1g2)"/>
+        <!-- Base-esq ∴ -->
+        <circle cx="14" cy="32" r="10" fill="url(#n1g3)"/>
+
+        <!-- Halos médios (mais concentrados) -->
+        <circle cx="24" cy="13" r="6" fill="#A78BFA" opacity=".2"/>
+        <circle cx="34" cy="32" r="5" fill="#6D28D9" opacity=".25"/>
+        <circle cx="14" cy="32" r="5" fill="#6D28D9" opacity=".25"/>
+
+        <!-- ∴ — Núcleos brilhantes -->
+        <!-- Apex — mais brilhante -->
+        <circle cx="24" cy="13" r="2.8" fill="#A78BFA"/>
+        <circle cx="24" cy="13" r="1.3" fill="white"/>
+        <!-- Base dir -->
+        <circle cx="34" cy="32" r="2.2" fill="#7C3AED"/>
+        <circle cx="34" cy="32" r="1" fill="rgba(255,255,255,.85)"/>
+        <!-- Base esq -->
+        <circle cx="14" cy="32" r="2.2" fill="#7C3AED"/>
+        <circle cx="14" cy="32" r="1" fill="rgba(255,255,255,.85)"/>
+      </svg>
+
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <radialGradient id="nb1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#A78BFA" stop-opacity=".5"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/></radialGradient>
+              <radialGradient id="nb2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6D28D9" stop-opacity=".45"/><stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/></radialGradient>
+            </defs>
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="13" r="12" fill="url(#nb1)"/>
+            <circle cx="34" cy="32" r="10" fill="url(#nb2)"/>
+            <circle cx="14" cy="32" r="10" fill="url(#nb2)"/>
+            <circle cx="24" cy="13" r="6" fill="#A78BFA" opacity=".2"/>
+            <circle cx="24" cy="13" r="2.8" fill="#A78BFA"/><circle cx="24" cy="13" r="1.3" fill="white"/>
+            <circle cx="34" cy="32" r="2.2" fill="#7C3AED"/><circle cx="34" cy="32" r="1" fill="rgba(255,255,255,.85)"/>
+            <circle cx="14" cy="32" r="2.2" fill="#7C3AED"/><circle cx="14" cy="32" r="1" fill="rgba(255,255,255,.85)"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <radialGradient id="nc1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#A78BFA" stop-opacity=".5"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/></radialGradient>
+              <radialGradient id="nc2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6D28D9" stop-opacity=".45"/><stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/></radialGradient>
+            </defs>
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="13" r="11" fill="url(#nc1)"/>
+            <circle cx="34" cy="32" r="9" fill="url(#nc2)"/>
+            <circle cx="14" cy="32" r="9" fill="url(#nc2)"/>
+            <circle cx="24" cy="13" r="2.8" fill="#A78BFA"/><circle cx="24" cy="13" r="1.3" fill="white"/>
+            <circle cx="34" cy="32" r="2.2" fill="#7C3AED"/><circle cx="34" cy="32" r="1" fill="rgba(255,255,255,.85)"/>
+            <circle cx="14" cy="32" r="2.2" fill="#7C3AED"/><circle cx="14" cy="32" r="1" fill="rgba(255,255,255,.85)"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="13" r="4" fill="#A78BFA"/>
+            <circle cx="34" cy="32" r="3.2" fill="#7C3AED"/>
+            <circle cx="14" cy="32" r="3.2" fill="#7C3AED"/>
+          </svg>
+          <span>20px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Nebula"</div>
+      <div class="card-desc">3 estrelas com halos de glow que se sobrepõem no centro. Parece uma nebulosa ou campo de energia. Muito abstrato — o ∴ só é visto por quem já sabe onde olhar.</div>
+    </div>
+
+    <!-- ──────────────────────────────────────
+         CONCEITO 3 — PULSAR
+    ─────────────────────────────────────── -->
+    <div class="card">
+      <div class="tag d">PULSAR</div>
+
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+
+        <!-- ∴ — 3 pulsares (anéis concêntricos em cada ponto) -->
+
+        <!-- Apex ∴ — anéis maiores -->
+        <circle cx="24" cy="12" r="7" stroke="#A78BFA" stroke-width=".8" opacity=".15"/>
+        <circle cx="24" cy="12" r="4.5" stroke="#A78BFA" stroke-width=".8" opacity=".3"/>
+        <circle cx="24" cy="12" r="2.5" fill="#A78BFA" opacity=".4"/>
+        <circle cx="24" cy="12" r="1.5" fill="#A78BFA"/>
+        <circle cx="24" cy="12" r=".7" fill="white"/>
+
+        <!-- Base dir ∴ — anéis médios -->
+        <circle cx="35" cy="31" r="5.5" stroke="#6D28D9" stroke-width=".8" opacity=".15"/>
+        <circle cx="35" cy="31" r="3.5" stroke="#6D28D9" stroke-width=".8" opacity=".3"/>
+        <circle cx="35" cy="31" r="2" fill="#7C3AED" opacity=".4"/>
+        <circle cx="35" cy="31" r="1.2" fill="#7C3AED"/>
+        <circle cx="35" cy="31" r=".5" fill="rgba(255,255,255,.8)"/>
+
+        <!-- Base esq ∴ — anéis médios -->
+        <circle cx="13" cy="31" r="5.5" stroke="#6D28D9" stroke-width=".8" opacity=".15"/>
+        <circle cx="13" cy="31" r="3.5" stroke="#6D28D9" stroke-width=".8" opacity=".3"/>
+        <circle cx="13" cy="31" r="2" fill="#7C3AED" opacity=".4"/>
+        <circle cx="13" cy="31" r="1.2" fill="#7C3AED"/>
+        <circle cx="13" cy="31" r=".5" fill="rgba(255,255,255,.8)"/>
+      </svg>
+
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="12" r="7" stroke="#A78BFA" stroke-width=".8" opacity=".15"/>
+            <circle cx="24" cy="12" r="4.5" stroke="#A78BFA" stroke-width=".8" opacity=".3"/>
+            <circle cx="24" cy="12" r="2.5" fill="#A78BFA" opacity=".4"/>
+            <circle cx="24" cy="12" r="1.5" fill="#A78BFA"/><circle cx="24" cy="12" r=".7" fill="white"/>
+            <circle cx="35" cy="31" r="5.5" stroke="#6D28D9" stroke-width=".8" opacity=".15"/>
+            <circle cx="35" cy="31" r="3.5" stroke="#6D28D9" stroke-width=".8" opacity=".3"/>
+            <circle cx="35" cy="31" r="2" fill="#7C3AED" opacity=".4"/>
+            <circle cx="35" cy="31" r="1.2" fill="#7C3AED"/><circle cx="35" cy="31" r=".5" fill="rgba(255,255,255,.8)"/>
+            <circle cx="13" cy="31" r="5.5" stroke="#6D28D9" stroke-width=".8" opacity=".15"/>
+            <circle cx="13" cy="31" r="3.5" stroke="#6D28D9" stroke-width=".8" opacity=".3"/>
+            <circle cx="13" cy="31" r="2" fill="#7C3AED" opacity=".4"/>
+            <circle cx="13" cy="31" r="1.2" fill="#7C3AED"/><circle cx="13" cy="31" r=".5" fill="rgba(255,255,255,.8)"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="12" r="4.5" stroke="#A78BFA" stroke-width=".8" opacity=".3"/>
+            <circle cx="24" cy="12" r="1.8" fill="#A78BFA"/><circle cx="24" cy="12" r=".8" fill="white"/>
+            <circle cx="35" cy="31" r="3.5" stroke="#6D28D9" stroke-width=".8" opacity=".3"/>
+            <circle cx="35" cy="31" r="1.4" fill="#7C3AED"/>
+            <circle cx="13" cy="31" r="3.5" stroke="#6D28D9" stroke-width=".8" opacity=".3"/>
+            <circle cx="13" cy="31" r="1.4" fill="#7C3AED"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="12" r="4" fill="#A78BFA"/>
+            <circle cx="35" cy="31" r="3" fill="#7C3AED"/>
+            <circle cx="13" cy="31" r="3" fill="#7C3AED"/>
+          </svg>
+          <span>20px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Pulsar"</div>
+      <div class="card-desc">Cada ponto ∴ emite ondas concêntricas — como um sinal de rádio ou radar. Para o mundo: 3 fontes de sinal/dados. Para o irmão: 3 pulsares no padrão ∴, silencioso e preciso.</div>
+    </div>
+
+    <!-- ──────────────────────────────────────
+         CONCEITO 4 — VÓRTEX
+    ─────────────────────────────────────── -->
+    <div class="card">
+      <div class="tag d">VÓRTEX</div>
+
+      <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+        <defs>
+          <!-- Gradiente para os arcos curvos -->
+          <linearGradient id="v1a" x1="24" y1="11" x2="36" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#A78BFA" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="v1b" x1="36" y1="32" x2="12" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#7C3AED" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="v1c" x1="12" y1="32" x2="24" y2="11" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#6D28D9" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+
+        <!--
+          Arcos curvos conectando os 3 pontos ∴ em sentido rotacional.
+          Cada arco parte de um ponto ∴ em direção ao próximo,
+          mas curva pelo centro (bezier), criando um vórtex.
+          Os arcos deixam um rastro gradiente (vivo → transparente).
+        -->
+
+        <!-- Arco de apex → base-dir (curva pelo centro, fade) -->
+        <path d="M24,11 Q28,24 36,32" stroke="url(#v1a)" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- Arco de base-dir → base-esq -->
+        <path d="M36,32 Q24,30 12,32" stroke="url(#v1b)" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- Arco de base-esq → apex (fecha o ciclo) -->
+        <path d="M12,32 Q20,24 24,11" stroke="url(#v1c)" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+        <!-- ∴ — Pontos nos vértices do vórtex -->
+        <!-- Apex -->
+        <circle cx="24" cy="11" r="3.5" fill="#A78BFA" opacity=".3"/>
+        <circle cx="24" cy="11" r="2.5" fill="#A78BFA"/>
+        <circle cx="24" cy="11" r="1.1" fill="white"/>
+        <!-- Base dir -->
+        <circle cx="36" cy="32" r="2.8" fill="#7C3AED" opacity=".3"/>
+        <circle cx="36" cy="32" r="2" fill="#7C3AED"/>
+        <circle cx="36" cy="32" r=".9" fill="rgba(255,255,255,.8)"/>
+        <!-- Base esq -->
+        <circle cx="12" cy="32" r="2.8" fill="#6D28D9" opacity=".3"/>
+        <circle cx="12" cy="32" r="2" fill="#6D28D9"/>
+        <circle cx="12" cy="32" r=".9" fill="rgba(255,255,255,.8)"/>
+
+        <!-- Ponto central do vórtex (convergência) -->
+        <circle cx="24" cy="25" r="1.5" fill="#6D28D9" opacity=".5"/>
+        <circle cx="24" cy="25" r=".7" fill="#A78BFA" opacity=".8"/>
+      </svg>
+
+      <div class="sizes">
+        <div class="si">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <linearGradient id="vs1a" x1="24" y1="11" x2="36" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity=".9"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/></linearGradient>
+              <linearGradient id="vs1b" x1="36" y1="32" x2="12" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity=".9"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/></linearGradient>
+              <linearGradient id="vs1c" x1="12" y1="32" x2="24" y2="11" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#6D28D9" stop-opacity=".9"/><stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/></linearGradient>
+            </defs>
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <path d="M24,11 Q28,24 36,32" stroke="url(#vs1a)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M36,32 Q24,30 12,32" stroke="url(#vs1b)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M12,32 Q20,24 24,11" stroke="url(#vs1c)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <circle cx="24" cy="11" r="2.5" fill="#A78BFA"/><circle cx="24" cy="11" r="1.1" fill="white"/>
+            <circle cx="36" cy="32" r="2" fill="#7C3AED"/><circle cx="36" cy="32" r=".9" fill="rgba(255,255,255,.8)"/>
+            <circle cx="12" cy="32" r="2" fill="#6D28D9"/><circle cx="12" cy="32" r=".9" fill="rgba(255,255,255,.8)"/>
+          </svg>
+          <span>48px</span>
+        </div>
+        <div class="si">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <linearGradient id="vm1a" x1="24" y1="11" x2="36" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity=".9"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/></linearGradient>
+              <linearGradient id="vm1b" x1="36" y1="32" x2="12" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity=".9"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/></linearGradient>
+              <linearGradient id="vm1c" x1="12" y1="32" x2="24" y2="11" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#6D28D9" stop-opacity=".9"/><stop offset="100%" stop-color="#6D28D9" stop-opacity="0"/></linearGradient>
+            </defs>
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <path d="M24,11 Q28,24 36,32" stroke="url(#vm1a)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M36,32 Q24,30 12,32" stroke="url(#vm1b)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M12,32 Q20,24 24,11" stroke="url(#vm1c)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <circle cx="24" cy="11" r="2.5" fill="#A78BFA"/><circle cx="36" cy="32" r="2" fill="#7C3AED"/><circle cx="12" cy="32" r="2" fill="#6D28D9"/>
+          </svg>
+          <span>32px</span>
+        </div>
+        <div class="si">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+            <circle cx="24" cy="11" r="4" fill="#A78BFA"/>
+            <circle cx="36" cy="32" r="3" fill="#7C3AED"/>
+            <circle cx="12" cy="32" r="3" fill="#6D28D9"/>
+          </svg>
+          <span>20px</span>
+        </div>
+      </div>
+
+      <div class="card-name">Conceito "Vórtex"</div>
+      <div class="card-desc">Arcos curvos conectam os 3 pontos ∴ em espiral rotacional — como um vórtice de dados ou energia em ciclo. O ponto central é o foco. Moderno, dinâmico, completamente abstrato.</div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    💡 <strong>Meu ranking:</strong>
+    <br/>⭐ <strong>Cometa</strong> — o mais elegante. Movimento implícito + ∴ na órbita. Iconicamente moderno.
+    <br/>2º <strong>Vórtex</strong> — os arcos em espiral criam tensão e movimento sem precisar de círculo explícito.
+    <br/>3º <strong>Nebula</strong> — o mais abstrato de todos. O ∴ quase desaparece nos halos — máxima sutileza.
+    <br/>4º <strong>Pulsar</strong> — muito limpo, parece "sinal de wifi" para quem não sabe, ∴ perfeito para quem é irmão.
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     LOGOS COMPLETOS
+══════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-label">Sistema completo</div>
+  <div class="sec-title">Ícone + Wordmark — Cometa (fundo escuro e claro)</div>
+
+  <div class="combo-grid">
+    <!-- DARK -->
+    <div class="combo-card">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:4px;">Fundo escuro</div>
+      <div class="combo-row">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <defs>
+            <linearGradient id="d1t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+            <linearGradient id="d1t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            <linearGradient id="d1t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <circle cx="24" cy="24" r="14" stroke="#6D28D9" stroke-width=".5" stroke-dasharray="2 3" opacity=".15"/>
+          <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#d1t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#d1t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#d1t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="10" r="3.8" fill="#A78BFA" opacity=".2"/><circle cx="24" cy="10" r="2.6" fill="#A78BFA"/><circle cx="24" cy="10" r="1.2" fill="white"/>
+          <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/><circle cx="36" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+          <circle cx="12" cy="31" r="2.2" fill="#7C3AED"/><circle cx="12" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+        </svg>
+        <span class="wm" style="font-size:26px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <defs>
+            <linearGradient id="d2t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+            <linearGradient id="d2t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            <linearGradient id="d2t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#d2t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#d2t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#d2t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="10" r="2.6" fill="#A78BFA"/><circle cx="24" cy="10" r="1.2" fill="white"/>
+          <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/><circle cx="12" cy="31" r="2.2" fill="#7C3AED"/>
+        </svg>
+        <span class="wm" style="font-size:18px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row" style="border:none;padding:0">
+        <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <circle cx="24" cy="10" r="5" fill="#A78BFA"/>
+          <circle cx="36" cy="31" r="3.8" fill="#7C3AED"/>
+          <circle cx="12" cy="31" r="3.8" fill="#7C3AED"/>
+        </svg>
+        <span class="wm" style="font-size:13px;">jar<span class="b">b</span>is</span>
+      </div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="combo-card light">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9CA3AF;margin-bottom:4px;">Fundo claro</div>
+      <div class="combo-row light-sep">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <defs>
+            <linearGradient id="l1t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+            <linearGradient id="l1t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            <linearGradient id="l1t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <circle cx="24" cy="24" r="14" stroke="#6D28D9" stroke-width=".5" stroke-dasharray="2 3" opacity=".15"/>
+          <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#l1t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#l1t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#l1t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="10" r="2.6" fill="#A78BFA"/><circle cx="24" cy="10" r="1.2" fill="white"/>
+          <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/><circle cx="36" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+          <circle cx="12" cy="31" r="2.2" fill="#7C3AED"/><circle cx="12" cy="31" r="1" fill="rgba(255,255,255,.8)"/>
+        </svg>
+        <span class="wml" style="font-size:26px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row light-sep">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <defs>
+            <linearGradient id="l2t1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+            <linearGradient id="l2t2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            <linearGradient id="l2t3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#l2t1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#l2t2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#l2t3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="10" r="2.6" fill="#A78BFA"/><circle cx="36" cy="31" r="2.2" fill="#7C3AED"/><circle cx="12" cy="31" r="2.2" fill="#7C3AED"/>
+        </svg>
+        <span class="wml" style="font-size:18px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div class="combo-row" style="border:none;padding:0">
+        <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <circle cx="24" cy="10" r="5" fill="#A78BFA"/>
+          <circle cx="36" cy="31" r="3.8" fill="#7C3AED"/>
+          <circle cx="12" cy="31" r="3.8" fill="#7C3AED"/>
+        </svg>
+        <span class="wml" style="font-size:13px;">jar<span class="b">b</span>is</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- HERO -->
+<div class="section">
+  <div class="sec-label">Contexto real</div>
+  <div class="sec-title">Na landing page</div>
+  <div class="hero">
+    <div class="nav-sim">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+          <defs>
+            <linearGradient id="nt1" x1="36" y1="17" x2="24" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#A78BFA" stop-opacity="0"/><stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/></linearGradient>
+            <linearGradient id="nt2" x1="24" y1="38" x2="36" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+            <linearGradient id="nt3" x1="12" y1="17" x2="12" y2="31" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="1"/></linearGradient>
+          </defs>
+          <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+          <path d="M36,17 A14,14 0 0,0 24,10" stroke="url(#nt1)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M24,38 A14,14 0 0,0 36,31" stroke="url(#nt2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M12,17 A14,14 0 0,0 12,31" stroke="url(#nt3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="10" r="2.6" fill="#A78BFA"/><circle cx="24" cy="10" r="1.2" fill="white"/>
+          <circle cx="36" cy="31" r="2.2" fill="#7C3AED"/>
+          <circle cx="12" cy="31" r="2.2" fill="#7C3AED"/>
+        </svg>
+        <span class="wm" style="font-size:16px;">jar<span class="b">b</span>is</span>
+      </div>
+      <div style="display:flex;gap:24px;align-items:center;">
+        <span style="font-size:13px;color:rgba(255,255,255,.4);">Como funciona</span>
+        <span style="font-size:13px;color:rgba(255,255,255,.4);">Preços</span>
+        <button class="btn-main" style="font-size:13px;padding:9px 22px;">Começar grátis</button>
+      </div>
+    </div>
+    <div style="position:relative;z-index:1;">
+      <div style="display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(124,58,237,.4);background:rgba(124,58,237,.1);color:#A78BFA;font-size:12px;font-weight:600;padding:6px 16px;border-radius:100px;margin-bottom:28px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#7C3AED;display:inline-block;"></span>
+        BI embarcado para PMEs brasileiras
+      </div>
+      <h1 class="hero-h1">Seus dados.<br/><span>Sua visão.</span></h1>
+      <p class="hero-sub">Faça upload de uma planilha e tenha dashboards interativos em segundos.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn-main">Começar grátis — 7 dias</button>
+        <button class="btn-ghost">Ver demonstração</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;color:#374151;font-size:12px;padding-top:48px;border-top:1px solid rgba(255,255,255,.06);max-width:1040px;margin:0 auto;">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+    <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="13" fill="#0B0A1A"/>
+      <circle cx="24" cy="10" r="5" fill="#A78BFA"/>
+      <circle cx="36" cy="31" r="3.8" fill="#7C3AED"/>
+      <circle cx="12" cy="31" r="3.8" fill="#7C3AED"/>
+    </svg>
+    <span style="font-weight:900;font-size:14px;letter-spacing:-.05em;font-family:'Inter',sans-serif;color:#6B7280;">jar<span style="color:#6D28D9;">b</span>is</span>
+  </div>
+  <p>Brand Abstract Preview · ∴ · Identidade Visual 2026 · Mazzel Tech</p>
+</div>
+
+</body>
+</html>

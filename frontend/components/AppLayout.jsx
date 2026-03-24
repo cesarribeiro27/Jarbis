@@ -174,8 +174,8 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
               title={collapsed ? label : undefined}
               className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                 active
-                  ? 'bg-violet-600 text-white shadow-sm shadow-violet-200'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-[#6D28D9] text-white shadow-sm shadow-violet-300'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#1A1A2E] dark:hover:text-gray-100 hover:bg-[#f5f3ff] dark:hover:bg-gray-800'
               }`}
             >
               <span className="flex-shrink-0"><Icon /></span>

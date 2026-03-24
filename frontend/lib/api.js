@@ -239,4 +239,9 @@ export const api = {
     getFiscalProfile: () => apiFetch('/billing/fiscal-profile'),
     saveFiscalProfile: (data) => apiFetch('/billing/fiscal-profile', { method: 'PATCH', body: JSON.stringify(data) }),
   },
+
+  brand: {
+    get: () => apiFetch('/reports/tenant/customization'),
+    save: (data) => apiFetch('/reports/tenant/customization', { method: 'PATCH', body: JSON.stringify(data) }),
+  },
 }

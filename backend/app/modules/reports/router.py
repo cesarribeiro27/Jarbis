@@ -3115,6 +3115,7 @@ class CustomizationUpdateInput(BaseModel):
     custom_logo_url: str | None = None
     primary_color: str | None = None
     billing_name: str | None = None
+    brand_colors: list[str] | None = None  # até 5 hex strings, ex: ["#6D28D9","#10b981"]
 
 
 @router.get("/tenant/customization", summary="Configurações de personalização")
@@ -3122,12 +3123,20 @@ async def get_customization(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
+    import json
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+    brand_colors_parsed: list[str] = []
+    if tenant.brand_colors:
+        try:
+            brand_colors_parsed = json.loads(tenant.brand_colors)
+        except Exception:
+            pass
     return {
         "custom_logo_url": tenant.custom_logo_url,
         "primary_color": tenant.primary_color,
+        "brand_colors": brand_colors_parsed,
         "billing_name": tenant.billing_name,
         "plan": tenant.plan,
         "white_label_enabled": tenant.plan in ("ilimitado", "business", "enterprise"),
@@ -3152,6 +3161,12 @@ async def update_customization(
         # Sincroniza o nome no Stripe
         svc = BillingService(db)
         await svc.update_customer_name(tenant)
+
+    # brand_colors: disponível para todos os planos (aparência do canvas)
+    if data.brand_colors is not None:
+        import json
+        valid = [c for c in data.brand_colors if isinstance(c, str) and len(c) == 7 and c.startswith("#")][:5]
+        tenant.brand_colors = json.dumps(valid) if valid else None
 
     # white-label: apenas Business/Enterprise
     if data.custom_logo_url is not None or data.primary_color is not None:

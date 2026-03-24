@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jarbis — Brand Identity Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --violet: #6D28D9;
+    --violet-light: #7C3AED;
+    --violet-lighter: #8B5CF6;
+    --violet-pale: #A78BFA;
+    --dark: #0B0A1A;
+    --dark2: #13111F;
+    --dark3: #1C1929;
+    --text: #1A1A2E;
+    --muted: #6B7280;
+    --border: #E2E8F0;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8F7FF;
+    color: var(--text);
+    padding: 48px 24px;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .page-header h1 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--violet);
+    margin-bottom: 12px;
+  }
+  .page-header h2 {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+  .page-header p {
+    color: var(--muted);
+    margin-top: 8px;
+    font-size: 15px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto 80px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--violet-lighter);
+    margin-bottom: 6px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 80px 0;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── LOGO GRID ── */
+  .logo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .logo-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .logo-card:hover { border-color: var(--violet); box-shadow: 0 4px 20px rgba(109,40,217,0.12); transform: translateY(-2px); }
+  .logo-card.dark-bg { background: var(--dark); border-color: rgba(255,255,255,0.08); }
+  .logo-card.recommended { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(109,40,217,0.15); }
+  .logo-card .badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--violet);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .logo-card .badge.current { background: #16A34A; }
+  .logo-card .badge.new { background: var(--violet); }
+  .logo-card-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .logo-card.dark-bg .logo-card-name { color: rgba(255,255,255,0.4); }
+  .logo-card-desc {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .logo-card.dark-bg .logo-card-desc { color: rgba(255,255,255,0.35); }
+
+  /* ── LOGO SIZES ── */
+  .logo-sizes {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 32px;
+    margin-bottom: 16px;
+  }
+  .logo-sizes.dark { background: var(--dark); border-color: rgba(255,255,255,0.08); }
+  .size-label { font-size: 10px; color: var(--muted); margin-top: 6px; text-align: center; }
+  .size-label.dark { color: rgba(255,255,255,0.3); }
+
+  /* ── PALETTE ── */
+  .palette-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .swatch {
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .swatch-color {
+    height: 64px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.06);
+    margin-bottom: 8px;
+  }
+  .swatch-name { font-size: 11px; font-weight: 600; color: var(--text); }
+  .swatch-hex { font-size: 10px; color: var(--muted); font-family: monospace; }
+
+  /* ── TYPOGRAPHY ── */
+  .type-row {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* ── COMPONENTS ── */
+  .component-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  .btn-primary {
+    background: var(--violet);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--violet-light); }
+  .btn-primary-pill {
+    background: var(--violet);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 28px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-primary-pill:hover { background: var(--violet-light); }
+  .btn-outline {
+    background: transparent;
+    color: var(--violet);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 1.5px solid var(--violet);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .badge-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ede9fe;
+    color: var(--violet);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+  .badge-chip-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(124,58,237,0.15);
+    color: #A78BFA;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+
+  /* ── DARK HERO PREVIEW ── */
+  .hero-preview {
+    background: var(--dark);
+    border-radius: 24px;
+    padding: 64px 48px;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .hero-preview::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(124,58,237,0.4);
+    background: rgba(124,58,237,0.1);
+    color: #A78BFA;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+  }
+  .hero-dot { width: 6px; height: 6px; border-radius: 50%; background: #7C3AED; }
+  .hero-h1 {
+    font-size: clamp(40px, 7vw, 80px);
+    font-weight: 900;
+    color: white;
+    letter-spacing: -0.04em;
+    line-height: 1.0;
+    margin-bottom: 20px;
+  }
+  .hero-h1 span {
+    background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #67e8f9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 18px;
+    color: rgba(255,255,255,0.5);
+    max-width: 480px;
+    margin: 0 auto 36px;
+    line-height: 1.6;
+  }
+  .hero-cta-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-hero-primary {
+    background: var(--violet);
+    color: white;
+    font-weight: 800;
+    font-size: 15px;
+    padding: 16px 36px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+  }
+  .btn-hero-ghost {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.7);
+    font-weight: 600;
+    font-size: 15px;
+    padding: 16px 36px;
+    border-radius: 100px;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── WORDMARK OPTIONS ── */
+  .wordmark-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+  }
+  .wordmark-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 220px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .wordmark-card:hover { border-color: var(--violet); box-shadow: 0 4px 20px rgba(109,40,217,0.12); }
+  .wordmark-card.dark-bg { background: var(--dark); border-color: rgba(255,255,255,0.08); }
+  .wordmark-card.recommended { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(109,40,217,0.15); }
+  .wordmark-label {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--border);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .wordmark-card.recommended .wordmark-label { background: var(--violet); color: white; }
+
+  /* ── NEW LOGO CONCEPTS ── */
+  .new-concepts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .concept-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .concept-card:hover { border-color: var(--violet); box-shadow: 0 8px 32px rgba(109,40,217,0.12); transform: translateY(-3px); }
+  .concept-card.featured { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(109,40,217,0.15); }
+  .concept-tag {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--violet);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding: 4px 14px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .concept-name {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .concept-desc {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .concept-inspiration {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .inspo-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .note-box {
+    background: #ede9fe;
+    border-left: 3px solid var(--violet);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 13px;
+    color: #5B21B6;
+    margin-top: 24px;
+    line-height: 1.6;
+  }
+
+  /* ── DARK SECTION PREVIEW ── */
+  .dark-strip {
+    background: var(--dark);
+    border-radius: 20px;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .dark-strip .row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────── HEADER ─────────────────────────────────── -->
+<div class="page-header">
+  <h1>Identidade Visual</h1>
+  <h2>Jarbis Brand Preview</h2>
+  <p>Escolha o logo, valide a paleta, aprove o estilo. Versão 2.0</p>
+</div>
+
+<!-- ─────────────────────────────────── SEÇÃO 1: LOGOS ATUAIS ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Logos existentes</div>
+  <div class="section-title">Opções A → E (atuais)</div>
+  <div class="section-desc">Anel orbital + ∴ é o logo oficial. Veja todos os conceitos existentes lado a lado.</div>
+
+  <div class="logo-grid">
+
+    <!-- Logo A -->
+    <div class="logo-card">
+      <div class="badge current">OFICIAL ATUAL</div>
+      <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="17" stroke="#6D28D9" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.28" />
+        <path d="M20 4 A16 16 0 0 1 36 20" stroke="#6D28D9" stroke-width="2.5" stroke-linecap="round" opacity="0.8" />
+        <circle cx="36" cy="20" r="2.8" fill="#6D28D9" />
+        <circle cx="20" cy="20" r="6.5" fill="#6D28D9" opacity="0.07" />
+        <circle cx="20" cy="20" r="6.5" stroke="#6D28D9" stroke-width="1.2" opacity="0.3" />
+        <circle cx="20" cy="16.5" r="1.6" fill="#6D28D9" />
+        <circle cx="17.2" cy="22" r="1.6" fill="#6D28D9" />
+        <circle cx="22.8" cy="22" r="1.6" fill="#6D28D9" />
+      </svg>
+      <div class="logo-card-name">Logo A</div>
+      <div class="logo-card-desc">Órbita + ∴<br/>Símbolo de clareza/dados</div>
+    </div>
+
+    <!-- Logo B -->
+    <div class="logo-card">
+      <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
+        <line x1="20" y1="8" x2="20" y2="2" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" opacity="0.3" />
+        <line x1="20" y1="8" x2="25" y2="4" stroke="#6D28D9" stroke-width="1.5" stroke-linecap="round" opacity="0.25" />
+        <line x1="20" y1="8" x2="15" y2="4" stroke="#6D28D9" stroke-width="1.5" stroke-linecap="round" opacity="0.25" />
+        <rect x="8" y="28" width="5" height="8" rx="2" fill="#6D28D9" opacity="0.45" />
+        <rect x="15" y="20" width="5" height="16" rx="2" fill="#6D28D9" opacity="0.65" />
+        <rect x="22" y="12" width="5" height="24" rx="2" fill="#6D28D9" />
+        <path d="M22 36 Q29 36 30 30" stroke="#6D28D9" stroke-width="2.5" stroke-linecap="round" fill="none" />
+      </svg>
+      <div class="logo-card-name">Logo B</div>
+      <div class="logo-card-desc">Farol / Barras + J<br/>Crescimento + dados</div>
+    </div>
+
+    <!-- Logo C -->
+    <div class="logo-card">
+      <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
+        <polygon points="20,3 27,7 27,15 20,19 13,15 13,7" fill="#6D28D9" opacity="0.9" />
+        <polygon points="12,22 19,26 19,34 12,38 5,34 5,26" fill="#6D28D9" opacity="0.55" />
+        <polygon points="28,22 35,26 35,34 28,38 21,34 21,26" fill="#6D28D9" opacity="0.75" />
+        <line x1="20" y1="19" x2="12" y2="22" stroke="#6D28D9" stroke-width="1.5" opacity="0.4" />
+        <line x1="20" y1="19" x2="28" y2="22" stroke="#6D28D9" stroke-width="1.5" opacity="0.4" />
+        <rect x="18.5" y="6" width="2.5" height="8" rx="1.25" fill="white" />
+        <path d="M16 14 Q18.5 17 21 14" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none" />
+      </svg>
+      <div class="logo-card-name">Logo C</div>
+      <div class="logo-card-desc">Nexo / Hexágonos<br/>Conexão + estrutura</div>
+    </div>
+
+    <!-- Logo D -->
+    <div class="logo-card">
+      <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="18" fill="#6D28D9" opacity="0.08" />
+        <rect x="6" y="30" width="6" height="6" rx="2" fill="#6D28D9" opacity="0.35" />
+        <rect x="14" y="22" width="6" height="14" rx="2" fill="#6D28D9" opacity="0.55" />
+        <rect x="22" y="10" width="6" height="26" rx="2" fill="#6D28D9" />
+        <path d="M22 36 Q22 40 17 40" stroke="#6D28D9" stroke-width="2.5" stroke-linecap="round" fill="none" />
+        <path d="M25 10 L25 4 M22 7 L25 4 L28 7" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="logo-card-name">Logo D</div>
+      <div class="logo-card-desc">Ascensão / Barras + J<br/>Crescimento + direção</div>
+    </div>
+
+    <!-- Logo E -->
+    <div class="logo-card">
+      <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="10" fill="#6D28D9" />
+        <text x="20" y="29" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-weight="800" font-size="24" fill="white" letter-spacing="-1">J</text>
+        <polyline points="22,8 25,5 28,7 31,4 34,6" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" />
+        <circle cx="34" cy="6" r="1.5" fill="white" opacity="0.8" />
+      </svg>
+      <div class="logo-card-name">Logo E</div>
+      <div class="logo-card-desc">Lettermark + Sparkline<br/>Clean / App icon</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── SEÇÃO 2: NOVOS CONCEITOS ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Novos conceitos — Rebrand 2.0</div>
+  <div class="section-title">3 direções para a nova identidade</div>
+  <div class="section-desc">Inspirados em Apple · CapCut · Tesla · Linear · Vercel. Qual ressoa mais?</div>
+
+  <div class="new-concepts">
+
+    <!-- CONCEITO 1: SPARK (Recomendado) -->
+    <div class="concept-card featured">
+      <div class="concept-tag">★ RECOMENDADO</div>
+
+      <!-- Logo: J minimalista em rounded-square com micro spark -->
+      <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
+        <!-- Versão light -->
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+          <!-- J bold -->
+          <rect x="20" y="10" width="9" height="22" rx="4.5" fill="white"/>
+          <!-- Hook do J -->
+          <path d="M20 32 Q20 40 13 40 Q10 40 9 38" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <!-- Micro spark no canto -->
+          <circle cx="37" cy="13" r="2" fill="white" opacity="0.9"/>
+          <path d="M33 13 L35.2 13" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+          <path d="M37 9 L37 11.2" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+        <!-- Wordmark -->
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+            <rect x="20" y="10" width="9" height="22" rx="4.5" fill="white"/>
+            <path d="M20 32 Q20 40 13 40 Q10 40 9 38" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            <circle cx="37" cy="13" r="2" fill="white" opacity="0.9"/>
+          </svg>
+          <span style="font-size:22px; font-weight:900; color:#1A1A2E; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jarbis</span>
+        </div>
+      </div>
+
+      <div class="concept-name">Conceito "Spark"</div>
+      <div class="concept-desc">
+        J bold em rounded-square violeta. Limpo, escalável, reconhecível em 16px ou 512px. Micro-spark no canto remete a dados/inteligência.
+      </div>
+      <div class="concept-inspiration">
+        <span class="inspo-tag">Linear</span>
+        <span class="inspo-tag">Notion</span>
+        <span class="inspo-tag">Apple</span>
+        <span class="inspo-tag">Vercel</span>
+      </div>
+    </div>
+
+    <!-- CONCEITO 2: GLOW -->
+    <div class="concept-card">
+      <!-- Logo: J com traço de luz (glow line) -->
+      <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
+        <!-- Icon -->
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
+          <defs>
+            <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#7C3AED"/>
+              <stop offset="100%" stop-color="#4F46E5"/>
+            </radialGradient>
+          </defs>
+          <rect width="48" height="48" rx="13" fill="url(#glowGrad)"/>
+          <!-- J feito de linhas finas -->
+          <line x1="24" y1="10" x2="24" y2="32" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 32 Q24 40 16 40" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <!-- Linha horizontal do J (topo) -->
+          <line x1="19" y1="10" x2="31" y2="10" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <!-- Glow dots — BI -->
+          <circle cx="35" cy="20" r="2.5" fill="white" opacity="0.4"/>
+          <circle cx="35" cy="28" r="2.5" fill="white" opacity="0.65"/>
+          <circle cx="35" cy="36" r="2.5" fill="white" opacity="0.9"/>
+        </svg>
+        <!-- Wordmark -->
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+            <line x1="24" y1="10" x2="24" y2="32" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <path d="M24 32 Q24 40 16 40" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+            <line x1="19" y1="10" x2="31" y2="10" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="35" cy="28" r="2.5" fill="white" opacity="0.65"/>
+            <circle cx="35" cy="36" r="2.5" fill="white" opacity="0.9"/>
+          </svg>
+          <span style="font-size:22px; font-weight:900; color:#1A1A2E; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jarbis</span>
+        </div>
+      </div>
+
+      <div class="concept-name">Conceito "Glow"</div>
+      <div class="concept-desc">
+        J tipográfico com linha clean + 3 pontos de dados verticais. Sofisticado, remete a séries de dados. Gradiente violeta → índigo.
+      </div>
+      <div class="concept-inspiration">
+        <span class="inspo-tag">Stripe</span>
+        <span class="inspo-tag">Figma</span>
+        <span class="inspo-tag">Tesla</span>
+      </div>
+    </div>
+
+    <!-- CONCEITO 3: WORDMARK PURO -->
+    <div class="concept-card">
+      <!-- Apenas wordmark tipográfico sem ícone -->
+      <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
+        <!-- Wordmark principal -->
+        <div style="position:relative; padding: 8px 0;">
+          <span style="font-size:36px; font-weight:900; letter-spacing:-0.05em; color:#1A1A2E; font-family:'Inter',sans-serif; line-height:1;">
+            jar<span style="color:#6D28D9;">b</span>is
+          </span>
+        </div>
+        <!-- Versão com underline accent -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <span style="font-size:28px; font-weight:900; letter-spacing:-0.04em; color:#1A1A2E; font-family:'Inter',sans-serif;">jarbis</span>
+          <div style="width:32px; height:3px; border-radius:2px; background:linear-gradient(90deg, #6D28D9, #818CF8);"></div>
+        </div>
+        <!-- Versão dark (pill) -->
+        <div style="background:#1A1A2E; padding:10px 24px; border-radius:100px; display:inline-block;">
+          <span style="font-size:20px; font-weight:900; letter-spacing:-0.04em; color:white; font-family:'Inter',sans-serif;">jarbis</span>
+        </div>
+      </div>
+
+      <div class="concept-name">Conceito "Wordmark"</div>
+      <div class="concept-desc">
+        Sem ícone — apenas o nome em tipografia ultra-bold. Ousado como Tesla. O "b" pode ser violeta. Funciona em qualquer tamanho.
+      </div>
+      <div class="concept-inspiration">
+        <span class="inspo-tag">Tesla</span>
+        <span class="inspo-tag">OpenAI</span>
+        <span class="inspo-tag">CapCut</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note-box">
+    💡 <strong>Minha recomendação:</strong> Conceito "Spark" — o J no rounded-square é o padrão atual das melhores SaaS (Linear, Notion, Loom, Raycast). Funciona como app icon, favicon, email, landing. O wordmark "jarbis" ao lado fica limpo e moderno. Pode usar o Conceito "Wordmark" como complemento na landing page.
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── SEÇÃO 3: WORDMARKS LADO A LADO ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Logo + Nome</div>
+  <div class="section-title">Wordmarks — Luz e Escuro</div>
+  <div class="section-desc">Como o logo aparece na nav, emails e materiais.</div>
+
+  <div class="wordmark-row" style="margin-bottom:32px;">
+    <!-- Spark light -->
+    <div class="wordmark-card recommended">
+      <div class="wordmark-label">★ RECOMENDADO</div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+          <rect x="20" y="10" width="9" height="22" rx="4.5" fill="white"/>
+          <path d="M20 32 Q20 40 13 40 Q10 40 9 38" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <circle cx="37" cy="13" r="2" fill="white" opacity="0.9"/>
+        </svg>
+        <span style="font-size:20px; font-weight:900; color:#1A1A2E; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jarbis</span>
+      </div>
+    </div>
+
+    <!-- Atual (LogoA) light -->
+    <div class="wordmark-card">
+      <div class="wordmark-label">ATUAL</div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="17" stroke="#6D28D9" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.28" />
+          <path d="M20 4 A16 16 0 0 1 36 20" stroke="#6D28D9" stroke-width="2.5" stroke-linecap="round" opacity="0.8" />
+          <circle cx="36" cy="20" r="2.8" fill="#6D28D9" />
+          <circle cx="20" cy="20" r="6.5" fill="#6D28D9" opacity="0.07" />
+          <circle cx="20" cy="20" r="6.5" stroke="#6D28D9" stroke-width="1.2" opacity="0.3" />
+          <circle cx="20" cy="16.5" r="1.6" fill="#6D28D9" />
+          <circle cx="17.2" cy="22" r="1.6" fill="#6D28D9" />
+          <circle cx="22.8" cy="22" r="1.6" fill="#6D28D9" />
+        </svg>
+        <span style="font-size:20px; font-weight:900; color:#1A1A2E; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jarbis</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark versions -->
+  <div class="wordmark-row">
+    <!-- Spark dark -->
+    <div class="wordmark-card dark-bg recommended">
+      <div class="wordmark-label">★ DARK</div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+          <rect x="20" y="10" width="9" height="22" rx="4.5" fill="white"/>
+          <path d="M20 32 Q20 40 13 40 Q10 40 9 38" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <circle cx="37" cy="13" r="2" fill="white" opacity="0.9"/>
+        </svg>
+        <span style="font-size:20px; font-weight:900; color:white; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jarbis</span>
+      </div>
+    </div>
+
+    <!-- Atual dark -->
+    <div class="wordmark-card dark-bg">
+      <div class="wordmark-label">ATUAL DARK</div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="17" stroke="white" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.28" />
+          <path d="M20 4 A16 16 0 0 1 36 20" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.8" />
+          <circle cx="36" cy="20" r="2.8" fill="white" />
+          <circle cx="20" cy="20" r="6.5" fill="white" opacity="0.07" />
+          <circle cx="20" cy="20" r="6.5" stroke="white" stroke-width="1.2" opacity="0.3" />
+          <circle cx="20" cy="16.5" r="1.6" fill="white" />
+          <circle cx="17.2" cy="22" r="1.6" fill="white" />
+          <circle cx="22.8" cy="22" r="1.6" fill="white" />
+        </svg>
+        <span style="font-size:20px; font-weight:900; color:white; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jarbis</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── SEÇÃO 4: PALETA ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Cores</div>
+  <div class="section-title">Paleta — mantida, refinada</div>
+  <div class="section-desc">Violet é a identidade do Jarbis. Não muda. Apenas usamos melhor.</div>
+
+  <div class="palette-row">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#6D28D9;"></div>
+      <div class="swatch-name">Brand</div>
+      <div class="swatch-hex">#6D28D9</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#7C3AED;"></div>
+      <div class="swatch-name">Accent</div>
+      <div class="swatch-hex">#7C3AED</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#8B5CF6;"></div>
+      <div class="swatch-name">Light</div>
+      <div class="swatch-hex">#8B5CF6</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#A78BFA;"></div>
+      <div class="swatch-name">Pale</div>
+      <div class="swatch-hex">#A78BFA</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#EDE9FE; border:1px solid #E2E8F0;"></div>
+      <div class="swatch-name">Brand-100</div>
+      <div class="swatch-hex">#EDE9FE</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0B0A1A;"></div>
+      <div class="swatch-name">Dark</div>
+      <div class="swatch-hex">#0B0A1A</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#1A1A2E;"></div>
+      <div class="swatch-name">Text</div>
+      <div class="swatch-hex">#1A1A2E</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#FAFAF8; border:1px solid #E2E8F0;"></div>
+      <div class="swatch-name">Surface</div>
+      <div class="swatch-hex">#FAFAF8</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#6B7280;"></div>
+      <div class="swatch-name">Muted</div>
+      <div class="swatch-hex">#6B7280</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#16A34A;"></div>
+      <div class="swatch-name">Success</div>
+      <div class="swatch-hex">#16A34A</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#DC2626;"></div>
+      <div class="swatch-name">Error</div>
+      <div class="swatch-hex">#DC2626</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#D97706;"></div>
+      <div class="swatch-name">Warning</div>
+      <div class="swatch-hex">#D97706</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── SEÇÃO 5: TIPOGRAFIA ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Tipografia</div>
+  <div class="section-title">Escala tipográfica</div>
+  <div class="section-desc">Inter mantida. Ajuste nos pesos e tracking para parecer mais premium.</div>
+
+  <div style="background:white; border:1px solid var(--border); border-radius:20px; padding:40px;">
+    <div class="type-row">
+      <div class="type-meta">H1 — Hero / 80px / 900 / tracking -0.05em</div>
+      <div style="font-size:clamp(40px,6vw,80px); font-weight:900; color:#1A1A2E; letter-spacing:-0.05em; line-height:1.0; font-family:'Inter',sans-serif;">
+        Dados que<br/><span style="background:linear-gradient(135deg,#a78bfa,#818cf8,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">falam por si.</span>
+      </div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta">H2 — Section / 40px / 800 / tracking -0.03em</div>
+      <div style="font-size:40px; font-weight:800; color:#1A1A2E; letter-spacing:-0.03em; line-height:1.1; font-family:'Inter',sans-serif;">Tudo que você precisa, sem o que você não precisa.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta">H3 — Card Title / 22px / 700 / tracking -0.02em</div>
+      <div style="font-size:22px; font-weight:700; color:#1A1A2E; letter-spacing:-0.02em; font-family:'Inter',sans-serif;">Dashboards em minutos</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta">Body — 16px / 400 / line-height 1.7</div>
+      <div style="font-size:16px; font-weight:400; color:#6B7280; line-height:1.7; font-family:'Inter',sans-serif; max-width:580px;">Faça upload da sua planilha e veja seus dados virarem gráficos interativos em segundos. Sem configuração. Sem código. Sem complicação.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta">Label / 11px / 700 / tracking 0.12em / uppercase</div>
+      <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#6D28D9; font-family:'Inter',sans-serif;">Funcionalidades</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── SEÇÃO 6: COMPONENTES ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Componentes</div>
+  <div class="section-title">Botões, Badges e Cards</div>
+  <div class="section-desc">O design system visual da interface.</div>
+
+  <div style="background:white; border:1px solid var(--border); border-radius:20px; padding:40px; display:flex; flex-direction:column; gap:32px;">
+
+    <!-- Botões -->
+    <div>
+      <div class="type-meta" style="margin-bottom:16px;">Botões</div>
+      <div class="component-row">
+        <button class="btn-primary">Começar grátis</button>
+        <button class="btn-primary-pill">Começar grátis →</button>
+        <button class="btn-outline">Ver planos</button>
+        <button class="btn-ghost">Saiba mais</button>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div>
+      <div class="type-meta" style="margin-bottom:16px;">Badges / Chips</div>
+      <div class="component-row">
+        <span class="badge-chip">● Novo</span>
+        <span class="badge-chip">Pro</span>
+        <span class="badge-chip-dark">✦ BI embarcado</span>
+        <span style="display:inline-flex; align-items:center; gap:6px; background:#dcfce7; color:#16A34A; font-size:12px; font-weight:700; padding:4px 12px; border-radius:100px;">✓ 7 dias grátis</span>
+        <span style="display:inline-flex; align-items:center; gap:6px; background:#fef3c7; color:#D97706; font-size:12px; font-weight:700; padding:4px 12px; border-radius:100px;">⚡ Em breve</span>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div>
+      <div class="type-meta" style="margin-bottom:16px;">Cards</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px;">
+        <div style="background:white; border:1px solid #E2E8F0; border-radius:16px; padding:24px; box-shadow:0 2px 8px rgba(109,40,217,0.06);">
+          <div style="width:40px; height:40px; background:#EDE9FE; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px;">
+            <svg width="20" height="20" fill="none" stroke="#6D28D9" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6z"/></svg>
+          </div>
+          <div style="font-size:15px; font-weight:700; color:#1A1A2E; letter-spacing:-0.01em; margin-bottom:6px;">28+ tipos de gráfico</div>
+          <div style="font-size:13px; color:#6B7280; line-height:1.6;">Barras, linhas, pizza, mapa, funil e muito mais.</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#6D28D9,#7C3AED); border-radius:16px; padding:24px; box-shadow:0 8px 24px rgba(109,40,217,0.25);">
+          <div style="width:40px; height:40px; background:rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px;">
+            <svg width="20" height="20" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          </div>
+          <div style="font-size:15px; font-weight:700; color:white; letter-spacing:-0.01em; margin-bottom:6px;">IA que entende seus dados</div>
+          <div style="font-size:13px; color:rgba(255,255,255,0.7); line-height:1.6;">Geração automática de dashboards com um prompt.</div>
+        </div>
+        <div style="background:#0B0A1A; border-radius:16px; padding:24px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="width:40px; height:40px; background:rgba(124,58,237,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px;">
+            <svg width="20" height="20" fill="none" stroke="#A78BFA" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314"/></svg>
+          </div>
+          <div style="font-size:15px; font-weight:700; color:white; letter-spacing:-0.01em; margin-bottom:6px;">Embed em qualquer site</div>
+          <div style="font-size:13px; color:rgba(255,255,255,0.45); line-height:1.6;">Iframes com RLS e SDK React.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── SEÇÃO 7: HERO PREVIEW ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Landing Page</div>
+  <div class="section-title">Preview do Hero — nova direção</div>
+  <div class="section-desc">Mais bold, mais Apple/Tesla. H1 maior, menos copy, mais impacto.</div>
+
+  <div class="hero-preview">
+    <div class="hero-badge">
+      <div class="hero-dot"></div>
+      BI embarcado para PMEs brasileiras
+    </div>
+
+    <h1 class="hero-h1">
+      Seus dados.<br/>
+      <span>Sua visão.</span>
+    </h1>
+
+    <p class="hero-sub">
+      Faça upload de uma planilha e tenha dashboards interativos em segundos. Sem código. Sem TI.
+    </p>
+
+    <div class="hero-cta-row">
+      <button class="btn-hero-primary">Começar grátis — 7 dias</button>
+      <button class="btn-hero-ghost">Ver demonstração</button>
+    </div>
+
+    <div style="margin-top:28px; display:flex; justify-content:center; gap:24px; flex-wrap:wrap;">
+      <span style="font-size:12px; color:rgba(255,255,255,0.3);">✦ Sem cartão de crédito</span>
+      <span style="font-size:12px; color:rgba(255,255,255,0.3);">✦ Setup em 2 minutos</span>
+      <span style="font-size:12px; color:rgba(255,255,255,0.3);">✦ Dados 100% seus</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ─────────────────────────────────── FOOTER ─────────────────────────────────── -->
+<div style="text-align:center; color:var(--muted); font-size:12px; padding-bottom:48px;">
+  <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+    <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="13" fill="#6D28D9"/>
+      <rect x="20" y="10" width="9" height="22" rx="4.5" fill="white"/>
+      <path d="M20 32 Q20 40 13 40 Q10 40 9 38" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+      <circle cx="37" cy="13" r="2" fill="white" opacity="0.9"/>
+    </svg>
+    <span style="font-weight:800; font-size:15px; color:#1A1A2E; letter-spacing:-0.03em;">jarbis</span>
+  </div>
+  <p>Brand Preview v2.0 · Identidade Visual 2026 · Mazzel Tech</p>
+</div>
+
+</body>
+</html>

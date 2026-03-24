@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jarbis — Icon Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F3F2FF;
+    color: #1A1A2E;
+    padding: 48px 24px 80px;
+  }
+
+  /* Wordmark base — igual ao escolhido */
+  .wordmark {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    color: #1A1A2E;
+    line-height: 1;
+    font-family: 'Inter', sans-serif;
+  }
+  .wordmark .b { color: #6D28D9; }
+  .wordmark-sm {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    color: #1A1A2E;
+    line-height: 1;
+    font-family: 'Inter', sans-serif;
+  }
+  .wordmark-sm .b { color: #6D28D9; }
+  .wordmark-dark {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    color: white;
+    line-height: 1;
+    font-family: 'Inter', sans-serif;
+  }
+  .wordmark-dark .b { color: #A78BFA; }
+
+  .page-title {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .page-title h1 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #6D28D9;
+    margin-bottom: 10px;
+  }
+  .page-title h2 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .page-title p { color: #6B7280; margin-top: 8px; font-size: 14px; }
+
+  .section { max-width: 1000px; margin: 0 auto 72px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #8B5CF6; margin-bottom: 6px;
+  }
+  .section-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .section-desc { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
+
+  /* Grid de conceitos */
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  .icon-card {
+    background: white;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 20px;
+    padding: 36px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .icon-card:hover {
+    border-color: #6D28D9;
+    box-shadow: 0 8px 32px rgba(109,40,217,0.13);
+    transform: translateY(-3px);
+  }
+  .icon-card.featured {
+    border-color: #6D28D9;
+    box-shadow: 0 0 0 3px rgba(109,40,217,0.15);
+  }
+  .icon-tag {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 4px 14px;
+    border-radius: 100px;
+    white-space: nowrap;
+    background: #6D28D9;
+    color: white;
+  }
+  .icon-tag.alt { background: #1A1A2E; }
+
+  .icon-name { font-size: 14px; font-weight: 800; letter-spacing: -0.01em; }
+  .icon-desc { font-size: 12px; color: #6B7280; text-align: center; line-height: 1.6; }
+
+  /* Linha de tamanhos */
+  .sizes-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .size-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .size-label { font-size: 10px; color: #9CA3AF; font-weight: 600; }
+
+  /* Full logo combos */
+  .combo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media(max-width:640px){ .combo-grid { grid-template-columns: 1fr; } }
+
+  .combo-card {
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    border: 1.5px solid #E2E8F0;
+    background: white;
+  }
+  .combo-card.dark { background: #0B0A1A; border-color: rgba(255,255,255,0.08); }
+  .combo-row { display: flex; align-items: center; gap: 12px; }
+
+  .note-box {
+    background: #EDE9FE;
+    border-left: 3px solid #6D28D9;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 13px;
+    color: #5B21B6;
+    margin-top: 24px;
+    line-height: 1.6;
+  }
+
+  /* Hero dark preview */
+  .hero-dark {
+    background: #0B0A1A;
+    border-radius: 20px;
+    padding: 56px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-dark::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(109,40,217,0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-dark-wordmark {
+    font-size: 48px; font-weight: 900; letter-spacing: -0.05em;
+    color: white; line-height: 1; font-family: 'Inter', sans-serif;
+    position: relative; z-index: 1;
+  }
+  .hero-dark-wordmark .b { color: #A78BFA; }
+  .hero-dark-sub {
+    font-size: 16px; color: rgba(255,255,255,0.45); margin-top: 12px;
+    position: relative; z-index: 1;
+  }
+
+  .divider { height: 1px; background: #E2E8F0; max-width: 1000px; margin: 72px auto; }
+
+  /* Favicon strip */
+  .favicon-strip {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: white; border: 1.5px solid #E2E8F0; border-radius: 14px;
+    padding: 20px 24px;
+  }
+  .favicon-label { font-size: 11px; font-weight: 600; color: #9CA3AF; min-width: 60px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-title">
+  <h1>Evolução do Logo</h1>
+  <h2>Wordmark + Ícone</h2>
+  <p>Base escolhida: wordmark "jar<span style="color:#6D28D9;">b</span>is" — agora com ícone.</p>
+</div>
+
+<!-- ── WORDMARK BASE (referência) ── -->
+<div class="section">
+  <div class="section-label">Base aprovada</div>
+  <div class="section-title">O wordmark que você escolheu</div>
+  <div class="section-desc">Este é o ponto de partida. O ícone precisa ser sua extensão natural.</div>
+  <div style="background:white; border:1.5px solid #E2E8F0; border-radius:16px; padding:40px; display:flex; flex-direction:column; gap:28px; align-items:center;">
+    <div class="wordmark">jar<span class="b">b</span>is</div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+      <div class="wordmark-sm">jar<span class="b">b</span>is</div>
+      <div style="width:32px; height:3px; border-radius:2px; background:linear-gradient(90deg,#6D28D9,#818CF8);"></div>
+    </div>
+    <div style="background:#1A1A2E; padding:12px 32px; border-radius:100px;">
+      <div class="wordmark-dark">jar<span class="b">b</span>is</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── CONCEITOS DE ÍCONE ── -->
+<div class="section">
+  <div class="section-label">4 conceitos de ícone</div>
+  <div class="section-title">Qual ícone acompanha o wordmark?</div>
+  <div class="section-desc">Cada conceito é projetado para funcionar ao lado de "jar<span style="color:#6D28D9;">b</span>is" e também sozinho como app icon / favicon.</div>
+
+  <div class="icon-grid">
+
+    <!-- CONCEITO 1: "b" como ícone -->
+    <div class="icon-card featured">
+      <div class="icon-tag">★ COERENTE COM O WORDMARK</div>
+
+      <!-- Tamanho hero -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <!-- Icon grande -->
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <!-- "b" geométrico/bold: haste vertical + círculo à direita -->
+          <!-- Haste vertical do b -->
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <!-- Bolinha do b -->
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+
+        <!-- Tamanhos -->
+        <div class="sizes-row">
+          <div class="size-item">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="27" cy="29" r="9" fill="white"/>
+              <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+            </svg>
+            <span class="size-label">48px</span>
+          </div>
+          <div class="size-item">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="27" cy="29" r="9" fill="white"/>
+              <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+            </svg>
+            <span class="size-label">32px</span>
+          </div>
+          <div class="size-item">
+            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="27" cy="29" r="9" fill="white"/>
+              <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+            </svg>
+            <span class="size-label">20px</span>
+          </div>
+          <div class="size-item">
+            <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="27" cy="29" r="9" fill="white"/>
+              <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+            </svg>
+            <span class="size-label">16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="icon-name">Conceito "b" — Lettermark</div>
+      <div class="icon-desc">O "b" violeta do wordmark vira ícone. Coerência total: quem vê o ícone reconhece o wordmark. Funciona de 16px a 512px.</div>
+    </div>
+
+    <!-- CONCEITO 2: "b" com sparkline integrada -->
+    <div class="icon-card">
+      <div class="icon-tag alt">DATA + IDENTIDADE</div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#1A1A2E"/>
+          <!-- Haste do b -->
+          <rect x="11" y="9" width="7" height="30" rx="3.5" fill="white"/>
+          <!-- Círculo do b -->
+          <circle cx="26" cy="28" r="9" fill="white"/>
+          <circle cx="26" cy="28" r="5.5" fill="#1A1A2E"/>
+          <!-- Sparkline no topo direito -->
+          <polyline points="30,13 33,10 36,12 39,9" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="39" cy="9" r="2" fill="#A78BFA"/>
+        </svg>
+
+        <div class="sizes-row">
+          <div class="size-item">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#1A1A2E"/>
+              <rect x="11" y="9" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="26" cy="28" r="9" fill="white"/>
+              <circle cx="26" cy="28" r="5.5" fill="#1A1A2E"/>
+              <polyline points="30,13 33,10 36,12 39,9" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="39" cy="9" r="2" fill="#A78BFA"/>
+            </svg>
+            <span class="size-label">48px</span>
+          </div>
+          <div class="size-item">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#1A1A2E"/>
+              <rect x="11" y="9" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="26" cy="28" r="9" fill="white"/>
+              <circle cx="26" cy="28" r="5.5" fill="#1A1A2E"/>
+              <polyline points="30,13 33,10 36,12 39,9" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="39" cy="9" r="2" fill="#A78BFA"/>
+            </svg>
+            <span class="size-label">32px</span>
+          </div>
+          <div class="size-item">
+            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#1A1A2E"/>
+              <rect x="11" y="9" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="26" cy="28" r="9" fill="white"/>
+              <circle cx="26" cy="28" r="5.5" fill="#1A1A2E"/>
+            </svg>
+            <span class="size-label">20px</span>
+          </div>
+          <div class="size-item">
+            <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#1A1A2E"/>
+              <rect x="11" y="9" width="7" height="30" rx="3.5" fill="white"/>
+              <circle cx="26" cy="28" r="9" fill="white"/>
+              <circle cx="26" cy="28" r="5.5" fill="#1A1A2E"/>
+            </svg>
+            <span class="size-label">16px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="icon-name">Conceito "b" + Spark</div>
+      <div class="icon-desc">Fundo dark (#1A1A2E) com o "b" branco + sparkline violeta no canto. BI + identidade. Contraste premium, estilo Tesla/Linear.</div>
+    </div>
+
+    <!-- CONCEITO 3: "b" com barras de dados integradas -->
+    <div class="icon-card">
+      <div class="icon-tag alt">BI INTEGRADO</div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
+          <!-- Rounded square com gradiente -->
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <!-- b geométrico menor, deslocado à esquerda -->
+          <rect x="8" y="11" width="6" height="26" rx="3" fill="white"/>
+          <circle cx="21" cy="28" r="8" fill="white"/>
+          <circle cx="21" cy="28" r="4.5" fill="#6D28D9"/>
+          <!-- Barras de gráfico à direita -->
+          <rect x="32" y="28" width="4" height="10" rx="2" fill="white" opacity="0.4"/>
+          <rect x="38" y="22" width="4" height="16" rx="2" fill="white" opacity="0.7"/>
+          <rect x="26" y="18" width="4" height="20" rx="2" fill="white"/>
+        </svg>
+
+        <div class="sizes-row">
+          <div class="size-item">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="8" y="11" width="6" height="26" rx="3" fill="white"/>
+              <circle cx="21" cy="28" r="8" fill="white"/>
+              <circle cx="21" cy="28" r="4.5" fill="#6D28D9"/>
+              <rect x="32" y="28" width="4" height="10" rx="2" fill="white" opacity="0.4"/>
+              <rect x="38" y="22" width="4" height="16" rx="2" fill="white" opacity="0.7"/>
+              <rect x="26" y="18" width="4" height="20" rx="2" fill="white"/>
+            </svg>
+            <span class="size-label">48px</span>
+          </div>
+          <div class="size-item">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="8" y="11" width="6" height="26" rx="3" fill="white"/>
+              <circle cx="21" cy="28" r="8" fill="white"/>
+              <circle cx="21" cy="28" r="4.5" fill="#6D28D9"/>
+              <rect x="32" y="28" width="4" height="10" rx="2" fill="white" opacity="0.4"/>
+              <rect x="38" y="22" width="4" height="16" rx="2" fill="white" opacity="0.7"/>
+              <rect x="26" y="18" width="4" height="20" rx="2" fill="white"/>
+            </svg>
+            <span class="size-label">32px</span>
+          </div>
+          <div class="size-item">
+            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+              <rect x="8" y="11" width="6" height="26" rx="3" fill="white"/>
+              <circle cx="21" cy="28" r="8" fill="white"/>
+              <circle cx="21" cy="28" r="4.5" fill="#6D28D9"/>
+              <rect x="38" y="22" width="4" height="16" rx="2" fill="white" opacity="0.7"/>
+              <rect x="26" y="18" width="4" height="20" rx="2" fill="white"/>
+            </svg>
+            <span class="size-label">20px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="icon-name">Conceito "b" + Barras</div>
+      <div class="icon-desc">O "b" à esquerda + barras de gráfico crescentes à direita. BI integrado ao símbolo da marca. Mais complexo — melhor em tamanhos grandes.</div>
+    </div>
+
+    <!-- CONCEITO 4: Abstract "data node" -->
+    <div class="icon-card">
+      <div class="icon-tag alt">ABSTRATO</div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#0B0A1A"/>
+          <!-- Nó central grande -->
+          <circle cx="24" cy="24" r="7" fill="#6D28D9"/>
+          <circle cx="24" cy="24" r="4" fill="white"/>
+          <!-- Linhas para satélites -->
+          <line x1="24" y1="17" x2="24" y2="11" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/>
+          <line x1="24" y1="31" x2="24" y2="37" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+          <line x1="17" y1="24" x2="11" y2="24" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+          <line x1="31" y1="24" x2="37" y2="24" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/>
+          <!-- Satélites -->
+          <circle cx="24" cy="10" r="3" fill="#6D28D9"/>
+          <circle cx="24" cy="38" r="2" fill="#A78BFA" opacity="0.7"/>
+          <circle cx="10" cy="24" r="2" fill="#A78BFA" opacity="0.7"/>
+          <circle cx="38" cy="24" r="3" fill="#6D28D9"/>
+        </svg>
+
+        <div class="sizes-row">
+          <div class="size-item">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#0B0A1A"/>
+              <circle cx="24" cy="24" r="7" fill="#6D28D9"/>
+              <circle cx="24" cy="24" r="4" fill="white"/>
+              <line x1="24" y1="17" x2="24" y2="11" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/>
+              <line x1="24" y1="31" x2="24" y2="37" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+              <line x1="17" y1="24" x2="11" y2="24" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+              <line x1="31" y1="24" x2="37" y2="24" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="24" cy="10" r="3" fill="#6D28D9"/>
+              <circle cx="24" cy="38" r="2" fill="#A78BFA" opacity="0.7"/>
+              <circle cx="10" cy="24" r="2" fill="#A78BFA" opacity="0.7"/>
+              <circle cx="38" cy="24" r="3" fill="#6D28D9"/>
+            </svg>
+            <span class="size-label">48px</span>
+          </div>
+          <div class="size-item">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#0B0A1A"/>
+              <circle cx="24" cy="24" r="7" fill="#6D28D9"/>
+              <circle cx="24" cy="24" r="4" fill="white"/>
+              <line x1="24" y1="17" x2="24" y2="11" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/>
+              <line x1="24" y1="31" x2="24" y2="37" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+              <line x1="17" y1="24" x2="11" y2="24" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+              <line x1="31" y1="24" x2="37" y2="24" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="24" cy="10" r="3" fill="#6D28D9"/>
+              <circle cx="38" cy="24" r="3" fill="#6D28D9"/>
+            </svg>
+            <span class="size-label">32px</span>
+          </div>
+          <div class="size-item">
+            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#0B0A1A"/>
+              <circle cx="24" cy="24" r="7" fill="#6D28D9"/>
+              <circle cx="24" cy="24" r="4" fill="white"/>
+            </svg>
+            <span class="size-label">20px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="icon-name">Conceito "Node"</div>
+      <div class="icon-desc">Nó central (dado) com satélites conectados. Abstrato, remete a BI/conexão de dados. Funciona melhor em tamanhos maiores (32px+).</div>
+    </div>
+
+  </div>
+
+  <div class="note-box">
+    💡 <strong>Minha recomendação:</strong> <strong>Conceito "b" Lettermark</strong> — é o mais coerente com o wordmark escolhido. O "b" violeta já é o elemento de identidade visual. Transformá-lo em ícone cria um sistema consistente: o ícone <em>é</em> o wordmark comprimido. Se quiser mais personalidade de "produto de dados", o <strong>"b" + Spark</strong> (dark) é a segunda melhor opção.
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── LOGO COMPLETO: ÍCONE + WORDMARK ── -->
+<div class="section">
+  <div class="section-label">Sistema completo</div>
+  <div class="section-title">Ícone + Wordmark — como fica junto</div>
+  <div class="section-desc">Veja o logo completo nas variações que serão usadas na nav, emails e materiais.</div>
+
+  <div class="combo-grid">
+
+    <!-- LIGHT: conceito "b" violet -->
+    <div class="combo-card">
+      <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9CA3AF; margin-bottom:4px;">Fundo claro — Tamanhos</div>
+
+      <div class="combo-row" style="padding:16px 0; border-bottom:1px solid #F1F5F9;">
+        <!-- Icon 40px -->
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:26px; font-weight:900; letter-spacing:-0.05em; color:#1A1A2E; font-family:'Inter',sans-serif;">jar<span style="color:#6D28D9;">b</span>is</span>
+      </div>
+
+      <div class="combo-row" style="padding:12px 0; border-bottom:1px solid #F1F5F9;">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:18px; font-weight:900; letter-spacing:-0.05em; color:#1A1A2E; font-family:'Inter',sans-serif;">jar<span style="color:#6D28D9;">b</span>is</span>
+      </div>
+
+      <div class="combo-row" style="padding:10px 0;">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:13px; font-weight:900; letter-spacing:-0.05em; color:#1A1A2E; font-family:'Inter',sans-serif;">jar<span style="color:#6D28D9;">b</span>is</span>
+      </div>
+    </div>
+
+    <!-- DARK: conceito "b" dark -->
+    <div class="combo-card dark">
+      <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:4px;">Fundo escuro — Tamanhos</div>
+
+      <div class="combo-row" style="padding:16px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:26px; font-weight:900; letter-spacing:-0.05em; color:white; font-family:'Inter',sans-serif;">jar<span style="color:#A78BFA;">b</span>is</span>
+      </div>
+
+      <div class="combo-row" style="padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:18px; font-weight:900; letter-spacing:-0.05em; color:white; font-family:'Inter',sans-serif;">jar<span style="color:#A78BFA;">b</span>is</span>
+      </div>
+
+      <div class="combo-row" style="padding:10px 0;">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:13px; font-weight:900; letter-spacing:-0.05em; color:white; font-family:'Inter',sans-serif;">jar<span style="color:#A78BFA;">b</span>is</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Favicon / App Icon strip -->
+  <div style="margin-top:24px;">
+    <div class="section-desc" style="margin-bottom:16px;">Ícone isolado — favicon, app icon, avatar</div>
+    <div class="favicon-strip">
+      <span class="favicon-label">16px</span>
+      <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+        <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+        <circle cx="27" cy="29" r="9" fill="white"/>
+        <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+      </svg>
+      <span class="favicon-label">32px</span>
+      <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+        <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+        <circle cx="27" cy="29" r="9" fill="white"/>
+        <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+      </svg>
+      <span class="favicon-label">64px</span>
+      <svg width="64" height="64" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+        <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+        <circle cx="27" cy="29" r="9" fill="white"/>
+        <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+      </svg>
+      <span class="favicon-label">128px</span>
+      <svg width="128" height="128" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+        <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+        <circle cx="27" cy="29" r="9" fill="white"/>
+        <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── HERO DARK PREVIEW ── -->
+<div class="section">
+  <div class="section-label">Contexto real</div>
+  <div class="section-title">Como fica na landing page</div>
+  <div class="section-desc">Logo na nav + wordmark em destaque no hero.</div>
+
+  <div class="hero-dark">
+    <!-- Nav simulada -->
+    <div style="position:relative;z-index:1; display:flex; align-items:center; justify-content:space-between; max-width:700px; margin:0 auto 56px; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+          <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+          <circle cx="27" cy="29" r="9" fill="white"/>
+          <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+        </svg>
+        <span style="font-size:17px; font-weight:900; letter-spacing:-0.05em; color:white; font-family:'Inter',sans-serif;">jar<span style="color:#A78BFA;">b</span>is</span>
+      </div>
+      <div style="display:flex; gap:24px; align-items:center;">
+        <span style="font-size:13px; color:rgba(255,255,255,0.45);">Como funciona</span>
+        <span style="font-size:13px; color:rgba(255,255,255,0.45);">Preços</span>
+        <div style="background:#6D28D9; color:white; font-size:13px; font-weight:700; padding:8px 20px; border-radius:100px;">Começar grátis</div>
+      </div>
+    </div>
+
+    <!-- Hero content -->
+    <div style="position:relative;z-index:1;">
+      <div style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(124,58,237,0.4); background:rgba(124,58,237,0.1); color:#A78BFA; font-size:12px; font-weight:600; padding:6px 16px; border-radius:100px; margin-bottom:28px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#7C3AED;display:inline-block;"></span>
+        BI embarcado para PMEs brasileiras
+      </div>
+
+      <div class="hero-dark-wordmark">
+        Seus dados.<br/>
+        <span style="background:linear-gradient(135deg,#a78bfa,#818cf8,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Sua visão.</span>
+      </div>
+
+      <div class="hero-dark-sub">Faça upload de uma planilha e tenha dashboards interativos em segundos.</div>
+
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:32px; flex-wrap:wrap;">
+        <button style="background:#6D28D9;color:white;font-weight:800;font-size:15px;padding:16px 36px;border-radius:100px;border:none;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:-0.01em;">Começar grátis — 7 dias</button>
+        <button style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-weight:600;font-size:15px;padding:16px 36px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;font-family:'Inter',sans-serif;">Ver demonstração</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center; color:#9CA3AF; font-size:12px; padding-top:48px; border-top:1px solid #E2E8F0; max-width:1000px; margin:0 auto;">
+  <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+    <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="#6D28D9"/>
+      <rect x="13" y="10" width="7" height="30" rx="3.5" fill="white"/>
+      <circle cx="27" cy="29" r="9" fill="white"/>
+      <circle cx="27" cy="29" r="5.5" fill="#6D28D9"/>
+    </svg>
+    <span style="font-weight:900; font-size:15px; color:#1A1A2E; letter-spacing:-0.04em; font-family:'Inter',sans-serif;">jar<span style="color:#6D28D9;">b</span>is</span>
+  </div>
+  <p>Brand Icon Preview v1.0 · Identidade Visual 2026 · Mazzel Tech</p>
+</div>
+
+</body>
+</html>

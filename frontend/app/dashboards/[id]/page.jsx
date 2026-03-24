@@ -262,7 +262,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
 
   if (datasets.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 text-center" onClick={e => e.stopPropagation()}>
           <p className="text-sm text-gray-500">{t('ai.noDataset')}</p>
           <button onClick={onClose} className="mt-4 text-sm text-violet-600 hover:underline">Fechar</button>
@@ -272,7 +272,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[88vh]" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
@@ -778,7 +778,7 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
@@ -1195,7 +1195,7 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
   )
 }
 
-function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterChange, filterSummary = {}, onClearDatasetFilters }) {
+function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterChange, filterSummary = {}, onClearDatasetFilters, onAddPreset }) {
   const t = useTranslations('dashboardEditor')
   const filterBlocks = blocks.filter(b => b.type === 'filter' || b.type === 'slider')
   const hasDateFilter = !!(globalDateFilter.dateFrom || globalDateFilter.dateTo)
@@ -1286,12 +1286,31 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
 
       {/* Blocos de filtro configurados */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Blocos de filtro</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Blocos de filtro</p>
+        </div>
+
+        {/* Ação rápida: adicionar filtro de período com 1 clique */}
+        {dateColOptions.length > 0 && onAddPreset && (
+          <button
+            onClick={() => {
+              const dateCol = globalDateFilter.dateCol || dateColOptions[0]
+              const ds = datasets.find(d => Object.entries(d.column_types || {}).some(([c, t]) => c === dateCol && t === 'date')) || datasets[0]
+              if (!ds) return
+              onAddPreset([{ id: crypto.randomUUID(), type: 'filter', title: 'Período', dataset_id: ds.id, filter_col: dateCol, filter_label: 'Período', config: { date_mode: true }, layout: { w: 4, h: 2 } }])
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 mb-3 text-xs font-semibold text-violet-600 border border-violet-200 border-dashed rounded-xl hover:bg-violet-50 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            Adicionar filtro de período
+          </button>
+        )}
+
         {filterBlocks.length === 0 ? (
-          <div className="text-center py-6 px-2">
+          <div className="text-center py-4 px-2">
             <svg className="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             <p className="text-xs text-gray-400 font-medium">Nenhum bloco de filtro</p>
-            <p className="text-[10px] text-gray-300 mt-1 leading-relaxed">Adicione um bloco "Filtro" ou "Slider" ao dashboard para filtrar dados interativamente</p>
+            <p className="text-[10px] text-gray-300 mt-1 leading-relaxed">Use o botão acima ou adicione um bloco "Filtro" ao dashboard</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -1424,6 +1443,409 @@ function CommentsPanel({ blocks, onBlocksChange }) {
   )
 }
 
+// ─── ColumnDiscovery — UX mobile-first: coluna → insight → bloco ──────────────
+function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
+  const [step, setStep] = useState('cols')   // 'cols' | 'insights' | 'compare'
+  const [search, setSearch] = useState('')
+  const [selectedCol, setSelectedCol] = useState(null)
+  const [selectedInsight, setSelectedInsight] = useState(null)
+  const [addedLabel, setAddedLabel] = useState(null)
+
+  // Fechar com Esc
+  useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose])
+
+  const allCols = useMemo(() =>
+    datasets.flatMap(ds =>
+      Object.entries(ds.column_types || {}).map(([col, type]) => ({
+        col, type: (type === 'string' || type === 'text' || type === 'category') ? 'text' : type,
+        dsId: ds.id, dsName: ds.name,
+      }))
+    ), [datasets])
+
+  // Sugestões inteligentes: detecta padrões nos datasets
+  const smartSuggestions = useMemo(() => {
+    const result = []
+    for (const ds of datasets) {
+      const nums  = allCols.filter(c => c.dsId === ds.id && c.type === 'number')
+      const dates = allCols.filter(c => c.dsId === ds.id && c.type === 'date')
+      const texts = allCols.filter(c => c.dsId === ds.id && c.type !== 'number' && c.type !== 'date')
+      const mkId = () => crypto.randomUUID()
+      // KPIs rápidos
+      // ícones SVG reutilizáveis (criados inline para ficarem fora do render tree principal)
+      const IcoKpi  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M5.5 8h5M8 6v4"/></svg>
+      const IcoLine = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,12 5,8 9,10 14,4"/><path d="M12 4h2v2"/></svg>
+      const IcoBarH = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="12" height="2.5" rx="1"/><rect x="1" y="6.75" width="8.5" height="2.5" rx="1"/><rect x="1" y="11" width="5.5" height="2.5" rx="1"/></svg>
+      const IcoPie  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 2v6h6A6 6 0 108 2z"/><path d="M8 8l3 3.5"/></svg>
+      const IcoCal  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="3" width="13" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M1.5 6.5h13"/></svg>
+
+      nums.slice(0, 2).forEach(n => result.push({
+        label: `Total: ${n.col}`, icon: IcoKpi,
+        build: () => ({ id: mkId(), type: 'kpi', title: `Total: ${n.col}`, dataset_id: ds.id, value_col: n.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } })
+      }))
+      // Evolução temporal
+      if (nums[0] && dates[0]) result.push({
+        label: `Evolução: ${nums[0].col}`, icon: IcoLine,
+        build: () => ({ id: mkId(), type: 'line', title: `Evolução de ${nums[0].col}`, dataset_id: ds.id, label_col: dates[0].col, value_col: nums[0].col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } })
+      })
+      // Ranking
+      if (texts[0] && nums[0]) result.push({
+        label: `Ranking: ${texts[0].col}`, icon: IcoBarH,
+        build: () => ({ id: mkId(), type: 'bar_h', title: `${texts[0].col} por ${nums[0].col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: nums[0].col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } })
+      })
+      // Pizza
+      if (texts[0] && nums[0]) result.push({
+        label: `Fatias: ${texts[0].col}`, icon: IcoPie,
+        build: () => ({ id: mkId(), type: 'pie', title: `${texts[0].col} por ${nums[0].col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: nums[0].col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } })
+      })
+      // Filtro de período
+      if (dates[0]) result.push({
+        label: 'Filtro de período', icon: IcoCal,
+        build: () => ({ id: mkId(), type: 'filter', title: dates[0].col, dataset_id: ds.id, filter_col: dates[0].col, filter_label: dates[0].col, config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } })
+      })
+    }
+    return result.slice(0, 7)
+  }, [allCols, datasets])
+
+  const filtered = search
+    ? allCols.filter(c => c.col.toLowerCase().includes(search.toLowerCase()))
+    : allCols
+
+  const numCols  = filtered.filter(c => c.type === 'number')
+  const dateCols = filtered.filter(c => c.type === 'date')
+  const textCols = filtered.filter(c => c.type !== 'number' && c.type !== 'date')
+
+  const NUM_INSIGHTS = [
+    { id: 'total',    label: 'Total',       desc: 'Soma de todos os valores',        blockType: 'kpi',   agg: 'sum',  needsCompare: null,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg> },
+    { id: 'media',    label: 'Média',       desc: 'Valor médio',                     blockType: 'kpi',   agg: 'avg',  needsCompare: null,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg> },
+    { id: 'evolucao', label: 'Evolução',    desc: 'Como mudou ao longo do tempo',    blockType: 'line',  agg: 'sum',  needsCompare: 'date',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><polyline points="3,17 8,11 13,14 21,5"/><path d="M17 5h4v4"/></svg> },
+    { id: 'tendencia', label: 'Tendência',  desc: 'Área de crescimento ou queda',    blockType: 'area',  agg: 'sum',  needsCompare: 'date',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M3 17 L8 11 L13 14 L21 5 L21 19 L3 19 Z" strokeLinejoin="round"/></svg> },
+    { id: 'ranking',  label: 'Ranking',     desc: 'Quem tem mais deste valor',       blockType: 'bar_h', agg: 'sum',  needsCompare: 'text',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="5" width="16" height="3" rx="1.5"/><rect x="3" y="10" width="11" height="3" rx="1.5"/><rect x="3" y="15" width="7" height="3" rx="1.5"/></svg> },
+    { id: 'fatias',   label: 'Fatias',      desc: 'Proporção por categoria',         blockType: 'pie',   agg: 'sum',  needsCompare: 'text',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M12 2v10l7 7A10 10 0 1112 2z"/><path d="M12 12L5 19"/></svg> },
+  ]
+  const TEXT_INSIGHTS = [
+    { id: 'filtro',   label: 'Filtro',      desc: 'Filtrar o dashboard por categoria', blockType: 'filter', needsCompare: null,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg> },
+    { id: 'ranking',  label: 'Ranking',     desc: 'Ranquear por um valor numérico',    blockType: 'bar_h', needsCompare: 'number',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="5" width="16" height="3" rx="1.5"/><rect x="3" y="10" width="11" height="3" rx="1.5"/><rect x="3" y="15" width="7" height="3" rx="1.5"/></svg> },
+    { id: 'fatias',   label: 'Fatias',      desc: 'Distribuição por categoria',        blockType: 'pie',   needsCompare: 'number',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M12 2v10l7 7A10 10 0 1112 2z"/><path d="M12 12L5 19"/></svg> },
+  ]
+  const DATE_INSIGHTS = [
+    { id: 'periodo',  label: 'Filtro de período', desc: 'Selecionar intervalo de datas', blockType: 'filter', isDateFilter: true, needsCompare: null,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> },
+  ]
+
+  const getInsights = col => col.type === 'number' ? NUM_INSIGHTS : col.type === 'date' ? DATE_INSIGHTS : TEXT_INSIGHTS
+
+  const getCompareOptions = insight => {
+    if (!selectedCol) return []
+    if (insight.needsCompare === 'date')   return allCols.filter(c => c.type === 'date'   && c.dsId === selectedCol.dsId)
+    if (insight.needsCompare === 'text')   return allCols.filter(c => c.type !== 'number' && c.type !== 'date' && c.dsId === selectedCol.dsId)
+    if (insight.needsCompare === 'number') return allCols.filter(c => c.type === 'number' && c.dsId === selectedCol.dsId)
+    return []
+  }
+
+  function buildAndAdd(compareCol = null, insightArg = null) {
+    const col = selectedCol
+    const insight = insightArg ?? selectedInsight
+    const dsId = col.dsId
+    let block
+    const baseTitle = compareCol
+      ? `${insight.label} de ${col.col} por ${compareCol.col}`
+      : `${insight.label} — ${col.col}`
+
+    if (insight.blockType === 'kpi') {
+      block = { id: crypto.randomUUID(), type: 'kpi', title: `${insight.label}: ${col.col}`, dataset_id: dsId, value_col: col.col, agg: insight.agg, config: {}, layout: { x: 0, y: Infinity, w: 3, h: 2 } }
+    } else if (insight.blockType === 'filter') {
+      block = { id: crypto.randomUUID(), type: 'filter', title: col.col, dataset_id: dsId, filter_col: col.col, filter_label: col.col, config: insight.isDateFilter ? { date_mode: true } : {}, layout: { x: 0, y: Infinity, w: 4, h: 2 } }
+    } else if (insight.blockType === 'line' || insight.blockType === 'area') {
+      block = { id: crypto.randomUUID(), type: insight.blockType, title: baseTitle, dataset_id: dsId, label_col: compareCol?.col || null, value_col: col.col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x: 0, y: Infinity, w: 6, h: 4 } }
+    } else if (insight.blockType === 'bar_h') {
+      const labelCol = col.type === 'number' ? compareCol?.col : col.col
+      const valueCol = col.type === 'number' ? col.col : compareCol?.col
+      block = { id: crypto.randomUUID(), type: 'bar_h', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x: 0, y: Infinity, w: 6, h: 4 } }
+    } else if (insight.blockType === 'pie') {
+      const labelCol = col.type === 'number' ? compareCol?.col : col.col
+      const valueCol = col.type === 'number' ? col.col : compareCol?.col
+      block = { id: crypto.randomUUID(), type: 'pie', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: 'sum', config: {}, layout: { x: 0, y: Infinity, w: 4, h: 4 } }
+    }
+    if (block) {
+      onAddBlock(block)
+      setAddedLabel(block.title || 'Bloco adicionado')
+      setTimeout(() => onClose(), 700)
+    }
+  }
+
+  function handleInsightSelect(insight) {
+    setSelectedInsight(insight)
+    if (!insight.needsCompare) { buildAndAdd(null, insight); return }
+    const opts = getCompareOptions(insight)
+    if (opts.length === 1) { buildAndAdd(opts[0], insight); return }
+    if (opts.length === 0) { buildAndAdd(null, insight); return }
+    setStep('compare')
+  }
+
+  // ── Shared layout shell ────────────────────────────────────────────────────
+  const typeColors = {
+    number: {
+      bg: 'bg-emerald-100', text: 'text-emerald-700', hover: 'hover:bg-emerald-200',
+      // ícone: 3 barras ascendentes = métricas numéricas
+      badge: (
+        <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+          <rect x="1"    y="10" width="3.5" height="5"  rx="0.75"/>
+          <rect x="6.25" y="6"  width="3.5" height="9"  rx="0.75"/>
+          <rect x="11.5" y="2"  width="3.5" height="13" rx="0.75"/>
+        </svg>
+      ),
+    },
+    date: {
+      bg: 'bg-amber-100', text: 'text-amber-700', hover: 'hover:bg-amber-200',
+      // ícone: calendário = datas
+      badge: (
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+          <rect x="1.5" y="3" width="13" height="11" rx="1.5"/>
+          <path d="M5 1.5v3M11 1.5v3M1.5 6.5h13"/>
+        </svg>
+      ),
+    },
+    text: {
+      bg: 'bg-blue-100', text: 'text-blue-700', hover: 'hover:bg-blue-200',
+      // ícone: tag de preço = categorias/rótulos
+      badge: (
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+          <path d="M1.5 1.5h5.5l7 7-5.5 5.5-7-7V1.5z"/>
+          <circle cx="5" cy="5" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      ),
+    },
+  }
+
+  const ColCard = ({ c }) => {
+    const tc = typeColors[c.type] || typeColors.text
+    return (
+      <button
+        onClick={() => { setSelectedCol(c); setStep('insights') }}
+        className="flex items-center gap-3 px-3 py-3.5 bg-gray-50 hover:bg-violet-50 border border-transparent hover:border-violet-200 rounded-2xl transition-all text-left group active:scale-[.98]"
+      >
+        <span className={`w-8 h-8 rounded-xl ${tc.bg} ${tc.text} flex items-center justify-center flex-shrink-0 transition-colors ${tc.hover}`}>{tc.badge}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{c.col}</p>
+          {datasets.length > 1 && <p className="text-[10px] text-gray-400 truncate mt-0.5">{c.dsName}</p>}
+        </div>
+        <svg className="w-4 h-4 text-gray-300 group-hover:text-violet-400 flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+      </button>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col sm:items-center sm:justify-center" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+
+      {/* Sheet — bottom on mobile, centered on desktop */}
+      <div
+        className="relative bg-white w-full sm:w-[480px] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col mt-auto sm:mt-0 max-h-[92vh] sm:max-h-[80vh]"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle (mobile only) */}
+        <div className="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2 flex-shrink-0" />
+
+        {/* ── Overlay de sucesso ─────────────────────────────────────────── */}
+        {addedLabel && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/95 rounded-t-3xl sm:rounded-2xl z-10">
+            <div className="flex flex-col items-center gap-3 px-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center animate-[bounceIn_0.3s_ease]">
+                <svg className="w-9 h-9 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <p className="font-bold text-gray-900 text-base leading-snug">{addedLabel}</p>
+              <p className="text-sm text-gray-400">Adicionado ao dashboard</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: cols ─────────────────────────────────────────────────── */}
+        {step === 'cols' && (<>
+          <div className="flex items-center justify-between px-5 pt-2 pb-4 flex-shrink-0">
+            <div>
+              <h2 className="font-black text-gray-900 text-lg leading-tight">O que quer analisar?</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Toque em uma coluna para começar</p>
+            </div>
+            <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="px-5 pb-3 flex-shrink-0">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar coluna..." className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 rounded-xl border border-transparent focus:border-violet-300 focus:bg-white focus:ring-1 focus:ring-violet-200 outline-none transition-all" />
+            </div>
+          </div>
+
+          {/* Sugestões rápidas */}
+          {smartSuggestions.length > 0 && !search && (
+            <div className="px-5 pb-4 flex-shrink-0">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Sugestões rápidas</p>
+              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                {smartSuggestions.map((s, i) => (
+                  <button key={i}
+                    onClick={() => { const b = s.build(); onAddBlock(b); setAddedLabel(s.label); setTimeout(onClose, 700) }}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-violet-50 hover:bg-violet-100 border border-violet-100 hover:border-violet-300 rounded-xl text-xs font-semibold text-violet-700 transition-all active:scale-[.96] whitespace-nowrap"
+                  >
+                    {s.icon}
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Column groups */}
+          <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-5">
+            {numCols.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded text-emerald-600 flex items-center justify-center">{typeColors.number.badge}</span>
+                  Números
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {numCols.map(c => <ColCard key={`${c.dsId}-${c.col}`} c={c} />)}
+                </div>
+              </div>
+            )}
+            {dateCols.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded text-amber-600 flex items-center justify-center">{typeColors.date.badge}</span>
+                  Datas
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {dateCols.map(c => <ColCard key={`${c.dsId}-${c.col}`} c={c} />)}
+                </div>
+              </div>
+            )}
+            {textCols.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded text-blue-600 flex items-center justify-center">{typeColors.text.badge}</span>
+                  Categorias
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {textCols.map(c => <ColCard key={`${c.dsId}-${c.col}`} c={c} />)}
+                </div>
+              </div>
+            )}
+            {filtered.length === 0 && allCols.length === 0 && (
+              <div className="flex flex-col items-center text-center py-10 gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-2xl">🗄️</div>
+                <p className="font-semibold text-gray-700 text-sm">Nenhum dataset conectado</p>
+                <p className="text-xs text-gray-400 max-w-[220px] leading-relaxed">Conecte uma fonte de dados para começar a criar visualizações</p>
+              </div>
+            )}
+            {filtered.length === 0 && allCols.length > 0 && (
+              <p className="text-sm text-gray-400 text-center py-8">Nenhuma coluna encontrada para "{search}"</p>
+            )}
+            {/* Advanced link */}
+            <button onClick={onOpenAdvanced} className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 py-2 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Criar com IA / modo avançado
+            </button>
+          </div>
+        </>)}
+
+        {/* ── Step: insights ─────────────────────────────────────────────── */}
+        {step === 'insights' && selectedCol && (<>
+          <div className="flex items-center gap-3 px-5 pt-2 pb-4 border-b border-gray-100 flex-shrink-0">
+            <button onClick={() => setStep('cols')} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Coluna selecionada</p>
+              <p className="font-black text-gray-900 text-base truncate">{selectedCol.col}</p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
+            <p className="text-xs text-gray-500 font-semibold mb-3">O que fazer com este dado?</p>
+            {getInsights(selectedCol).map(insight => (
+              <button
+                key={insight.id}
+                onClick={() => handleInsightSelect(insight)}
+                className="w-full flex items-center gap-4 px-4 py-4 bg-gray-50 hover:bg-violet-50 border border-transparent hover:border-violet-200 rounded-2xl transition-all text-left group active:scale-[.99]"
+              >
+                <span className="w-10 h-10 rounded-xl bg-white border border-gray-200 group-hover:border-violet-200 group-hover:bg-violet-50 flex items-center justify-center text-gray-500 group-hover:text-violet-600 transition-colors flex-shrink-0 shadow-sm">
+                  {insight.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-800 text-sm leading-none">{insight.label}</p>
+                  <p className="text-xs text-gray-400 mt-1 leading-snug">{insight.desc}</p>
+                </div>
+                {insight.needsCompare ? (
+                  <span className="text-[10px] font-semibold text-violet-500 bg-violet-50 border border-violet-100 px-2 py-1 rounded-lg flex-shrink-0">Comparar</span>
+                ) : (
+                  <svg className="w-4 h-4 text-gray-300 group-hover:text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>)}
+
+        {/* ── Step: compare ──────────────────────────────────────────────── */}
+        {step === 'compare' && selectedInsight && (<>
+          <div className="flex items-center gap-3 px-5 pt-2 pb-4 border-b border-gray-100 flex-shrink-0">
+            <button onClick={() => setStep('insights')} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">{selectedInsight.label} de {selectedCol?.col}</p>
+              <p className="font-black text-gray-900 text-base leading-tight">
+                {selectedInsight.needsCompare === 'date' ? 'Comparar ao longo de qual data?' : 'Agrupar por qual categoria?'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
+            {getCompareOptions(selectedInsight).map(c => {
+              const tc = typeColors[c.type] || typeColors.text
+              return (
+                <button
+                  key={`${c.dsId}-${c.col}`}
+                  onClick={() => buildAndAdd(c)}
+                  className="w-full flex items-center gap-4 px-4 py-4 bg-gray-50 hover:bg-violet-50 border border-transparent hover:border-violet-200 rounded-2xl transition-all text-left group active:scale-[.99]"
+                >
+                  <span className={`w-10 h-10 rounded-xl ${tc.bg} ${tc.text} flex items-center justify-center flex-shrink-0`}>{tc.badge}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 text-sm truncate">{c.col}</p>
+                    {datasets.length > 1 && <p className="text-xs text-gray-400 mt-0.5">{c.dsName}</p>}
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 group-hover:text-violet-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                </button>
+              )
+            })}
+            {getCompareOptions(selectedInsight).length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-400">Nenhuma coluna compatível encontrada</p>
+                <button onClick={() => buildAndAdd(null)} className="mt-3 text-xs text-violet-600 hover:underline">Criar mesmo assim →</button>
+              </div>
+            )}
+          </div>
+        </>)}
+      </div>
+    </div>
+  )
+}
+
 // ─── AddBlockDialog — "O que quer ver aqui?" (text-to-block) ──────────────────
 function AddBlockDialog({ datasets, onClose, onAddBlock }) {
   const [dsId, setDsId] = useState(datasets[0]?.id || '')
@@ -1447,12 +1869,13 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
   ].filter(Boolean).slice(0, 4)
 
   const BLANK_TYPES = [
-    { type: 'kpi', label: 'KPI' },
-    { type: 'bar', label: 'Barras' },
-    { type: 'line', label: 'Linha' },
-    { type: 'pie', label: 'Pizza' },
-    { type: 'table', label: 'Tabela' },
-    { type: 'text', label: 'Texto' },
+    { type: 'kpi',  label: 'KPI'    },
+    { type: 'meta', label: '🎯 Meta' },
+    { type: 'bar',  label: 'Barras' },
+    { type: 'line', label: 'Linha'  },
+    { type: 'pie',  label: 'Pizza'  },
+    { type: 'table',label: 'Tabela' },
+    { type: 'text', label: 'Texto'  },
   ]
 
   async function createWithAI() {
@@ -1487,20 +1910,21 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
     const isFilter = type === 'filter' || type === 'slider'
     const isNoData = isFilter || type === 'text' || type === 'image'
     const isGauge = type === 'gauge' || type === 'speedometer'
+    const isMeta = type === 'meta'
     onAddBlock({
       id: crypto.randomUUID(),
       type,
-      title: '',
+      title: isMeta ? 'Meta' : '',
       dataset_id: isNoData ? null : dsId,
-      ...(isNoData ? {} : { label_col: null, value_col: null, agg: 'sum' }),
+      ...(isNoData || isMeta ? {} : { label_col: null, value_col: null, agg: 'sum' }),
       config: {},
-      layout: { x: 0, y: Infinity, w: isFilter ? 4 : isGauge ? 3 : type === 'kpi' ? 3 : 6, h: isFilter ? 2 : isGauge ? 4 : type === 'kpi' ? 2 : 4 },
+      layout: { x: 0, y: Infinity, w: isFilter ? 4 : isMeta ? 3 : isGauge ? 3 : type === 'kpi' ? 3 : 6, h: isFilter ? 2 : isMeta ? 3 : isGauge ? 4 : type === 'kpi' ? 2 : 4 },
     })
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
@@ -1807,6 +2231,7 @@ export default function DashboardDetailPage() {
   const [datasets, setDatasets] = useState([])
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [showAddBlockDialog, setShowAddBlockDialog] = useState(false)
+  const [showColumnDiscovery, setShowColumnDiscovery] = useState(false)
   const [canvasConfig, setCanvasConfig] = useState({ bgColor: '', sheetBgColor: '' })
   const [globalDateFilter, setGlobalDateFilter] = useState({ dateCol: '', dateFrom: '', dateTo: '' })
   const [filterSummary, setFilterSummary] = useState({})
@@ -2357,7 +2782,7 @@ export default function DashboardDetailPage() {
           </button>
 
           <button
-            onClick={() => datasets.length > 0 ? setShowAddBlockDialog(true) : setShowAddMenu(v => !v)}
+            onClick={() => datasets.length > 0 ? setShowColumnDiscovery(true) : setShowAddMenu(v => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-xs font-semibold rounded-lg hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16M4 12h16" /></svg>
@@ -2437,25 +2862,63 @@ export default function DashboardDetailPage() {
             />
           </div>
 
-          {/* Right: date filter → opens filters panel + share + cancel + save */}
+          {/* Right: painéis + share + salvar */}
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5 shrink-0" />
+
+          {/* Dados */}
+          <button
+            onClick={() => togglePanel('dados')}
+            title="Dados e colunas"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'dados' && sidebarOpen ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-600' : 'text-gray-400 hover:text-[#1A1A2E] hover:bg-[#f5f3ff] dark:hover:bg-gray-800 dark:hover:text-gray-200'}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3"/></svg>
+          </button>
+
+          {/* Filtros */}
           <button
             onClick={() => togglePanel('filtros')}
             title={t('titleFilters')}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'filtros' && sidebarOpen || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            className={`relative w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${(sidePanel === 'filtros' && sidebarOpen) || globalDateFilter.dateFrom || globalDateFilter.dateTo ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-600' : 'text-gray-400 hover:text-[#1A1A2E] hover:bg-[#f5f3ff] dark:hover:bg-gray-800 dark:hover:text-gray-200'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
+            {(globalDateFilter.dateFrom || globalDateFilter.dateTo) && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-violet-600 border-2 border-white" />
+            )}
           </button>
 
-          <button onClick={handleShare} disabled={sharingLoading} title={t('titleShare')} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          {/* Canvas config */}
+          <button
+            onClick={() => { setSelectedBlockId(null); togglePanel('config') }}
+            title="Configurar canvas"
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'config' && sidebarOpen && !selectedBlockId ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-600' : 'text-gray-400 hover:text-[#1A1A2E] hover:bg-[#f5f3ff] dark:hover:bg-gray-800 dark:hover:text-gray-200'}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+          </button>
+
+          {/* Notas */}
+          <button
+            onClick={() => togglePanel('comentarios')}
+            title="Notas e comentários"
+            className={`relative w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sidePanel === 'comentarios' && sidebarOpen ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-600' : 'text-gray-400 hover:text-[#1A1A2E] hover:bg-[#f5f3ff] dark:hover:bg-gray-800 dark:hover:text-gray-200'}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>
+            {blocks.reduce((s, b) => s + (b.config?.annotations?.length || 0), 0) > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 border-2 border-white" />
+            )}
+          </button>
+
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5 shrink-0" />
+
+          <button onClick={handleShare} disabled={sharingLoading} title={t('titleShare')} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#1A1A2E] hover:bg-[#f5f3ff] dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
           </button>
 
-          <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-1" />
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5 shrink-0" />
 
-          <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-[#1A1A2E] dark:hover:text-gray-100 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             {t('cancel')}
           </button>
-          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shadow-violet-200">
+          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#6D28D9] text-white text-xs font-bold rounded-xl hover:bg-[#7C3AED] disabled:opacity-50 transition-colors shadow-sm shadow-violet-300">
             {saving ? (
               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             ) : (
@@ -2534,7 +2997,7 @@ export default function DashboardDetailPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} onAddPreset={addMultipleBlocks} />}
+              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} blocks={blocks} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} onAddPreset={addMultipleBlocks} />}
               {sidePanel === 'config' && (activeBlock
                 ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} />
                 : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />
@@ -2547,6 +3010,7 @@ export default function DashboardDetailPage() {
                   onGlobalDateFilterChange={setGlobalDateFilter}
                   filterSummary={filterSummary}
                   onClearDatasetFilters={clearDatasetFilters}
+                  onAddPreset={addMultipleBlocks}
                 />
               )}
               {sidePanel === 'comentarios' && (
@@ -2555,25 +3019,15 @@ export default function DashboardDetailPage() {
             </div>
           </aside>
 
-          <DashboardRail
-            blocks={blocks}
-            globalDateFilter={globalDateFilter}
-            sidePanel={sidePanel}
-            sidebarOpen={sidebarOpen}
-            selectedBlockId={selectedBlockId}
-            togglePanel={togglePanel}
-            setSidebarOpen={setSidebarOpen}
-            setSidePanel={setSidePanel}
-            setShowAiPanel={setShowAiPanel}
-            onAutoLayout={handleAutoLayout}
-          />
+          {/* DashboardRail removido — painéis agora acessíveis via top bar */}
         </div>
         {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
         {showDiagnostico && <DiagnosticoPanel reportId={report.id} datasets={datasets} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
+        {showColumnDiscovery && <ColumnDiscovery datasets={datasets} onClose={() => setShowColumnDiscovery(false)} onAddBlock={addBlockObject} onOpenAdvanced={() => { setShowColumnDiscovery(false); setShowAddBlockDialog(true) }} />}
         {showAddBlockDialog && <AddBlockDialog datasets={datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
 
         {showVersions && (
-          <div className="fixed inset-0 z-50 flex">
+          <div className="fixed inset-0 z-[200] flex">
             <div className="flex-1" onClick={() => setShowVersions(false)} />
             <div className="w-80 bg-white shadow-2xl border-l flex flex-col">
               <div className="p-4 border-b flex items-center justify-between">

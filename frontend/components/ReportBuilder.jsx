@@ -389,6 +389,43 @@ function buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, glo
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v) { return typeof v === 'string' && UUID_RE.test(v) }
 
+// ── Avaliador matemático seguro (sem eval) ─────────────────────────────────
+// Suporta: + - * / ( ) números decimais e unário negativo
+function safeMath(expr) {
+  const s = (expr || '').replace(/\s+/g, '').replace(/,/g, '.')
+  let pos = 0
+  function parseExpr() {
+    let left = parseTerm()
+    while (pos < s.length && (s[pos] === '+' || s[pos] === '-')) {
+      const op = s[pos++]; const right = parseTerm()
+      left = op === '+' ? left + right : left - right
+    }
+    return left
+  }
+  function parseTerm() {
+    let left = parseFactor()
+    while (pos < s.length && (s[pos] === '*' || s[pos] === '/')) {
+      const op = s[pos++]; const right = parseFactor()
+      left = op === '*' ? left * right : right !== 0 ? left / right : NaN
+    }
+    return left
+  }
+  function parseFactor() {
+    if (pos < s.length && s[pos] === '(') { pos++; const v = parseExpr(); if (s[pos] === ')') pos++; return v }
+    if (pos < s.length && s[pos] === '-') { pos++; return -parseFactor() }
+    const start = pos
+    while (pos < s.length && /[\d.]/.test(s[pos])) pos++
+    return pos > start ? parseFloat(s.slice(start, pos)) || 0 : 0
+  }
+  try { const r = parseExpr(); return isFinite(r) ? r : NaN } catch { return NaN }
+}
+
+// Substitui [NomeColuna] pelos valores agregados e avalia a expressão
+function evaluateExpression(expr, values) {
+  const withVals = expr.replace(/\[([^\]]+)\]/g, (_, col) => values[col] != null ? String(values[col]) : '0')
+  return safeMath(withVals)
+}
+
 function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters = {}, globalDateFilter = {}, drilldown = null, shareToken = null, drillFilters = []) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -397,11 +434,65 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
   const req = buildQueryRequest(block, activeFilters, crossFilters, rangeFilters, globalDateFilter, drilldown, drillFilters)
   const pivotCfgKey = block.type === 'pivot' ? JSON.stringify({ rc: block.config?.row_col, cc: block.config?.col_col, vc: block.config?.value_col }) : null
   const ganttCfgKey = block.type === 'gantt' ? JSON.stringify({ tc: block.config?.task_col, sc: block.config?.start_col, ec: block.config?.end_col, gc: block.config?.group_col }) : null
-  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken, pk: pivotCfgKey, gk: ganttCfgKey })
+  const key = JSON.stringify({ dsId: block.dataset_id, req, type: block.type, st: shareToken, pk: pivotCfgKey, gk: ganttCfgKey, expr: block.config?.expression || null })
 
   useEffect(() => {
     if (['text', 'filter', 'slider', 'image', 'ai_summary'].includes(block.type)) return
     if (!isUUID(block.dataset_id)) { setData(block.static_data || null); return }
+
+    // ── Modo fórmula: dois seletores com agregações independentes ───────────
+    if (block.type === 'kpi' && block.config?.formula_mode && block.config?.formula_col_a && block.config?.formula_col_b) {
+      setLoading(true); setError(null)
+      const baseQuery = { dimensions: [], filters: req.filters || [], ...(req.date_range ? { date_range: req.date_range } : {}) }
+      Promise.all([
+        api.reports.datasets.queryV2(block.dataset_id, { ...baseQuery, metrics: [{ column: block.config.formula_col_a, aggregation: block.config.formula_agg_a || 'sum' }] })
+          .then(res => (res?.data || res)?.[0]?.value ?? 0).catch(() => 0),
+        api.reports.datasets.queryV2(block.dataset_id, { ...baseQuery, metrics: [{ column: block.config.formula_col_b, aggregation: block.config.formula_agg_b || 'sum' }] })
+          .then(res => (res?.data || res)?.[0]?.value ?? 0).catch(() => 0),
+      ])
+        .then(([a, b]) => {
+          const op = block.config.formula_op || '/'
+          let result
+          if (op === '+') result = a + b
+          else if (op === '-') result = a - b
+          else if (op === '*') result = a * b
+          else result = b !== 0 ? a / b : 0
+          if (block.config.formula_multiply_100) result *= 100
+          setData([{ label: 'formula', value: isFinite(result) ? result : 0 }])
+        })
+        .catch(e => setError(e.message))
+        .finally(() => setLoading(false))
+      return
+    }
+
+    // ── Modo expressão: busca cada [coluna] separadamente e avalia ─────────
+    if (block.type === 'kpi' && block.config?.expression?.trim()) {
+      const expr = block.config.expression.trim()
+      const tokens = [...expr.matchAll(/\[([^\]]+)\]/g)].map(m => m[1])
+      const unique = [...new Set(tokens)]
+      if (!unique.length) { setData([]); return }
+      setLoading(true); setError(null)
+      const fetches = unique.map(col =>
+        api.reports.datasets.queryV2(block.dataset_id, {
+          dimensions: [],
+          metrics: [{ column: col, aggregation: block.agg || 'sum' }],
+          filters: req.filters || [],
+          ...(req.date_range ? { date_range: req.date_range } : {}),
+        })
+        .then(res => ({ col, value: (res?.data || res)?.[0]?.value ?? 0 }))
+        .catch(() => ({ col, value: 0 }))
+      )
+      Promise.all(fetches)
+        .then(results => {
+          const vals = Object.fromEntries(results.map(r => [r.col, r.value]))
+          const evaluated = evaluateExpression(expr, vals)
+          setData([{ label: 'expr', value: isFinite(evaluated) ? evaluated : 0 }])
+        })
+        .catch(e => setError(e.message))
+        .finally(() => setLoading(false))
+      return
+    }
+
     // For pivot, require at least row_col and value_col configured
     if (block.type === 'pivot') {
       const cfg = block.config || {}
@@ -422,7 +513,13 @@ function useBlockData(block, activeFilters = {}, crossFilters = {}, rangeFilters
     } else if (block.type === 'boxplot') {
       const cfg = block.config || {}
       if (!cfg.value_col) { setData(block.static_data || null); return }
+    } else if (block.type === 'meta') {
+      // Meta: se tem valor manual do realizado, não busca dataset
+      if (block.config?.meta_actual != null && block.config.meta_actual !== '') { setData([]); return }
+      if (!block.value_col) { setData([]); return }
     } else if (['kpi', 'gauge', 'speedometer', 'bullet'].includes(block.type)) {
+      // KPI em modo manual (valor fixo): não busca dataset
+      if (block.type === 'kpi' && block.config?.manual_value != null && block.config.manual_value !== '') { setData([]); return }
       if (!block.value_col) { setData(block.static_data || null); return }
     } else {
       if (!block.label_col || !block.value_col) { setData(block.static_data || null); return }
@@ -1238,7 +1335,7 @@ function AISummaryBlock({ block, readOnly }) {
 }
 
 // ─── Packed Bubble Chart ─────────────────────────────────────────────────────
-function BubblePackChart({ data, palette, fmt, format, config }) {
+function BubblePackChart({ data, palette, fmt, format, config, onClickBubble }) {
   const containerRef = useRef(null)
   const [size, setSize] = useState({ w: 400, h: 300 })
 
@@ -1291,11 +1388,12 @@ function BubblePackChart({ data, palette, fmt, format, config }) {
           const color = palette[i % palette.length]
           const fs = Math.max(8, Math.min(13, c.r * 0.32))
           const fsVal = Math.max(7, fs * 0.82)
-          const showLabel = c.r > 18
-          const showValue = c.r > 28
+          const dlCfg = config?.show_data_labels
+          const showLabel = dlCfg === true ? c.r > 10 : dlCfg === false ? false : c.r > 18
+          const showValue = dlCfg === true ? c.r > 16 : dlCfg === false ? false : c.r > 28
           const maxChars = Math.max(3, Math.floor(c.r * 1.6 / fs))
           return (
-            <g key={i} transform={`translate(${c.x},${c.y})`}>
+            <g key={i} transform={`translate(${c.x},${c.y})`} onClick={() => onClickBubble?.(c.label)} style={{ cursor: onClickBubble ? 'pointer' : 'default' }}>
               <circle r={c.r} fill={color} opacity={0.88} />
               <circle r={c.r} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={1} />
               {showLabel && (
@@ -1330,7 +1428,28 @@ function BubblePackChart({ data, palette, fmt, format, config }) {
   )
 }
 
-function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, onGlobalDateFilterChange, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR' }) {
+function BlockEmptyState({ block, readOnly, onBlockAction }) {
+  const BLOCK_LABELS = { kpi: 'KPI', bar: 'Barras', bar_h: 'Barras H', line: 'Linha', area: 'Área', pie: 'Pizza', table: 'Tabela', scatter: 'Dispersão' }
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 px-4 text-center select-none">
+      <div className="w-10 h-10 rounded-2xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center">
+        <span className="text-[10px] text-gray-300 font-bold">{BLOCK_LABELS[block.type] || block.type}</span>
+      </div>
+      <p className="text-xs text-gray-400 font-medium leading-snug">Bloco sem dados</p>
+      {!readOnly && onBlockAction && (
+        <button
+          onClick={e => { e.stopPropagation(); onBlockAction(block.id, 'config') }}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl text-xs font-semibold text-violet-700 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          Configurar bloco
+        </button>
+      )}
+    </div>
+  )
+}
+
+function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilters, onCrossFilter, onFilterChange, globalDateFilter, onGlobalDateFilterChange, shareToken, rangeFilters = {}, onRangeChange, locale = 'pt-BR', onBlockAction }) {
   const vs = VIEWER_STRINGS[locale] || VIEWER_STRINGS['pt-BR']
   const [drilldown, setDrilldown] = useState(null) // { val: string } when active (legacy single-level)
 
@@ -1427,46 +1546,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   const effectiveDatasetId = (block.dataset_id && block.dataset_id !== '__onboarding__') ? block.dataset_id : null
   const isSampleData = block.static_data && !effectiveDatasetId
   // KPI/gauge/speedometer/bullet só precisam de dataset_id + value_col (sem dimensão obrigatória)
-  const noLabelRequired = ['kpi', 'gauge', 'speedometer', 'bullet', 'pivot', 'gantt', 'sankey', 'candlestick', 'boxplot', 'table'].includes(block.type)
-  if (!isSampleData && ['kpi', 'gauge', 'speedometer', 'bullet'].includes(block.type) && (!effectiveDatasetId || !block.value_col)) {
-    const msg = !block.dataset_id ? 'Arraste um dataset aqui' : 'Arraste uma coluna numérica (#)'
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
-        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <ellipse cx="12" cy="5" rx="9" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
-        </svg>
-        <p className="text-[10px] text-gray-400 font-medium leading-snug">{msg}</p>
-        <p className="text-[9px] text-gray-300">ou clique em <strong>Editar</strong> para configurar</p>
-      </div>
-    )
+  const noLabelRequired = ['kpi', 'gauge', 'speedometer', 'bullet', 'meta', 'pivot', 'gantt', 'sankey', 'candlestick', 'boxplot', 'table'].includes(block.type)
+  if (!isSampleData && ['kpi', 'gauge', 'speedometer', 'bullet'].includes(block.type) && (!effectiveDatasetId || !block.value_col) && !(block.type === 'kpi' && block.config?.manual_value != null && block.config.manual_value !== '') && !(block.type === 'kpi' && block.config?.expression?.trim())) {
+    return <BlockEmptyState block={block} readOnly={readOnly} onBlockAction={onBlockAction} />
   }
   if (!isSampleData && !noLabelRequired && (!effectiveDatasetId || !block.label_col || !block.value_col)) {
-    const msg = !block.dataset_id
-      ? 'Arraste um dataset aqui'
-      : !block.label_col
-      ? 'Arraste uma coluna de dimensão (A)'
-      : 'Arraste uma coluna numérica (#)'
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
-        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <ellipse cx="12" cy="5" rx="9" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
-        </svg>
-        <p className="text-[10px] text-gray-400 font-medium leading-snug">{msg}</p>
-        <p className="text-[9px] text-gray-300">ou clique em <strong>Editar</strong> para configurar</p>
-      </div>
-    )
+    return <BlockEmptyState block={block} readOnly={readOnly} onBlockAction={onBlockAction} />
   }
 
   // Table em modo bruto — não depende de data agregada, busca direto do /rows
   if (block.type === 'table') {
-    if (!effectiveDatasetId) return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
-        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M10 6v12M6 6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
-        <p className="text-[10px] text-gray-400 font-medium">Clique em <strong>Editar</strong> e selecione um dataset</p>
-      </div>
-    )
+    if (!effectiveDatasetId) return <BlockEmptyState block={block} readOnly={readOnly} onBlockAction={onBlockAction} />
     if (!block.label_col || !block.value_col) {
       return <RawTableBlock datasetId={effectiveDatasetId} columns={block.config?.raw_columns || []} readOnly={readOnly} />
     }
@@ -1584,8 +1674,67 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     </div>
   ) : null
 
+  // ── Meta block — card comparativo de meta vs realizado ────────────────────
+  if (block.type === 'meta') {
+    const target = parseFloat(block.config?.meta_target) || 0
+    const hasManualActual = block.config?.meta_actual != null && block.config.meta_actual !== ''
+    const actual = hasManualActual
+      ? parseFloat(block.config.meta_actual) || 0
+      : (displayData || []).reduce((s, d) => s + (d.value || 0), 0)
+    if (!target && !hasManualActual && !block.value_col) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
+          <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <p className="text-[10px] text-gray-400 font-medium leading-snug">Clique em <strong>Editar</strong> para definir a meta</p>
+        </div>
+      )
+    }
+    const achieved = target > 0 ? actual >= target : actual > 0
+    const pct = target > 0 ? Math.min(Math.round((actual / target) * 100), 999) : 0
+    const accentColor = achieved ? (block.config?.color_ok || '#10b981') : (block.config?.color_fail || '#ef4444')
+    const unit = block.config?.meta_unit || ''
+    const fmtMeta = v => {
+      const n = Number(v)
+      if (!isFinite(n)) return String(v)
+      const s = n.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+      return unit ? `${unit}\u00A0${s}` : s
+    }
+    return (
+      <div className="flex flex-col justify-between h-full py-0.5">
+        <div>
+          <p className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wide font-semibold">Realizado</p>
+          <p className="font-black leading-none tracking-tight tabular-nums" style={{ color: accentColor, fontSize: '28px' }}>
+            {fmtMeta(actual)}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${achieved ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+              {achieved ? '✓' : '↓'} {pct}%
+            </span>
+            <span className="text-[10px] text-gray-400 leading-none">da meta</span>
+          </div>
+        </div>
+        <div className="space-y-1.5 mt-2">
+          {target > 0 && (
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: accentColor }} />
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] text-gray-400 truncate">{block.config?.meta_label || 'Meta'}</span>
+            {target > 0 && <span className="text-[10px] font-semibold text-gray-600 shrink-0">{fmtMeta(target)}</span>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (block.type === 'kpi') {
-    const total = displayData.reduce((s, d) => s + (d.value || 0), 0)
+    const isManualKpi = block.config?.manual_value != null && block.config.manual_value !== ''
+    const total = isManualKpi
+      ? parseFloat(block.config.manual_value) || 0
+      : (displayData || []).reduce((s, d) => s + (d.value || 0), 0)
     const accentColor = config.accent_color || '#6366f1'
     let valueColor = accentColor
     if (config.threshold_warn != null && config.threshold_warn !== '' && total < parseFloat(config.threshold_warn)) valueColor = '#ef4444'
@@ -1787,6 +1936,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const pieOuter = config.outer_radius_pct != null && config.outer_radius_pct !== '' ? `${config.outer_radius_pct}%` : '75%'
     const pieCY = config.pie_cy != null && config.pie_cy !== '' ? `${config.pie_cy}%` : '50%'
     const showLegend = config.show_legend !== false
+    const pieTopN = config.top_n ? parseInt(config.top_n) : null
+    const pieData = pieTopN
+      ? [...displayData].sort((a, b) => (b.value || 0) - (a.value || 0)).slice(0, pieTopN)
+      : displayData
     return (
       <div className="flex flex-col h-full">
         {DrillBreadcrumb}
@@ -1795,7 +1948,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={displayData} dataKey="value" nameKey="label"
+              data={pieData} dataKey="value" nameKey="label"
               cx="50%" cy={pieCY} outerRadius={pieOuter} innerRadius={pieInner}
               labelLine={false}
               label={config.show_labels ? ({ cx: pcx, cy: pcy, midAngle, outerRadius: pr, percent }) => {
@@ -1808,7 +1961,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               onClick={entry => { handleClick(entry.label); if (config.custom_event) handleCustomEvent(config.custom_event, entry.name, entry.value) }}
               style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}
             >
-              {displayData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} onClick={() => { if (config.click_url) handleChartClickUrl(d.label) }} />)}
+              {pieData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} onClick={() => { if (config.click_url) handleChartClickUrl(d.label) }} />)}
             </Pie>
             <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => [fmt(v, format, config), '']} />
             {showLegend && <Legend
@@ -1863,11 +2016,19 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   )
 
   if (block.type === 'bubble') {
-    return <BubblePackChart data={displayData} palette={palette} fmt={fmt} format={format} config={config} />
+    const bubbleTopN = config.top_n ? parseInt(config.top_n) : null
+    const bubbleData = bubbleTopN
+      ? [...displayData].sort((a, b) => (b.value || 0) - (a.value || 0)).slice(0, bubbleTopN)
+      : displayData
+    return <BubblePackChart data={bubbleData} palette={palette} fmt={fmt} format={format} config={config} onClickBubble={handleClick} />
   }
 
   if (block.type === 'treemap') {
-    const treeData = displayData.map((d, i) => ({ name: d.label, size: Math.abs(d.value) || 1, fill: palette[i % palette.length] }))
+    const treeTopN = config.top_n ? parseInt(config.top_n) : null
+    const treeSource = treeTopN
+      ? [...displayData].sort((a, b) => (b.value || 0) - (a.value || 0)).slice(0, treeTopN)
+      : displayData
+    const treeData = treeSource.map((d, i) => ({ name: d.label, size: Math.abs(d.value) || 1, fill: palette[i % palette.length] }))
     return (
       <div className="flex flex-col h-full">
         {DrillChip}
@@ -2007,12 +2168,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'table') {
-    if (!effectiveDatasetId) return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 px-3 text-center select-none">
-        <svg className="w-7 h-7 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M10 6v12M6 6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
-        <p className="text-[10px] text-gray-400 font-medium">Clique em <strong>Editar</strong> e selecione um dataset</p>
-      </div>
-    )
+    if (!effectiveDatasetId) return <BlockEmptyState block={block} readOnly={readOnly} onBlockAction={onBlockAction} />
     // Modo bruto: dataset definido mas sem dimensão+métrica → mostra linhas brutas imediatamente
     if (!block.label_col || !block.value_col) {
       const cols = block.config?.raw_columns || []
@@ -2651,7 +2807,8 @@ function ConfigSection({ title, children, defaultOpen = true }) {
   )
 }
 
-export function BlockConfigPanel({ block, onChange, datasets = [] }) {
+export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
+  const block = rawBlock?.config ? rawBlock : { ...rawBlock, config: rawBlock?.config ?? {} }
   const t = useTranslations('dashboardEditor')
   const AGG_OPTIONS = [
     { value: 'sum',   label: t('agg.sum') },
@@ -3201,6 +3358,112 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
           )}
           {block.type === 'kpi' && (
             <>
+              {/* ── Valor fixo (manual) ─────────────────────────────────────── */}
+              <div className="border border-violet-100 bg-violet-50/60 rounded-xl p-3 space-y-2.5">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <div
+                    onClick={() => updConfig('manual_value', block.config?.manual_value != null ? null : 0)}
+                    className={`w-8 h-4 rounded-full transition-colors relative shrink-0 ${block.config?.manual_value != null ? 'bg-violet-500' : 'bg-gray-200'}`}
+                  >
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.manual_value != null ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700 leading-none">Valor fixo</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Sem dataset — você digita o número</p>
+                  </div>
+                </label>
+                {block.config?.manual_value != null && (
+                  <input
+                    type="number" step="any"
+                    value={block.config.manual_value}
+                    onChange={e => updConfig('manual_value', e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                    placeholder="0"
+                    className="w-full border border-violet-200 bg-white rounded-lg px-3 py-2 text-base font-bold focus:outline-none focus:ring-1 focus:ring-violet-400 tabular-nums"
+                  />
+                )}
+              </div>
+
+              {/* ── Cálculo entre colunas / Expressão ── */}
+              {block.config?.manual_value == null && (
+                <>
+                  {/* Modo fórmula: dois seletores com agg independentes */}
+                  <div className="border border-gray-100 rounded-xl p-3 space-y-2.5 bg-gray-50/60">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <div onClick={() => updConfig('formula_mode', !block.config?.formula_mode)} className={`w-8 h-4 rounded-full transition-colors relative shrink-0 ${block.config?.formula_mode ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.formula_mode ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-700 leading-none">Cálculo entre colunas</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Ex: Receita ÷ Pedidos = Ticket médio</p>
+                      </div>
+                    </label>
+
+                    {block.config?.formula_mode && (
+                      <div className="space-y-2 pt-1">
+                        {/* Coluna A */}
+                        <div className="flex gap-1.5">
+                          <select value={block.config?.formula_col_a || ''} onChange={e => updConfig('formula_col_a', e.target.value || null)}
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400">
+                            <option value="">Coluna A</option>
+                            {metricColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <select value={block.config?.formula_agg_a || 'sum'} onChange={e => updConfig('formula_agg_a', e.target.value)}
+                            className="w-16 border border-gray-200 rounded-lg px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400">
+                            {AGG_OPTIONS.filter(o => o.value !== 'none').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+
+                        {/* Operador */}
+                        <div className="flex gap-1 justify-center">
+                          {[{ sym: '+', val: '+' }, { sym: '-', val: '-' }, { sym: '×', val: '*' }, { sym: '÷', val: '/' }].map(({ sym, val }) => (
+                            <button key={val} onClick={() => updConfig('formula_op', val)}
+                              className={`w-9 h-9 rounded-xl text-base font-bold border transition-all ${(block.config?.formula_op || '/') === val ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-violet-300 bg-white'}`}>
+                              {sym}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Coluna B */}
+                        <div className="flex gap-1.5">
+                          <select value={block.config?.formula_col_b || ''} onChange={e => updConfig('formula_col_b', e.target.value || null)}
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400">
+                            <option value="">Coluna B</option>
+                            {metricColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <select value={block.config?.formula_agg_b || 'sum'} onChange={e => updConfig('formula_agg_b', e.target.value)}
+                            className="w-16 border border-gray-200 rounded-lg px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400">
+                            {AGG_OPTIONS.filter(o => o.value !== 'none').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+
+                        {/* ×100 para porcentagem */}
+                        <label className="flex items-center gap-2 cursor-pointer pt-0.5">
+                          <div onClick={() => updConfig('formula_multiply_100', !block.config?.formula_multiply_100)} className={`w-8 h-4 rounded-full transition-colors relative shrink-0 ${block.config?.formula_multiply_100 ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.formula_multiply_100 ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                          </div>
+                          <span className="text-xs text-gray-600">Multiplicar por 100 (resultado em %)</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Expressão livre — só quando não está em modo fórmula */}
+                  {!block.config?.formula_mode && (
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Expressão calculada</label>
+                      <input
+                        type="text"
+                        value={block.config?.expression || ''}
+                        onChange={e => updConfig('expression', e.target.value || null)}
+                        placeholder="[Vendas] / [Meta] * 100"
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
+                      />
+                      <p className="text-[10px] text-gray-400 mt-1">Use [NomeColuna] para referenciar colunas. Suporta + - * / ( )</p>
+                    </div>
+                  )}
+                </>
+              )}
+
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">{t('block.labelAlignment')}</label>
                 <div className="flex gap-1">
@@ -3269,6 +3532,68 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
               {block.config?.auto_delta && (
                 <p className="text-[10px] text-gray-400 -mt-1">{t('block.hintAutoDelta')}</p>
               )}
+            </>
+          )}
+          {block.type === 'meta' && (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Valor da meta</label>
+                <input
+                  type="number" step="any"
+                  value={block.config?.meta_target ?? ''}
+                  onChange={e => updConfig('meta_target', e.target.value === '' ? null : parseFloat(e.target.value))}
+                  placeholder="Ex: 100000"
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Label da meta</label>
+                  <input
+                    type="text"
+                    value={block.config?.meta_label || ''}
+                    onChange={e => updConfig('meta_label', e.target.value)}
+                    placeholder="Ex: Meta Q1"
+                    className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Unidade</label>
+                  <input
+                    type="text"
+                    value={block.config?.meta_unit || ''}
+                    onChange={e => updConfig('meta_unit', e.target.value)}
+                    placeholder="R$, %, un."
+                    className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+              </div>
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Valor realizado</p>
+                <label className="flex items-center gap-2.5 cursor-pointer mb-2">
+                  <div
+                    onClick={() => updConfig('meta_actual', block.config?.meta_actual != null ? null : 0)}
+                    className={`w-8 h-4 rounded-full transition-colors relative shrink-0 ${block.config?.meta_actual != null ? 'bg-violet-500' : 'bg-gray-200'}`}
+                  >
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.meta_actual != null ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700 leading-none">Valor manual</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Desativa busca no dataset</p>
+                  </div>
+                </label>
+                {block.config?.meta_actual != null ? (
+                  <input
+                    type="number" step="any"
+                    value={block.config.meta_actual}
+                    onChange={e => updConfig('meta_actual', e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                    placeholder="0"
+                    className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                ) : (
+                  <p className="text-[10px] text-gray-400">O valor realizado vem do dataset via coluna selecionada acima.</p>
+                )}
+              </div>
             </>
           )}
           {['gauge', 'speedometer'].includes(block.type) && (
@@ -3542,6 +3867,20 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         </ConfigSection>
       )}
 
+      {/* BOLHAS — opções específicas */}
+      {block.type === 'bubble' && (
+        <ConfigSection title="Bolhas" defaultOpen={false}>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_data_labels', block.config?.show_data_labels === true ? false : block.config?.show_data_labels === false ? undefined : true)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_data_labels === true ? 'bg-violet-500' : block.config?.show_data_labels === false ? 'bg-red-300' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_data_labels === true ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">
+              {block.config?.show_data_labels === true ? 'Labels sempre visíveis' : block.config?.show_data_labels === false ? 'Labels ocultos' : 'Labels automáticos (por tamanho)'}
+            </span>
+          </label>
+        </ConfigSection>
+      )}
+
       {/* INTERATIVIDADE */}
       {hasData && block.type !== 'scatter' && (
         <ConfigSection title={t('block.sectionInteractivity')} defaultOpen={false}>
@@ -3748,20 +4087,22 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
         </ConfigSection>
       )}
 
-      {/* ORDENAÇÃO E RANKING — bar/bar_h */}
-      {['bar', 'bar_h'].includes(block.type) && (
+      {/* ORDENAÇÃO E RANKING */}
+      {['bar', 'bar_h', 'pie', 'bubble', 'treemap'].includes(block.type) && (
         <ConfigSection title={t('block.sectionSorting')} defaultOpen={false}>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">{t('block.labelSortBy')}</label>
-            <div className="flex gap-1">
-              {[{ v: '', l: t('block.btnOriginal') }, { v: 'desc', l: t('block.btnDesc') }, { v: 'asc', l: t('block.btnAsc') }].map(o => (
-                <button key={o.v} onClick={() => onChange({ ...block, config: { ...block.config, sort_by: o.v || undefined } })}
-                  className={`flex-1 px-2 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${(block.config?.sort_by || '') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                  {o.l}
-                </button>
-              ))}
+          {['bar', 'bar_h'].includes(block.type) && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">{t('block.labelSortBy')}</label>
+              <div className="flex gap-1">
+                {[{ v: '', l: t('block.btnOriginal') }, { v: 'desc', l: t('block.btnDesc') }, { v: 'asc', l: t('block.btnAsc') }].map(o => (
+                  <button key={o.v} onClick={() => onChange({ ...block, config: { ...block.config, sort_by: o.v || undefined } })}
+                    className={`flex-1 px-2 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${(block.config?.sort_by || '') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                    {o.l}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">{t('block.labelTopN')}</label>
             <input type="number" min="0" value={block.config?.top_n ?? ''} onChange={e => onChange({ ...block, config: { ...block.config, top_n: e.target.value || undefined } })} placeholder={t('block.placeholderTopN')} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
@@ -4010,7 +4351,23 @@ export function BlockConfigPanel({ block, onChange, datasets = [] }) {
 
 export function CanvasConfigPanel({ config, onChange }) {
   const t = useTranslations('dashboardEditor')
+  const [applyingBrand, setApplyingBrand] = useState(false)
+  const [brandApplied, setBrandApplied] = useState(false)
+
   function upd(field, value) { onChange(prev => ({ ...prev, [field]: value })) }
+
+  async function handleApplyBrand() {
+    setApplyingBrand(true)
+    try {
+      const brand = await api.brand.get()
+      if (brand.primary_color) upd('accentColor', brand.primary_color)
+      if (brand.brand_colors?.length > 0) upd('chartPalette', brand.brand_colors)
+      setBrandApplied(true)
+      setTimeout(() => setBrandApplied(false), 2500)
+    } catch { /* ignora silenciosamente */ } finally {
+      setApplyingBrand(false)
+    }
+  }
 
   function SwatchPicker({ field, colors, placeholder }) {
     return (
@@ -4052,6 +4409,34 @@ export function CanvasConfigPanel({ config, onChange }) {
   return (
     <div className="space-y-5">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('canvas.title')}</p>
+
+      {/* APLICAR MARCA */}
+      <button
+        onClick={handleApplyBrand}
+        disabled={applyingBrand}
+        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+          brandApplied
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+            : 'border-[#6D28D9]/30 bg-[#f5f3ff] text-[#6D28D9] hover:bg-[#ede9fe] hover:border-[#6D28D9]/50'
+        } disabled:opacity-50`}
+      >
+        {brandApplied ? (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+            Marca aplicada!
+          </>
+        ) : applyingBrand ? (
+          <>
+            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            Aplicando...
+          </>
+        ) : (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+            Aplicar minha marca
+          </>
+        )}
+      </button>
 
       {/* TEMA RÁPIDO */}
       <div>
@@ -4433,7 +4818,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
       </div>
 
       {excelSheetPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setExcelSheetPicker(null)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setExcelSheetPicker(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h2 className="font-semibold text-gray-800 mb-1">Qual aba contém os dados?</h2>
             <p className="text-xs text-gray-400 mb-4">O arquivo tem {excelSheetPicker.sheets.length} abas. Escolha qual importar como dataset.</p>
@@ -4615,7 +5000,7 @@ function generateSmartPresets(ds) {
   return presets
 }
 
-export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, onDatasetsChange, onColumnDragStart, onColumnDragEnd, onAddPreset }) {
+export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAssignColumn, onDatasetsChange, onColumnDragStart, onColumnDragEnd, onAddPreset }) {
   const [tab, setTab] = useState('colunas')
   const [search, setSearch] = useState('')
   const [expandedDates, setExpandedDates] = useState(new Set())
@@ -4642,8 +5027,15 @@ export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, o
     })
   }
 
-  // All presets for all datasets
-  const allPresets = datasets.flatMap(ds => generateSmartPresets(ds).map(p => ({ ...p, dsName: ds.name, dsId: ds.id })))
+  // Datasets efetivamente usados por blocos deste dashboard
+  const usedDatasetIds = new Set(blocks.map(b => b.dataset_id).filter(Boolean))
+  const usedDatasets = datasets.filter(d => usedDatasetIds.has(d.id))
+  // Na aba Dados: só datasets usados; se nenhum ainda, mostra todos (onboarding)
+  const displayDatasets = usedDatasets.length > 0 ? usedDatasets : datasets
+  const hiddenCount = datasets.length - displayDatasets.length
+
+  // Sugestões inteligentes: date_filter pertence ao painel Filtros — não exibir aqui
+  const allPresets = datasets.flatMap(ds => generateSmartPresets(ds).filter(p => p.id !== 'date_filter').map(p => ({ ...p, dsName: ds.name, dsId: ds.id })))
 
   return (
     <div className="space-y-2">
@@ -4719,10 +5111,15 @@ export function ColumnsPanel({ datasets = [], selectedBlockId, onAssignColumn, o
               Selecione um bloco para atribuir colunas manualmente
             </p>
           )}
+          {hiddenCount > 0 && !search && (
+            <p className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+              {hiddenCount} fonte{hiddenCount > 1 ? 's' : ''} não usada{hiddenCount > 1 ? 's' : ''} neste dashboard — disponível em <button onClick={() => setTab('gerenciar')} className="text-violet-600 underline font-medium">Gerenciar</button>
+            </p>
+          )}
 
-          {datasets.length === 0 ? (
+          {displayDatasets.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-6">Nenhum dataset — vá em Gerenciar para adicionar</p>
-          ) : datasets.map(ds => {
+          ) : displayDatasets.map(ds => {
             const cols = ds.columns || []
             const colTypes = ds.column_types || {}
             const filtered = search ? cols.filter(c => String(c).toLowerCase().includes(search.toLowerCase())) : cols
@@ -5032,11 +5429,11 @@ function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction
 
   return (
     <div
-      className="absolute -top-10 left-0 bg-white rounded-xl shadow-lg border border-gray-200 flex items-center px-1.5 py-1 gap-0.5 z-50"
+      className="absolute -top-10 left-0 bg-white rounded-2xl shadow-[0_8px_32px_rgba(109,40,217,0.18)] border border-[#E2E8F0] flex items-center px-1.5 py-1 gap-0.5 z-50"
       onClick={e => e.stopPropagation()}
     >
-      {/* Type picker */}
-      <div className="relative">
+      {/* Type picker — oculto para filtros */}
+      {block.type !== 'filter' && block.type !== 'slider' && <div className="relative">
         <button
           onClick={() => { setShowTypes(v => !v); setShowData(false); setShowColors(false) }}
           className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${showTypes ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -5063,12 +5460,12 @@ function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
-      <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0"/>
+      {block.type !== 'filter' && block.type !== 'slider' && <div className="w-px h-5 bg-gray-200 mx-0.5 shrink-0"/>}
 
-      {/* Dados */}
-      <div className="relative">
+      {/* Dados — oculto para filtros */}
+      {block.type !== 'filter' && block.type !== 'slider' && <div className="relative">
         <button
           onClick={() => { setShowData(v => !v); setShowTypes(false); setShowColors(false) }}
           className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${showData ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
@@ -5119,7 +5516,7 @@ function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* IA Improve */}
       {onAiImprove && (
@@ -5382,14 +5779,14 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         return (
           <div
             key={block.id}
-            className={`group relative rounded-xl flex flex-col transition-all duration-200 ${
+            className={`group relative rounded-2xl flex flex-col transition-all duration-200 ${
               isSelected
-                ? 'ring-2 ring-purple-500 ring-offset-1 shadow-lg border border-transparent'
+                ? 'ring-2 ring-[#6D28D9] ring-offset-2 shadow-[0_8px_32px_rgba(109,40,217,0.18)] border border-transparent'
                 : isCrossFiltered
                 ? 'border-2 border-emerald-400 shadow-[0_4px_16px_rgba(52,211,153,0.2)]'
                 : isUnrelated
-                ? 'border border-gray-200/60 opacity-35'
-                : 'border border-gray-200/70 shadow-sm hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] hover:border-violet-200/60 hover:-translate-y-px'
+                ? 'border border-[#E2E8F0] opacity-35'
+                : 'border border-[#E2E8F0] shadow-[0_2px_8px_rgba(109,40,217,0.06)] hover:shadow-[0_8px_24px_rgba(109,40,217,0.14)] hover:border-violet-200 hover:-translate-y-px'
             }`}
             style={{
               backgroundColor: isCrossFiltered
@@ -5408,8 +5805,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             onMouseLeave={() => setHoveredBlockId(null)}
             onClick={e => { e.stopPropagation(); !readOnly && onSelectBlock?.(block.id) }}
           >
-            {/* Floating block toolbar — shown above selected non-filter/text blocks */}
-            {!readOnly && isSelected && block.type !== 'filter' && block.type !== 'slider' && block.type !== 'text' && (
+            {/* Floating block toolbar — shown above selected non-text blocks */}
+            {!readOnly && isSelected && block.type !== 'text' && (
               <FloatingBlockToolbar
                 block={block}
                 blocks={blocks}
@@ -5445,10 +5842,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 </svg>
               )}
               {readOnly ? (
-                <span className="text-xs font-semibold text-gray-600 flex-1 truncate leading-none">{block.title}</span>
+                <span className="text-xs font-semibold text-[#1A1A2E] dark:text-gray-200 flex-1 truncate leading-none">{block.title}</span>
               ) : (
                 <input
-                  className="text-xs font-semibold text-gray-600 flex-1 bg-transparent outline-none min-w-0 leading-none placeholder:text-gray-300"
+                  className="text-xs font-semibold text-[#1A1A2E] dark:text-gray-200 flex-1 bg-transparent outline-none min-w-0 leading-none placeholder:text-gray-300"
                   value={block.title}
                   onChange={e => onChange(blocks.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
                   onClick={e => e.stopPropagation()}
@@ -5513,6 +5910,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 rangeFilters={rangeFilters}
                 onRangeChange={handleRangeChange}
                 locale={locale}
+                onBlockAction={onBlockAction}
               />
             </div>
 

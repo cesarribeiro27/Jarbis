@@ -83,6 +83,7 @@ class Tenant(Base):
     # ── White-label (plano Enterprise) ───────────────────────────────────────
     custom_logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="URL da logo customizada do tenant")
     primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True, comment="Cor primária hex: #7c3aed")
+    brand_colors: Mapped[str | None] = mapped_column(Text, nullable=True, comment="Paleta da marca — JSON array de até 5 hex strings: [\"#6D28D9\",\"#10b981\"]")
 
     # ── Sub-organizações ─────────────────────────────────────────────────────
     parent_tenant_id: Mapped[uuid.UUID | None] = mapped_column(

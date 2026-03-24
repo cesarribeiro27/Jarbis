@@ -3,7 +3,7 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogoA } from '@/components/logos/JarbisLogo'
+import { LogoComet } from '@/components/logos/JarbisLogo'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -182,7 +182,7 @@ function SidebarContent({ collapsed, onToggleCollapse, onClose, adminEmail, admi
       {/* Header */}
       <div className={`h-[60px] flex items-center border-b border-gray-800 flex-shrink-0 ${collapsed ? 'px-[17px] justify-between' : 'px-4 gap-2'}`}>
         <Link href="/admin" className="flex items-center gap-2.5 min-w-0">
-          <LogoA size={28} color="#fff" light={true} className="flex-shrink-0" />
+          <LogoComet size={28} light={true} />
           {!collapsed && (
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="font-black text-white text-sm tracking-tight">jar<span style={{ color: '#A78BFA' }}>b</span>is</span>
@@ -410,7 +410,7 @@ export default function AdminLayout({ children }) {
               </svg>
             </button>
             <Link href="/admin" className="flex items-center gap-2">
-              <LogoA size={24} color="#fff" light={true} />
+              <LogoComet size={24} light={true} />
               <span className="font-black text-white text-sm">jar<span style={{ color: '#A78BFA' }}>b</span>is</span>
               <span className="text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-md">ADMIN</span>
             </Link>
