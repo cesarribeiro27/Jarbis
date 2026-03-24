@@ -457,7 +457,7 @@ export default function AppLayout({ children }) {
   const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, onBellClick: () => setNotifOpen(o => !o) }
 
   return (
-    <div className="flex h-screen bg-[#f8f7fc] dark:bg-gray-950 overflow-x-hidden">
+    <div className="flex min-h-screen md:h-screen bg-[#f8f7fc] dark:bg-gray-950">
 
       {/* ── Sidebar desktop (md+) ── */}
       <aside
@@ -492,7 +492,7 @@ export default function AppLayout({ children }) {
       )}
 
       {/* ── Main ── */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0 pb-16 md:pb-0">
+      <main className="flex-1 md:overflow-y-auto flex flex-col min-w-0 pb-16 md:pb-0">
 
         {/* Header mobile */}
         <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30 flex-shrink-0">
