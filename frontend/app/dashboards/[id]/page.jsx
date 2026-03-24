@@ -2769,7 +2769,7 @@ export default function DashboardDetailPage() {
           <style dangerouslySetInnerHTML={{ __html: canvasConfig.custom_css }} />
         )}
         {/* Editor top bar */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-700 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-700 px-4 h-12 flex items-center gap-2 shrink-0 shadow-sm overflow-x-auto">
           {/* Left: back + title + add */}
           <button onClick={cancelEdit} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors pr-2 border-r border-gray-200 dark:border-gray-600 mr-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 12H5M12 5l-7 7 7 7" /></svg>
@@ -3085,7 +3085,7 @@ export default function DashboardDetailPage() {
             <button
               onClick={exportPDF}
               disabled={exportingPDF}
-              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors disabled:opacity-50"
               title="Exportar como PDF"
             >
               {exportingPDF ? (
@@ -3100,24 +3100,24 @@ export default function DashboardDetailPage() {
               )}
             </button>
             <button onClick={enterEditMode} className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">{t('edit')}</button>
-            <button onClick={() => setShowAiPanel(true)} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
+            <button onClick={() => setShowAiPanel(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
               {t('ask')}
             </button>
             {blocks.length > 0 && (
-              <button onClick={() => setShowDiagnostico(true)} className="flex items-center gap-1.5 px-3 py-2 border border-violet-200 bg-violet-50 text-violet-700 text-sm rounded-xl hover:bg-violet-100 transition-colors">
+              <button onClick={() => setShowDiagnostico(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-2 border border-violet-200 bg-violet-50 text-violet-700 text-sm rounded-xl hover:bg-violet-100 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Análise
               </button>
             )}
             <button onClick={handleShare} disabled={sharingLoading} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-xl hover:border-gray-300 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-              {sharingLoading ? t('sharing') : t('share')}
+              <span className="hidden sm:inline">{sharingLoading ? t('sharing') : t('share')}</span>
             </button>
             {!deleteConfirm ? (
-              <button onClick={() => setDeleteConfirm(true)} className="px-3 py-2 text-sm text-red-500 hover:text-red-700 transition-colors">{t('delete')}</button>
+              <button onClick={() => setDeleteConfirm(true)} className="hidden sm:block px-3 py-2 text-sm text-red-500 hover:text-red-700 transition-colors">{t('delete')}</button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-300">{t('confirm')}</span>
                 <button onClick={handleDelete} className="text-sm text-red-600 font-semibold">{t('yes')}</button>
                 <button onClick={() => setDeleteConfirm(false)} className="text-sm text-gray-400">{t('no')}</button>

@@ -5749,8 +5749,8 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   )
 
   return (
-    <div style={sheetStyle} ref={sheetRef} className="report-canvas">
-    <GridLayout key={isMobile ? 'mobile' : 'desktop'} className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: 52, margin: [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={verticalCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)}>
+    <div style={sheetStyle} ref={sheetRef} className="report-canvas overflow-x-hidden">
+    <GridLayout key={isMobile ? 'mobile' : 'desktop'} className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: isMobile ? 64 : 52, margin: isMobile ? [6, 6] : [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={verticalCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)}>
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
         const isSelected = selectedBlockId === block.id
