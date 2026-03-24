@@ -4,17 +4,17 @@
     "features": "Features",
     "pricing": "Pricing",
     "login": "Log in",
-    "trialCta": "Try free for 7 days"
+    "trialCta": "Start free"
   },
   "hero": {
-    "badge": "Automatic analysis in every plan, including the free one",
-    "title1": "Your spreadsheet becomes a",
-    "title2": "professional dashboard in 30 seconds.",
-    "subtitle": "Upload your Excel or CSV and Jarbis analyzes everything. Generates KPIs, charts and reports in seconds. No coding, no data analyst needed.",
+    "badge": "No code · No analyst · 7 days free",
+    "title1": "Your data.",
+    "title2": "Your vision.",
+    "subtitle": "Turn spreadsheets into professional dashboards in seconds. Upload a file or connect your sheet — Jarbis does the rest.",
     "ctaPrimary": "Start for free",
     "ctaSecondary": "See how it works",
     "freeBadge": "7 days free · No credit card · Cancel anytime",
-    "proof1": "5-minute setup",
+    "proof1": "Ready in under 5 minutes",
     "proof2": "Free to start",
     "proof3": "No coding required",
     "upload": {

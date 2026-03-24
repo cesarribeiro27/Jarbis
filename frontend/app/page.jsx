@@ -373,7 +373,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">{t('nav.login')}</Link>
             <LanguageSwitcher />
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link href="/signup" className="inline-flex items-center gap-1.5 bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-violet-500 transition-colors shadow-md shadow-violet-600/30 block">
+              <Link href="/signup" className="inline-flex items-center gap-1.5 text-white text-sm font-bold px-5 py-2.5 rounded-full transition-all shadow-lg shadow-violet-600/40 hover:shadow-violet-600/60 hover:scale-[1.03]" style={{ background: 'linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%)' }}>
                 {t('nav.trialCta')}
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
               </Link>
@@ -422,9 +422,9 @@ export default function LandingPage() {
           {/* Wordmark */}
           <motion.div
             variants={fadeIn} initial="hidden" animate="visible"
-            className="flex justify-center mb-6"
+            className="flex justify-center mb-8"
           >
-            <LogoWithText size={36} light={true} />
+            <LogoWithText size={44} light={true} />
           </motion.div>
 
           {/* Badge */}
@@ -440,7 +440,7 @@ export default function LandingPage() {
           <motion.h1
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.1 }}
-            className="text-6xl sm:text-7xl md:text-[108px] font-black text-white leading-[0.95] tracking-[-0.03em] mb-6"
+            className="text-6xl sm:text-8xl md:text-[120px] font-black text-white leading-[0.9] tracking-[-0.04em] mb-8"
           >
             {t('hero.title1')}<br />
             <motion.span
@@ -456,7 +456,7 @@ export default function LandingPage() {
           <motion.p
             variants={fadeUp} initial="hidden" animate="visible"
             transition={{ delay: 0.3 }}
-            className="text-lg sm:text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed font-light"
+            className="text-lg sm:text-xl md:text-2xl text-gray-300 max-w-xl mx-auto mb-10 leading-relaxed font-light"
           >
             {t('hero.subtitle')}
           </motion.p>
