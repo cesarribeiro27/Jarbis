@@ -5634,26 +5634,30 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
   const [rangeFilters, setRangeFilters] = useState({})
   // isDragging removed — was set but never consumed
   const [hoveredBlockId, setHoveredBlockId] = useState(null)
-  const [gridWidth, setGridWidth] = useState(() =>
-    typeof window !== 'undefined' ? Math.min(window.innerWidth, 1400) : 800
-  )
+  const [gridWidth, setGridWidth] = useState(0)
+  // viewportWidth tracks the actual device width — used for isMobile so sidebar animations don't affect layout mode
+  const [viewportWidth, setViewportWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 800)
   const sheetRef = useRef(null)
 
   useEffect(() => {
     if (!sheetRef.current) return
-    // Measure immediately on mount to avoid wrong initial layout
-    setGridWidth(sheetRef.current.offsetWidth || window.innerWidth)
-    let rafId = null
+    // Measure synchronously on mount — getBoundingClientRect is accurate after layout
+    const w = sheetRef.current.getBoundingClientRect().width
+    if (w > 0) setGridWidth(w)
     const observer = new ResizeObserver(entries => {
       for (const entry of entries) {
-        cancelAnimationFrame(rafId)
-        rafId = requestAnimationFrame(() => {
-          setGridWidth(entry.contentRect.width)
-        })
+        const cw = entry.contentRect.width
+        if (cw > 0) setGridWidth(cw)
       }
     })
     observer.observe(sheetRef.current)
-    return () => { observer.disconnect(); cancelAnimationFrame(rafId) }
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    function onResize() { setViewportWidth(window.innerWidth) }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   useEffect(() => {
@@ -5712,7 +5716,9 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
     })
   }
 
-  const isMobile = gridWidth < 500
+  // isMobile based on viewport width — threshold matches AppLayout's lg: breakpoint (1024px)
+  // iPhones max out at 932px landscape; only tablets/desktops reach 1024px+
+  const isMobile = viewportWidth < 1024
   const layout = isMobile
     ? [...blocks]
         .sort((a, b) => {
@@ -5781,7 +5787,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
 
   return (
     <div style={sheetStyle} ref={sheetRef} className="report-canvas">
-    <GridLayout key="grid" className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: isMobile ? 64 : 52, margin: isMobile ? [6, 6] : [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={verticalCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)}>
+    {gridWidth > 0 && <GridLayout key="grid" className="w-full" layout={layout} width={gridWidth} gridConfig={{ cols: 12, rowHeight: isMobile ? 64 : 52, margin: isMobile ? [6, 6] : [8, 8] }} dragConfig={{ enabled: !readOnly && !isMobile, handle: '.drag-handle' }} resizeConfig={{ enabled: !readOnly && !isMobile }} compactor={verticalCompactor} onDragStop={(l) => syncLayout(l)} onResizeStop={(l) => syncLayout(l)}>
       {blocks.map(block => {
         const activeCross = crossFilters[block.dataset_id]
         const isSelected = selectedBlockId === block.id
@@ -5993,7 +5999,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
           </div>
         )
       })}
-    </GridLayout>
+    </GridLayout>}
     </div>
   )
 }

@@ -457,11 +457,11 @@ export default function AppLayout({ children }) {
   const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, onBellClick: () => setNotifOpen(o => !o) }
 
   return (
-    <div className="flex min-h-screen md:h-screen bg-[#f8f7fc] dark:bg-gray-950">
+    <div className="flex min-h-screen lg:h-screen bg-[#f8f7fc] dark:bg-gray-950">
 
       {/* ── Sidebar desktop (md+) ── */}
       <aside
-        className={`hidden md:flex ${collapsed ? 'w-[68px]' : 'w-[220px]'} bg-white dark:bg-gray-900 border-r border-gray-100/80 dark:border-gray-800 flex-col transition-all duration-200 flex-shrink-0`}
+        className={`hidden lg:flex ${collapsed ? 'w-[68px]' : 'w-[220px]'} bg-white dark:bg-gray-900 border-r border-gray-100/80 dark:border-gray-800 flex-col transition-all duration-200 flex-shrink-0`}
         style={{ boxShadow: '1px 0 0 0 #f0eef8' }}
       >
         <SidebarContent
@@ -474,7 +474,7 @@ export default function AppLayout({ children }) {
 
       {/* ── Drawer mobile (< md) ── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -492,10 +492,10 @@ export default function AppLayout({ children }) {
       )}
 
       {/* ── Main ── */}
-      <main className="flex-1 md:overflow-y-auto flex flex-col min-w-0 pb-16 md:pb-0">
+      <main className="flex-1 lg:overflow-y-auto flex flex-col min-w-0 pb-16 lg:pb-0">
 
         {/* Header mobile */}
-        <div className="md:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30 flex-shrink-0">
+        <div className="lg:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
             <LogoWithText size={24} />
           </div>
@@ -706,7 +706,7 @@ export default function AppLayout({ children }) {
       )}
 
       {/* ── Bottom navigation mobile (< md) ── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 z-30 safe-area-inset-bottom">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 z-30 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16">
           {NAV_KEYS.map(({ href, key, Icon }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
