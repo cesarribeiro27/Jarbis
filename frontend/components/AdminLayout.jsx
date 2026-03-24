@@ -307,6 +307,7 @@ export default function AdminLayout({ children }) {
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
   useEffect(() => {
+    if (pathname === '/admin/login') return
     const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
     if (!token) { router.replace('/admin/login'); return }
 
