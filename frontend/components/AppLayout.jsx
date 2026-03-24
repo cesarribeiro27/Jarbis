@@ -282,10 +282,17 @@ export default function AppLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const t = useTranslations('app')
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try { return JSON.parse(localStorage.getItem('jarbis_user') || 'null') } catch { return null }
+  })
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [trialDays, setTrialDays] = useState(null)
+  const [trialDays, setTrialDays] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const td = localStorage.getItem('jarbis_trial_days')
+    return td !== null ? parseInt(td, 10) : null
+  })
   const [plan, setPlan] = useState(null)
   const [pastDue, setPastDue] = useState(false)
   const [upgradeModal, setUpgradeModal] = useState(null)
@@ -370,17 +377,8 @@ export default function AppLayout({ children }) {
   }
 
   useEffect(() => {
-    try {
-      const u = localStorage.getItem('jarbis_user')
-      if (!u) { router.push('/login'); return }
-      setUser(JSON.parse(u))
-    } catch {
-      localStorage.removeItem('jarbis_user')
-      router.push('/login')
-      return
-    }
-    const td = localStorage.getItem('jarbis_trial_days')
-    if (td !== null) setTrialDays(parseInt(td, 10))
+    // user and trialDays already initialized from localStorage via useState lazy initializer
+    if (!user) { router.push('/login'); return }
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/billing/status`, {
       credentials: 'include',
