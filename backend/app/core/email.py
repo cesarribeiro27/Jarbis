@@ -27,17 +27,23 @@ _LOGO_HTML = (
 )
 
 _HEADER_HTML = (
-    '<div style="background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%); padding: 28px 32px; text-align: center;">'
-    '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
-    '<tr><td align="center">'
+    # Fundo dark com glow radial — mesmo padrão da tela de login
+    '<div style="background:#0B0A1A;padding:40px 32px 36px;text-align:center;border-radius:16px 16px 0 0;">'
+    # Glow via camada com gradiente radial (Gmail/Apple Mail suportam; Outlook mostra dark sólido — ok)
+    '<div style="background:radial-gradient(ellipse at 50% 40%,rgba(124,58,237,0.40) 0%,transparent 70%);padding:0;margin:-40px -32px 0;height:0;">&zwnj;</div>'
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:0;">'
+    '<tr><td align="center" style="padding-bottom:16px;">'
     '<table cellpadding="0" cellspacing="0" border="0">'
     '<tr>'
     '<td style="vertical-align:middle;">' + _LOGO_HTML + '</td>'
-    '<td style="padding-left:10px;vertical-align:middle;">'
-    '<span style="color:white;font-weight:800;font-size:18px;letter-spacing:-1px;">jar<span style="color:#A78BFA;">b</span>is</span>'
+    '<td style="padding-left:12px;vertical-align:middle;">'
+    '<span style="color:#ffffff;font-weight:900;font-size:22px;letter-spacing:-0.05em;">jar<span style="color:#A78BFA;">b</span>is</span>'
     '</td>'
     '</tr>'
     '</table>'
+    '</td></tr>'
+    '<tr><td align="center">'
+    '<div style="width:40px;height:1px;background:rgba(167,139,250,0.30);margin:0 auto 14px;"></div>'
     '</td></tr>'
     '</table>'
     '</div>'
@@ -143,27 +149,33 @@ async def send_verification_email(to_email: str, full_name: str, code: str) -> N
 
 
 _LIFECYCLE_ICONS = {
-    "d1_welcome": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2l2-2-5-5-2 2z"/>
-      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-    </svg>""",
-    "d3_activation": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"/>
-      <line x1="12" y1="20" x2="12" y2="4"/>
-      <line x1="6" y1="20" x2="6" y2="14"/>
-      <line x1="2" y1="20" x2="22" y2="20"/>
-    </svg>""",
-    "d7_engagement": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>""",
-    "d30_retention": """<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>""",
+    "d1_welcome": (
+        '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<rect width="40" height="40" rx="12" fill="#f5f3ff"/>'
+        '<path d="M13 27.5c-1 .84-1.5 3.5-1.5 3.5s2.5-.4 3.5-1.5l1.5-1.5-3.5-3.5-1.5 1.5z" stroke="#6D28D9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+        '<path d="M20 23l-2-2a16 16 0 0 1 1.5-3A9 9 0 0 1 27 13c0 2-.5 5.5-4 8a16 16 0 0 1-3 2z" stroke="#6D28D9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+        '</svg>'
+    ),
+    "d3_activation": (
+        '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<rect width="40" height="40" rx="12" fill="#f5f3ff"/>'
+        '<path d="M13 28v-6M20 28v-14M27 28v-10M11 28h18" stroke="#6D28D9" stroke-width="1.75" stroke-linecap="round"/>'
+        '</svg>'
+    ),
+    "d7_engagement": (
+        '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<rect width="40" height="40" rx="12" fill="#f5f3ff"/>'
+        '<circle cx="18" cy="16" r="4" stroke="#6D28D9" stroke-width="1.75"/>'
+        '<path d="M12 28v-1a6 6 0 0 1 6-6v0a6 6 0 0 1 6 6v1" stroke="#6D28D9" stroke-width="1.75" stroke-linecap="round"/>'
+        '<path d="M25 13a3 3 0 0 1 0 6M27 28v-1a6 6 0 0 0-3-5.2" stroke="#6D28D9" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>'
+        '</svg>'
+    ),
+    "d30_retention": (
+        '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<rect width="40" height="40" rx="12" fill="#f5f3ff"/>'
+        '<path d="M20 12l2 5h5l-4 3 1.5 5L20 22l-4.5 3L17 20l-4-3h5z" stroke="#6D28D9" stroke-width="1.6" stroke-linejoin="round"/>'
+        '</svg>'
+    ),
 }
 
 _LIFECYCLE_TEMPLATES = {
@@ -226,7 +238,7 @@ def _lifecycle_html(template_key: str, tenant_name: str) -> str:
     <div style="padding: 40px 32px 32px;">
 
       <!-- Ícone temático -->
-      <div style="width: 56px; height: 56px; background: #eef2ff; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+      <div style="margin-bottom: 24px;">
         {icon}
       </div>
 
