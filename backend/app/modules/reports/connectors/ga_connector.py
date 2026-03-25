@@ -22,7 +22,12 @@ async def _run_ga_report(access_token: str, property_id: str, dimensions: list[s
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {access_token}"}
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(url, json=payload, headers=headers)
-        resp.raise_for_status()
+        if not resp.is_success:
+            try:
+                err_body = resp.json()
+            except Exception:
+                err_body = resp.text
+            raise Exception(f"GA API {resp.status_code}: {err_body}")
         data = resp.json()
     rows = []
     dim_headers = [h["name"] for h in data.get("dimensionHeaders", [])]
