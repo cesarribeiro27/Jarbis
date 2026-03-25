@@ -710,7 +710,8 @@ export default function DatasetsPage() {
       window.history.replaceState({}, '', window.location.pathname)
     } else if (params.get('ga_error')) {
       const erros = { acesso_negado: 'Acesso negado pelo usuário.', sessao_expirada: 'Sessão expirada. Tente novamente.', falha_token: 'Erro ao obter token do Google.', sem_refresh_token: 'Permissão offline não concedida. Tente novamente.', falha_dados: 'Erro ao buscar dados do Google Analytics.' }
-      toast(erros[params.get('ga_error')] || 'Erro ao conectar Google Analytics.', 'error')
+      const detail = params.get('ga_detail') ? ` (${decodeURIComponent(params.get('ga_detail'))})` : ''
+      toast((erros[params.get('ga_error')] || 'Erro ao conectar Google Analytics.') + detail, 'error')
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])

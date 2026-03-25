@@ -3542,7 +3542,11 @@ async def ga_auth_callback(
             date_range_days=state_data["date_range_days"],
         )
     except Exception as e:
-        return RedirectResponse(f"{frontend_datasets}?ga_error=falha_dados")
+        import logging
+        logging.getLogger(__name__).error(f"GA fetch failed: {e}")
+        from urllib.parse import quote
+        detail = quote(str(e)[:200], safe="")
+        return RedirectResponse(f"{frontend_datasets}?ga_error=falha_dados&ga_detail={detail}")
 
     # Cria o dataset
     columns = list(rows[0].keys()) if rows else []
