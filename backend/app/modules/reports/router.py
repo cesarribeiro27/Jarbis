@@ -3570,7 +3570,8 @@ async def ga_auth_callback(
     db.add(dataset)
     await db.commit()
 
-    return RedirectResponse(f"{frontend_datasets}?ga_success=1&ga_name={state_data['name']}")
+    from urllib.parse import quote as _quote
+    return RedirectResponse(f"{frontend_datasets}?ga_success=1&ga_name={_quote(state_data['name'])}")
 
 
 @router.post("/datasets/{dataset_id}/ga/sync", status_code=200)

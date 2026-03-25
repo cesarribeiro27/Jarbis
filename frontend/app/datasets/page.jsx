@@ -708,6 +708,7 @@ export default function DatasetsPage() {
       const name = params.get('ga_name') || 'Google Analytics'
       toast(`Dataset "${name}" conectado com sucesso!`, 'success')
       window.history.replaceState({}, '', window.location.pathname)
+      api.reports.datasets.list().then(data => setDatasets(data || [])).catch(() => {})
     } else if (params.get('ga_error')) {
       const erros = { acesso_negado: 'Acesso negado pelo usuário.', sessao_expirada: 'Sessão expirada. Tente novamente.', falha_token: 'Erro ao obter token do Google.', sem_refresh_token: 'Permissão offline não concedida. Tente novamente.', falha_dados: 'Erro ao buscar dados do Google Analytics.' }
       const detail = params.get('ga_detail') ? ` (${decodeURIComponent(params.get('ga_detail'))})` : ''
