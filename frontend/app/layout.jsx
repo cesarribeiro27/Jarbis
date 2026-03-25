@@ -30,13 +30,14 @@ export default async function RootLayout({ children }) {
     <html lang={locale} className={inter.variable}>
       <body className="antialiased">
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-17421636806"
+          src="https://www.googletagmanager.com/gtag/js?id=G-R30CF04F2Z"
           strategy="afterInteractive"
         />
-        <Script id="google-ads-tag" strategy="afterInteractive">{`
+        <Script id="google-tags" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
+          gtag('config', 'G-R30CF04F2Z');
           gtag('config', 'AW-17421636806');
         `}</Script>
         <NextIntlClientProvider locale={locale} messages={messages}>
