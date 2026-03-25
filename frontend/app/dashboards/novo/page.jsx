@@ -648,6 +648,17 @@ function NovoDashboardContent() {
   const [autoGenStep, setAutoGenStep] = useState(0)
   const [autoGenError, setAutoGenError] = useState(null)
   const autoGenDoneRef = useRef(false)
+  const [showDatasetPicker, setShowDatasetPicker] = useState(false)
+  const [availableDatasets, setAvailableDatasets] = useState([])
+  const [selectedDatasetIds, setSelectedDatasetIds] = useState([])
+
+  // Carrega datasets disponíveis quando chega na etapa de nomear
+  useEffect(() => {
+    if (!templateSelected) return
+    api.reports.datasets.list()
+      .then(data => setAvailableDatasets(data || []))
+      .catch(() => {})
+  }, [templateSelected])
 
   // Auto-gerar dashboard quando veio do preview
   useEffect(() => {
@@ -792,9 +803,10 @@ function NovoDashboardContent() {
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-  async function handleCreate() {
+  async function handleCreate(datasetIds = []) {
     const finalTitle = title.trim() || 'Meu Dashboard'
     setSaving(true)
+    setShowDatasetPicker(false)
     setError('')
     try {
       const sanitized = pendingBlocks.map(b => ({
@@ -806,12 +818,19 @@ function NovoDashboardContent() {
         title: finalTitle,
         description: description || null,
         pages: [{ id: crypto.randomUUID(), title: 'Página 1', blocks: sanitized }],
+        dataset_ids: datasetIds,
       })
       router.push(`/dashboards/${report.id}`)
     } catch (err) {
       setError(err.message)
       setSaving(false)
     }
+  }
+
+  function toggleDataset(id) {
+    setSelectedDatasetIds(prev =>
+      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
+    )
   }
 
   // Step 2: wizard leve — nomear e criar
@@ -858,14 +877,65 @@ function NovoDashboardContent() {
           {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
 
           <button
-            onClick={handleCreate}
+            onClick={() => availableDatasets.length > 0 ? setShowDatasetPicker(true) : handleCreate([])}
             disabled={saving}
             className="mt-6 w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
           >
-            {saving ? 'Criando...' : 'Criar Dashboard'}
+            {saving ? 'Criando...' : 'Próximo'}
           </button>
         </div>
       </div>
+
+      {/* Modal de seleção de datasets */}
+      {showDatasetPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-black text-gray-900 mb-1">Selecionar fontes de dados</h3>
+            <p className="text-sm text-gray-400 mb-4">Escolha quais datasets serão usados neste dashboard. Você pode adicionar ou remover depois.</p>
+
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {availableDatasets.map(ds => {
+                const checked = selectedDatasetIds.includes(ds.id)
+                const typeColor = ds.type === 'api' ? 'bg-blue-50 text-blue-600' : ds.type === 'database' ? 'bg-emerald-50 text-emerald-700' : ds.type === 'google-analytics' ? 'bg-orange-50 text-orange-600' : 'bg-violet-50 text-violet-600'
+                const typeLabel = ds.type === 'api' ? 'API' : ds.type === 'database' ? 'DB' : ds.type === 'google-analytics' ? 'Analytics' : 'CSV'
+                return (
+                  <button
+                    key={ds.id}
+                    onClick={() => toggleDataset(ds.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${checked ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-violet-200 hover:bg-violet-50/40'}`}
+                  >
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
+                      {checked && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-800 truncate">{ds.name}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${typeColor}`}>{typeLabel}</span>
+                      </div>
+                      <span className="text-xs text-gray-400">{(ds.row_count || 0).toLocaleString()} linhas</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => handleCreate([])}
+                className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Continuar sem fontes
+              </button>
+              <button
+                onClick={() => handleCreate(selectedDatasetIds)}
+                className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl py-2.5 text-sm transition-colors"
+              >
+                {selectedDatasetIds.length > 0 ? `Criar com ${selectedDatasetIds.length} fonte${selectedDatasetIds.length > 1 ? 's' : ''}` : 'Criar Dashboard'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }

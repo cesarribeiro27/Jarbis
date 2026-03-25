@@ -19,6 +19,7 @@ class ReportCreate(BaseModel):
     description: str | None = None
     blocks: list[dict[str, Any]] = []
     pages: list[dict[str, Any]] = []
+    dataset_ids: list[str] | None = None  # None = não configurado (comportamento legado)
 
 
 class ReportUpdate(BaseModel):
@@ -28,6 +29,7 @@ class ReportUpdate(BaseModel):
     pages: list[dict[str, Any]] | None = None
     cover_image: str | None = None
     language: str | None = None
+    dataset_ids: list[str] | None = None
 
 
 class ReportResponse(BaseModel):
@@ -41,6 +43,7 @@ class ReportResponse(BaseModel):
     share_token: str | None
     share_view_count: int
     language: str = "pt-BR"
+    dataset_ids: list[str] | None = None  # None = legado (mostra todos)
     created_at: datetime
     updated_at: datetime
 

@@ -38,6 +38,10 @@ class Report(Base):
     # Se preenchido, tem prioridade sobre blocks (que fica como compat com legado)
     pages: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
+    # Datasets vinculados explicitamente a este dashboard
+    # Lista de UUIDs (strings) dos ReportDatasets que o usuário quer usar neste dashboard
+    dataset_ids: Mapped[list] = mapped_column(JSONB, nullable=True, default=list)
+
     # Imagem de capa (base64 data URL da imagem recortada)
     cover_image: Mapped[str | None] = mapped_column(Text, nullable=True)
 

@@ -2205,6 +2205,7 @@ export default function DashboardDetailPage() {
   }))
 
   const [report, setReport] = useState(null)
+  const [reportDatasetIds, setReportDatasetIds] = useState(null) // null = legado; [] = sem datasets; [ids] = selecionados
   const [displayReport, setDisplayReport] = useState(null)
   const [translating, setTranslating] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -2254,6 +2255,7 @@ export default function DashboardDetailPage() {
     Promise.all([api.reports.get(id), api.reports.datasets.list()])
       .then(([r, ds]) => {
         setReport(r); setDatasets(ds)
+        setReportDatasetIds(r.dataset_ids !== undefined ? r.dataset_ids : null)
         const rawPs = (r.pages && r.pages.length > 0) ? r.pages : [{ id: 'page_1', title: '', blocks: r.blocks || [] }]
         // Resolve o placeholder '__onboarding__' para o UUID real do dataset demo do tenant
         const onboardingDs = ds.find(d => d.is_demo)
@@ -2540,11 +2542,23 @@ export default function DashboardDetailPage() {
     setSaving(true)
     try {
       const cleanPages = pages.map(p => ({ ...p, blocks: sanitizeBlocks(p.blocks || []) }))
-      const updated = await api.reports.update(id, { title: editTitle, description: editDescription || null, blocks: cleanPages[0]?.blocks || [], pages: cleanPages, language: canvasConfig.language || 'pt-BR' })
+      const updated = await api.reports.update(id, { title: editTitle, description: editDescription || null, blocks: cleanPages[0]?.blocks || [], pages: cleanPages, language: canvasConfig.language || 'pt-BR', dataset_ids: reportDatasetIds })
       await saveVersion()
       setReport(updated); setMode('view')
     } catch (err) { console.error(err) }
     finally { setSaving(false) }
+  }
+
+  async function handleUnpinDataset(datasetId) {
+    const newIds = (reportDatasetIds || []).filter(did => did !== datasetId)
+    setReportDatasetIds(newIds)
+    try { await api.reports.update(id, { dataset_ids: newIds }) } catch (err) { console.error(err) }
+  }
+
+  async function handlePinDataset(datasetId) {
+    const newIds = [...(reportDatasetIds || []), datasetId]
+    setReportDatasetIds(newIds)
+    try { await api.reports.update(id, { dataset_ids: newIds }) } catch (err) { console.error(err) }
   }
 
   async function handleDelete() {
@@ -2998,7 +3012,7 @@ export default function DashboardDetailPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} blocks={blocks} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} onAddPreset={addMultipleBlocks} />}
+              {sidePanel === 'dados' && <ColumnsPanel datasets={datasets} blocks={blocks} selectedBlockId={selectedBlockId} onAssignColumn={handleAssignColumn} onDatasetsChange={setDatasets} onColumnDragStart={(col, colType, datasetId) => setDraggedColumn({ col, colType, datasetId })} onColumnDragEnd={() => setDraggedColumn(null)} onAddPreset={addMultipleBlocks} reportDatasetIds={reportDatasetIds} onUnpinDataset={handleUnpinDataset} onPinDataset={handlePinDataset} />}
               {sidePanel === 'config' && (activeBlock
                 ? <BlockConfigPanel block={activeBlock} onChange={updateActiveBlock} datasets={datasets} />
                 : <CanvasConfigPanel config={canvasConfig} onChange={setCanvasConfig} />
@@ -3022,7 +3036,7 @@ export default function DashboardDetailPage() {
 
           {/* DashboardRail removido — painéis agora acessíveis via top bar */}
         </div>
-        {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
+        {showAiPanel && <AiPanel datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
         {showDiagnostico && <DiagnosticoPanel reportId={report.id} datasets={datasets} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
         {showColumnDiscovery && <ColumnDiscovery datasets={datasets} onClose={() => setShowColumnDiscovery(false)} onAddBlock={addBlockObject} onOpenAdvanced={() => { setShowColumnDiscovery(false); setShowAddBlockDialog(true) }} />}
         {showAddBlockDialog && <AddBlockDialog datasets={datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
@@ -3175,7 +3189,7 @@ export default function DashboardDetailPage() {
 
         <ReportBuilder blocks={((displayReport ?? report).pages || pages).find(p => p.id === activePageId)?.blocks || (displayReport ?? report).blocks || []} readOnly={true} datasets={datasets} globalDateFilter={globalDateFilter} onGlobalDateFilterChange={setGlobalDateFilter} />
       </div>
-      {showAiPanel && <AiPanel datasets={datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} />}
+      {showAiPanel && <AiPanel datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} />}
       {showDiagnostico && <DiagnosticoPanel reportId={report.id} onClose={() => setShowDiagnostico(false)} />}
     </AppLayout>
   )

@@ -5039,12 +5039,13 @@ function generateSmartPresets(ds) {
   return presets
 }
 
-export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAssignColumn, onDatasetsChange, onColumnDragStart, onColumnDragEnd, onAddPreset }) {
+export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAssignColumn, onDatasetsChange, onColumnDragStart, onColumnDragEnd, onAddPreset, reportDatasetIds = null, onUnpinDataset, onPinDataset }) {
   const [tab, setTab] = useState('colunas')
   const [search, setSearch] = useState('')
   const [expandedDates, setExpandedDates] = useState(new Set())
   const [expandedDatasets, setExpandedDatasets] = useState(() => new Set(datasets.map(d => d.id)))
   const [expandedPresets, setExpandedPresets] = useState(true)
+  const [showAddPicker, setShowAddPicker] = useState(false)
 
   const GRANULARITIES = [
     { value: 'year', label: 'Ano' },
@@ -5069,12 +5070,21 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
   // Datasets efetivamente usados por blocos deste dashboard
   const usedDatasetIds = new Set(blocks.map(b => b.dataset_id).filter(Boolean))
   const usedDatasets = datasets.filter(d => usedDatasetIds.has(d.id))
-  // Na aba Dados: só datasets usados; se nenhum ainda, mostra todos (onboarding)
-  const displayDatasets = usedDatasets.length > 0 ? usedDatasets : datasets
-  const hiddenCount = datasets.length - displayDatasets.length
+
+  // reportDatasetIds: null = legado (mostra usados ou todos), [] = nenhum selecionado, [ids] = filtrado
+  const displayDatasets = reportDatasetIds !== null
+    ? datasets.filter(d => reportDatasetIds.includes(d.id))
+    : (usedDatasets.length > 0 ? usedDatasets : datasets)
+
+  // Datasets disponíveis para adicionar (não estão no dashboard ainda)
+  const unpinnedDatasets = reportDatasetIds !== null
+    ? datasets.filter(d => !reportDatasetIds.includes(d.id))
+    : []
+
+  const hiddenCount = reportDatasetIds !== null ? 0 : datasets.length - displayDatasets.length
 
   // Sugestões inteligentes: date_filter pertence ao painel Filtros — não exibir aqui
-  const allPresets = datasets.flatMap(ds => generateSmartPresets(ds).filter(p => p.id !== 'date_filter').map(p => ({ ...p, dsName: ds.name, dsId: ds.id })))
+  const allPresets = displayDatasets.flatMap(ds => generateSmartPresets(ds).filter(p => p.id !== 'date_filter').map(p => ({ ...p, dsName: ds.name, dsId: ds.id })))
 
   return (
     <div className="space-y-2">
@@ -5156,6 +5166,17 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
             </p>
           )}
 
+          {/* Estado vazio quando nenhum dataset vinculado */}
+          {reportDatasetIds !== null && displayDatasets.length === 0 && !search && (
+            <div className="text-center py-6 px-3">
+              <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg>
+              <p className="text-xs text-gray-400 mb-3">Nenhuma fonte vinculada a este dashboard</p>
+              {unpinnedDatasets.length > 0 && onPinDataset && (
+                <button onClick={() => setShowAddPicker(true)} className="text-xs text-violet-600 font-semibold hover:underline">+ Adicionar fonte de dados</button>
+              )}
+            </div>
+          )}
+
           {displayDatasets.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-6">Nenhum dataset — vá em Gerenciar para adicionar</p>
           ) : displayDatasets.map(ds => {
@@ -5168,21 +5189,32 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
             return (
               <div key={ds.id} className="border border-gray-200 rounded-xl overflow-hidden">
                 {/* Dataset header — accordion toggle */}
-                <button
-                  onClick={() => toggleDataset(ds.id)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                >
-                  <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" />
-                  </svg>
-                  <span className="text-[11px] font-bold text-gray-600 flex-1 truncate">{ds.name}</span>
-                  {ds.is_demo && <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-amber-100 text-amber-600 shrink-0">DEMO</span>}
-                  <span className="text-[9px] text-gray-400 shrink-0">{cols.length} cols</span>
-                  <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                <div className="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <button
+                    onClick={() => toggleDataset(ds.id)}
+                    className="flex items-center gap-2 px-3 py-2.5 text-left flex-1 min-w-0"
+                  >
+                    <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" />
+                    </svg>
+                    <span className="text-[11px] font-bold text-gray-600 flex-1 truncate">{ds.name}</span>
+                    {ds.is_demo && <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-amber-100 text-amber-600 shrink-0">DEMO</span>}
+                    <span className="text-[9px] text-gray-400 shrink-0">{cols.length} cols</span>
+                    <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {reportDatasetIds !== null && onUnpinDataset && (
+                    <button
+                      onClick={e => { e.stopPropagation(); onUnpinDataset(ds.id) }}
+                      title="Remover deste dashboard"
+                      className="p-2 text-gray-300 hover:text-red-400 transition-colors shrink-0"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                  )}
+                </div>
 
                 {/* Columns list */}
                 {isOpen && (
@@ -5260,6 +5292,38 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Botão Adicionar fonte (apenas quando datasets vinculados estão configurados) */}
+      {tab === 'colunas' && reportDatasetIds !== null && unpinnedDatasets.length > 0 && onPinDataset && (
+        <div className="pt-1">
+          {showAddPicker ? (
+            <div className="border border-violet-200 rounded-xl overflow-hidden">
+              <div className="px-3 py-2 bg-violet-50 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-700">Adicionar fonte</span>
+                <button onClick={() => setShowAddPicker(false)} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {unpinnedDatasets.map(ds => (
+                  <button key={ds.id} onClick={() => { onPinDataset(ds.id); setShowAddPicker(false) }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-violet-50 transition-colors text-left">
+                    <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg>
+                    <span className="text-xs text-gray-700 flex-1 truncate">{ds.name}</span>
+                    <span className="text-[10px] text-gray-400">{(ds.row_count || 0).toLocaleString()} linhas</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowAddPicker(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-violet-600 font-semibold hover:bg-violet-50 rounded-xl border border-dashed border-violet-200 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/></svg>
+              Adicionar fonte de dados
+            </button>
+          )}
         </div>
       )}
 
@@ -5563,7 +5627,7 @@ function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction
           onClick={handleAiImprove}
           disabled={aiLoading || !block.dataset_id}
           className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-gray-500 hover:bg-violet-50 hover:text-violet-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Melhorar com IA"
+          title="Melhorar com Jarbis IA"
         >
           {aiLoading ? (
             <svg className="w-3.5 h-3.5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">

@@ -32,6 +32,7 @@ class ReportService:
             description=data.description,
             blocks=data.blocks,
             pages=data.pages,
+            dataset_ids=data.dataset_ids,  # None = legado; [] = zero selecionados; [ids] = selecionados
         )
         self.db.add(report)
         await self.db.commit()
@@ -94,6 +95,8 @@ class ReportService:
             report.pages = data.pages
         if data.cover_image is not None:
             report.cover_image = data.cover_image
+        if data.dataset_ids is not None:
+            report.dataset_ids = data.dataset_ids
 
         report.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
