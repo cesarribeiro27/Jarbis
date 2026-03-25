@@ -3435,57 +3435,132 @@ async def decode_embed_token(token: str):
 
 
 # ---------------------------------------------------------------------------
-# N30 — Google Analytics Connector
+# N30 — Google Analytics Connector (OAuth2)
 # ---------------------------------------------------------------------------
 
-from app.modules.reports.connectors.ga_connector import fetch_ga_report
+import json as _json
+from urllib.parse import urlencode as _urlencode
+from fastapi.responses import RedirectResponse
+from app.modules.reports.connectors.ga_connector import fetch_ga_report, fetch_ga_report_oauth
 from app.modules.reports.connectors.db_connector import encrypt_password, decrypt_password
 
 
-class GADatasetCreate(BaseModel):
+class GAAuthInit(BaseModel):
     name: str
     property_id: str
-    service_account_json: str
-    dimensions: list[str] = ["date", "sessionDefaultChannelGrouping"]
+    dimensions: list[str] = ["date", "sessionDefaultChannelGrouping", "country"]
     metrics: list[str] = ["sessions", "activeUsers", "bounceRate"]
     date_range_days: int = 30
 
 
-@router.post("/datasets/google-analytics", status_code=201)
-async def create_ga_dataset(
-    body: GADatasetCreate,
-    db: AsyncSession = Depends(get_db),
+@router.post("/datasets/google-analytics/auth", status_code=200)
+async def ga_auth_init(
+    body: GAAuthInit,
     user: User = Depends(get_current_active_user),
 ):
-    """Cria um dataset a partir da Google Analytics Data API usando Service Account."""
+    """Inicia o fluxo OAuth2 do Google Analytics. Retorna a URL de autorização do Google."""
+    from app.config import settings
+    state_key = str(uuid.uuid4())
+    state_data = {
+        "tenant_id": str(user.tenant_id),
+        "name": body.name,
+        "property_id": body.property_id,
+        "dimensions": body.dimensions,
+        "metrics": body.metrics,
+        "date_range_days": body.date_range_days,
+    }
+    redis = get_redis()
     try:
-        rows = await fetch_ga_report(
-            property_id=body.property_id,
-            service_account_json=body.service_account_json,
-            dimensions=body.dimensions,
-            metrics=body.metrics,
-            date_range_days=body.date_range_days,
+        await redis.setex(f"jarbis:ga_oauth:{state_key}", 600, _json.dumps(state_data))
+    finally:
+        await redis.aclose()
+
+    redirect_uri = f"{settings.backend_url}/reports/datasets/google-analytics/callback"
+    params = _urlencode({
+        "client_id": settings.google_client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/analytics.readonly",
+        "access_type": "offline",
+        "prompt": "consent",
+        "state": state_key,
+    })
+    return {"auth_url": f"https://accounts.google.com/o/oauth2/v2/auth?{params}"}
+
+
+@router.get("/datasets/google-analytics/callback")
+async def ga_auth_callback(
+    code: str = None,
+    state: str = None,
+    error: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Callback OAuth2 do Google Analytics — cria o dataset e redireciona ao frontend."""
+    from app.config import settings
+    import httpx as _httpx
+
+    frontend_datasets = f"{settings.frontend_url}/datasets"
+
+    if error or not code or not state:
+        return RedirectResponse(f"{frontend_datasets}?ga_error=acesso_negado")
+
+    redis = get_redis()
+    try:
+        state_json = await redis.get(f"jarbis:ga_oauth:{state}")
+        await redis.delete(f"jarbis:ga_oauth:{state}")
+    finally:
+        await redis.aclose()
+
+    if not state_json:
+        return RedirectResponse(f"{frontend_datasets}?ga_error=sessao_expirada")
+
+    state_data = _json.loads(state_json)
+    redirect_uri = f"{settings.backend_url}/reports/datasets/google-analytics/callback"
+
+    # Troca o code por access_token + refresh_token
+    async with _httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post("https://oauth2.googleapis.com/token", data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect_uri,
+            "client_id": settings.google_client_id,
+            "client_secret": settings.google_client_secret,
+        })
+        if resp.status_code != 200:
+            return RedirectResponse(f"{frontend_datasets}?ga_error=falha_token")
+        tokens = resp.json()
+
+    refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        return RedirectResponse(f"{frontend_datasets}?ga_error=sem_refresh_token")
+
+    # Busca os dados do GA
+    try:
+        rows = await fetch_ga_report_oauth(
+            property_id=state_data["property_id"],
+            refresh_token=refresh_token,
+            client_id=settings.google_client_id,
+            client_secret=settings.google_client_secret,
+            dimensions=state_data["dimensions"],
+            metrics=state_data["metrics"],
+            date_range_days=state_data["date_range_days"],
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao buscar dados do GA: {str(e)}")
+        return RedirectResponse(f"{frontend_datasets}?ga_error=falha_dados")
 
-    if not rows:
-        raise HTTPException(status_code=400, detail="Nenhum dado retornado. Verifique o Property ID e as permissões da conta de serviço.")
-
+    # Cria o dataset
     columns = list(rows[0].keys()) if rows else []
-    credentials_enc = encrypt_password(body.service_account_json)
-
     dataset = ReportDataset(
         id=uuid.uuid4(),
-        tenant_id=user.tenant_id,
-        name=body.name,
+        tenant_id=state_data["tenant_id"],
+        name=state_data["name"],
         type="google-analytics",
-        ga_property_id=body.property_id,
-        ga_credentials_enc=credentials_enc,
-        ga_dimensions=body.dimensions,
-        ga_metrics=body.metrics,
-        ga_date_range_days=body.date_range_days,
-        api_url=f"https://analyticsdata.googleapis.com/v1beta/properties/{body.property_id}:runReport",
+        ga_property_id=state_data["property_id"],
+        ga_credentials_enc=encrypt_password(refresh_token),
+        ga_dimensions=state_data["dimensions"],
+        ga_metrics=state_data["metrics"],
+        ga_date_range_days=state_data["date_range_days"],
+        api_url=f"https://analyticsdata.googleapis.com/v1beta/properties/{state_data['property_id']}:runReport",
         rows=rows,
         columns=columns,
         row_count=len(rows),
@@ -3494,7 +3569,8 @@ async def create_ga_dataset(
     )
     db.add(dataset)
     await db.commit()
-    return {"id": str(dataset.id), "name": dataset.name, "row_count": len(rows), "columns": columns}
+
+    return RedirectResponse(f"{frontend_datasets}?ga_success=1&ga_name={state_data['name']}")
 
 
 @router.post("/datasets/{dataset_id}/ga/sync", status_code=200)
@@ -3504,6 +3580,7 @@ async def sync_ga_dataset(
     user: User = Depends(get_current_active_user),
 ):
     """Re-sincroniza um dataset do Google Analytics buscando dados frescos."""
+    from app.config import settings
     result = await db.execute(
         select(ReportDataset).where(
             ReportDataset.id == dataset_id,
@@ -3516,17 +3593,29 @@ async def sync_ga_dataset(
     if ds.type != "google-analytics":
         raise HTTPException(status_code=400, detail="Dataset não é do tipo Google Analytics.")
     if not ds.ga_credentials_enc:
-        raise HTTPException(status_code=400, detail="Credenciais da conta de serviço não encontradas. Recrie o dataset.")
+        raise HTTPException(status_code=400, detail="Credenciais não encontradas. Reconecte o Google Analytics.")
 
     try:
         credentials = decrypt_password(ds.ga_credentials_enc)
-        rows = await fetch_ga_report(
-            property_id=ds.ga_property_id,
-            service_account_json=credentials,
-            dimensions=ds.ga_dimensions or ["date"],
-            metrics=ds.ga_metrics or ["sessions"],
-            date_range_days=ds.ga_date_range_days or 30,
-        )
+        # Detecta o tipo: refresh_token (OAuth) ou Service Account JSON
+        if credentials.startswith("{"):
+            rows = await fetch_ga_report(
+                property_id=ds.ga_property_id,
+                service_account_json=credentials,
+                dimensions=ds.ga_dimensions or ["date"],
+                metrics=ds.ga_metrics or ["sessions"],
+                date_range_days=ds.ga_date_range_days or 30,
+            )
+        else:
+            rows = await fetch_ga_report_oauth(
+                property_id=ds.ga_property_id,
+                refresh_token=credentials,
+                client_id=settings.google_client_id,
+                client_secret=settings.google_client_secret,
+                dimensions=ds.ga_dimensions or ["date"],
+                metrics=ds.ga_metrics or ["sessions"],
+                date_range_days=ds.ga_date_range_days or 30,
+            )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao sincronizar GA: {str(e)}")
 
@@ -3536,7 +3625,6 @@ async def sync_ga_dataset(
     ds.last_synced_at = datetime.now(timezone.utc)
     await db.commit()
 
-    # Invalida Redis cache + Warp
     try:
         redis = get_redis()
         try:
