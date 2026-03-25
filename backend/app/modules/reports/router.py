@@ -3439,12 +3439,13 @@ async def decode_embed_token(token: str):
 # ---------------------------------------------------------------------------
 
 from app.modules.reports.connectors.ga_connector import fetch_ga_report
+from app.modules.reports.connectors.db_connector import encrypt_password, decrypt_password
 
 
 class GADatasetCreate(BaseModel):
     name: str
     property_id: str
-    api_key: str
+    service_account_json: str
     dimensions: list[str] = ["date", "sessionDefaultChannelGrouping"]
     metrics: list[str] = ["sessions", "activeUsers", "bounceRate"]
     date_range_days: int = 30
@@ -3456,11 +3457,11 @@ async def create_ga_dataset(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):
-    """Create a dataset from Google Analytics Data API."""
+    """Cria um dataset a partir da Google Analytics Data API usando Service Account."""
     try:
         rows = await fetch_ga_report(
             property_id=body.property_id,
-            api_secret=body.api_key,
+            service_account_json=body.service_account_json,
             dimensions=body.dimensions,
             metrics=body.metrics,
             date_range_days=body.date_range_days,
@@ -3469,23 +3470,84 @@ async def create_ga_dataset(
         raise HTTPException(status_code=400, detail=f"Erro ao buscar dados do GA: {str(e)}")
 
     if not rows:
-        raise HTTPException(status_code=400, detail="Nenhum dado retornado. Verifique Property ID e API Key.")
+        raise HTTPException(status_code=400, detail="Nenhum dado retornado. Verifique o Property ID e as permissões da conta de serviço.")
 
     columns = list(rows[0].keys()) if rows else []
+    credentials_enc = encrypt_password(body.service_account_json)
+
     dataset = ReportDataset(
         id=uuid.uuid4(),
         tenant_id=user.tenant_id,
         name=body.name,
-        type="api",
+        type="google-analytics",
+        ga_property_id=body.property_id,
+        ga_credentials_enc=credentials_enc,
+        ga_dimensions=body.dimensions,
+        ga_metrics=body.metrics,
+        ga_date_range_days=body.date_range_days,
         api_url=f"https://analyticsdata.googleapis.com/v1beta/properties/{body.property_id}:runReport",
         rows=rows,
         columns=columns,
         row_count=len(rows),
         sync_mode="replace",
+        last_synced_at=datetime.now(timezone.utc),
     )
     db.add(dataset)
     await db.commit()
     return {"id": str(dataset.id), "name": dataset.name, "row_count": len(rows), "columns": columns}
+
+
+@router.post("/datasets/{dataset_id}/ga/sync", status_code=200)
+async def sync_ga_dataset(
+    dataset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    """Re-sincroniza um dataset do Google Analytics buscando dados frescos."""
+    result = await db.execute(
+        select(ReportDataset).where(
+            ReportDataset.id == dataset_id,
+            ReportDataset.tenant_id == user.tenant_id,
+        )
+    )
+    ds = result.scalar_one_or_none()
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado.")
+    if ds.type != "google-analytics":
+        raise HTTPException(status_code=400, detail="Dataset não é do tipo Google Analytics.")
+    if not ds.ga_credentials_enc:
+        raise HTTPException(status_code=400, detail="Credenciais da conta de serviço não encontradas. Recrie o dataset.")
+
+    try:
+        credentials = decrypt_password(ds.ga_credentials_enc)
+        rows = await fetch_ga_report(
+            property_id=ds.ga_property_id,
+            service_account_json=credentials,
+            dimensions=ds.ga_dimensions or ["date"],
+            metrics=ds.ga_metrics or ["sessions"],
+            date_range_days=ds.ga_date_range_days or 30,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao sincronizar GA: {str(e)}")
+
+    ds.rows = rows
+    ds.columns = list(rows[0].keys()) if rows else ds.columns
+    ds.row_count = len(rows)
+    ds.last_synced_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    # Invalida Redis cache + Warp
+    try:
+        redis = get_redis()
+        try:
+            await warp_invalidate(redis, str(dataset_id))
+            await _bump_dataset_version(redis, str(dataset_id))
+        finally:
+            await redis.aclose()
+    except Exception:
+        pass
+
+    return {"row_count": ds.row_count, "columns": ds.columns, "last_synced_at": ds.last_synced_at.isoformat()}
 
 
 # ---------------------------------------------------------------------------

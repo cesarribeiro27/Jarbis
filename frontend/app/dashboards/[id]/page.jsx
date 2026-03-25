@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useTranslations, useLocale } from 'next-intl'
 import AppLayout from '@/components/AppLayout'
+import SupportChat from '@/components/SupportChat'
 import { api } from '@/lib/api'
 import { BlockConfigPanel, DatasetPanel, CanvasConfigPanel, ColumnsPanel } from '@/components/ReportBuilder'
 import DashboardRail from '@/components/DashboardRail'
@@ -3052,6 +3053,7 @@ export default function DashboardDetailPage() {
             </div>
           </div>
         )}
+      <SupportChat />
       </div>
     )
   }

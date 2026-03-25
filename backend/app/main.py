@@ -58,6 +58,21 @@ async def _refresh_loop():
                     try:
                         if ds.type == "api" and ds.api_url:
                             await svc.sync_api(ds.id, ds.tenant_id)
+                        elif ds.type == "google-analytics" and ds.ga_credentials_enc:
+                            from app.modules.reports.connectors.db_connector import decrypt_password
+                            from app.modules.reports.connectors.ga_connector import fetch_ga_report
+                            credentials = decrypt_password(ds.ga_credentials_enc)
+                            rows = await fetch_ga_report(
+                                property_id=ds.ga_property_id,
+                                service_account_json=credentials,
+                                dimensions=ds.ga_dimensions or ["date"],
+                                metrics=ds.ga_metrics or ["sessions"],
+                                date_range_days=ds.ga_date_range_days or 30,
+                            )
+                            ds.rows = rows
+                            ds.columns = list(rows[0].keys()) if rows else ds.columns
+                            ds.row_count = len(rows)
+                            ds.last_synced_at = now
                         ds.next_refresh_at = now + timedelta(minutes=ds.refresh_interval_minutes)
                         # Invalida Warp após sync automático
                         try:

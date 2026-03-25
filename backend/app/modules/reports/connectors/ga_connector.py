@@ -1,25 +1,48 @@
-"""Google Analytics Data API v1 connector."""
+"""Google Analytics Data API v1 connector — Service Account auth."""
+import json
+import time
 import httpx
 from datetime import datetime, timedelta
+from jose import jwt as jose_jwt
+
+
+async def _get_access_token(service_account_json: str) -> str:
+    """Exchange a Service Account JSON for a short-lived OAuth2 access token."""
+    sa = json.loads(service_account_json)
+    now = int(time.time())
+    payload = {
+        "iss": sa["client_email"],
+        "scope": "https://www.googleapis.com/auth/analytics.readonly",
+        "aud": sa.get("token_uri", "https://oauth2.googleapis.com/token"),
+        "iat": now,
+        "exp": now + 3600,
+    }
+    assertion = jose_jwt.encode(payload, sa["private_key"], algorithm="RS256")
+    token_url = sa.get("token_uri", "https://oauth2.googleapis.com/token")
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(token_url, data={
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "assertion": assertion,
+        })
+        resp.raise_for_status()
+        return resp.json()["access_token"]
 
 
 async def fetch_ga_report(
     property_id: str,
-    api_secret: str,
+    service_account_json: str,
     dimensions: list[str],
     metrics: list[str],
     date_range_days: int = 30,
 ) -> list[dict]:
     """
-    Fetches data from Google Analytics Data API v1 (Measurement Protocol style).
-    Uses the runReport endpoint with an API secret.
-
-    property_id: GA4 property ID (ex: "123456789")
-    api_secret: API Secret from GA4 Admin > Data Streams > Measurement Protocol API secrets
+    Fetches data from Google Analytics Data API v1beta.
+    Authenticates via Service Account JSON credentials.
     """
+    access_token = await _get_access_token(service_account_json)
+
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=date_range_days)).strftime("%Y-%m-%d")
-
     url = f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id}:runReport"
 
     payload = {
@@ -28,12 +51,13 @@ async def fetch_ga_report(
         "metrics": [{"name": m} for m in metrics],
         "limit": 10000,
     }
-
-    headers = {"Content-Type": "application/json"}
-    params = {"key": api_secret}  # using API key in query param
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}",
+    }
 
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(url, json=payload, headers=headers, params=params)
+        resp = await client.post(url, json=payload, headers=headers)
         resp.raise_for_status()
         data = resp.json()
 

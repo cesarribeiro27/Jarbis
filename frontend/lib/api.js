@@ -156,6 +156,8 @@ export const api = {
       },
       createApi: (data) => apiFetch('/reports/datasets/api', { method: 'POST', body: JSON.stringify(data) }),
       sync: (id) => apiFetch(`/reports/datasets/${id}/sync`, { method: 'POST' }),
+      syncGA: (id) => apiFetch(`/reports/datasets/${id}/ga/sync`, { method: 'POST' }),
+      syncDb: (id) => apiFetch(`/reports/datasets/${id}/database/sync`, { method: 'POST' }),
       setSchedule: (id, intervalMinutes) => apiFetch(`/reports/datasets/${id}/schedule`, { method: 'PATCH', body: JSON.stringify({ refresh_interval_minutes: intervalMinutes }) }),
       delete: (id) => apiFetch(`/reports/datasets/${id}`, { method: 'DELETE' }),
       // Query v1 — legado (mantido para compatibilidade)

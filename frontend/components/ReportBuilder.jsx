@@ -2077,17 +2077,27 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const total = displayData.reduce((s, d) => s + (d.value || 0), 0)
     const maxVal = parseFloat(config.gauge_max) || 100
     const minVal = parseFloat(config.gauge_min) || 0
-    const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1) * 100
-    const gaugeData = [{ name: block.title || vs.value, value: pct }]
+    const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1)
+    // SVG full-circle progress ring — starts at top, fills clockwise
+    const cx = 100, cy = 100, r = 68, sw = 16
+    const pctAngle = pct * 2 * Math.PI
+    const ex = (cx + r * Math.sin(pctAngle)).toFixed(2)
+    const ey = (cy - r * Math.cos(pctAngle)).toFixed(2)
+    const largeArc = pct > 0.5 ? 1 : 0
+    // When pct≈1 both endpoints coincide — offset slightly to avoid degenerate arc
+    const valuePath = pct >= 0.999
+      ? `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx - 0.01} ${cy - r}`
+      : pct > 0.001
+      ? `M ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey}`
+      : null
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <ResponsiveContainer width="100%" height={150}>
-          <RadialBarChart innerRadius="55%" outerRadius="85%" data={gaugeData} startAngle={90} endAngle={-270} barSize={20}>
-            <RadialBar dataKey="value" cornerRadius={8} background={{ fill: '#f3f4f6' }} fill={color} />
-          </RadialBarChart>
-        </ResponsiveContainer>
-        <p className="text-2xl font-black -mt-12" style={{ color }}>{fmt(total, format, config)}</p>
-        <p className="text-xs text-gray-400 mt-1">{Math.round(pct)}%</p>
+        <svg viewBox="0 0 200 200" className="w-full" style={{ maxHeight: 160 }}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f3f4f6" strokeWidth={sw} />
+          {valuePath && <path d={valuePath} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" />}
+          <text x={cx} y={cy + 7} textAnchor="middle" fontSize="20" fontWeight="800" fill={color}>{fmt(total, format, config)}</text>
+          <text x={cx} y={cy + 24} textAnchor="middle" fontSize="11" fill="#9ca3af">{Math.round(pct * 100)}%</text>
+        </svg>
       </div>
     )
   }
@@ -2097,22 +2107,28 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const maxVal = parseFloat(config.gauge_max) || 100
     const minVal = parseFloat(config.gauge_min) || 0
     const pct = Math.min(Math.max((total - minVal) / (maxVal - minVal), 0), 1)
-    const cx = 100, cy = 88, r = 68
+    const cx = 100, cy = 90, r = 68
     const valAngleRad = (180 - 180 * pct) * Math.PI / 180
     const vx = (cx + r * Math.cos(valAngleRad)).toFixed(2)
     const vy = (cy - r * Math.sin(valAngleRad)).toFixed(2)
     const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 1 0 ${cx + r} ${cy}`
-    const valPath = pct > 0.001 ? `M ${cx - r} ${cy} A ${r} ${r} 0 ${pct > 0.5 ? 1 : 0} 0 ${vx} ${vy}` : null
+    // large-arc is always 0 for upper-semicircle: the arc from left to any point on top is always ≤180°
+    // For pct≈1 both endpoints land on horizontal axis — use full bgPath to avoid degenerate arc
+    const valPath = pct >= 0.999
+      ? bgPath
+      : pct > 0.001
+      ? `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${vx} ${vy}`
+      : null
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <svg viewBox="0 0 200 115" className="w-full" style={{ maxHeight: 130 }}>
+        <svg viewBox="0 0 200 118" className="w-full" style={{ maxHeight: 130 }}>
           <path d={bgPath} fill="none" stroke="#f3f4f6" strokeWidth="15" strokeLinecap="round" />
           {valPath && <path d={valPath} fill="none" stroke={color} strokeWidth="15" strokeLinecap="round" />}
           <line x1={cx} y1={cy} x2={vx} y2={vy} stroke="#374151" strokeWidth="2.5" strokeLinecap="round" />
           <circle cx={cx} cy={cy} r="5" fill="#374151" />
-          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fontWeight="800" fill={color}>{fmt(total, format, config)}</text>
-          <text x={cx - r + 2} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_min || 0}</text>
-          <text x={cx + r - 10} y={cy + 16} fontSize="8" fill="#9ca3af">{config.gauge_max || 100}</text>
+          <text x={cx} y={cy + 22} textAnchor="middle" fontSize="15" fontWeight="800" fill={color}>{fmt(total, format, config)}</text>
+          <text x={cx - r + 4} y={cy + 14} fontSize="8" fill="#9ca3af">{config.gauge_min ?? 0}</text>
+          <text x={cx + r - 4} y={cy + 14} textAnchor="end" fontSize="8" fill="#9ca3af">{config.gauge_max ?? 100}</text>
         </svg>
       </div>
     )

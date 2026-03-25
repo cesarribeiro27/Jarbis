@@ -51,6 +51,13 @@ class ReportDataset(Base):
     db_password_enc: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     db_query: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Config de Google Analytics (apenas quando type == 'google-analytics')
+    ga_property_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    ga_credentials_enc: Mapped[str | None] = mapped_column(String(4000), nullable=True)  # SA JSON criptografado
+    ga_dimensions: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    ga_metrics: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    ga_date_range_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     is_demo: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=False)
 
     # Modo de sincronização de APIs: replace (padrão) ou append (acumula)
