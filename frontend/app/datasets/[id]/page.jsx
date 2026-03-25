@@ -289,7 +289,7 @@ export default function DatasetDetailPage() {
     )
   }
 
-  const typeLabel = dataset.type === 'api' ? 'API' : 'CSV/Excel'
+  const typeLabel = dataset.type === 'api' ? 'API' : dataset.type === 'google-analytics' ? 'Google Analytics' : dataset.type === 'database' ? 'Banco de dados' : 'CSV/Excel'
 
   return (
     <AppLayout>
