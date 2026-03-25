@@ -3459,21 +3459,21 @@ async def ga_auth_init(
     user: User = Depends(get_current_active_user),
 ):
     """Inicia o fluxo OAuth2 do Google Analytics. Retorna a URL de autorização do Google."""
+    import time
+    import jwt as pyjwt
     from app.config import settings
-    state_key = str(uuid.uuid4())
-    state_data = {
+
+    state_payload = {
         "tenant_id": str(user.tenant_id),
         "name": body.name,
         "property_id": body.property_id,
         "dimensions": body.dimensions,
         "metrics": body.metrics,
         "date_range_days": body.date_range_days,
+        "exp": int(time.time()) + 600,
+        "nonce": str(uuid.uuid4()),
     }
-    redis = get_redis()
-    try:
-        await redis.setex(f"jarbis:ga_oauth:{state_key}", 600, _json.dumps(state_data))
-    finally:
-        await redis.aclose()
+    state_token = pyjwt.encode(state_payload, settings.secret_key, algorithm="HS256")
 
     redirect_uri = f"{settings.backend_url}/reports/datasets/google-analytics/callback"
     params = _urlencode({
@@ -3483,7 +3483,7 @@ async def ga_auth_init(
         "scope": "https://www.googleapis.com/auth/analytics.readonly",
         "access_type": "offline",
         "prompt": "consent",
-        "state": state_key,
+        "state": state_token,
     })
     return {"auth_url": f"https://accounts.google.com/o/oauth2/v2/auth?{params}"}
 
@@ -3504,17 +3504,13 @@ async def ga_auth_callback(
     if error or not code or not state:
         return RedirectResponse(f"{frontend_datasets}?ga_error=acesso_negado")
 
-    redis = get_redis()
+    import jwt as pyjwt
     try:
-        state_json = await redis.get(f"jarbis:ga_oauth:{state}")
-        await redis.delete(f"jarbis:ga_oauth:{state}")
-    finally:
-        await redis.aclose()
-
-    if not state_json:
+        state_data = pyjwt.decode(state, settings.secret_key, algorithms=["HS256"])
+    except pyjwt.ExpiredSignatureError:
         return RedirectResponse(f"{frontend_datasets}?ga_error=sessao_expirada")
-
-    state_data = _json.loads(state_json)
+    except Exception:
+        return RedirectResponse(f"{frontend_datasets}?ga_error=sessao_expirada")
     redirect_uri = f"{settings.backend_url}/reports/datasets/google-analytics/callback"
 
     # Troca o code por access_token + refresh_token
