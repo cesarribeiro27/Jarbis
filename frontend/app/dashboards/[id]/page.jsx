@@ -831,11 +831,14 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
         {/* Tabs — só aparecem após escolha */}
         {tab !== null && (
           <div className="flex border-b border-gray-100 shrink-0">
-            {[{ id: 'analise', label: 'Visão geral' }, { id: 'perguntar', label: 'Perguntar' }, { id: 'tecnico', label: 'Técnico' }].map(t => (
+            {[{ id: 'analise', label: 'Visão geral' }, { id: 'perguntar', label: 'Perguntar' }, { id: 'historico', label: 'Histórico' }, { id: 'tecnico', label: 'Técnico' }].map(t => (
               <button key={t.id}
                 onClick={() => { if (t.id === 'analise') handleGenerateAuto(); else setTab(t.id) }}
                 className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${tab === t.id ? 'text-violet-700 border-b-2 border-violet-500 bg-violet-50/40' : 'text-gray-500 hover:text-gray-700'}`}>
                 {t.label}
+                {t.id === 'historico' && !historyLoading && history.length > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-violet-100 text-violet-600 text-[9px] font-bold">{history.length}</span>
+                )}
               </button>
             ))}
           </div>
@@ -876,51 +879,28 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
                 </div>
               </button>
 
-              {/* Histórico de análises */}
-              {!historyLoading && history.length > 0 && (
-                <div className="mt-1">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Análises anteriores</p>
-                  <div className="flex flex-col gap-1.5">
-                    {history.map(snap => (
-                      <button
-                        key={snap.id}
-                        onClick={() => loadSnapshot(snap)}
-                        className="flex items-center justify-between gap-2 px-3 py-2.5 border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-all text-left group"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${snap.health_score >= 70 ? 'bg-green-50 text-green-600' : snap.health_score >= 40 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'}`}>
-                            {snap.health_score}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-700 truncate">{snap.domain_name}</p>
-                            <p className="text-[10px] text-gray-400">
-                              {new Date(snap.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                              {' · '}
-                              {new Date(snap.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={e => handleDeleteSnapshot(e, snap.id)}
-                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"
-                          title="Apagar análise"
-                        >
-                          {deletingId === snap.id
-                            ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                            : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                          }
-                        </button>
-                      </button>
-                    ))}
+              <button
+                onClick={() => setTab('historico')}
+                className="flex items-start gap-3 p-4 border border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50/40 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0 group-hover:bg-violet-200 transition-colors">
+                  <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-800">Ver análises anteriores</p>
+                    {!historyLoading && history.length > 0 && (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600 text-[10px] font-bold">{history.length}</span>
+                    )}
+                    {historyLoading && (
+                      <svg className="w-3 h-3 animate-spin text-gray-300" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    )}
                   </div>
+                  <p className="text-xs text-gray-400 mt-0.5">Consulte o histórico de análises geradas neste dashboard</p>
                 </div>
-              )}
-              {historyLoading && (
-                <div className="flex items-center justify-center py-3 gap-2 text-xs text-gray-400">
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  Carregando histórico...
-                </div>
-              )}
+              </button>
             </div>
           )}
 
@@ -1126,6 +1106,73 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
               )}
 
               <div ref={chatEndRef} />
+            </div>
+          )}
+
+          {/* Tab: Histórico */}
+          {tab === 'historico' && (
+            <div className="flex flex-col gap-2">
+              {historyLoading && (
+                <div className="flex items-center justify-center py-8 gap-2 text-xs text-gray-400">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  Carregando histórico...
+                </div>
+              )}
+              {!historyLoading && history.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                  <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500">Nenhuma análise gerada ainda</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Gere uma análise automática para começar a construir seu histórico de inteligência.</p>
+                  </div>
+                  <button
+                    onClick={handleGenerateAuto}
+                    className="text-xs font-semibold text-violet-600 hover:text-violet-700 underline underline-offset-2"
+                  >
+                    Gerar primeira análise
+                  </button>
+                </div>
+              )}
+              {!historyLoading && history.length > 0 && (
+                <>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">{history.length} {history.length === 1 ? 'análise salva' : 'análises salvas'}</p>
+                  {history.map(snap => (
+                    <button
+                      key={snap.id}
+                      onClick={() => loadSnapshot(snap)}
+                      className="flex items-center justify-between gap-2 px-3 py-3 border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${snap.health_score >= 70 ? 'bg-green-50 text-green-600' : snap.health_score >= 40 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'}`}>
+                          {snap.health_score}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-700 truncate">{snap.domain_name}</p>
+                          <p className="text-[10px] text-gray-400">
+                            {new Date(snap.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {' · '}
+                            {new Date(snap.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={e => handleDeleteSnapshot(e, snap.id)}
+                        className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"
+                        title="Apagar análise"
+                      >
+                        {deletingId === snap.id
+                          ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                          : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                        }
+                      </button>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
 

@@ -4208,6 +4208,24 @@ async def diagnose_dashboard_endpoint(
     if not api_key or api_key == "your_key_here":
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
 
+    # Buscar snapshot anterior ANTES da chamada à IA — para incluir no contexto histórico
+    prev_snapshot = await db.scalar(
+        select(DiagnosisSnapshot)
+        .where(DiagnosisSnapshot.report_id == report_id, DiagnosisSnapshot.tenant_id == current_user.tenant_id)
+        .order_by(DiagnosisSnapshot.created_at.desc())
+        .limit(1)
+    )
+
+    has_history = prev_snapshot is not None
+    prev_date_str = (
+        prev_snapshot.created_at.strftime("%d/%m/%Y")
+        if prev_snapshot else None
+    )
+    prev_insights_str = (
+        "\n".join(f"  - {ins}" for ins in (prev_snapshot.visual_insights or []))
+        if prev_snapshot else None
+    )
+
     system_prompt = (
         "Você é um analista de negócios especializado em BI para PMEs brasileiras. "
         "Responda APENAS com JSON válido, sem markdown.\n\n"
@@ -4225,7 +4243,15 @@ async def diagnose_dashboard_endpoint(
         "  que o usuário vê na tela. NUNCA cite valores que não aparecem nesses KPIs. "
         "  PROIBIDO mencionar 'banco de dados', 'colunas', 'blocos', 'dataset'. "
         "  Fale como analista para o dono da empresa, não para um técnico.\n"
-        "- missing_blocks: até 2 gráficos que faltam. OBRIGATÓRIO incluir 'value_col' (coluna numérica a agregar) "
+        + (
+            "- CONTEXTO HISTÓRICO: existe uma análise anterior disponível. Se os dados atuais "
+            "  confirmarem, contrariarem ou evoluírem em relação às tendências anteriores, "
+            "  mencione explicitamente no visual_insights — ex: 'o crescimento gradual apontado "
+            "  na análise anterior se confirmou neste ciclo' ou 'a queda observada anteriormente "
+            "  foi revertida'. Isso cria inteligência de negócio contínua para o cliente.\n"
+            if has_history else ""
+        )
+        + "- missing_blocks: até 2 gráficos que faltam. OBRIGATÓRIO incluir 'value_col' (coluna numérica a agregar) "
         "  e 'label_col' (coluna categórica/data do eixo X ou legenda) usando os nomes EXATOS das colunas disponíveis. "
         "  Se já está completo, lista vazia.\n"
         "- missing_columns: até 2 colunas que agregariam valor de negócio. Se já está bom, lista vazia.\n"
@@ -4240,11 +4266,19 @@ async def diagnose_dashboard_endpoint(
         if dashboard_kpi_lines else ""
     )
 
+    history_section = (
+        f"\n\nANÁLISE ANTERIOR ({prev_date_str}) — health score: {prev_snapshot.health_score}/100:\n"
+        + prev_insights_str
+        + f"\n(Sugestões anteriores: {'; '.join(prev_snapshot.suggestions or [])})"
+        if prev_snapshot else ""
+    )
+
     user_msg = (
         f"SETOR/DOMÍNIO: {domain_tpl['name']}\n"
         f"DADOS: {total_rows} registros\n\n"
         f"MÉTRICAS DO DATASET (contexto apenas):\n" + "\n".join(schema_lines or [f"  {c}" for c in columns[:12]])
-        + kpis_section + "\n\n"
+        + kpis_section
+        + history_section + "\n\n"
         f"VISUALIZAÇÕES NO DASHBOARD: {json.dumps(block_types, ensure_ascii=False)}\n"
         + (f"\nCOLUNAS EXTRAS QUE PODERIAM EXISTIR:\n"
            + "\n".join(f"  {m['col']}: {m['impact']}" for m in missing_cols_from_template[:2])
@@ -4297,14 +4331,7 @@ async def diagnose_dashboard_endpoint(
         "missing_columns": missing_columns_ai,
     }
 
-    # Carregar snapshot anterior para comparação De/Para
-    from datetime import timezone as _tz
-    prev_snapshot = await db.scalar(
-        select(DiagnosisSnapshot)
-        .where(DiagnosisSnapshot.report_id == report_id, DiagnosisSnapshot.tenant_id == current_user.tenant_id)
-        .order_by(DiagnosisSnapshot.created_at.desc())
-        .limit(1)
-    )
+    # Montar o "previous" para retorno ao frontend (De/Para)
     previous = None
     if prev_snapshot:
         previous = {
@@ -4314,20 +4341,33 @@ async def diagnose_dashboard_endpoint(
             "delta": health_score - prev_snapshot.health_score,
         }
 
-    # Salvar novo snapshot
-    snapshot = DiagnosisSnapshot(
-        report_id=report_id,
-        tenant_id=current_user.tenant_id,
-        health_score=health_score,
-        domain=domain_key,
-        domain_name=domain_tpl["name"],
-        visual_insights=visual_insights,
-        missing_blocks=missing_blocks_ai,
-        missing_columns=missing_columns_ai,
-        suggestions=suggestions_ai,
+    # Deduplicação: não salva se já existe snapshot recente com resultado similar.
+    # "Recente" = menos de 30 minutos. "Similar" = health score com diferença <= 5 pontos.
+    # Isso evita que cliques acidentais poluam o histórico de inteligência.
+    # Se o negócio do cliente tem ciclo de horas (dados mudam rápido), a diferença no
+    # health score ou nos insights vai naturalmente superar o threshold e será salvo.
+    from datetime import datetime, timedelta
+    _dedup_cutoff = datetime.utcnow() - timedelta(minutes=30)
+    _is_duplicate = (
+        prev_snapshot is not None
+        and prev_snapshot.created_at.replace(tzinfo=None) >= _dedup_cutoff
+        and abs(health_score - prev_snapshot.health_score) <= 5
     )
-    db.add(snapshot)
-    await db.commit()
+
+    if not _is_duplicate:
+        snapshot = DiagnosisSnapshot(
+            report_id=report_id,
+            tenant_id=current_user.tenant_id,
+            health_score=health_score,
+            domain=domain_key,
+            domain_name=domain_tpl["name"],
+            visual_insights=visual_insights,
+            missing_blocks=missing_blocks_ai,
+            missing_columns=missing_columns_ai,
+            suggestions=suggestions_ai,
+        )
+        db.add(snapshot)
+        await db.commit()
 
     return {
         "domain": domain_key,
