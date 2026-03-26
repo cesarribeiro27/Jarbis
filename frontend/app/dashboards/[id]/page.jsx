@@ -694,10 +694,7 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
     api.reports.diagnoseHistory(reportId)
       .then(data => {
         setHistory(data)
-        // Se existe análise anterior, carrega automaticamente a mais recente
-        if (data?.length > 0) {
-          loadSnapshot(data[0])
-        }
+        // Não auto-navega — o usuário escolhe o que quer fazer na tela de opções
       })
       .catch(() => {})
       .finally(() => setHistoryLoading(false))

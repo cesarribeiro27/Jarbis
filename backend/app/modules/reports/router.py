@@ -4341,17 +4341,15 @@ async def diagnose_dashboard_endpoint(
             "delta": health_score - prev_snapshot.health_score,
         }
 
-    # Deduplicação: não salva se já existe snapshot recente com resultado similar.
-    # "Recente" = menos de 30 minutos. "Similar" = health score com diferença <= 5 pontos.
-    # Isso evita que cliques acidentais poluam o histórico de inteligência.
-    # Se o negócio do cliente tem ciclo de horas (dados mudam rápido), a diferença no
-    # health score ou nos insights vai naturalmente superar o threshold e será salvo.
+    # Deduplicação: não salva se for um clique acidental em sequência.
+    # "Acidental" = menos de 5 minutos E health score idêntico (delta = 0).
+    # Re-análises intencionais (qualquer mudança no score, ou > 5 min) são sempre salvas.
     from datetime import datetime, timedelta
-    _dedup_cutoff = datetime.utcnow() - timedelta(minutes=30)
+    _dedup_cutoff = datetime.utcnow() - timedelta(minutes=5)
     _is_duplicate = (
         prev_snapshot is not None
         and prev_snapshot.created_at.replace(tzinfo=None) >= _dedup_cutoff
-        and abs(health_score - prev_snapshot.health_score) <= 5
+        and health_score == prev_snapshot.health_score
     )
 
     if not _is_duplicate:
