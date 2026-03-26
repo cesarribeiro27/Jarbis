@@ -30,6 +30,7 @@ from app.modules.links.schemas import (
     CampaignResponse,
     LinkAnalytics,
     ShortLinkCreate,
+    ShortLinkUpdate,
     ShortLinkResponse,
 )
 
@@ -109,6 +110,41 @@ async def list_links(
     user: User = Depends(get_current_active_user),
 ):
     return await service.list_links(db, user.tenant_id, campaign_id)
+
+
+# ── Editar link ───────────────────────────────────────────────────────────
+
+@router.patch("/links/{link_id}", response_model=ShortLinkResponse, tags=["Links"])
+async def update_link(
+    link_id: uuid.UUID,
+    data: ShortLinkUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    from sqlalchemy import select
+    from app.modules.links.models import ShortLink
+    from app.config import settings as _settings
+
+    link = await db.scalar(
+        select(ShortLink).where(ShortLink.id == link_id, ShortLink.tenant_id == user.tenant_id)
+    )
+    if not link:
+        from app.core.exceptions import NotFoundError
+        raise NotFoundError("link", str(link_id))
+    link.name = data.name.strip()
+    await db.flush()
+    await db.refresh(link)
+    return ShortLinkResponse(
+        id=link.id,
+        campaign_id=link.campaign_id,
+        slug=link.slug,
+        original_url=link.original_url,
+        name=link.name,
+        clicks_cached=link.clicks_cached,
+        is_active=link.is_active,
+        created_at=link.created_at,
+        short_url=f"{_settings.frontend_url}/l/{link.slug}",
+    )
 
 
 # ── Analytics ──────────────────────────────────────────────────────────────

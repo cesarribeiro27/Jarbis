@@ -24,6 +24,10 @@ class CampaignResponse(BaseModel):
 
 # ── Short Links ────────────────────────────────────────────────────────────
 
+class ShortLinkUpdate(BaseModel):
+    name: str
+
+
 class ShortLinkCreate(BaseModel):
     original_url: str
     name: str
