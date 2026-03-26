@@ -91,10 +91,18 @@ const Icons = {
   ),
 }
 
+const IconLinkChain = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+)
+
 const NAV_KEYS = [
   { href: '/dashboard',  key: 'home',       Icon: Icons.Dashboard },
   { href: '/dashboards', key: 'dashboards', Icon: Icons.Charts },
   { href: '/datasets',   key: 'sources',    Icon: Icons.Database },
+  { href: '/links',      label: 'Links',    Icon: IconLinkChain },
   { href: '/alertas',    key: 'alerts',     Icon: Icons.Bell },
 ]
 
@@ -138,7 +146,7 @@ const PLAN_BADGES = {
 
 function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initials, isAdmin, pathname, logout, onClose, unreadCount, onBellClick }) {
   const t = useTranslations('app')
-  const NAV = NAV_KEYS.map(n => ({ ...n, label: t(`nav.${n.key}`) }))
+  const NAV = NAV_KEYS.map(n => ({ ...n, label: n.label || t(`nav.${n.key}`) }))
   const NAV_ADMIN = NAV_ADMIN_KEYS.map(n => ({ ...n, label: n.label || t(`nav.${n.key}`) }))
   return (
     <>

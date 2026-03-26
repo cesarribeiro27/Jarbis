@@ -155,12 +155,19 @@ async def create_link(
 ) -> ShortLinkResponse:
     await get_campaign(db, tenant_id, campaign_id)
 
-    # Gera slug único
-    for _ in range(10):
-        slug = _generate_slug()
-        existing = await db.scalar(select(ShortLink).where(ShortLink.slug == slug))
-        if not existing:
-            break
+    # Slug: personalizado ou gerado automaticamente
+    if data.custom_slug:
+        existing = await db.scalar(select(ShortLink).where(ShortLink.slug == data.custom_slug))
+        if existing:
+            from app.core.exceptions import ConflictError
+            raise ConflictError(f"O slug '{data.custom_slug}' já está em uso. Escolha outro.")
+        slug = data.custom_slug
+    else:
+        for _ in range(10):
+            slug = _generate_slug()
+            existing = await db.scalar(select(ShortLink).where(ShortLink.slug == slug))
+            if not existing:
+                break
 
     link = ShortLink(
         tenant_id=tenant_id,

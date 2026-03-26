@@ -27,12 +27,24 @@ class CampaignResponse(BaseModel):
 class ShortLinkCreate(BaseModel):
     original_url: str
     name: str
+    custom_slug: str | None = None
 
     @field_validator("original_url")
     @classmethod
     def validate_url(cls, v: str) -> str:
         if not v.startswith(("http://", "https://")):
             raise ValueError("URL deve começar com http:// ou https://")
+        return v
+
+    @field_validator("custom_slug")
+    @classmethod
+    def validate_slug(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        import re
+        v = v.strip().lower()
+        if not re.match(r'^[a-z0-9][a-z0-9\-_]{1,30}[a-z0-9]$', v):
+            raise ValueError("Slug deve ter 3-32 caracteres: letras, números, hífen ou underscore")
         return v
 
 
