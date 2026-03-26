@@ -48,6 +48,10 @@ async def redirect_link(slug: str, request: Request, db: AsyncSession = Depends(
     user_agent = request.headers.get("user-agent", "")
     referrer = request.headers.get("referer", "")
 
+    # Incrementa contador no Postgres
+    link.clicks_cached = (link.clicks_cached or 0) + 1
+    await db.commit()
+
     # Registra clique sem bloquear o redirect
     asyncio.create_task(
         asyncio.to_thread(
