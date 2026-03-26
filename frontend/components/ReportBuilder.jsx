@@ -4609,7 +4609,7 @@ export function CanvasConfigPanel({ config, onChange }) {
   )
 }
 
-export function DatasetPanel({ datasets, onDatasetsChange }) {
+export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = null, onPinDataset, onUnpinDataset }) {
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
   const [tab, setTab] = useState('upload')
@@ -4623,7 +4623,16 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
   const [selectedSheet, setSelectedSheet] = useState('')
   const [sheetsLoading, setSheetsLoading] = useState(false)
   const [excelSheetPicker, setExcelSheetPicker] = useState(null)
+  const [showAddPicker, setShowAddPicker] = useState(false)
   const fileRef = useRef()
+
+  // Quando no contexto de um dashboard, mostra só os datasets pinados
+  const displayedDatasets = reportDatasetIds !== null
+    ? datasets.filter(d => reportDatasetIds.includes(d.id))
+    : datasets
+  const unpinnedDatasets = reportDatasetIds !== null
+    ? datasets.filter(d => !reportDatasetIds.includes(d.id))
+    : []
 
   const isGoogleSheets = apiForm.api_url.includes('docs.google.com/spreadsheets')
 
@@ -4684,6 +4693,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
       if (sheetName) fd.append('sheet_name', sheetName)
       const ds = await api.reports.datasets.upload(fd)
       onDatasetsChange([ds, ...datasets])
+      if (reportDatasetIds !== null && onPinDataset) onPinDataset(ds.id)
     } catch (err) { setError(err.message) }
     finally { setUploading(false) }
   }
@@ -4704,6 +4714,7 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
       const resolvedUrl = isGoogleSheets ? normalizeApiUrl(apiForm.api_url, selectedSheet) : apiForm.api_url
       const ds = await api.reports.datasets.createApi({ name: apiForm.name, api_url: resolvedUrl, api_headers: headers, api_data_path: apiForm.api_data_path || null })
       onDatasetsChange([ds, ...datasets])
+      if (reportDatasetIds !== null && onPinDataset) onPinDataset(ds.id)
       setApiForm({ name: '', api_url: '', api_headers: '', api_data_path: '' })
       setSheets([]); setSelectedSheet('')
     } catch (err) { setError(err.message) }
@@ -4737,9 +4748,9 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
     <div className="space-y-4">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{t('dataset.title')}</p>
 
-      {datasets.length > 0 && (
+      {displayedDatasets.length > 0 && (
         <div className="space-y-2">
-          {datasets.map(ds => (
+          {displayedDatasets.map(ds => (
             <div key={ds.id} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -4754,9 +4765,15 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
                       <svg className={`w-3.5 h-3.5 ${syncing === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
                   )}
-                  <button onClick={() => handleDelete(ds.id)} className="p-1 text-gray-400 hover:text-red-500 rounded">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
+                  {reportDatasetIds !== null && onUnpinDataset ? (
+                    <button onClick={() => onUnpinDataset(ds.id)} title="Remover deste dashboard" className="p-1 text-gray-400 hover:text-orange-500 rounded">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  ) : (
+                    <button onClick={() => handleDelete(ds.id)} className="p-1 text-gray-400 hover:text-red-500 rounded">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  )}
                 </div>
               </div>
               {ds.type === 'api' && (
@@ -4784,6 +4801,38 @@ export function DatasetPanel({ datasets, onDatasetsChange }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Picker de datasets existentes para pinar */}
+      {reportDatasetIds !== null && onPinDataset && unpinnedDatasets.length > 0 && (
+        <div>
+          {showAddPicker ? (
+            <div className="border border-violet-200 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-violet-50 border-b border-violet-100">
+                <span className="text-xs font-semibold text-violet-700">Adicionar fonte existente</span>
+                <button onClick={() => setShowAddPicker(false)} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {unpinnedDatasets.map(ds => (
+                  <button key={ds.id} onClick={() => { onPinDataset(ds.id); setShowAddPicker(false) }}
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-violet-50 text-left transition-colors">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
+                    <span className="text-xs text-gray-700 truncate">{ds.name}</span>
+                    <span className="text-[10px] text-gray-400 ml-auto shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowAddPicker(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-violet-600 font-semibold hover:bg-violet-50 rounded-lg border border-dashed border-violet-200 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/></svg>
+              Adicionar fonte existente
+            </button>
+          )}
         </div>
       )}
 
@@ -5318,7 +5367,7 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
       )}
 
       {tab === 'gerenciar' && (
-        <DatasetPanel datasets={datasets} onDatasetsChange={onDatasetsChange} />
+        <DatasetPanel datasets={datasets} onDatasetsChange={onDatasetsChange} reportDatasetIds={reportDatasetIds} onPinDataset={onPinDataset} onUnpinDataset={onUnpinDataset} />
       )}
     </div>
   )
