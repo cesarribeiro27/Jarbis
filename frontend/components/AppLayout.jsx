@@ -387,7 +387,14 @@ export default function AppLayout({ children }) {
       .then(data => {
         if (data) {
           setPlan(data.plan)
-          if (data.trial_days_remaining !== null) setTrialDays(data.trial_days_remaining)
+          if (data.trial_days_remaining !== null) {
+            setTrialDays(data.trial_days_remaining)
+            localStorage.setItem('jarbis_trial_days', data.trial_days_remaining)
+          } else {
+            // Plano pago — limpa o trial do localStorage para não mostrar banner stale
+            setTrialDays(null)
+            localStorage.removeItem('jarbis_trial_days')
+          }
           if (data.subscription_status === 'past_due') setPastDue(true)
         }
       })

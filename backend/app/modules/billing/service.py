@@ -682,7 +682,7 @@ class BillingService:
             "plan": plan,
             "plan_name": PLAN_NAMES.get(plan, plan),
             "subscription_status": tenant.subscription_status,
-            "trial_days_remaining": tenant.trial_days_remaining,
+            "trial_days_remaining": tenant.trial_days_remaining if plan == "free" else None,
             "has_stripe": bool(tenant.stripe_customer_id),
             "has_active_subscription": bool(
                 tenant.stripe_subscription_id
