@@ -93,6 +93,13 @@ class Settings(BaseSettings):
     nfeio_api_key: str = ""
     nfeio_company_id: str = ""
 
+    # --- ClickHouse (eventos de links) ---
+    clickhouse_host: str = ""
+    clickhouse_port: int = 8443
+    clickhouse_user: str = "default"
+    clickhouse_password: str = ""
+    clickhouse_database: str = "default"
+
     @property
     def admin_emails(self) -> list[str]:
         return [e.strip() for e in self.admin_emails_csv.split(",") if e.strip()]

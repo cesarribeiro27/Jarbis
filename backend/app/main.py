@@ -22,6 +22,7 @@ from app.modules.billing.router import router as billing_router
 from app.modules.reports.router import router as reports_router
 from app.modules.support.router import router as support_router
 from app.modules.tenants.suborg_router import router as suborg_router
+from app.modules.links.router import router as links_router
 
 
 async def _refresh_loop():
@@ -219,6 +220,11 @@ async def _refresh_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.core.clickhouse import ensure_tables
+    try:
+        ensure_tables()
+    except Exception as e:
+        print(f"[ClickHouse] Aviso: não foi possível criar tabelas — {e}")
     print(f"[Jarbis] Iniciando API v{settings.app_version} ({settings.environment})")
     task = asyncio.create_task(_refresh_loop())
     yield
@@ -270,6 +276,7 @@ app.include_router(billing_router)
 app.include_router(reports_router)
 app.include_router(support_router)
 app.include_router(suborg_router)
+app.include_router(links_router)
 
 
 @app.get("/health", tags=["Sistema"])

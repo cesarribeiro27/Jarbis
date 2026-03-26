@@ -43,6 +43,9 @@ dependencies = [
     "stripe>=10.0.0",
     "twilio>=9.0.0",
 
+    # ClickHouse (banco de eventos de links)
+    "clickhouse-connect>=0.7.0",
+
     # Utilitários
     "python-slugify>=8.0.0",
     "pendulum>=3.0.0",
