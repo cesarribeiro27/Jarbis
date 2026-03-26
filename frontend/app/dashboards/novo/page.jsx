@@ -828,9 +828,7 @@ function NovoDashboardContent() {
   }
 
   function toggleDataset(id) {
-    setSelectedDatasetIds(prev =>
-      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
-    )
+    setSelectedDatasetIds(prev => prev.includes(id) ? [] : [id])
   }
 
   // Step 2: wizard leve — nomear e criar
@@ -890,8 +888,8 @@ function NovoDashboardContent() {
       {showDatasetPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-black text-gray-900 mb-1">Selecionar fontes de dados</h3>
-            <p className="text-sm text-gray-400 mb-4">Escolha quais datasets serão usados neste dashboard. Você pode adicionar ou remover depois.</p>
+            <h3 className="text-lg font-black text-gray-900 mb-1">Selecionar fonte de dados</h3>
+            <p className="text-sm text-gray-400 mb-4">Escolha a fonte principal deste dashboard. Você pode adicionar outras depois.</p>
 
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {availableDatasets.map(ds => {
@@ -904,8 +902,8 @@ function NovoDashboardContent() {
                     onClick={() => toggleDataset(ds.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${checked ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-violet-200 hover:bg-violet-50/40'}`}
                   >
-                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
-                      {checked && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'border-violet-500' : 'border-gray-300'}`}>
+                      {checked && <div className="w-2 h-2 rounded-full bg-violet-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -921,16 +919,16 @@ function NovoDashboardContent() {
 
             <div className="flex gap-2 mt-5">
               <button
-                onClick={() => handleCreate([])}
-                className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                onClick={() => setShowDatasetPicker(false)}
+                className="px-4 border border-gray-200 rounded-xl py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               >
-                Continuar sem fontes
+                Voltar
               </button>
               <button
                 onClick={() => handleCreate(selectedDatasetIds)}
                 className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl py-2.5 text-sm transition-colors"
               >
-                {selectedDatasetIds.length > 0 ? `Criar com ${selectedDatasetIds.length} fonte${selectedDatasetIds.length > 1 ? 's' : ''}` : 'Criar Dashboard'}
+                {selectedDatasetIds.length > 0 ? 'Criar Dashboard' : 'Criar sem fonte'}
               </button>
             </div>
           </div>
