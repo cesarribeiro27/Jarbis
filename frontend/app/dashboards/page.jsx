@@ -186,7 +186,7 @@ function ImageCropperModal({ onSave, onClose }) {
 function AiCreateModal({ onClose }) {
   const router = useRouter()
   const [datasets, setDatasets] = useState([])
-  const [datasetId, setDatasetId] = useState('')
+  const [selectedIds, setSelectedIds] = useState([])
   const [objetivo, setObjetivo] = useState('')
   const [step, setStep] = useState(0)  // 0=idle, 1-3=loading, 4=success, -1=error
   const [error, setError] = useState(null)
@@ -200,22 +200,22 @@ function AiCreateModal({ onClose }) {
 
   useEffect(() => {
     api.reports.datasets.list()
-      .then(d => {
-        const list = d || []
-        setDatasets(list)
-        if (list.length > 0) setDatasetId(list[0].id)
-      })
+      .then(d => { setDatasets(d || []) })
       .catch(() => {})
   }, [])
 
+  function toggleId(id) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
   async function handleGenerate() {
-    if (!datasetId || step > 0) return
+    if (!selectedIds.length || step > 0) return
     setError(null)
     setStep(1)
     const t1 = setTimeout(() => setStep(2), 2500)
     const t2 = setTimeout(() => setStep(3), 5000)
     try {
-      const result = await api.reports.generateDashboard(datasetId, objetivo.trim() || null)
+      const result = await api.reports.generateDashboard(selectedIds, objetivo.trim() || null)
       clearTimeout(t1); clearTimeout(t2)
 
       if (!result.blocks?.length) {
@@ -237,14 +237,16 @@ function AiCreateModal({ onClose }) {
         const layout = { x: curX, y: curY, w, h }
         curX += w
         rowH = Math.max(rowH, h)
-        return { ...b, id: b.id || crypto.randomUUID(), dataset_id: datasetId, layout }
+        return { ...b, id: b.id || crypto.randomUUID(), layout }
       })
 
-      const dsName = datasets.find(d => d.id === datasetId)?.name || 'Dataset'
-      const title = objetivo.trim() || `Dashboard — ${dsName}`
+      const primaryDs = datasets.find(d => d.id === selectedIds[0])
+      const dsNames = selectedIds.map(id => datasets.find(d => d.id === id)?.name).filter(Boolean)
+      const title = objetivo.trim() || (dsNames.length > 1 ? `Dashboard — ${dsNames[0]} +${dsNames.length - 1}` : `Dashboard — ${dsNames[0] || 'Dataset'}`)
       const report = await api.reports.create({
         title,
         pages: [{ id: crypto.randomUUID(), title: 'Página 1', blocks: blocksWithLayout }],
+        dataset_ids: selectedIds,
       })
 
       setStep(4)
@@ -299,16 +301,33 @@ function AiCreateModal({ onClose }) {
               ) : (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Fonte de dados</label>
-                    <select
-                      value={datasetId}
-                      onChange={e => setDatasetId(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-                    >
-                      {datasets.map(ds => (
-                        <option key={ds.id} value={ds.id}>{ds.name} ({ds.row_count} linhas)</option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                      Fontes de dados
+                      {selectedIds.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700">{selectedIds.length} selecionada{selectedIds.length > 1 ? 's' : ''}</span>
+                      )}
+                    </label>
+                    <div className="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
+                      {datasets.map(ds => {
+                        const checked = selectedIds.includes(ds.id)
+                        const typeColor = ds.type === 'api' ? 'bg-blue-50 text-blue-600' : ds.type === 'database' ? 'bg-emerald-50 text-emerald-700' : ds.type === 'google-analytics' ? 'bg-orange-50 text-orange-600' : 'bg-violet-50 text-violet-600'
+                        const typeLabel = ds.type === 'api' ? 'API' : ds.type === 'database' ? 'DB' : ds.type === 'google-analytics' ? 'GA' : 'CSV'
+                        return (
+                          <button
+                            key={ds.id}
+                            onClick={() => toggleId(ds.id)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-colors ${checked ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-violet-200 hover:bg-violet-50/40'}`}
+                          >
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
+                              {checked && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
+                            </div>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${typeColor}`}>{typeLabel}</span>
+                            <span className="text-sm font-medium text-gray-800 truncate flex-1">{ds.name}</span>
+                            <span className="text-[10px] text-gray-400 shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
 
                   <div>
@@ -338,13 +357,13 @@ function AiCreateModal({ onClose }) {
 
                   <button
                     onClick={handleGenerate}
-                    disabled={!datasetId}
+                    disabled={!selectedIds.length}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-all shadow-sm hover:shadow-md"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                    Gerar dashboard agora
+                    {selectedIds.length > 1 ? `Gerar com ${selectedIds.length} fontes` : 'Gerar dashboard agora'}
                   </button>
 
                   <p className="text-[11px] text-gray-400 text-center">

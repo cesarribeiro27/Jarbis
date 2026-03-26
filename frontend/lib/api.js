@@ -197,8 +197,10 @@ export const api = {
     },
     aiQuery: (datasetId, question) =>
       apiFetch('/reports/ai-query', { method: 'POST', body: JSON.stringify({ dataset_id: datasetId, question }) }),
-    generateDashboard: (datasetId, objetivo) =>
-      apiFetch('/reports/generate-dashboard', { method: 'POST', body: JSON.stringify({ dataset_id: datasetId, objetivo: objetivo || null }) }),
+    generateDashboard: (datasetIds, objetivo) => {
+      const ids = Array.isArray(datasetIds) ? datasetIds : [datasetIds]
+      return apiFetch('/reports/generate-dashboard', { method: 'POST', body: JSON.stringify({ dataset_ids: ids, objetivo: objetivo || null }) })
+    },
     diagnoseDashboard: (reportId) => apiFetch(`/reports/${reportId}/diagnose`, { method: 'POST' }),
     diagnoseHistory: (reportId) => apiFetch(`/reports/${reportId}/diagnose/history`),
     deleteSnapshot: (reportId, snapshotId) => apiFetch(`/reports/${reportId}/diagnose/${snapshotId}`, { method: 'DELETE' }),

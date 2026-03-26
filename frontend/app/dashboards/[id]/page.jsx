@@ -124,6 +124,10 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   const t = useTranslations('dashboardEditor')
   const locale = useLocale()
   const [activeTab, setActiveTab] = useState('generate')
+
+  // Generate tab: multi-select de datasets (default = todos)
+  const [genSelectedIds, setGenSelectedIds] = useState(() => datasets.map(d => d.id))
+  // Ask tab: single dataset select
   const [datasetId, setDatasetId] = useState(datasets[0]?.id || '')
 
   // Generate tab state: 0=idle, 1-3=loading steps, 4=success, -1=error
@@ -167,8 +171,12 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
     'Montando estrutura do dashboard...',
   ]
 
+  function toggleGenId(id) {
+    setGenSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
   async function generateDashboard() {
-    if (!datasetId || !selectedDs || genStep > 0 || !onAddBlocks) return
+    if (!genSelectedIds.length || genStep > 0 || !onAddBlocks) return
     setGenError(null)
     setGenResult(null)
     setGenStep(1)
@@ -177,21 +185,25 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
     const t2 = setTimeout(() => setGenStep(3), 5000)
 
     try {
-      const result = await api.reports.generateDashboard(datasetId, objetivo.trim() || null)
+      const result = await api.reports.generateDashboard(genSelectedIds, objetivo.trim() || null)
       clearTimeout(t1); clearTimeout(t2)
 
-      const mapped = (result.blocks || []).map(b => ({
-        ...b,
-        id: b.id || crypto.randomUUID(),
-        dataset_id: datasetId,
-        config: {
-          ...(b.config || {}),
-          dim_type: b.label_col
-            ? (selectedDs?.column_types?.[b.label_col] === 'date' ? 'date' : 'text')
-            : undefined,
-          granularity: selectedDs?.column_types?.[b.label_col] === 'date' ? 'month' : undefined,
-        },
-      }))
+      const mapped = (result.blocks || []).map(b => {
+        const bDsId = b.dataset_id || genSelectedIds[0]
+        const bDs = datasets.find(d => d.id === bDsId)
+        return {
+          ...b,
+          id: b.id || crypto.randomUUID(),
+          dataset_id: bDsId,
+          config: {
+            ...(b.config || {}),
+            dim_type: b.label_col
+              ? (bDs?.column_types?.[b.label_col] === 'date' ? 'date' : 'text')
+              : undefined,
+            granularity: bDs?.column_types?.[b.label_col] === 'date' ? 'month' : undefined,
+          },
+        }
+      })
 
       if (!mapped.length) {
         setGenError('A IA não gerou blocos. Tente descrever o objetivo do dashboard.')
@@ -208,7 +220,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
             id: crypto.randomUUID(),
             type: 'filter',
             title: 'Filtro de Período',
-            dataset_id: datasetId,
+            dataset_id: genSelectedIds[0] || '',
             filter_col: result.suggested_date_col,
             filter_label: 'Período',
             config: {},
@@ -363,20 +375,37 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
           {activeTab === 'generate' && (
             <div className="p-5 flex flex-col gap-4">
 
-              {/* Dataset selector (só aparece se houver mais de 1) */}
-              {datasets.length > 1 && (
+              {/* Dataset multi-select (sempre visível se há datasets) */}
+              {datasets.length > 0 && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Dataset</label>
-                  <select
-                    value={datasetId}
-                    onChange={e => { setDatasetId(e.target.value); setGenStep(0); setGenError(null); setGenResult(null) }}
-                    disabled={isGenerating}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-50"
-                  >
-                    {datasets.map(ds => (
-                      <option key={ds.id} value={ds.id}>{ds.name} ({ds.row_count} linhas)</option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Fontes de dados
+                    {genSelectedIds.length > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700">{genSelectedIds.length}/{datasets.length}</span>
+                    )}
+                  </label>
+                  <div className="space-y-1">
+                    {datasets.map(ds => {
+                      const checked = genSelectedIds.includes(ds.id)
+                      const typeColor = ds.type === 'api' ? 'bg-blue-50 text-blue-600' : ds.type === 'database' ? 'bg-emerald-50 text-emerald-700' : ds.type === 'google-analytics' ? 'bg-orange-50 text-orange-600' : 'bg-violet-50 text-violet-600'
+                      const typeLabel = ds.type === 'api' ? 'API' : ds.type === 'database' ? 'DB' : ds.type === 'google-analytics' ? 'GA' : 'CSV'
+                      return (
+                        <button
+                          key={ds.id}
+                          onClick={() => { if (!isGenerating) toggleGenId(ds.id) }}
+                          disabled={isGenerating}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-colors disabled:opacity-50 ${checked ? 'border-violet-300 bg-violet-50' : 'border-gray-200 hover:border-violet-200'}`}
+                        >
+                          <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
+                            {checked && <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
+                          </div>
+                          <span className={`text-[9px] px-1 py-0.5 rounded font-bold shrink-0 ${typeColor}`}>{typeLabel}</span>
+                          <span className="text-xs font-medium text-gray-700 truncate flex-1">{ds.name}</span>
+                          <span className="text-[10px] text-gray-400 shrink-0">{(ds.row_count || 0).toLocaleString()}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -411,13 +440,13 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
 
                   <button
                     onClick={generateDashboard}
-                    disabled={!datasetId}
+                    disabled={!genSelectedIds.length}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-semibold rounded-xl disabled:opacity-40 transition-all shadow-sm hover:shadow-md"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                    Gerar Dashboard
+                    {genSelectedIds.length > 1 ? `Gerar com ${genSelectedIds.length} fontes` : 'Gerar Dashboard'}
                   </button>
 
                   <p className="text-[11px] text-gray-400 text-center leading-relaxed">

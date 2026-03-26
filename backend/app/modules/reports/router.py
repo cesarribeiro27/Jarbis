@@ -1987,8 +1987,17 @@ def _detect_domain(columns: list[str], rows: list[dict]) -> tuple[str, dict]:
 
 
 class GenerateDashboardRequest(BaseModel):
-    dataset_id: uuid.UUID
+    dataset_id: uuid.UUID | None = None        # legado — single dataset
+    dataset_ids: list[uuid.UUID] | None = None  # novo — múltiplos datasets
     objetivo: str | None = None
+
+    @property
+    def resolved_ids(self) -> list[uuid.UUID]:
+        if self.dataset_ids:
+            return self.dataset_ids
+        if self.dataset_id:
+            return [self.dataset_id]
+        return []
 
 
 @router.post("/generate-dashboard", summary="Gera blocos de dashboard automaticamente com IA")
@@ -2029,134 +2038,203 @@ async def generate_dashboard_endpoint(
                 "incident_count": safety.get("incident_count", 1),
             })
 
+    resolved_ids = data.resolved_ids
+    if not resolved_ids:
+        raise HTTPException(status_code=400, detail="Nenhum dataset informado")
+
     svc = DatasetService(db)
-    ds = await svc.get(data.dataset_id, effective_tenant_id)
-    if not ds and effective_tenant_id != current_user.tenant_id:
-        ds = await svc.get(data.dataset_id, current_user.tenant_id)
-    if not ds:
+    all_datasets = []
+    for did in resolved_ids:
+        ds_item = await svc.get(did, effective_tenant_id)
+        if not ds_item and effective_tenant_id != current_user.tenant_id:
+            ds_item = await svc.get(did, current_user.tenant_id)
+        if ds_item:
+            all_datasets.append(ds_item)
+
+    if not all_datasets:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
+
+    ds = all_datasets[0]  # dataset primário (legado / fallback)
+    is_multi = len(all_datasets) > 1
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key or api_key == "your_key_here":
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurada.")
 
-    columns = ds.columns or []
-    rows = ds.rows or []
-    total_rows = len(rows)
-
-    # ── Análise estatística completa de TODAS as linhas ──────────────────────
-    col_stats: dict[str, dict] = {}
-    for col in columns:
-        vals = [r.get(col) for r in rows if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
+    # ── Helper: analisa colunas de um dataset ────────────────────────────────
+    def _build_col_stats(columns_list: list, rows_list: list) -> dict:
+        stats: dict[str, dict] = {}
+        total = len(rows_list)
+        for col in columns_list:
+            vals = [r.get(col) for r in rows_list if r.get(col) is not None and str(r.get(col)).strip().lower() not in (
                 "", "null", "none", "n/a", "na", "n.a.", "-", "--", "nan",
                 "#n/a", "#na", "#div/0!", "#ref!", "#value!", "#num!", "#name?", "#null!",
             )]
-        null_count = total_rows - len(vals)
-
-        if not vals:
-            col_stats[col] = {"type": "texto", "null_pct": 100}
-            continue
-
-        # Tentar numérico
-        nums: list[float] = []
-        all_numeric = True
-        for v in vals:
-            try:
-                nums.append(float(str(v).replace(",", ".")))
-            except (ValueError, TypeError):
-                all_numeric = False
-                break
-
-        if all_numeric and nums:
-            nonzero = sum(1 for n in nums if n != 0)
-            col_stats[col] = {
-                "type": "numero",
-                "sum": round(sum(nums), 2),
-                "avg": round(sum(nums) / len(nums), 2),
-                "min": round(min(nums), 2),
-                "max": round(max(nums), 2),
-                "count": len(nums),
-                "nonzero_pct": round(nonzero / len(nums) * 100),
-                "null_pct": round(null_count / total_rows * 100) if total_rows else 0,
-            }
-        else:
-            sample_val = str(vals[0])
-            if re.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}", sample_val):
-                col_stats[col] = {
-                    "type": "data",
-                    "sample": sample_val,
-                    "count": len(vals),
+            null_count = total - len(vals)
+            if not vals:
+                stats[col] = {"type": "texto", "null_pct": 100}
+                continue
+            nums: list[float] = []
+            all_numeric = True
+            for v in vals:
+                try:
+                    nums.append(float(str(v).replace(",", ".")))
+                except (ValueError, TypeError):
+                    all_numeric = False
+                    break
+            if all_numeric and nums:
+                nonzero = sum(1 for n in nums if n != 0)
+                stats[col] = {
+                    "type": "numero",
+                    "sum": round(sum(nums), 2),
+                    "avg": round(sum(nums) / len(nums), 2),
+                    "min": round(min(nums), 2),
+                    "max": round(max(nums), 2),
+                    "count": len(nums),
+                    "nonzero_pct": round(nonzero / len(nums) * 100),
+                    "null_pct": round(null_count / total * 100) if total else 0,
                 }
             else:
-                str_vals = [str(v) for v in vals]
-                unique_vals = list(dict.fromkeys(str_vals))
-                col_stats[col] = {
-                    "type": "texto",
-                    "unique": len(set(str_vals)),
-                    "top3": unique_vals[:3],
-                    "count": len(vals),
-                }
+                sample_val = str(vals[0])
+                if re.match(r"\d{4}-\d{2}|\d{2}/\d{4}|\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}", sample_val):
+                    stats[col] = {"type": "data", "sample": sample_val, "count": len(vals)}
+                else:
+                    str_vals = [str(v) for v in vals]
+                    unique_vals = list(dict.fromkeys(str_vals))
+                    stats[col] = {
+                        "type": "texto",
+                        "unique": len(set(str_vals)),
+                        "top3": unique_vals[:3],
+                        "count": len(vals),
+                    }
+        return stats
 
-    # ── Schema para a IA com estatísticas claras ─────────────────────────────
-    schema_parts = [
-        f"Dataset: {ds.name}",
-        f"Total de linhas: {total_rows}",
-        "",
-        "Colunas (analise cuidadosamente cada uma):",
-    ]
-    for col, st in col_stats.items():
-        if st["type"] == "numero":
-            null_pct = st.get("null_pct", 0)
-            nonzero_pct = st.get("nonzero_pct", 0)
-            # Coluna interessante apenas se: muitos valores preenchidos E maioria não-zero
-            # null_pct > 70% = dados insuficientes para gráfico/KPI confiável
-            if nonzero_pct >= 20 and null_pct <= 70:
-                flag = "★ INTERESSANTE"
-            elif null_pct > 70:
-                flag = f"— MUITOS NULOS ({null_pct}% vazio)"
+    # ── Computa col_stats por dataset ────────────────────────────────────────
+    per_ds_stats: list[dict] = []  # [{id, name, columns, rows, col_stats, sample}]
+    for ds_item in all_datasets:
+        ds_cols = ds_item.columns or []
+        ds_rows = ds_item.rows or []
+        per_ds_stats.append({
+            "id": str(ds_item.id),
+            "name": ds_item.name,
+            "columns": ds_cols,
+            "rows": ds_rows,
+            "col_stats": _build_col_stats(ds_cols, ds_rows),
+            "sample": ds_rows[:5],
+        })
+
+    # col_stats do dataset primário (usado para filtros categoriais — legado)
+    col_stats = per_ds_stats[0]["col_stats"]
+    columns = per_ds_stats[0]["columns"]
+    rows = per_ds_stats[0]["rows"]
+    total_rows = len(rows)
+
+    # ── Helper: formata col_stats de um dataset para o schema da IA ─────────
+    def _format_ds_schema(ds_info: dict) -> list[str]:
+        parts = []
+        for col, st in ds_info["col_stats"].items():
+            if st["type"] == "numero":
+                null_pct = st.get("null_pct", 0)
+                nonzero_pct = st.get("nonzero_pct", 0)
+                if nonzero_pct >= 20 and null_pct <= 70:
+                    flag = "★ INTERESSANTE"
+                elif null_pct > 70:
+                    flag = f"— MUITOS NULOS ({null_pct}% vazio)"
+                else:
+                    flag = "— zero/irrelevante"
+                parts.append(
+                    f'  "{col}" [número {flag}] sum={st["sum"]}, avg={st["avg"]}, '
+                    f'nonzero={nonzero_pct}%, nulos={null_pct}%'
+                )
+            elif st["type"] == "data":
+                parts.append(f'  "{col}" [data] ex: {st["sample"]}')
             else:
-                flag = "— zero/irrelevante"
-            schema_parts.append(
-                f'  "{col}" [número {flag}] sum={st["sum"]}, avg={st["avg"]}, '
-                f'nonzero={nonzero_pct}%, nulos={null_pct}%'
-            )
-        elif st["type"] == "data":
-            schema_parts.append(f'  "{col}" [data] ex: {st["sample"]}')
-        else:
-            top3 = ", ".join(st.get("top3", []))
-            schema_parts.append(
-                f'  "{col}" [texto] {st.get("unique", "?")} valores únicos, ex: {top3}'
-            )
+                top3 = ", ".join(st.get("top3", []))
+                parts.append(f'  "{col}" [texto] {st.get("unique", "?")} valores únicos, ex: {top3}')
+        return parts
 
-    sample_rows = rows[:5]
-    schema_str = "\n".join(schema_parts)
-    schema_str += f"\n\nAmostra (5 linhas):\n{json.dumps(sample_rows, ensure_ascii=False, default=str)}"
-
-    # Detectar coluna de data mais relevante para sugerir ao frontend
-    date_cols = [col for col, st in col_stats.items() if st.get("type") == "data"]
-    # Preferir colunas com nome relacionado a mês/data/período
+    # ── Schema para a IA ─────────────────────────────────────────────────────
     date_priority = ["mes", "mês", "data", "date", "periodo", "período", "dt", "competencia",
                      "emissao", "emissão", "vencimento", "referencia", "referência", "lancamento", "lançamento"]
-    suggested_date_col = None
-    for priority in date_priority:
-        for dc in date_cols:
-            if priority in dc.lower():
-                suggested_date_col = dc
-                break
-        if suggested_date_col:
-            break
-    if not suggested_date_col and date_cols:
-        suggested_date_col = date_cols[0]
-    # Fallback: checar nome das colunas mesmo que tipo não detectado como data
-    if not suggested_date_col:
-        for col in columns:
-            col_l = col.lower()
-            if any(sig in col_l for sig in date_priority):
-                suggested_date_col = col
-                break
 
-    # ── Detecção de domínio ────────────────────────────────────────────────
-    domain_key, domain_tpl = _detect_domain(columns, rows)
+    if is_multi:
+        # Schema combinado com atribuição clara por dataset
+        schema_parts = [
+            f"O usuário selecionou {len(all_datasets)} fontes de dados para este dashboard.",
+            "Gere blocos usando as colunas de qualquer dataset — use 'dataset_id' para identificar a origem.",
+            "",
+        ]
+        all_date_cols_by_ds: list[tuple[str, str]] = []  # (col_name, ds_id)
+        all_columns_combined: list = []
+        for ds_info in per_ds_stats:
+            schema_parts.append(f"━━━ FONTE: {ds_info['name']} | dataset_id: {ds_info['id']} ━━━")
+            schema_parts.append(f"Linhas: {len(ds_info['rows'])}")
+            schema_parts.append("Colunas:")
+            schema_parts.extend(_format_ds_schema(ds_info))
+            schema_parts.append(f"Amostra: {json.dumps(ds_info['sample'], ensure_ascii=False, default=str)}")
+            schema_parts.append("")
+            all_columns_combined.extend(ds_info["columns"])
+            for col, st in ds_info["col_stats"].items():
+                if st.get("type") == "data":
+                    all_date_cols_by_ds.append((col, ds_info["id"]))
+        schema_str = "\n".join(schema_parts)
+
+        # Data col: preferência por nomes prioritários, de qualquer dataset
+        suggested_date_col = None
+        suggested_date_ds_id = str(ds.id)
+        for priority in date_priority:
+            for col, did in all_date_cols_by_ds:
+                if priority in col.lower():
+                    suggested_date_col = col
+                    suggested_date_ds_id = did
+                    break
+            if suggested_date_col:
+                break
+        if not suggested_date_col and all_date_cols_by_ds:
+            suggested_date_col, suggested_date_ds_id = all_date_cols_by_ds[0]
+        if not suggested_date_col:
+            for ds_info in per_ds_stats:
+                for col in ds_info["columns"]:
+                    if any(sig in col.lower() for sig in date_priority):
+                        suggested_date_col = col
+                        suggested_date_ds_id = ds_info["id"]
+                        break
+                if suggested_date_col:
+                    break
+
+        domain_key, domain_tpl = _detect_domain(all_columns_combined, [])
+    else:
+        # Single dataset — comportamento original
+        schema_parts = [
+            f"Dataset: {ds.name}",
+            f"Total de linhas: {total_rows}",
+            "",
+            "Colunas (analise cuidadosamente cada uma):",
+        ]
+        schema_parts.extend(_format_ds_schema(per_ds_stats[0]))
+        schema_str = "\n".join(schema_parts)
+        schema_str += f"\n\nAmostra (5 linhas):\n{json.dumps(rows[:5], ensure_ascii=False, default=str)}"
+
+        date_cols = [col for col, st in col_stats.items() if st.get("type") == "data"]
+        suggested_date_col = None
+        suggested_date_ds_id = str(ds.id)
+        for priority in date_priority:
+            for dc in date_cols:
+                if priority in dc.lower():
+                    suggested_date_col = dc
+                    break
+            if suggested_date_col:
+                break
+        if not suggested_date_col and date_cols:
+            suggested_date_col = date_cols[0]
+        if not suggested_date_col:
+            for col in columns:
+                if any(sig in col.lower() for sig in date_priority):
+                    suggested_date_col = col
+                    break
+
+        domain_key, domain_tpl = _detect_domain(columns, rows)
+
     domain_section = (
         f"\nDOMÍNIO DETECTADO: {domain_tpl['name']}\n"
         f"Foco de análise: {domain_tpl['insights_focus']}\n"
@@ -2165,6 +2243,14 @@ async def generate_dashboard_endpoint(
     )
 
     objetivo_str = f"\n\nObjetivo do usuário: {data.objetivo}" if data.objetivo else ""
+
+    multi_dataset_instruction = (
+        "\n\nATRIBUIÇÃO — MÚLTIPLOS DATASETS:\n"
+        "Cada bloco DEVE incluir o campo 'dataset_id' com o UUID exato do dataset de onde vêm suas colunas.\n"
+        "NÃO misture colunas de datasets diferentes no mesmo bloco.\n"
+        "Você PODE e DEVE gerar blocos de datasets diferentes — isso dá visão cruzada ao usuário.\n"
+        "O campo 'dataset_id' deve ser o UUID mostrado após 'dataset_id:' no header de cada fonte.\n"
+    ) if is_multi else ""
 
     system_prompt = (
         "Você é um Jornalista de Dados com visão estratégica de negócio.\n"
@@ -2234,6 +2320,7 @@ async def generate_dashboard_endpoint(
         "9. O gráfico do Ato 2 (temporal) deve usar w=12 se houver coluna de data\n\n"
 
         f"{domain_section}"
+        f"{multi_dataset_instruction}"
 
         "TESTE DE QUALIDADE — antes de retornar, verifique:\n"
         "  ✓ Os blocos estão na ordem da narrativa (contexto → tempo → composição → detalhe)?\n"
@@ -2258,7 +2345,7 @@ async def generate_dashboard_endpoint(
         log = AIUsageLog(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
-            dataset_id=data.dataset_id,
+            dataset_id=data.dataset_id or (all_datasets[0].id if all_datasets else None),
             model=_AI_MODEL_GENERATE,
             tokens_input=usage.input_tokens,
             tokens_output=usage.output_tokens,
@@ -2291,8 +2378,14 @@ async def generate_dashboard_endpoint(
         "pie":    {"w": 4, "h": 4},
         "bubble": {"w": 6, "h": 4},
     }
+    valid_ds_ids = {info["id"] for info in per_ds_stats}
     for b in blocks:
-        b["dataset_id"] = str(data.dataset_id)
+        # Multi: preserva dataset_id que a IA atribuiu (se válido); fallback = primário
+        if is_multi:
+            if not b.get("dataset_id") or b["dataset_id"] not in valid_ds_ids:
+                b["dataset_id"] = str(ds.id)
+        else:
+            b["dataset_id"] = str(ds.id)
         if not b.get("id"):
             b["id"] = str(_uuid.uuid4())
         btype = b.get("type", "bar")
@@ -2318,7 +2411,7 @@ async def generate_dashboard_endpoint(
             "id": str(_uuid.uuid4()),
             "type": "filter",
             "config": {"date_mode": True},
-            "dataset_id": str(data.dataset_id),
+            "dataset_id": suggested_date_ds_id,
             "filter_col": suggested_date_col,
             "filter_label": suggested_date_col,
             "layout": {"w": 12, "h": 2},
@@ -2361,7 +2454,7 @@ async def generate_dashboard_endpoint(
                 cat_filters.append({
                     "id": str(_uuid.uuid4()),
                     "type": "filter",
-                    "dataset_id": str(data.dataset_id),
+                    "dataset_id": str(ds.id),
                     "filter_col": col,
                     "filter_label": col,
                     "layout": {"w": 6, "h": 2},
