@@ -610,9 +610,53 @@ class DatasetService:
         self, url: str, headers: dict, data_path: str | None
     ) -> tuple[list[dict], list[str]]:
         _validate_ssrf(url)
+
+        _GS_HEADERS = {
+            "User-Agent": "Mozilla/5.0 (compatible; Jarbis/1.0; +https://jarbis.cc)",
+            "Accept": "text/csv,text/plain,*/*",
+        }
+
+        # Google Sheets: tenta gviz/tq primeiro (funciona com "qualquer pessoa com o link")
+        # depois cai para export?format=csv — mesma lógica do endpoint preview-sheets
+        import re as _re
+        gs_match = _re.search(r"spreadsheets/d/([a-zA-Z0-9_-]+)", url)
+        if gs_match:
+            sheet_id = gs_match.group(1)
+            sheet_m = _re.search(r"[?&]sheet=([^&]+)", url)
+            gid_m = _re.search(r"[#&?]gid=(\d+)", url)
+            if sheet_m:
+                candidates = [
+                    f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_m.group(1)}",
+                    f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&sheet={sheet_m.group(1)}",
+                ]
+            else:
+                gid = gid_m.group(1) if gid_m else "0"
+                candidates = [
+                    f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&gid={gid}",
+                    f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}",
+                ]
+            content: bytes | None = None
+            async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
+                for csv_url in candidates:
+                    resp = await client.get(csv_url, headers=_GS_HEADERS)
+                    if resp.status_code == 200:
+                        ct = resp.headers.get("content-type", "")
+                        if "text/html" in ct or resp.content[:15].lower().startswith(b"<!doctype"):
+                            continue
+                        content = resp.content
+                        break
+            if content is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Não foi possível acessar a planilha. Certifique-se de que está compartilhada como 'Qualquer pessoa com o link pode visualizar'.",
+                )
+            rows = _parse_csv(content)
+            columns = _detect_columns(rows)
+            return rows, columns
+
+        # Outros tipos de API (JSON / CSV genérico)
         is_csv = "format=csv" in url
 
-        # Google Sheets redirect: first request gets 302, second fetches the CDN URL clean
         async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
             resp = await client.get(url, headers=headers)
 
