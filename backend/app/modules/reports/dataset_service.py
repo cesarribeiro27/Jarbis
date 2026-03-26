@@ -624,11 +624,26 @@ class DatasetService:
 
         resp.raise_for_status()
         content_type = resp.headers.get("content-type", "")
+
+        # Se Google retornou HTML (página de login ou erro de acesso), não tratar como CSV
+        if "text/html" in content_type:
+            is_sheets = "docs.google.com" in url or "spreadsheets" in url
+            if is_sheets:
+                raise HTTPException(
+                    status_code=400,
+                    detail="A planilha não está acessível publicamente. Certifique-se de que ela está compartilhada como 'Qualquer pessoa com o link pode ver' e tente novamente.",
+                )
+            raise HTTPException(status_code=400, detail="A URL retornou HTML em vez de dados. Verifique se a URL está correta e acessível.")
+
         if "text/csv" in content_type:
             is_csv = True
 
         if is_csv:
             rows = _parse_csv(resp.content)
+            if not rows:
+                is_sheets = "docs.google.com" in url or "spreadsheets" in url
+                hint = " Verifique se a aba selecionada contém dados e se a planilha está pública." if is_sheets else ""
+                raise HTTPException(status_code=400, detail=f"A fonte retornou 0 linhas.{hint}")
         else:
             data = resp.json()
             raw_rows = _extract_json_path(data, data_path)
