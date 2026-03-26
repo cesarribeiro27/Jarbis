@@ -76,7 +76,7 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
   const [slugMode, setSlugMode] = useState('auto')
   const [loading, setLoading] = useState(false)
   const [slugError, setSlugError] = useState('')
-  const { showToast } = useToast()
+  const toast = useToast()
 
   function validateSlug(v) {
     if (!v) { setSlugError(''); return }
@@ -98,7 +98,7 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
         name: name.trim(),
         custom_slug: slugMode === 'custom' && customSlug.trim() ? customSlug.trim().toLowerCase() : null,
       }
-      const data = await api(`/links/campaigns/${campaignId}/links`, { method: 'POST', body: JSON.stringify(body) })
+      const data = await api.fetch(`/links/campaigns/${campaignId}/links`, { method: 'POST', body: JSON.stringify(body) })
       onCreated(data)
       onClose()
     } catch (err) {
@@ -106,7 +106,7 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
       if (msg.includes('já está em uso')) {
         setSlugError(msg)
       } else {
-        showToast(msg || 'Erro ao criar link', 'error')
+        toast(msg || 'Erro ao criar link', 'error')
       }
     } finally {
       setLoading(false)
@@ -337,8 +337,8 @@ export default function CampaignPage({ params }) {
 
   useEffect(() => {
     Promise.all([
-      api(`/links/campaigns`),
-      api(`/links/campaigns/${id}/links`),
+      api.fetch(`/links/campaigns`),
+      api.fetch(`/links/campaigns/${id}/links`),
     ]).then(([campaigns, linksData]) => {
       const found = campaigns.find(c => c.id === id)
       setCampaign(found || null)
@@ -349,7 +349,7 @@ export default function CampaignPage({ params }) {
 
   useEffect(() => {
     if (!loading) {
-      api(`/links/campaigns/${id}/analytics?days=30`)
+      api.fetch(`/links/campaigns/${id}/analytics?days=30`)
         .then(data => { setAnalytics(data); setAnalyticsLoading(false) })
         .catch(() => setAnalyticsLoading(false))
     }
@@ -359,7 +359,7 @@ export default function CampaignPage({ params }) {
     setLinks(prev => [link, ...prev])
     // Recarrega analytics
     setAnalyticsLoading(true)
-    api(`/links/campaigns/${id}/analytics?days=30`)
+    api.fetch(`/links/campaigns/${id}/analytics?days=30`)
       .then(data => { setAnalytics(data); setAnalyticsLoading(false) })
       .catch(() => setAnalyticsLoading(false))
   }

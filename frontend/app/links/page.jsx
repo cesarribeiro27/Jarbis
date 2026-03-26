@@ -35,18 +35,18 @@ function NewCampaignModal({ onClose, onCreated }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
-  const { showToast } = useToast()
+  const toast = useToast()
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) return
     setLoading(true)
     try {
-      const data = await api('/links/campaigns', { method: 'POST', body: JSON.stringify({ name: name.trim(), description: description.trim() || null }) })
+      const data = await api.fetch('/links/campaigns', { method: 'POST', body: JSON.stringify({ name: name.trim(), description: description.trim() || null }) })
       onCreated(data)
       onClose()
     } catch (err) {
-      showToast(err.message || 'Erro ao criar campanha', 'error')
+      toast(err.message || 'Erro ao criar campanha', 'error')
     } finally {
       setLoading(false)
     }
@@ -130,7 +130,7 @@ export default function LinksPage() {
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
-    api('/links/campaigns').then(data => {
+    api.fetch('/links/campaigns').then(data => {
       setCampaigns(data)
       setLoading(false)
     }).catch(() => setLoading(false))
