@@ -131,7 +131,10 @@ async def update_link(
     if not link:
         from app.core.exceptions import NotFoundError
         raise NotFoundError("link", str(link_id))
-    link.name = data.name.strip()
+    if data.name is not None:
+        link.name = data.name.strip()
+    if data.original_url is not None:
+        link.original_url = data.original_url.strip()
     await db.flush()
     await db.refresh(link)
     return ShortLinkResponse(

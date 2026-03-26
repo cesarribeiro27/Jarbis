@@ -25,7 +25,17 @@ class CampaignResponse(BaseModel):
 # ── Short Links ────────────────────────────────────────────────────────────
 
 class ShortLinkUpdate(BaseModel):
-    name: str
+    name: str | None = None
+    original_url: str | None = None
+
+    @field_validator("original_url")
+    @classmethod
+    def validate_url(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("URL deve começar com http:// ou https://")
+        return v
 
 
 class ShortLinkCreate(BaseModel):

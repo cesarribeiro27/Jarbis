@@ -125,18 +125,33 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
   )
 }
 
-// ── Modal: Editar nome do link ──────────────────────────────────────────────
+// ── Modal: Editar link ─────────────────────────────────────────────────────
 function EditLinkModal({ link, onClose, onSaved }) {
   const [name, setName] = useState(link.name)
+  const [originalUrl, setOriginalUrl] = useState(link.original_url)
   const [loading, setLoading] = useState(false)
+  const [urlError, setUrlError] = useState('')
   const toast = useToast()
+
+  function validateUrl(v) {
+    if (!v.startsWith('http://') && !v.startsWith('https://')) {
+      setUrlError('URL deve começar com http:// ou https://')
+    } else {
+      setUrlError('')
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim() || name.trim() === link.name) { onClose(); return }
+    if (!name.trim() || !originalUrl.trim() || urlError) return
+    const unchanged = name.trim() === link.name && originalUrl.trim() === link.original_url
+    if (unchanged) { onClose(); return }
     setLoading(true)
     try {
-      const data = await api.fetch(`/links/${link.id}`, { method: 'PATCH', body: JSON.stringify({ name: name.trim() }) })
+      const data = await api.fetch(`/links/${link.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: name.trim(), original_url: originalUrl.trim() }),
+      })
       onSaved(data)
       onClose()
     } catch (err) {
@@ -148,17 +163,32 @@ function EditLinkModal({ link, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Editar nome</h2>
-        <p className="text-xs text-gray-400 mb-4">O slug e a URL de destino não podem ser alterados após a criação.</p>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Editar link</h2>
+        <p className="text-xs text-gray-400 mb-5">O slug (<span className="font-mono text-violet-500">/l/{link.slug}</span>) é permanente e não pode ser alterado.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome identificador</label>
-            <input autoFocus value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">URL de destino</label>
+            <input
+              type="url"
+              value={originalUrl}
+              onChange={e => { setOriginalUrl(e.target.value); validateUrl(e.target.value) }}
+              className={`w-full px-3 py-2.5 rounded-xl border bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500 ${urlError ? 'border-red-400' : 'border-gray-200 dark:border-gray-700'}`}
+            />
+            {urlError && <p className="text-xs text-red-500 mt-1">{urlError}</p>}
           </div>
-          <div className="flex gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome identificador</label>
+            <input
+              autoFocus
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+          </div>
+          <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancelar</button>
-            <button type="submit" disabled={loading || !name.trim()} className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-sm font-medium text-white transition-colors">{loading ? 'Salvando...' : 'Salvar'}</button>
+            <button type="submit" disabled={loading || !name.trim() || !originalUrl.trim() || !!urlError} className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-sm font-medium text-white transition-colors">{loading ? 'Salvando...' : 'Salvar'}</button>
           </div>
         </form>
       </div>
