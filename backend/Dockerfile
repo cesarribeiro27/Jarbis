@@ -2,11 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Instala dependências do sistema
+# Instala dependências do sistema + geoipupdate
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     libpq-dev \
+    && curl -fsSL https://repos.maxmind.com/apt/setup.sh | bash \
+    && apt-get install -y geoipupdate \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia e instala dependências Python a partir do pyproject.toml
