@@ -7,8 +7,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     libpq-dev \
-    && curl -fsSL https://repos.maxmind.com/apt/setup.sh | bash \
-    && apt-get install -y geoipupdate \
+    && ARCH=$(dpkg --print-architecture) \
+    && GEOIPUPDATE_VERSION="7.0.1" \
+    && curl -fsSL "https://github.com/maxmind/geoipupdate/releases/download/v${GEOIPUPDATE_VERSION}/geoipupdate_${GEOIPUPDATE_VERSION}_linux_${ARCH}.deb" -o /tmp/geoipupdate.deb \
+    && dpkg -i /tmp/geoipupdate.deb \
+    && rm /tmp/geoipupdate.deb \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia e instala dependências Python a partir do pyproject.toml
