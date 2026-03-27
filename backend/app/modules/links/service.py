@@ -30,6 +30,8 @@ from app.modules.links.schemas import (
     ClicksByDevice,
     ClicksByHour,
     ClicksByOS,
+    ClicksByReferrer,
+    ClicksByWeekday,
     LinkAnalytics,
     ShortLinkCreate,
     ShortLinkResponse,
@@ -285,11 +287,28 @@ def _ch_query(sql: str) -> list:
     return get_clickhouse().query(sql).result_rows
 
 
+_WEEKDAY_NAMES = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+_REFERRER_CASE = """multiIf(
+    referrer = '', 'Direto',
+    referrer LIKE '%google%', 'Google',
+    referrer LIKE '%instagram%', 'Instagram',
+    referrer LIKE '%facebook%' OR referrer LIKE '%fb.com%', 'Facebook',
+    referrer LIKE '%whatsapp%' OR referrer LIKE '%wa.me%', 'WhatsApp',
+    referrer LIKE '%t.co%' OR referrer LIKE '%twitter%' OR referrer LIKE '%x.com%', 'Twitter / X',
+    referrer LIKE '%linkedin%', 'LinkedIn',
+    referrer LIKE '%tiktok%', 'TikTok',
+    referrer LIKE '%youtube%' OR referrer LIKE '%youtu.be%', 'YouTube',
+    'Outro'
+)"""
+
+
 def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
     base = f"FROM link_events WHERE link_id = '{link_id}' AND clicked_at >= now() - INTERVAL {days} DAY"
 
-    total = _ch_query(f"SELECT count() {base}")
-    total_clicks = total[0][0] if total else 0
+    totals = _ch_query(f"SELECT count(), uniq(ip_address) {base}")
+    total_clicks = totals[0][0] if totals else 0
+    unique_clicks = totals[0][1] if totals else 0
 
     countries = _ch_query(
         f"SELECT country, count() as c {base} AND country != '' GROUP BY country ORDER BY c DESC LIMIT 20"
@@ -314,10 +333,17 @@ def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
     by_os = _ch_query(
         f"SELECT os, count() as c {base} AND os != '' GROUP BY os ORDER BY c DESC LIMIT 10"
     )
+    by_weekday = _ch_query(
+        f"SELECT toDayOfWeek(clicked_at) as dow, count() as c {base} GROUP BY dow ORDER BY dow"
+    )
+    by_referrer = _ch_query(
+        f"SELECT {_REFERRER_CASE} as source, count() as c {base} GROUP BY source ORDER BY c DESC LIMIT 10"
+    )
 
     return LinkAnalytics(
         link_id=link_id,
         total_clicks=total_clicks,
+        unique_clicks=unique_clicks,
         unique_countries=unique_countries,
         by_day=[ClicksByDay(date=r[0], clicks=r[1]) for r in by_day],
         by_country=[ClicksByCountry(country=r[0] or "Desconhecido", clicks=r[1]) for r in by_country],
@@ -325,6 +351,8 @@ def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
         by_hour=[ClicksByHour(hour=r[0], clicks=r[1]) for r in by_hour],
         by_browser=[ClicksByBrowser(browser=r[0] or "Outro", clicks=r[1]) for r in by_browser],
         by_os=[ClicksByOS(os=r[0] or "Outro", clicks=r[1]) for r in by_os],
+        by_weekday=[ClicksByWeekday(weekday=_WEEKDAY_NAMES[(r[0] - 1) % 7], clicks=r[1]) for r in by_weekday],
+        by_referrer=[ClicksByReferrer(source=r[0], clicks=r[1]) for r in by_referrer],
     )
 
 
@@ -342,8 +370,9 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
     ids_str = ", ".join(f"'{lid}'" for lid in link_ids)
     base = f"FROM link_events WHERE link_id IN ({ids_str}) AND clicked_at >= now() - INTERVAL {days} DAY"
 
-    total = _ch_query(f"SELECT count() {base}")
-    total_clicks = total[0][0] if total else 0
+    totals = _ch_query(f"SELECT count(), uniq(ip_address) {base}")
+    total_clicks = totals[0][0] if totals else 0
+    unique_clicks = totals[0][1] if totals else 0
 
     per_link = _ch_query(
         f"SELECT link_id, count() as c {base} GROUP BY link_id ORDER BY c DESC"
@@ -366,10 +395,17 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
     by_os = _ch_query(
         f"SELECT os, count() as c {base} AND os != '' GROUP BY os ORDER BY c DESC LIMIT 10"
     )
+    by_weekday = _ch_query(
+        f"SELECT toDayOfWeek(clicked_at) as dow, count() as c {base} GROUP BY dow ORDER BY dow"
+    )
+    by_referrer = _ch_query(
+        f"SELECT {_REFERRER_CASE} as source, count() as c {base} GROUP BY source ORDER BY c DESC LIMIT 10"
+    )
 
     return CampaignAnalytics(
         campaign_id=campaign_id,
         total_clicks=total_clicks,
+        unique_clicks=unique_clicks,
         links=[{"link_id": r[0], "clicks": r[1]} for r in per_link],
         by_day=[ClicksByDay(date=r[0], clicks=r[1]) for r in by_day],
         by_country=[ClicksByCountry(country=r[0] or "Desconhecido", clicks=r[1]) for r in by_country],
@@ -377,4 +413,6 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
         by_hour=[ClicksByHour(hour=r[0], clicks=r[1]) for r in by_hour],
         by_browser=[ClicksByBrowser(browser=r[0] or "Outro", clicks=r[1]) for r in by_browser],
         by_os=[ClicksByOS(os=r[0] or "Outro", clicks=r[1]) for r in by_os],
+        by_weekday=[ClicksByWeekday(weekday=_WEEKDAY_NAMES[(r[0] - 1) % 7], clicks=r[1]) for r in by_weekday],
+        by_referrer=[ClicksByReferrer(source=r[0], clicks=r[1]) for r in by_referrer],
     )

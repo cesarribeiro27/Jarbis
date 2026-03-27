@@ -6,7 +6,7 @@ import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://jarbis.cc'
 const DEVICE_COLORS = { mobile: '#7c3aed', desktop: '#a78bfa', tablet: '#ddd6fe', Outro: '#e5e7eb' }
@@ -218,16 +218,43 @@ function EditLinkModal({ link, onClose, onSaved }) {
   )
 }
 
+// ── Barra horizontal reutilizável ────────────────────────────────────────────
+function HBar({ label, clicks, total, color = '#7c3aed', labelWidth = 'w-24' }) {
+  const pct = Math.round((clicks / (total || 1)) * 100)
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`text-xs text-gray-700 dark:text-gray-300 ${labelWidth} truncate shrink-0`}>{label}</span>
+      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-8 text-right tabular-nums shrink-0">{clicks}</span>
+    </div>
+  )
+}
+
 // ── Modal: Ver mais analytics ───────────────────────────────────────────────
 function MoreAnalyticsModal({ analytics, label, onClose }) {
   if (!analytics) return null
 
-  const totalForBrowser = analytics.by_browser?.reduce((s, b) => s + b.clicks, 0) || 0
-  const totalForOS = analytics.by_os?.reduce((s, b) => s + b.clicks, 0) || 0
+  const totalCliques = analytics.total_clicks || 0
+  const uniqueCliques = analytics.unique_clicks || 0
+  const totalBrowser = analytics.by_browser?.reduce((s, b) => s + b.clicks, 0) || 0
+  const totalOS = analytics.by_os?.reduce((s, b) => s + b.clicks, 0) || 0
+  const totalDevice = analytics.by_device?.reduce((s, d) => s + d.clicks, 0) || 0
+  const totalReferrer = analytics.by_referrer?.reduce((s, r) => s + r.clicks, 0) || 0
+  const totalWeekday = analytics.by_weekday?.reduce((s, w) => s + w.clicks, 0) || 0
+  const uniquePct = totalCliques > 0 ? Math.round((uniqueCliques / totalCliques) * 100) : 0
+
+  const REFERRER_ICONS = {
+    'Google': '🔍', 'Instagram': '📸', 'Facebook': '👥', 'WhatsApp': '💬',
+    'Twitter / X': '𝕏', 'LinkedIn': '💼', 'TikTok': '🎵', 'YouTube': '▶️',
+    'Direto': '🔗', 'Outro': '🌐',
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Analytics detalhado</h2>
@@ -239,12 +266,39 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Cliques por hora */}
+          {/* KPIs: Total vs Únicos */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-violet-700 dark:text-violet-300">{totalCliques.toLocaleString('pt-BR')}</p>
+              <p className="text-xs text-gray-500 mt-1">Total de cliques</p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{uniqueCliques.toLocaleString('pt-BR')}</p>
+              <p className="text-xs text-gray-500 mt-1">Cliques únicos <span className="text-violet-500 font-semibold">{uniquePct}%</span></p>
+            </div>
+          </div>
+
+          {/* Evolução diária */}
+          {analytics.by_day?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Evolução diária</p>
+              <ResponsiveContainer width="100%" height={90}>
+                <LineChart data={analytics.by_day} margin={{ top: 2, right: 4, left: -28, bottom: 0 }}>
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#9ca3af' }} tickFormatter={d => d.slice(5)} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} />
+                  <Tooltip formatter={v => [v.toLocaleString('pt-BR'), 'Cliques']} labelFormatter={d => d} contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                  <Line type="monotone" dataKey="clicks" stroke="#7c3aed" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Hora do dia */}
           {analytics.by_hour?.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Cliques por hora do dia</p>
-              <ResponsiveContainer width="100%" height={100}>
-                <BarChart data={analytics.by_hour} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={90}>
+                <BarChart data={analytics.by_hour} margin={{ top: 2, right: 4, left: -28, bottom: 0 }}>
                   <XAxis dataKey="hour" tick={{ fontSize: 9, fill: '#9ca3af' }} tickFormatter={h => `${h}h`} />
                   <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} />
                   <Tooltip formatter={v => [v.toLocaleString('pt-BR'), 'Cliques']} labelFormatter={h => `${h}h`} contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }} />
@@ -254,20 +308,59 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
             </div>
           )}
 
+          {/* Dia da semana */}
+          {analytics.by_weekday?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Dia da semana</p>
+              <ResponsiveContainer width="100%" height={80}>
+                <BarChart data={analytics.by_weekday} margin={{ top: 2, right: 4, left: -28, bottom: 0 }}>
+                  <XAxis dataKey="weekday" tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                  <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} />
+                  <Tooltip formatter={v => [v.toLocaleString('pt-BR'), 'Cliques']} contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                  <Bar dataKey="clicks" fill="#a78bfa" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Fonte de tráfego */}
+          {analytics.by_referrer?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Fonte de tráfego</p>
+              <div className="flex flex-col gap-2">
+                {analytics.by_referrer.map(r => (
+                  <div key={r.source} className="flex items-center gap-2">
+                    <span className="text-sm shrink-0 w-5 text-center">{REFERRER_ICONS[r.source] || '🌐'}</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300 w-28 truncate shrink-0">{r.source}</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-violet-400 rounded-full" style={{ width: `${Math.round((r.clicks / (totalReferrer || 1)) * 100)}%` }} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-8 text-right tabular-nums shrink-0">{r.clicks}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dispositivos */}
+          {analytics.by_device?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Dispositivos</p>
+              <div className="flex flex-col gap-2">
+                {analytics.by_device.map(d => (
+                  <HBar key={d.device_type} label={d.device_type} clicks={d.clicks} total={totalDevice} color={DEVICE_COLORS[d.device_type] || '#ddd6fe'} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Navegadores */}
           {analytics.by_browser?.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Navegadores</p>
               <div className="flex flex-col gap-2">
                 {analytics.by_browser.map((b, i) => (
-                  <div key={b.browser} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
-                    <span className="text-xs text-gray-700 dark:text-gray-300 w-20 truncate">{b.browser}</span>
-                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${Math.round((b.clicks / (totalForBrowser || 1)) * 100)}%`, background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right tabular-nums">{b.clicks}</span>
-                  </div>
+                  <HBar key={b.browser} label={b.browser} clicks={b.clicks} total={totalBrowser} color={BROWSER_COLORS[i % BROWSER_COLORS.length]} />
                 ))}
               </div>
             </div>
@@ -279,32 +372,19 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Sistemas operacionais</p>
               <div className="flex flex-col gap-2">
                 {analytics.by_os.map((o, i) => (
-                  <div key={o.os} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
-                    <span className="text-xs text-gray-700 dark:text-gray-300 w-20 truncate">{o.os}</span>
-                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${Math.round((o.clicks / (totalForOS || 1)) * 100)}%`, background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right tabular-nums">{o.clicks}</span>
-                  </div>
+                  <HBar key={o.os} label={o.os} clicks={o.clicks} total={totalOS} color={BROWSER_COLORS[i % BROWSER_COLORS.length]} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Países completo */}
+          {/* Países */}
           {analytics.by_country?.filter(c => c.country && c.country !== 'Desconhecido').length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Países</p>
               <div className="flex flex-col gap-2">
                 {analytics.by_country.slice(0, 10).map(c => (
-                  <div key={c.country} className="flex items-center gap-2">
-                    <span className="text-xs text-gray-700 dark:text-gray-300 w-24 truncate">{c.country || 'Desconhecido'}</span>
-                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-violet-400 rounded-full" style={{ width: `${Math.round((c.clicks / analytics.by_country[0].clicks) * 100)}%` }} />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right tabular-nums">{c.clicks}</span>
-                  </div>
+                  <HBar key={c.country} label={c.country || 'Desconhecido'} clicks={c.clicks} total={analytics.by_country[0].clicks} color="#7c3aed" />
                 ))}
               </div>
             </div>

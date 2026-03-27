@@ -108,9 +108,20 @@ class ClicksByOS(BaseModel):
     clicks: int
 
 
+class ClicksByWeekday(BaseModel):
+    weekday: str   # "Seg", "Ter", ...
+    clicks: int
+
+
+class ClicksByReferrer(BaseModel):
+    source: str    # "Direto", "Google", "Instagram", ...
+    clicks: int
+
+
 class LinkAnalytics(BaseModel):
     link_id: str
     total_clicks: int
+    unique_clicks: int = 0
     unique_countries: int
     by_day: list[ClicksByDay]
     by_country: list[ClicksByCountry]
@@ -118,11 +129,14 @@ class LinkAnalytics(BaseModel):
     by_hour: list[ClicksByHour]
     by_browser: list[ClicksByBrowser] = []
     by_os: list[ClicksByOS] = []
+    by_weekday: list[ClicksByWeekday] = []
+    by_referrer: list[ClicksByReferrer] = []
 
 
 class CampaignAnalytics(BaseModel):
     campaign_id: str
     total_clicks: int
+    unique_clicks: int = 0
     links: list[dict]
     by_day: list[ClicksByDay]
     by_country: list[ClicksByCountry]
@@ -130,3 +144,5 @@ class CampaignAnalytics(BaseModel):
     by_hour: list[ClicksByHour] = []
     by_browser: list[ClicksByBrowser] = []
     by_os: list[ClicksByOS] = []
+    by_weekday: list[ClicksByWeekday] = []
+    by_referrer: list[ClicksByReferrer] = []
