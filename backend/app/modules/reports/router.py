@@ -2443,6 +2443,34 @@ async def generate_dashboard_endpoint(
     if not isinstance(blocks, list) or not blocks:
         raise HTTPException(status_code=500, detail="IA retornou formato inválido.")
 
+    # ── Valida campos obrigatórios por tipo — descarta blocos incompletos ─────
+    _NEEDS_BOTH = {"area", "line", "bar", "bar_h", "pie", "bubble", "scatter",
+                   "treemap", "heatmap", "combo", "bar_stacked", "area_stacked",
+                   "waterfall", "radar"}
+    _NEEDS_VALUE = {"kpi", "gauge", "speedometer", "bullet", "meta"}
+    _valid_blocks = []
+    for b in blocks:
+        btype = b.get("type", "")
+        if btype in _NEEDS_BOTH and (not b.get("label_col") or not b.get("value_col")):
+            import logging as _log
+            _log.getLogger(__name__).warning(
+                "[generate_dashboard] Bloco '%s' tipo '%s' descartado — label_col=%s value_col=%s",
+                b.get("title", ""), btype, b.get("label_col"), b.get("value_col")
+            )
+            continue
+        if btype in _NEEDS_VALUE and not b.get("value_col"):
+            import logging as _log
+            _log.getLogger(__name__).warning(
+                "[generate_dashboard] Bloco '%s' tipo '%s' descartado — value_col ausente",
+                b.get("title", ""), btype
+            )
+            continue
+        _valid_blocks.append(b)
+    blocks = _valid_blocks
+
+    if not blocks:
+        raise HTTPException(status_code=500, detail="IA não gerou blocos válidos. Tente novamente com um objetivo mais específico.")
+
     # ── Defaults de layout e id por tipo ─────────────────────────────────────
     _layout_defaults = {
         "kpi":    {"w": 3, "h": 2},
