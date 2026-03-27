@@ -3205,7 +3205,7 @@ export default function DashboardDetailPage() {
       <div className="p-3 sm:p-6 max-w-screen-xl mx-auto">
         <div className="flex items-start justify-between mb-4 sm:mb-6 gap-3 flex-wrap">
           <div className="min-w-0">
-            <button onClick={() => router.push('/dashboards')} className="text-sm text-gray-400 hover:text-gray-700 mb-2 block">← {t('back')}</button>
+            <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-700 mb-2 block">← {t('back')}</button>
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 truncate">{(displayReport ?? report).title}</h1>
             {(displayReport ?? report).description && <p className="text-sm text-gray-500 mt-1">{(displayReport ?? report).description}</p>}
           </div>

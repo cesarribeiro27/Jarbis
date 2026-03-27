@@ -658,7 +658,7 @@ export default function CampaignPage({ params }) {
       <div className="px-4 py-6 max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-5">
-          <button onClick={() => router.push('/links')} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+          <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
             <IconBack />
             Campanhas
           </button>

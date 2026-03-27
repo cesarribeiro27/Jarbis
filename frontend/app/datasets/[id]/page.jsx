@@ -299,7 +299,7 @@ export default function DatasetDetailPage() {
         <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4">
           <div className="flex items-center gap-3 mb-1">
             <button
-              onClick={() => router.push('/datasets')}
+              onClick={() => router.back()}
               className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
