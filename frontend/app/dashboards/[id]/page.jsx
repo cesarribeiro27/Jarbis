@@ -1540,49 +1540,75 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
       }))
     ), [datasets])
 
-  // Sugestões inteligentes: detecta padrões nos datasets
+  // Sugestões inteligentes: detecta domínio do dataset e gera sugestões calibradas
   const smartSuggestions = useMemo(() => {
     const result = []
+    const mkId = () => crypto.randomUUID()
+    const IcoKpi  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M5.5 8h5M8 6v4"/></svg>
+    const IcoLine = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,12 5,8 9,10 14,4"/><path d="M12 4h2v2"/></svg>
+    const IcoBarH = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="12" height="2.5" rx="1"/><rect x="1" y="6.75" width="8.5" height="2.5" rx="1"/><rect x="1" y="11" width="5.5" height="2.5" rx="1"/></svg>
+    const IcoPie  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 2v6h6A6 6 0 108 2z"/><path d="M8 8l3 3.5"/></svg>
+    const IcoCal  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="3" width="13" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M1.5 6.5h13"/></svg>
+
     for (const ds of datasets) {
+      const colNames = Object.keys(ds.column_types || {}).map(c => c.toLowerCase())
+      const has = (...names) => names.some(n => colNames.includes(n))
+      const gc = name => allCols.find(c => c.dsId === ds.id && c.col.toLowerCase() === name)
       const nums  = allCols.filter(c => c.dsId === ds.id && c.type === 'number')
       const dates = allCols.filter(c => c.dsId === ds.id && c.type === 'date')
       const texts = allCols.filter(c => c.dsId === ds.id && c.type !== 'number' && c.type !== 'date')
-      const mkId = () => crypto.randomUUID()
-      // KPIs rápidos
-      // ícones SVG reutilizáveis (criados inline para ficarem fora do render tree principal)
-      const IcoKpi  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M5.5 8h5M8 6v4"/></svg>
-      const IcoLine = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,12 5,8 9,10 14,4"/><path d="M12 4h2v2"/></svg>
-      const IcoBarH = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="12" height="2.5" rx="1"/><rect x="1" y="6.75" width="8.5" height="2.5" rx="1"/><rect x="1" y="11" width="5.5" height="2.5" rx="1"/></svg>
-      const IcoPie  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 2v6h6A6 6 0 108 2z"/><path d="M8 8l3 3.5"/></svg>
-      const IcoCal  = <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="3" width="13" height="11" rx="1.5"/><path d="M5 1.5v3M11 1.5v3M1.5 6.5h13"/></svg>
 
-      nums.slice(0, 2).forEach(n => result.push({
-        label: `Total: ${n.col}`, icon: IcoKpi,
-        build: () => ({ id: mkId(), type: 'kpi', title: `Total: ${n.col}`, dataset_id: ds.id, value_col: n.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } })
-      }))
-      // Evolução temporal
-      if (nums[0] && dates[0]) result.push({
-        label: `Evolução: ${nums[0].col}`, icon: IcoLine,
-        build: () => ({ id: mkId(), type: 'line', title: `Evolução de ${nums[0].col}`, dataset_id: ds.id, label_col: dates[0].col, value_col: nums[0].col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } })
-      })
-      // Ranking
-      if (texts[0] && nums[0]) result.push({
-        label: `Ranking: ${texts[0].col}`, icon: IcoBarH,
-        build: () => ({ id: mkId(), type: 'bar_h', title: `${texts[0].col} por ${nums[0].col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: nums[0].col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } })
-      })
-      // Pizza
-      if (texts[0] && nums[0]) result.push({
-        label: `Fatias: ${texts[0].col}`, icon: IcoPie,
-        build: () => ({ id: mkId(), type: 'pie', title: `${texts[0].col} por ${nums[0].col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: nums[0].col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } })
-      })
-      // Filtro de período
-      if (dates[0]) result.push({
-        label: 'Filtro de período', icon: IcoCal,
-        build: () => ({ id: mkId(), type: 'filter', title: dates[0].col, dataset_id: ds.id, filter_col: dates[0].col, filter_label: dates[0].col, config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } })
-      })
+      // ── Links dataset ──────────────────────────────────────────────────────
+      if (has('cliques') && (has('fonte') || has('dispositivo') || has('link'))) {
+        const cliques = gc('cliques'), fonte = gc('fonte'), disp = gc('dispositivo'), link = gc('link'), data = gc('data')
+        if (cliques) result.push({ label: 'Total de Cliques', icon: IcoKpi, build: () => ({ id: mkId(), type: 'kpi', title: 'Total de Cliques', dataset_id: ds.id, value_col: 'cliques', agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
+        if (data && cliques) result.push({ label: 'Evolução de Cliques', icon: IcoLine, build: () => ({ id: mkId(), type: 'line', title: 'Evolução de Cliques', dataset_id: ds.id, label_col: 'data', value_col: 'cliques', agg: 'sum', config: { granularity: 'day', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (fonte && cliques) result.push({ label: 'Canal que mais converte', icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: 'Cliques por Canal de Tráfego', dataset_id: ds.id, label_col: 'fonte', value_col: 'cliques', agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (link && cliques) result.push({ label: 'Links mais clicados', icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: 'Links mais Clicados', dataset_id: ds.id, label_col: 'link', value_col: 'cliques', agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (disp && cliques) result.push({ label: 'Cliques por Dispositivo', icon: IcoPie, build: () => ({ id: mkId(), type: 'pie', title: 'Cliques por Dispositivo', dataset_id: ds.id, label_col: 'dispositivo', value_col: 'cliques', agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } }) })
+        if (data) result.push({ label: 'Filtro de período', icon: IcoCal, build: () => ({ id: mkId(), type: 'filter', title: 'data', dataset_id: ds.id, filter_col: 'data', filter_label: 'Período', config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
+        continue
+      }
+
+      // ── Google Analytics dataset ───────────────────────────────────────────
+      if (has('sessions', 'pageviews', 'users')) {
+        const metric = gc('sessions') || gc('pageviews'), users = gc('users'), src = gc('source') || gc('channel') || gc('medium'), date = dates[0]
+        if (metric) result.push({ label: 'Total de Sessões', icon: IcoKpi, build: () => ({ id: mkId(), type: 'kpi', title: 'Total de Sessões', dataset_id: ds.id, value_col: metric.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
+        if (date && metric) result.push({ label: 'Tráfego ao longo do tempo', icon: IcoLine, build: () => ({ id: mkId(), type: 'line', title: 'Evolução de Sessões', dataset_id: ds.id, label_col: date.col, value_col: metric.col, agg: 'sum', config: { granularity: 'day', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (src && metric) result.push({ label: 'Canal de origem', icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: 'Sessões por Canal', dataset_id: ds.id, label_col: src.col, value_col: metric.col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (date) result.push({ label: 'Filtro de período', icon: IcoCal, build: () => ({ id: mkId(), type: 'filter', title: date.col, dataset_id: ds.id, filter_col: date.col, filter_label: 'Período', config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
+        continue
+      }
+
+      // ── Genérico: detecta coluna principal por nome semântico ──────────────
+      const mainNum = nums.find(n => ['receita','faturamento','repasse','valor','total','vendas','resultado','lucro','comissao'].some(k => n.col.toLowerCase().includes(k))) || nums[0]
+      if (mainNum) {
+        result.push({ label: `Total: ${mainNum.col}`, icon: IcoKpi, build: () => ({ id: mkId(), type: 'kpi', title: `Total: ${mainNum.col}`, dataset_id: ds.id, value_col: mainNum.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
+        if (dates[0]) result.push({ label: `Evolução: ${mainNum.col}`, icon: IcoLine, build: () => ({ id: mkId(), type: 'line', title: `Evolução de ${mainNum.col}`, dataset_id: ds.id, label_col: dates[0].col, value_col: mainNum.col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (texts[0]) result.push({ label: `Ranking: ${texts[0].col}`, icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: `${texts[0].col} por ${mainNum.col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: mainNum.col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (texts[0]) result.push({ label: `Fatias: ${texts[0].col}`, icon: IcoPie, build: () => ({ id: mkId(), type: 'pie', title: `${texts[0].col} por ${mainNum.col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: mainNum.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } }) })
+      }
+      if (dates[0]) result.push({ label: 'Filtro de período', icon: IcoCal, build: () => ({ id: mkId(), type: 'filter', title: dates[0].col, dataset_id: ds.id, filter_col: dates[0].col, filter_label: dates[0].col, config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
     }
     return result.slice(0, 7)
   }, [allCols, datasets])
+
+  // Coaching CEO/CMO: explica o valor de negócio de cada coluna
+  function getCoaching(col) {
+    const c = col.col.toLowerCase()
+    if (c === 'cliques') return 'Cliques são a moeda de atenção das suas campanhas — cada um é um potencial cliente que demonstrou interesse real.'
+    if (c === 'fonte') return 'Onde seu público está? Canal com maior volume não é sempre o de melhor ROI. Compare para decidir onde investir mais.'
+    if (c === 'dispositivo') return 'Empresas perdem conversões por ignorar mobile. Saber como seu público acessa é decisão estratégica de UX.'
+    if (c === 'link') return 'Qual CTA ressoa com seu público? Dados de link revelam quais mensagens e ofertas realmente funcionam.'
+    if (c === 'pais' || c === 'cidade') return 'Geografias com mais engajamento orgânico indicam onde existe demanda real para expansão ou maior investimento.'
+    if (c === 'navegador' || c === 'sistema') return 'Dados técnicos revelam o perfil do seu usuário e evitam perdas por incompatibilidade de plataforma.'
+    if (c.includes('receita') || c.includes('faturamento')) return 'Receita é o oxigênio do negócio. Monitore evolução, identifique sazonalidade e projete crescimento com dados reais.'
+    if (c.includes('repasse') || c.includes('comissao')) return 'Repasse e comissões definem a sustentabilidade do modelo. Controle margem real e negocie melhor com parceiros.'
+    if (c.includes('cliente') || c.includes('lead')) return 'Sua base de clientes é o ativo mais valioso. Entenda concentração, risco de dependência e potencial de upsell.'
+    if (c.includes('custo') || c.includes('despesa')) return 'Controlar custos é tão estratégico quanto crescer receita. Identifique onde cortar sem prejudicar crescimento.'
+    if (col.type === 'date' || c.includes('data') || c.includes('date')) return 'Análise temporal revela padrões, sazonalidade e momentum — base para planejamento e projeção estratégica.'
+    return 'Explore os padrões neste dado para identificar oportunidades e riscos antes da concorrência.'
+  }
 
   const filtered = search
     ? allCols.filter(c => c.col.toLowerCase().includes(search.toLowerCase()))
@@ -1851,7 +1877,12 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
-            <p className="text-xs text-gray-500 font-semibold mb-3">O que fazer com este dado?</p>
+            {/* Coaching CEO */}
+            <div className="flex gap-2.5 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 mb-1">
+              <svg className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <p className="text-[11px] text-violet-700 leading-relaxed">{getCoaching(selectedCol)}</p>
+            </div>
+            <p className="text-xs text-gray-500 font-semibold mb-3">Como quer visualizar este dado?</p>
             {getInsights(selectedCol).map(insight => (
               <button
                 key={insight.id}
