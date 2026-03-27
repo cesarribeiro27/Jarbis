@@ -244,6 +244,7 @@ export default function ConfiguracoesPage() {
                   { label: t('usage.datasets'),   used: billing.usage.datasets,   max: billing.limits.datasets,   color: 'bg-blue-500' },
                   { label: t('usage.users'),      used: billing.usage.users,      max: billing.limits.users,      color: 'bg-emerald-500' },
                   { label: t('usage.alerts'),     used: billing.usage.alerts,     max: billing.limits.alerts,     color: 'bg-amber-500' },
+                  { label: 'Campanhas de Links', used: billing.usage.link_campaigns ?? 0, max: billing.limits.link_campaigns ?? 1, color: 'bg-teal-500' },
                 ].map(item => {
                   const unlimited = item.max === -1
                   const pct = unlimited ? 0 : Math.min(100, (item.used / item.max) * 100)

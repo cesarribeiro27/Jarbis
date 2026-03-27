@@ -252,13 +252,14 @@ function PlanosContent() {
           <>
             {/* Uso atual */}
             {status && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
                 {[
                   { label: t('usage.dashboards'), used: status.usage.dashboards, max: status.limits.dashboards },
                   { label: t('usage.datasets'),   used: status.usage.datasets,   max: status.limits.datasets },
                   { label: t('usage.users'),       used: status.usage.users,      max: status.limits.users },
                   { label: t('usage.alerts'),      used: status.usage.alerts,     max: status.limits.alerts },
                   { label: t('usage.rows'),         used: status.usage.rows,       max: status.limits.rows, fmt: v => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v/1_000).toFixed(0)}k` : String(v) },
+                  { label: 'Campanhas de Links', used: status.usage.link_campaigns ?? 0, max: status.limits.link_campaigns ?? 1 },
                 ].map(item => {
                   const pct = item.max === -1 ? 0 : Math.min(100, (item.used / item.max) * 100)
                   const atLimit = item.max !== -1 && item.used >= item.max

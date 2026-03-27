@@ -4624,6 +4624,9 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
   const [sheetsLoading, setSheetsLoading] = useState(false)
   const [excelSheetPicker, setExcelSheetPicker] = useState(null)
   const [showAddPicker, setShowAddPicker] = useState(false)
+  const [linksForm, setLinksForm] = useState({ campaignId: '', name: '', days: 90 })
+  const [linksSaving, setLinksSaving] = useState(false)
+  const [linksCampaigns, setLinksCampaigns] = useState(null)
   const fileRef = useRef()
 
   // Quando no contexto de um dashboard, mostra só os datasets pinados
@@ -4721,13 +4724,39 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
     finally { setApiSaving(false) }
   }
 
-  async function handleSync(id) {
+  async function handleSync(id, type) {
     setSyncing(id)
     try {
-      const updated = await api.reports.datasets.sync(id)
+      let updated
+      if (type === 'links') {
+        updated = await api.reports.datasets.syncLinks(id)
+      } else {
+        updated = await api.reports.datasets.sync(id)
+      }
       onDatasetsChange(datasets.map(d => d.id === id ? updated : d))
     } catch (err) { setError(err.message) }
     finally { setSyncing(null) }
+  }
+
+  async function handleLinksTabOpen() {
+    if (linksCampaigns === null) {
+      try {
+        const data = await api.links.listCampaigns()
+        setLinksCampaigns(data || [])
+        if (data?.length > 0) setLinksForm(f => ({ ...f, campaignId: data[0].id, name: `Links - ${data[0].name}` }))
+      } catch { setLinksCampaigns([]) }
+    }
+  }
+
+  async function handleLinksCreate(e) {
+    e.preventDefault(); setLinksSaving(true); setError(null)
+    try {
+      const ds = await api.reports.datasets.createLinksDataset(linksForm.campaignId, linksForm.name, linksForm.days)
+      onDatasetsChange([ds, ...datasets])
+      if (reportDatasetIds !== null && onPinDataset) onPinDataset(ds.id)
+      setLinksForm(f => ({ ...f, name: '' }))
+    } catch (err) { setError(err.message) }
+    finally { setLinksSaving(false) }
   }
 
   async function handleDelete(id) {
@@ -4754,14 +4783,14 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
             <div key={ds.id} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : ds.type === 'links' ? 'bg-teal-100 text-teal-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
                   <p className="text-xs font-semibold text-gray-800 truncate">{ds.name}</p>
                   {ds.is_demo && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 shrink-0">DEMO</span>}
                   <span className="text-[10px] text-gray-400 shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  {(ds.type === 'api' || ds.type === 'google-analytics') && (
-                    <button onClick={() => handleSync(ds.id)} disabled={syncing === ds.id} title={t('dataset.syncTitle')} className="p-1 text-gray-400 hover:text-blue-600 rounded">
+                  {(ds.type === 'api' || ds.type === 'google-analytics' || ds.type === 'links') && (
+                    <button onClick={() => handleSync(ds.id, ds.type)} disabled={syncing === ds.id} title={t('dataset.syncTitle')} className="p-1 text-gray-400 hover:text-blue-600 rounded">
                       <svg className={`w-3.5 h-3.5 ${syncing === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
                   )}
@@ -4819,7 +4848,7 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
                 {unpinnedDatasets.map(ds => (
                   <button key={ds.id} onClick={() => { onPinDataset(ds.id); setShowAddPicker(false) }}
                     className="w-full flex items-center gap-2 px-3 py-2 hover:bg-violet-50 text-left transition-colors">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : ds.type === 'links' ? 'bg-teal-100 text-teal-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
                     <span className="text-xs text-gray-700 truncate">{ds.name}</span>
                     <span className="text-[10px] text-gray-400 ml-auto shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
                   </button>
@@ -4838,9 +4867,10 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         <div className="flex border-b border-gray-100">
-          {['upload', 'api'].map(tabKey => (
-            <button key={tabKey} onClick={() => setTab(tabKey)} className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tabKey ? 'bg-white text-gray-800' : 'bg-gray-50 text-gray-400 hover:text-gray-600'}`}>
-              {tabKey === 'upload' ? t('dataset.uploadTab') : t('dataset.apiTab')}
+          {['upload', 'api', 'links'].map(tabKey => (
+            <button key={tabKey} onClick={() => { setTab(tabKey); if (tabKey === 'links') handleLinksTabOpen() }}
+              className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tabKey ? 'bg-white text-gray-800' : 'bg-gray-50 text-gray-400 hover:text-gray-600'}`}>
+              {tabKey === 'upload' ? t('dataset.uploadTab') : tabKey === 'api' ? t('dataset.apiTab') : 'Links'}
             </button>
           ))}
         </div>
@@ -4855,6 +4885,55 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
               <span className="text-xs text-gray-500">{uploading ? t('dataset.uploading') : t('dataset.clickToSelect')}</span>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleUpload} />
             </label>
+          </div>
+        )}
+
+        {tab === 'links' && (
+          <div className="p-3 space-y-2">
+            <p className="text-xs text-gray-400">Importe dados de cliques de uma campanha de links como dataset para usar nos seus dashboards.</p>
+            {linksCampaigns === null ? (
+              <p className="text-xs text-gray-400 py-2 text-center">Carregando campanhas...</p>
+            ) : linksCampaigns.length === 0 ? (
+              <p className="text-xs text-gray-400 py-2 text-center">Nenhuma campanha de links encontrada.</p>
+            ) : (
+              <form onSubmit={handleLinksCreate} className="space-y-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Campanha</label>
+                  <select
+                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400"
+                    value={linksForm.campaignId}
+                    onChange={e => {
+                      const camp = linksCampaigns.find(c => c.id === e.target.value)
+                      setLinksForm(f => ({ ...f, campaignId: e.target.value, name: camp ? `Links - ${camp.name}` : f.name }))
+                    }}
+                    required
+                  >
+                    {linksCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Nome do dataset</label>
+                  <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" placeholder="Ex: Links - Campanha Verao" value={linksForm.name} onChange={e => setLinksForm(f => ({ ...f, name: e.target.value }))} required />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Periodo retroativo</label>
+                  <select
+                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400"
+                    value={linksForm.days}
+                    onChange={e => setLinksForm(f => ({ ...f, days: parseInt(e.target.value) }))}
+                  >
+                    <option value={7}>Ultimos 7 dias</option>
+                    <option value={30}>Ultimos 30 dias</option>
+                    <option value={90}>Ultimos 90 dias</option>
+                    <option value={180}>Ultimos 180 dias</option>
+                    <option value={365}>Ultimo ano</option>
+                  </select>
+                </div>
+                <button type="submit" disabled={linksSaving} className="w-full py-2 bg-teal-600 text-white text-xs font-semibold rounded hover:bg-teal-700 disabled:opacity-50 mt-1">
+                  {linksSaving ? 'Importando...' : 'Importar cliques'}
+                </button>
+              </form>
+            )}
           </div>
         )}
 

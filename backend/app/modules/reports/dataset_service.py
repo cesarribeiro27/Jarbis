@@ -496,6 +496,115 @@ class DatasetService:
         await self.db.refresh(ds)
         return ds
 
+    async def _fetch_links_data(
+        self,
+        tenant_id: uuid.UUID,
+        campaign_id: str,
+        days: int = 90,
+    ) -> tuple[list[dict], list[str]]:
+        """
+        Busca dados de cliques do ClickHouse para uma campanha de links.
+        Retorna (rows, columns) para materializar como dataset.
+        Colunas: data, link, dispositivo, navegador, sistema, cliques
+        """
+        from app.modules.links.models import ShortLink
+        from app.config import settings as _settings
+        from app.core.clickhouse import get_clickhouse
+        import uuid as _uuid
+
+        result = await self.db.scalars(
+            select(ShortLink).where(
+                ShortLink.campaign_id == _uuid.UUID(campaign_id),
+                ShortLink.tenant_id == tenant_id,
+            )
+        )
+        links = result.all()
+        if not links:
+            return [], []
+
+        link_ids = [str(lnk.id) for lnk in links]
+        name_map = {str(lnk.id): lnk.name for lnk in links}
+
+        if not _settings.clickhouse_host:
+            return [], []
+
+        ids_str = ", ".join(f"'{lid}'" for lid in link_ids)
+        ch = get_clickhouse()
+        rows_raw = ch.query(f"""
+            SELECT
+                formatDateTime(clicked_at, '%Y-%m-%d') as data,
+                link_id,
+                device_type,
+                browser,
+                os,
+                count() as cliques
+            FROM link_events
+            WHERE tenant_id = '{str(tenant_id)}'
+              AND link_id IN ({ids_str})
+              AND clicked_at >= now() - INTERVAL {days} DAY
+            GROUP BY data, link_id, device_type, browser, os
+            ORDER BY data DESC
+        """).result_rows
+
+        columns = ["data", "link", "dispositivo", "navegador", "sistema", "cliques"]
+        rows = [
+            {
+                "data": r[0],
+                "link": name_map.get(r[1], r[1]),
+                "dispositivo": r[2] or "Outro",
+                "navegador": r[3] or "Outro",
+                "sistema": r[4] or "Outro",
+                "cliques": r[5],
+            }
+            for r in rows_raw
+        ]
+        return rows, columns
+
+    async def create_from_links_campaign(
+        self,
+        tenant_id: uuid.UUID,
+        campaign_id: str,
+        name: str,
+        days: int = 90,
+    ) -> "ReportDataset":
+        rows, columns = await self._fetch_links_data(tenant_id, campaign_id, days)
+        ds = ReportDataset(
+            tenant_id=tenant_id,
+            name=name,
+            type="links",
+            rows=rows,
+            columns=columns,
+            row_count=len(rows),
+            links_campaign_id=campaign_id,
+            links_days=days,
+            last_synced_at=_utcnow(),
+        )
+        self.db.add(ds)
+        await self.db.commit()
+        await self.db.refresh(ds)
+        return ds
+
+    async def sync_links_campaign(
+        self,
+        dataset_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+    ) -> "ReportDataset | None":
+        from sqlalchemy.orm.attributes import flag_modified
+        ds = await self.get(dataset_id, tenant_id)
+        if not ds or ds.type != "links" or not ds.links_campaign_id:
+            return None
+        days = ds.links_days or 90
+        rows, columns = await self._fetch_links_data(tenant_id, ds.links_campaign_id, days)
+        ds.rows = rows
+        ds.columns = columns
+        ds.row_count = len(rows)
+        ds.last_synced_at = _utcnow()
+        flag_modified(ds, "rows")
+        flag_modified(ds, "columns")
+        await self.db.commit()
+        await self.db.refresh(ds)
+        return ds
+
     async def delete(self, dataset_id: uuid.UUID, tenant_id: uuid.UUID) -> bool:
         ds = await self.get(dataset_id, tenant_id)
         if not ds:

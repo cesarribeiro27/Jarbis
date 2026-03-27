@@ -51,6 +51,10 @@ class ReportDataset(Base):
     db_password_enc: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     db_query: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Config de Links de campanha (apenas quando type == 'links')
+    links_campaign_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    links_days: Mapped[int | None] = mapped_column(Integer, nullable=True)  # período retroativo em dias
+
     # Config de Google Analytics (apenas quando type == 'google-analytics')
     ga_property_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     ga_credentials_enc: Mapped[str | None] = mapped_column(String(4000), nullable=True)  # SA JSON criptografado

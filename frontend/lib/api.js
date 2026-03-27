@@ -158,6 +158,8 @@ export const api = {
       sync: (id) => apiFetch(`/reports/datasets/${id}/sync`, { method: 'POST' }),
       syncGA: (id) => apiFetch(`/reports/datasets/${id}/ga/sync`, { method: 'POST' }),
       syncDb: (id) => apiFetch(`/reports/datasets/${id}/database/sync`, { method: 'POST' }),
+      createLinksDataset: (campaignId, name, days = 90) => apiFetch('/reports/datasets/links-campaign', { method: 'POST', body: JSON.stringify({ campaign_id: campaignId, name, days }) }),
+      syncLinks: (id) => apiFetch(`/reports/datasets/${id}/links/sync`, { method: 'POST' }),
       setSchedule: (id, intervalMinutes) => apiFetch(`/reports/datasets/${id}/schedule`, { method: 'PATCH', body: JSON.stringify({ refresh_interval_minutes: intervalMinutes }) }),
       delete: (id) => apiFetch(`/reports/datasets/${id}`, { method: 'DELETE' }),
       // Query v1 — legado (mantido para compatibilidade)
@@ -247,5 +249,9 @@ export const api = {
   brand: {
     get: () => apiFetch('/reports/tenant/customization'),
     save: (data) => apiFetch('/reports/tenant/customization', { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+
+  links: {
+    listCampaigns: () => apiFetch('/links/campaigns'),
   },
 }

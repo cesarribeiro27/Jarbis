@@ -1120,6 +1120,70 @@ async def sync_db_dataset(
 
 
 @router.post(
+    "/datasets/links-campaign",
+    response_model=DatasetSummary,
+    status_code=201,
+    summary="Cria dataset a partir de dados de cliques de uma campanha de links",
+)
+async def create_links_dataset(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    body = await request.json()
+    campaign_id = body.get("campaign_id")
+    name = body.get("name", "Links")
+    days = int(body.get("days", 90))
+    if not campaign_id:
+        raise HTTPException(status_code=400, detail="campaign_id é obrigatório")
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
+    service = DatasetService(db)
+    ds = await service.create_from_links_campaign(current_user.tenant_id, campaign_id, name, days)
+    from .query_engine import detect_column_types
+    return DatasetSummary(
+        id=ds.id, name=ds.name, type=ds.type,
+        columns=ds.columns or [], row_count=ds.row_count,
+        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
+    )
+
+
+@router.post(
+    "/datasets/{dataset_id}/links/sync",
+    response_model=DatasetSummary,
+    summary="Re-sincroniza dataset do tipo links",
+)
+async def sync_links_dataset(
+    dataset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    service = DatasetService(db)
+    ds = await service.sync_links_campaign(dataset_id, current_user.tenant_id)
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset não encontrado ou não é do tipo links")
+
+    try:
+        redis = get_redis()
+        try:
+            await warp_invalidate(redis, str(dataset_id))
+            await _bump_dataset_version(redis, str(dataset_id))
+        finally:
+            await redis.aclose()
+    except Exception:
+        pass
+
+    from .query_engine import detect_column_types
+    return DatasetSummary(
+        id=ds.id, name=ds.name, type=ds.type,
+        columns=ds.columns or [], row_count=ds.row_count,
+        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
+    )
+
+
+@router.post(
     "/datasets/{dataset_id}/sync",
     response_model=DatasetSummary,
     summary="Re-sincroniza dataset de API",
