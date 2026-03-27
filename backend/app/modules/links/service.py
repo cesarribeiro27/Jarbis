@@ -25,6 +25,7 @@ from app.modules.links.schemas import (
     CampaignCreate,
     CampaignResponse,
     ClicksByBrowser,
+    ClicksByCity,
     ClicksByCountry,
     ClicksByDay,
     ClicksByDevice,
@@ -342,6 +343,9 @@ def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
     by_referrer = _ch_query(
         f"SELECT {_REFERRER_CASE} as source, count() as c {base} GROUP BY source ORDER BY c DESC LIMIT 10"
     )
+    by_city = _ch_query(
+        f"SELECT city, country, count() as c {base} AND city != '' GROUP BY city, country ORDER BY c DESC LIMIT 20"
+    )
 
     return LinkAnalytics(
         link_id=link_id,
@@ -356,6 +360,7 @@ def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
         by_os=[ClicksByOS(os=r[0] or "Outro", clicks=r[1]) for r in by_os],
         by_weekday=[ClicksByWeekday(weekday=_WEEKDAY_NAMES[(r[0] - 1) % 7], clicks=r[1]) for r in by_weekday],
         by_referrer=[ClicksByReferrer(source=r[0], clicks=r[1]) for r in by_referrer],
+        by_city=[ClicksByCity(city=r[0], country=r[1], clicks=r[2]) for r in by_city],
     )
 
 
@@ -404,6 +409,9 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
     by_referrer = _ch_query(
         f"SELECT {_REFERRER_CASE} as source, count() as c {base} GROUP BY source ORDER BY c DESC LIMIT 10"
     )
+    by_city = _ch_query(
+        f"SELECT city, country, count() as c {base} AND city != '' GROUP BY city, country ORDER BY c DESC LIMIT 20"
+    )
 
     return CampaignAnalytics(
         campaign_id=campaign_id,
@@ -418,4 +426,5 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
         by_os=[ClicksByOS(os=r[0] or "Outro", clicks=r[1]) for r in by_os],
         by_weekday=[ClicksByWeekday(weekday=_WEEKDAY_NAMES[(r[0] - 1) % 7], clicks=r[1]) for r in by_weekday],
         by_referrer=[ClicksByReferrer(source=r[0], clicks=r[1]) for r in by_referrer],
+        by_city=[ClicksByCity(city=r[0], country=r[1], clicks=r[2]) for r in by_city],
     )

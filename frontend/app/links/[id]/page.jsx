@@ -389,6 +389,18 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
               </div>
             </div>
           )}
+
+          {/* Cidades */}
+          {analytics.by_city?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Cidades</p>
+              <div className="flex flex-col gap-2">
+                {analytics.by_city.slice(0, 10).map(c => (
+                  <HBar key={`${c.city}-${c.country}`} label={`${c.city}, ${c.country}`} clicks={c.clicks} total={analytics.by_city[0].clicks} color="#7c3aed" labelWidth="w-40" />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

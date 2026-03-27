@@ -118,6 +118,12 @@ class ClicksByReferrer(BaseModel):
     clicks: int
 
 
+class ClicksByCity(BaseModel):
+    city: str
+    country: str
+    clicks: int
+
+
 class LinkAnalytics(BaseModel):
     link_id: str
     total_clicks: int
@@ -131,6 +137,7 @@ class LinkAnalytics(BaseModel):
     by_os: list[ClicksByOS] = []
     by_weekday: list[ClicksByWeekday] = []
     by_referrer: list[ClicksByReferrer] = []
+    by_city: list[ClicksByCity] = []
 
 
 class CampaignAnalytics(BaseModel):
@@ -146,3 +153,4 @@ class CampaignAnalytics(BaseModel):
     by_os: list[ClicksByOS] = []
     by_weekday: list[ClicksByWeekday] = []
     by_referrer: list[ClicksByReferrer] = []
+    by_city: list[ClicksByCity] = []
