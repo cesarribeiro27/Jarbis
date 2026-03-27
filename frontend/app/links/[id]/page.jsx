@@ -567,8 +567,14 @@ export default function CampaignPage({ params }) {
   const [campaign, setCampaign] = useState(null)
   const [links, setLinks] = useState([])
   const [billing, setBilling] = useState(null)
-  const [analytics, setAnalytics] = useState(null)          // campanha
-  const [analyticsLoading, setAnalyticsLoading] = useState(true)
+  const [analytics, setAnalytics] = useState(() => {        // campanha — inicia do cache
+    if (typeof window === 'undefined') return null
+    try { return JSON.parse(localStorage.getItem(`jarbis_analytics_${id}`)) } catch { return null }
+  })
+  const [analyticsLoading, setAnalyticsLoading] = useState(() => {
+    if (typeof window === 'undefined') return true
+    try { return !localStorage.getItem(`jarbis_analytics_${id}`) } catch { return true }
+  })
   const [selectedLink, setSelectedLink] = useState(null)
   const [linkAnalytics, setLinkAnalytics] = useState(null)  // link individual
   const [linkAnalyticsLoading, setLinkAnalyticsLoading] = useState(false)
@@ -596,9 +602,12 @@ export default function CampaignPage({ params }) {
   useEffect(() => {
     // Analytics dispara imediatamente em paralelo, sem bloquear o render principal
     api.fetch(`/links/campaigns/${id}/analytics?days=30`)
-      .then(data => setAnalytics(data))
-      .catch(() => {})
-      .finally(() => setAnalyticsLoading(false))
+      .then(data => {
+        setAnalytics(data)
+        setAnalyticsLoading(false)
+        try { localStorage.setItem(`jarbis_analytics_${id}`, JSON.stringify(data)) } catch {}
+      })
+      .catch(() => setAnalyticsLoading(false))
 
     // Dados principais - exibe a página assim que carregar
     Promise.all([
