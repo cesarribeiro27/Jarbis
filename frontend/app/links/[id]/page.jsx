@@ -31,6 +31,9 @@ function IconEdit() {
 function IconExternalLink() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
 }
+function IconClone() {
+  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="8" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+}
 function IconLock() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
 }
@@ -58,9 +61,9 @@ function CopyButton({ text, label = 'Copiar' }) {
 }
 
 // ── Modal: Adicionar link ───────────────────────────────────────────────────
-function AddLinkModal({ campaignId, planLimits, currentLinksCount, onClose, onCreated }) {
-  const [originalUrl, setOriginalUrl] = useState('')
-  const [name, setName] = useState('')
+function AddLinkModal({ campaignId, planLimits, currentLinksCount, onClose, onCreated, prefill }) {
+  const [originalUrl, setOriginalUrl] = useState(prefill?.original_url || '')
+  const [name, setName] = useState(prefill?.name || '')
   const [customSlug, setCustomSlug] = useState('')
   const [slugMode, setSlugMode] = useState('auto')
   const [loading, setLoading] = useState(false)
@@ -101,7 +104,7 @@ function AddLinkModal({ campaignId, planLimits, currentLinksCount, onClose, onCr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Adicionar link</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{prefill ? 'Clonar link' : 'Adicionar link'}</h2>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">Links não podem ser removidos após criados - fazem parte do banco de dados da campanha.</p>
 
         {atLimit && (
@@ -408,7 +411,7 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
 }
 
 // ── Link Row ────────────────────────────────────────────────────────────────
-function LinkRow({ link, clicksFromCH, isSelected, canSeeAnalytics, onSelect, onEdit }) {
+function LinkRow({ link, clicksFromCH, isSelected, canSeeAnalytics, onSelect, onEdit, onClone }) {
   const shortUrl = `${FRONTEND_URL}/l/${link.slug}`
   const clicks = clicksFromCH ?? link.clicks_cached
 
@@ -430,8 +433,11 @@ function LinkRow({ link, clicksFromCH, isSelected, canSeeAnalytics, onSelect, on
                 <IconChevronRight />
               </span>
             )}
-            <button onClick={() => onEdit(link)} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors shrink-0">
+            <button onClick={() => onEdit(link)} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors shrink-0" title="Editar">
               <IconEdit />
+            </button>
+            <button onClick={() => onClone(link)} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors shrink-0" title="Clonar link">
+              <IconClone />
             </button>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 truncate mb-2">{link.original_url}</p>
@@ -581,6 +587,7 @@ export default function CampaignPage({ params }) {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState(null)
+  const [cloningLink, setCloningLink] = useState(null)
   const [showMoreModal, setShowMoreModal] = useState(false)
 
   const canSeeAnalytics = billing?.limits?.link_analytics === true
@@ -718,6 +725,7 @@ export default function CampaignPage({ params }) {
                   canSeeAnalytics={canSeeAnalytics}
                   onSelect={handleSelectLink}
                   onEdit={setEditingLink}
+                  onClone={link => setCloningLink({ original_url: link.original_url, name: `${link.name} (cópia)` })}
                 />
               ))
             )}
@@ -762,6 +770,16 @@ export default function CampaignPage({ params }) {
         />
       )}
       {editingLink && <EditLinkModal link={editingLink} onClose={() => setEditingLink(null)} onSaved={handleLinkSaved} />}
+      {cloningLink && (
+        <AddLinkModal
+          campaignId={id}
+          planLimits={billing?.limits}
+          currentLinksCount={links.length}
+          prefill={cloningLink}
+          onClose={() => setCloningLink(null)}
+          onCreated={link => { handleLinkCreated(link); setCloningLink(null) }}
+        />
+      )}
       {showMoreModal && (
         <MoreAnalyticsModal
           analytics={activeAnalytics}
