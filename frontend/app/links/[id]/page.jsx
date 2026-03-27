@@ -594,19 +594,23 @@ export default function CampaignPage({ params }) {
   const activeLabel = selectedLink ? selectedLink.name : (campaign?.name || 'Campanha')
 
   useEffect(() => {
-    Promise.allSettled([
+    // Analytics dispara imediatamente em paralelo, sem bloquear o render principal
+    api.fetch(`/links/campaigns/${id}/analytics?days=30`)
+      .then(data => setAnalytics(data))
+      .catch(() => {})
+      .finally(() => setAnalyticsLoading(false))
+
+    // Dados principais - exibe a página assim que carregar
+    Promise.all([
       api.fetch(`/links/campaigns`),
       api.fetch(`/links/campaigns/${id}/links`),
       api.billing.status(),
-      api.fetch(`/links/campaigns/${id}/analytics?days=30`),
-    ]).then(([campaignsR, linksR, billingR, analyticsR]) => {
-      if (campaignsR.status === 'fulfilled') setCampaign(campaignsR.value.find(c => c.id === id) || null)
-      if (linksR.status === 'fulfilled') setLinks(linksR.value)
-      if (billingR.status === 'fulfilled') setBilling(billingR.value)
-      if (analyticsR.status === 'fulfilled') setAnalytics(analyticsR.value)
-      setAnalyticsLoading(false)
+    ]).then(([campaigns, linksData, billingData]) => {
+      setCampaign(campaigns.find(c => c.id === id) || null)
+      setLinks(linksData)
+      setBilling(billingData)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [id])
 
   function handleSelectLink(link) {
