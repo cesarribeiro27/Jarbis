@@ -537,16 +537,30 @@ class DatasetService:
                 device_type,
                 browser,
                 os,
+                country,
+                city,
+                multiIf(
+                    referrer = '', 'Direto',
+                    referrer LIKE '%google%', 'Google',
+                    referrer LIKE '%instagram%', 'Instagram',
+                    referrer LIKE '%facebook%' OR referrer LIKE '%fb.com%', 'Facebook',
+                    referrer LIKE '%whatsapp%' OR referrer LIKE '%wa.me%', 'WhatsApp',
+                    referrer LIKE '%t.co%' OR referrer LIKE '%twitter%' OR referrer LIKE '%x.com%', 'Twitter / X',
+                    referrer LIKE '%linkedin%', 'LinkedIn',
+                    referrer LIKE '%tiktok%', 'TikTok',
+                    referrer LIKE '%youtube%' OR referrer LIKE '%youtu.be%', 'YouTube',
+                    'Outro'
+                ) as fonte,
                 count() as cliques
             FROM link_events
             WHERE tenant_id = '{str(tenant_id)}'
               AND link_id IN ({ids_str})
               AND clicked_at >= now() - INTERVAL {days} DAY
-            GROUP BY data, link_id, device_type, browser, os
+            GROUP BY data, link_id, device_type, browser, os, country, city, fonte
             ORDER BY data DESC
         """).result_rows
 
-        columns = ["data", "link", "dispositivo", "navegador", "sistema", "cliques"]
+        columns = ["data", "link", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques"]
         rows = [
             {
                 "data": r[0],
@@ -554,7 +568,10 @@ class DatasetService:
                 "dispositivo": r[2] or "Outro",
                 "navegador": r[3] or "Outro",
                 "sistema": r[4] or "Outro",
-                "cliques": r[5],
+                "pais": r[5] or "",
+                "cidade": r[6] or "",
+                "fonte": r[7],
+                "cliques": r[8],
             }
             for r in rows_raw
         ]
