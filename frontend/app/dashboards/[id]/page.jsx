@@ -1561,34 +1561,34 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
       // ── Links dataset ──────────────────────────────────────────────────────
       if (has('cliques') && (has('fonte') || has('dispositivo') || has('link'))) {
         const cliques = gc('cliques'), fonte = gc('fonte'), disp = gc('dispositivo'), link = gc('link'), data = gc('data')
-        if (cliques) result.push({ label: 'Total de Cliques', icon: IcoKpi, build: () => ({ id: mkId(), type: 'kpi', title: 'Total de Cliques', dataset_id: ds.id, value_col: 'cliques', agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
-        if (data && cliques) result.push({ label: 'Evolução de Cliques', icon: IcoLine, build: () => ({ id: mkId(), type: 'line', title: 'Evolução de Cliques', dataset_id: ds.id, label_col: 'data', value_col: 'cliques', agg: 'sum', config: { granularity: 'day', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (fonte && cliques) result.push({ label: 'Canal que mais converte', icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: 'Cliques por Canal de Tráfego', dataset_id: ds.id, label_col: 'fonte', value_col: 'cliques', agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (link && cliques) result.push({ label: 'Links mais clicados', icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: 'Links mais Clicados', dataset_id: ds.id, label_col: 'link', value_col: 'cliques', agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (disp && cliques) result.push({ label: 'Cliques por Dispositivo', icon: IcoPie, build: () => ({ id: mkId(), type: 'pie', title: 'Cliques por Dispositivo', dataset_id: ds.id, label_col: 'dispositivo', value_col: 'cliques', agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } }) })
-        if (data) result.push({ label: 'Filtro de período', icon: IcoCal, build: () => ({ id: mkId(), type: 'filter', title: 'data', dataset_id: ds.id, filter_col: 'data', filter_label: 'Período', config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
+        if (cliques) result.push({ label: 'Total de Cliques', icon: IcoKpi, coaching: 'Cliques são a moeda de atenção das suas campanhas — base para medir ROI de qualquer ação de marketing.', build: () => ({ id: mkId(), type: 'kpi', title: 'Total de Cliques', dataset_id: ds.id, value_col: 'cliques', agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
+        if (data && cliques) result.push({ label: 'Evolução de Cliques', icon: IcoLine, coaching: 'Sua campanha está ganhando ou perdendo tração? Este gráfico responde antes que seja tarde para agir.', build: () => ({ id: mkId(), type: 'line', title: 'Evolução de Cliques', dataset_id: ds.id, label_col: 'data', value_col: 'cliques', agg: 'sum', config: { granularity: 'day', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (fonte && cliques) result.push({ label: 'Canal que mais converte', icon: IcoBarH, coaching: 'Canal com mais volume não é sempre o de melhor ROI. Descubra onde concentrar seu próximo investimento.', build: () => ({ id: mkId(), type: 'bar_h', title: 'Cliques por Canal de Tráfego', dataset_id: ds.id, label_col: 'fonte', value_col: 'cliques', agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (link && cliques) result.push({ label: 'Links mais clicados', icon: IcoBarH, coaching: 'Qual CTA ressoa com seu público? Os dados de link revelam quais mensagens e ofertas realmente funcionam.', build: () => ({ id: mkId(), type: 'bar_h', title: 'Links mais Clicados', dataset_id: ds.id, label_col: 'link', value_col: 'cliques', agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (disp && cliques) result.push({ label: 'Cliques por Dispositivo', icon: IcoPie, coaching: 'Empresas perdem conversões por ignorar mobile. Saiba exatamente como seu público chega até você.', build: () => ({ id: mkId(), type: 'pie', title: 'Cliques por Dispositivo', dataset_id: ds.id, label_col: 'dispositivo', value_col: 'cliques', agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } }) })
+        if (data) result.push({ label: 'Filtro de período', icon: IcoCal, coaching: 'Compare períodos para medir o impacto real de cada ação de marketing ao longo do tempo.', build: () => ({ id: mkId(), type: 'filter', title: 'data', dataset_id: ds.id, filter_col: 'data', filter_label: 'Período', config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
         continue
       }
 
       // ── Google Analytics dataset ───────────────────────────────────────────
       if (has('sessions', 'pageviews', 'users')) {
-        const metric = gc('sessions') || gc('pageviews'), users = gc('users'), src = gc('source') || gc('channel') || gc('medium'), date = dates[0]
-        if (metric) result.push({ label: 'Total de Sessões', icon: IcoKpi, build: () => ({ id: mkId(), type: 'kpi', title: 'Total de Sessões', dataset_id: ds.id, value_col: metric.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
-        if (date && metric) result.push({ label: 'Tráfego ao longo do tempo', icon: IcoLine, build: () => ({ id: mkId(), type: 'line', title: 'Evolução de Sessões', dataset_id: ds.id, label_col: date.col, value_col: metric.col, agg: 'sum', config: { granularity: 'day', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (src && metric) result.push({ label: 'Canal de origem', icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: 'Sessões por Canal', dataset_id: ds.id, label_col: src.col, value_col: metric.col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (date) result.push({ label: 'Filtro de período', icon: IcoCal, build: () => ({ id: mkId(), type: 'filter', title: date.col, dataset_id: ds.id, filter_col: date.col, filter_label: 'Período', config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
+        const metric = gc('sessions') || gc('pageviews'), src = gc('source') || gc('channel') || gc('medium'), date = dates[0]
+        if (metric) result.push({ label: 'Total de Sessões', icon: IcoKpi, coaching: 'Sessões são a audiência real do seu negócio online — o termômetro de visibilidade da sua marca.', build: () => ({ id: mkId(), type: 'kpi', title: 'Total de Sessões', dataset_id: ds.id, value_col: metric.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
+        if (date && metric) result.push({ label: 'Tráfego ao longo do tempo', icon: IcoLine, coaching: 'Picos e quedas de tráfego contam a história das suas campanhas. Correlacione com suas ações de marketing.', build: () => ({ id: mkId(), type: 'line', title: 'Evolução de Sessões', dataset_id: ds.id, label_col: date.col, value_col: metric.col, agg: 'sum', config: { granularity: 'day', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (src && metric) result.push({ label: 'Canal de origem', icon: IcoBarH, coaching: 'Onde seu público te encontra? Dados de canal definem onde dobrar o investimento e onde cortar o desperdício.', build: () => ({ id: mkId(), type: 'bar_h', title: 'Sessões por Canal', dataset_id: ds.id, label_col: src.col, value_col: metric.col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (date) result.push({ label: 'Filtro de período', icon: IcoCal, coaching: 'Compare períodos para medir o impacto real de cada campanha e decisão estratégica.', build: () => ({ id: mkId(), type: 'filter', title: date.col, dataset_id: ds.id, filter_col: date.col, filter_label: 'Período', config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
         continue
       }
 
       // ── Genérico: detecta coluna principal por nome semântico ──────────────
       const mainNum = nums.find(n => ['receita','faturamento','repasse','valor','total','vendas','resultado','lucro','comissao'].some(k => n.col.toLowerCase().includes(k))) || nums[0]
       if (mainNum) {
-        result.push({ label: `Total: ${mainNum.col}`, icon: IcoKpi, build: () => ({ id: mkId(), type: 'kpi', title: `Total: ${mainNum.col}`, dataset_id: ds.id, value_col: mainNum.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
-        if (dates[0]) result.push({ label: `Evolução: ${mainNum.col}`, icon: IcoLine, build: () => ({ id: mkId(), type: 'line', title: `Evolução de ${mainNum.col}`, dataset_id: ds.id, label_col: dates[0].col, value_col: mainNum.col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (texts[0]) result.push({ label: `Ranking: ${texts[0].col}`, icon: IcoBarH, build: () => ({ id: mkId(), type: 'bar_h', title: `${texts[0].col} por ${mainNum.col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: mainNum.col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
-        if (texts[0]) result.push({ label: `Fatias: ${texts[0].col}`, icon: IcoPie, build: () => ({ id: mkId(), type: 'pie', title: `${texts[0].col} por ${mainNum.col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: mainNum.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } }) })
+        result.push({ label: `Total: ${mainNum.col}`, icon: IcoKpi, coaching: 'O número mais importante do seu negócio em uma só leitura — coloque em destaque no topo do dashboard.', build: () => ({ id: mkId(), type: 'kpi', title: `Total: ${mainNum.col}`, dataset_id: ds.id, value_col: mainNum.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:3, h:2 } }) })
+        if (dates[0]) result.push({ label: `Evolução: ${mainNum.col}`, icon: IcoLine, coaching: 'Crescimento ou queda? A linha do tempo revela momentum e sazonalidade para planejar com antecedência.', build: () => ({ id: mkId(), type: 'line', title: `Evolução de ${mainNum.col}`, dataset_id: ds.id, label_col: dates[0].col, value_col: mainNum.col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (texts[0]) result.push({ label: `Ranking: ${texts[0].col}`, icon: IcoBarH, coaching: 'Quem contribui mais? Identifique seus 20% que geram 80% dos resultados — Lei de Pareto aplicada.', build: () => ({ id: mkId(), type: 'bar_h', title: `${texts[0].col} por ${mainNum.col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: mainNum.col, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x:0, y:Infinity, w:6, h:4 } }) })
+        if (texts[0]) result.push({ label: `Fatias: ${texts[0].col}`, icon: IcoPie, coaching: 'Concentração de receita por categoria revela risco e oportunidade — onde diversificar ou acelerar.', build: () => ({ id: mkId(), type: 'pie', title: `${texts[0].col} por ${mainNum.col}`, dataset_id: ds.id, label_col: texts[0].col, value_col: mainNum.col, agg: 'sum', config: {}, layout: { x:0, y:Infinity, w:4, h:4 } }) })
       }
-      if (dates[0]) result.push({ label: 'Filtro de período', icon: IcoCal, build: () => ({ id: mkId(), type: 'filter', title: dates[0].col, dataset_id: ds.id, filter_col: dates[0].col, filter_label: dates[0].col, config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
+      if (dates[0]) result.push({ label: 'Filtro de período', icon: IcoCal, coaching: 'Compare períodos para medir o impacto real de cada decisão estratégica ao longo do tempo.', build: () => ({ id: mkId(), type: 'filter', title: dates[0].col, dataset_id: ds.id, filter_col: dates[0].col, filter_label: dates[0].col, config: { date_mode: true }, layout: { x:0, y:Infinity, w:4, h:2 } }) })
     }
     return result.slice(0, 7)
   }, [allCols, datasets])
@@ -1799,13 +1799,21 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Sugestões rápidas</p>
               <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                 {smartSuggestions.map((s, i) => (
-                  <button key={i}
-                    onClick={() => { const b = s.build(); onAddBlock(b); setAddedLabel(s.label); setTimeout(onClose, 700) }}
-                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-violet-50 hover:bg-violet-100 border border-violet-100 hover:border-violet-300 rounded-xl text-xs font-semibold text-violet-700 transition-all active:scale-[.96] whitespace-nowrap"
-                  >
-                    {s.icon}
-                    {s.label}
-                  </button>
+                  <div key={i} className="relative group flex-shrink-0">
+                    <button
+                      onClick={() => { const b = s.build(); onAddBlock(b); setAddedLabel(s.label); setTimeout(onClose, 700) }}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-violet-50 hover:bg-violet-100 border border-violet-100 hover:border-violet-300 rounded-xl text-xs font-semibold text-violet-700 transition-all active:scale-[.96] whitespace-nowrap"
+                    >
+                      {s.icon}
+                      {s.label}
+                    </button>
+                    {s.coaching && (
+                      <div className="absolute bottom-full left-0 mb-2 w-56 bg-gray-900 text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50">
+                        {s.coaching}
+                        <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
