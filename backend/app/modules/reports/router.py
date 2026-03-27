@@ -2032,6 +2032,33 @@ DOMAIN_TEMPLATES = {
             {"col": "ORIGEM_TRAFEGO", "impact": "Atribuição de receita por canal de aquisição"},
         ],
     },
+    "links": {
+        "name": "Auditoria de Links / Rastreamento de Campanhas",
+        "signals": ["dispositivo", "navegador", "sistema", "pais", "cidade", "cliques_unicos"],
+        "insights_focus": "volume de cliques totais vs únicos (deduplicação por IP), performance por link, origem do tráfego, distribuição geográfica e de dispositivos",
+        "kpi_hints": (
+            "KPI 1: total de cliques — value_col='cliques', agg='sum', título='Cliques Totais'. "
+            "KPI 2: cliques únicos — value_col='cliques_unicos', agg='sum', título='Cliques Únicos'. "
+            "KPI 3: links ativos — value_col='link', agg='count_distinct' com filtro ativo=Sim, título='Links Ativos'. "
+            "KPI 4: fontes de tráfego — value_col='fonte', agg='count_distinct', título='Fontes de Tráfego'."
+        ),
+        "chart_hints": (
+            "ATO 2 herói: evolução temporal de cliques por data — type='line', label_col='data', value_col='cliques', agg='sum', w=12. "
+            "ATO 3: ranking por fonte de tráfego — type='bar_h', label_col='fonte', value_col='cliques', agg='sum'. "
+            "ATO 3: distribuição por dispositivo — type='pie', label_col='dispositivo', value_col='cliques', agg='sum'. "
+            "ATO 3: performance por link (compare cliques totais vs únicos) — type='bar_h', label_col='link', value_col='cliques', agg='sum'. "
+            "ATO 4: ranking por país — type='bar_h', label_col='pais', value_col='cliques', agg='sum'. "
+            "ATO 4: ranking por cidade — type='bar_h', label_col='cidade', value_col='cliques_unicos', agg='sum'. "
+            "ATO 4: filtro por link ativo — type='filter', label_col='ativo'. "
+            "REGRA IMPORTANTE: 'link' é identifier — use count_distinct ou label_col. "
+            "NUNCA some 'link' — ele não é numérico. "
+            "A coluna 'cliques_unicos' mede IPs únicos por combinação de dimensão — use agg='sum' para agregar."
+        ),
+        "optional_improvements": [
+            {"col": "navegador", "impact": "Análise de compatibilidade por browser (Safari vs Chrome vs Firefox)"},
+            {"col": "sistema", "impact": "Distribuição iOS vs Android vs Desktop — guia otimização de landing page"},
+        ],
+    },
 }
 
 
@@ -2185,16 +2212,20 @@ async def generate_dashboard_endpoint(
         return stats
 
     # ── Computa col_stats por dataset ────────────────────────────────────────
-    per_ds_stats: list[dict] = []  # [{id, name, columns, rows, col_stats, sample}]
+    from .query_engine import detect_column_types, infer_column_semantics as _infer_semantics
+
+    per_ds_stats: list[dict] = []  # [{id, name, columns, rows, col_stats, semantics, sample}]
     for ds_item in all_datasets:
         ds_cols = ds_item.columns or []
         ds_rows = ds_item.rows or []
+        _col_types = detect_column_types(ds_rows)
         per_ds_stats.append({
             "id": str(ds_item.id),
             "name": ds_item.name,
             "columns": ds_cols,
             "rows": ds_rows,
             "col_stats": _build_col_stats(ds_cols, ds_rows),
+            "semantics": _infer_semantics(_col_types, ds_item.type, ds_cols),
             "sample": ds_rows[:5],
         })
 
@@ -2205,9 +2236,19 @@ async def generate_dashboard_endpoint(
     total_rows = len(rows)
 
     # ── Helper: formata col_stats de um dataset para o schema da IA ─────────
+    _SEMANTIC_HINT = {
+        "metric":     "métrica numérica — use agg=sum ou avg",
+        "identifier": "identificador — use agg=count_distinct, NÃO some diretamente",
+        "category":   "dimensão categórica — use como label_col",
+        "date":       "coluna de data — use como eixo temporal (label_col)",
+        "boolean":    "booleano (Sim/Não) — use como filtro ou dimensão",
+    }
+
     def _format_ds_schema(ds_info: dict) -> list[str]:
         parts = []
+        sem = ds_info.get("semantics", {})
         for col, st in ds_info["col_stats"].items():
+            sem_tag = f" | semântica: {_SEMANTIC_HINT[sem[col]]}" if col in sem else ""
             if st["type"] == "numero":
                 null_pct = st.get("null_pct", 0)
                 nonzero_pct = st.get("nonzero_pct", 0)
@@ -2218,14 +2259,14 @@ async def generate_dashboard_endpoint(
                 else:
                     flag = "— zero/irrelevante"
                 parts.append(
-                    f'  "{col}" [número {flag}] sum={st["sum"]}, avg={st["avg"]}, '
+                    f'  "{col}" [número {flag}{sem_tag}] sum={st["sum"]}, avg={st["avg"]}, '
                     f'nonzero={nonzero_pct}%, nulos={null_pct}%'
                 )
             elif st["type"] == "data":
-                parts.append(f'  "{col}" [data] ex: {st["sample"]}')
+                parts.append(f'  "{col}" [data{sem_tag}] ex: {st["sample"]}')
             else:
                 top3 = ", ".join(st.get("top3", []))
-                parts.append(f'  "{col}" [texto] {st.get("unique", "?")} valores únicos, ex: {top3}')
+                parts.append(f'  "{col}" [texto{sem_tag}] {st.get("unique", "?")} valores únicos, ex: {top3}')
         return parts
 
     # ── Schema para a IA ─────────────────────────────────────────────────────

@@ -552,7 +552,8 @@ class DatasetService:
                     referrer LIKE '%youtube%' OR referrer LIKE '%youtu.be%', 'YouTube',
                     'Outro'
                 ) as fonte,
-                count() as cliques
+                count() as cliques,
+                countDistinct(ip_address) as cliques_unicos
             FROM link_events
             WHERE tenant_id = '{str(tenant_id)}'
               AND link_id IN ({ids_str})
@@ -561,7 +562,7 @@ class DatasetService:
             ORDER BY data DESC
         """).result_rows
 
-        columns = ["data", "link", "ativo", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques"]
+        columns = ["data", "link", "ativo", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques", "cliques_unicos"]
         rows = [
             {
                 "data": r[0],
@@ -574,6 +575,7 @@ class DatasetService:
                 "cidade": r[6] or "Desconhecido",
                 "fonte": r[7],
                 "cliques": r[8],
+                "cliques_unicos": r[9],
             }
             for r in rows_raw
         ]
