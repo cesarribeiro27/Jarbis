@@ -674,6 +674,144 @@ function DbDatasetModal({ onClose, onCreated }) {
   )
 }
 
+function LinksDatasetModal({ onClose, onCreated }) {
+  const toast = useToast()
+  const [campaigns, setCampaigns] = useState([])
+  const [loadingCampaigns, setLoadingCampaigns] = useState(true)
+  const [form, setForm] = useState({ name: '', campaign_id: '', days: 30 })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api.links.listCampaigns()
+      .then(data => {
+        setCampaigns(data || [])
+        if (data?.length === 1) {
+          setForm(f => ({ ...f, campaign_id: data[0].id, name: `Links - ${data[0].name}` }))
+        }
+      })
+      .catch(() => setError('Erro ao carregar campanhas'))
+      .finally(() => setLoadingCampaigns(false))
+  }, [])
+
+  function handleCampaignChange(e) {
+    const id = e.target.value
+    const camp = campaigns.find(c => c.id === id)
+    setForm(f => ({
+      ...f,
+      campaign_id: id,
+      name: f.name || (camp ? `Links - ${camp.name}` : ''),
+    }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.campaign_id) { setError('Selecione uma campanha'); return }
+    setLoading(true); setError(null)
+    try {
+      const ds = await api.reports.datasets.createLinksDataset(form.campaign_id, form.name, form.days)
+      onCreated(ds)
+      onClose()
+      toast('Dataset de Links criado com sucesso!', 'success')
+    } catch (e) {
+      setError(e.message || 'Erro ao criar dataset')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-800 dark:text-gray-200">Dataset de Links</h2>
+              <p className="text-xs text-gray-400">Importe analytics de uma campanha de links</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Nome do dataset</label>
+            <input
+              required
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Ex: Links - Campanha Black Friday"
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Campanha</label>
+            {loadingCampaigns ? (
+              <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 animate-pulse bg-gray-50">Carregando campanhas...</div>
+            ) : campaigns.length === 0 ? (
+              <div className="w-full border border-amber-200 bg-amber-50 rounded-lg px-3 py-2 text-sm text-amber-700">
+                Nenhuma campanha encontrada. Crie uma campanha em <strong>Links</strong> primeiro.
+              </div>
+            ) : (
+              <select
+                required
+                value={form.campaign_id}
+                onChange={handleCampaignChange}
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+              >
+                <option value="">Selecione uma campanha...</option>
+                {campaigns.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Periodo de dados</label>
+            <select
+              value={form.days}
+              onChange={e => setForm(f => ({ ...f, days: parseInt(e.target.value) }))}
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+            >
+              <option value={7}>Ultimos 7 dias</option>
+              <option value={30}>Ultimos 30 dias</option>
+              <option value={60}>Ultimos 60 dias</option>
+              <option value={90}>Ultimos 90 dias</option>
+            </select>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">{error}</div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2.5 text-sm text-gray-600 hover:bg-gray-50 font-semibold">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading || loadingCampaigns || campaigns.length === 0}
+              className="flex-1 bg-teal-600 text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Criando...' : 'Criar dataset'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function DatasetsPage() {
   const t = useTranslations('datasets')
   const locale = useLocale()
@@ -685,6 +823,7 @@ export default function DatasetsPage() {
   const [showApiModal, setShowApiModal] = useState(false)
   const [showDbModal, setShowDbModal] = useState(false)
   const [showGaModal, setShowGaModal] = useState(false)
+  const [showLinksModal, setShowLinksModal] = useState(false)
   const [syncingId, setSyncingId] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -961,6 +1100,12 @@ export default function DatasetsPage() {
                 </svg>
                 Google Analytics
               </button>
+              <button onClick={() => setShowLinksModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                Links
+              </button>
             </div>
           </div>
         )}
@@ -1022,6 +1167,15 @@ export default function DatasetsPage() {
                       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
                     </svg>
                     Google Analytics
+                  </button>
+                  <button
+                    onClick={() => { setShowNewMenu(false); setShowLinksModal(true) }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    Links
                   </button>
                 </div>
               )}
@@ -1157,6 +1311,7 @@ export default function DatasetsPage() {
       {showApiModal && <ApiDatasetModal onClose={() => setShowApiModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
       {showDbModal && <DbDatasetModal onClose={() => setShowDbModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
       {showGaModal && <GADatasetModal onClose={() => setShowGaModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
+      {showLinksModal && <LinksDatasetModal onClose={() => setShowLinksModal(false)} onCreated={ds => setDatasets(prev => [ds, ...prev])} />}
       {excelSheetPicker && (
         <ExcelSheetPickerModal
           sheets={excelSheetPicker.sheets}
