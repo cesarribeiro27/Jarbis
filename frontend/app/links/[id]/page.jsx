@@ -457,6 +457,12 @@ function LinkRow({ link, clicksFromCH, isSelected, canSeeAnalytics, onSelect, on
 
 // ── Analytics Panel ─────────────────────────────────────────────────────────
 function AnalyticsPanel({ analytics, loading, canSeeAnalytics, onShowMore }) {
+  if (loading) return (
+    <div className="space-y-3">
+      {[80, 120, 100].map((h, i) => <div key={i} style={{ height: h }} className="rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />)}
+    </div>
+  )
+
   if (!canSeeAnalytics) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -471,12 +477,6 @@ function AnalyticsPanel({ analytics, loading, canSeeAnalytics, onShowMore }) {
       </div>
     )
   }
-
-  if (loading) return (
-    <div className="space-y-3">
-      {[80, 120, 100].map((h, i) => <div key={i} style={{ height: h }} className="rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />)}
-    </div>
-  )
 
   if (!analytics || analytics.total_clicks === 0) return (
     <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -740,7 +740,7 @@ export default function CampaignPage({ params }) {
             </div>
             <AnalyticsPanel
               analytics={activeAnalytics}
-              loading={activeAnalyticsLoading}
+              loading={loading || activeAnalyticsLoading}
               canSeeAnalytics={canSeeAnalytics}
               onShowMore={() => setShowMoreModal(true)}
             />
