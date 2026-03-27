@@ -47,7 +47,9 @@ async def redirect_link(slug: str, request: Request, db: AsyncSession = Depends(
     if not link:
         return RedirectResponse(url="/", status_code=302)
 
-    ip = request.client.host if request.client else ""
+    # X-Forwarded-For contém o IP real quando há proxy (Railway, Cloudflare, etc.)
+    forwarded = request.headers.get("x-forwarded-for", "")
+    ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "")
     user_agent = request.headers.get("user-agent", "")
     referrer = request.headers.get("referer", "")
 
