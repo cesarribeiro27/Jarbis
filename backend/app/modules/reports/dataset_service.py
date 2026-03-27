@@ -568,8 +568,8 @@ class DatasetService:
                 "dispositivo": r[2] or "Outro",
                 "navegador": r[3] or "Outro",
                 "sistema": r[4] or "Outro",
-                "pais": r[5] or "",
-                "cidade": r[6] or "",
+                "pais": r[5] or "Desconhecido",
+                "cidade": r[6] or "Desconhecido",
                 "fonte": r[7],
                 "cliques": r[8],
             }
