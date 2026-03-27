@@ -524,6 +524,7 @@ class DatasetService:
 
         link_ids = [str(lnk.id) for lnk in links]
         name_map = {str(lnk.id): lnk.name for lnk in links}
+        active_map = {str(lnk.id): lnk.is_active for lnk in links}
 
         if not _settings.clickhouse_host:
             return [], []
@@ -560,11 +561,12 @@ class DatasetService:
             ORDER BY data DESC
         """).result_rows
 
-        columns = ["data", "link", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques"]
+        columns = ["data", "link", "ativo", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques"]
         rows = [
             {
                 "data": r[0],
                 "link": name_map.get(r[1], r[1]),
+                "ativo": "Sim" if active_map.get(r[1], True) else "Não",
                 "dispositivo": r[2] or "Outro",
                 "navegador": r[3] or "Outro",
                 "sistema": r[4] or "Outro",
