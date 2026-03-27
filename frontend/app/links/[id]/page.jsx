@@ -498,9 +498,18 @@ function AnalyticsPanel({ analytics, loading, canSeeAnalytics, onShowMore }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-xl p-4 text-center">
-        <p className="text-3xl font-bold text-white tabular-nums">{analytics.total_clicks.toLocaleString('pt-BR')}</p>
-        <p className="text-xs text-violet-200 mt-0.5">cliques totais - últimos 30 dias</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-xl p-3 text-center">
+          <p className="text-2xl font-bold text-white tabular-nums">{analytics.total_clicks.toLocaleString('pt-BR')}</p>
+          <p className="text-[11px] text-violet-200 mt-0.5">cliques totais</p>
+        </div>
+        <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl p-3 text-center">
+          <p className="text-2xl font-bold text-violet-700 dark:text-violet-300 tabular-nums">{(analytics.unique_clicks ?? 0).toLocaleString('pt-BR')}</p>
+          <p className="text-[11px] text-violet-400 mt-0.5">
+            únicos
+            {analytics.total_clicks > 0 && <span className="ml-1 font-semibold">{Math.round(((analytics.unique_clicks ?? 0) / analytics.total_clicks) * 100)}%</span>}
+          </p>
+        </div>
       </div>
 
       {analytics.by_day.length > 0 && (
