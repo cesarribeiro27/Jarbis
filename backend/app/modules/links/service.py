@@ -253,6 +253,9 @@ def record_click(
     device_type, browser = _parse_user_agent(user_agent)
     os_name = _parse_os(user_agent)
 
+    from app.core.geoip import lookup as _geoip_lookup
+    country, city = _geoip_lookup(ip_address)
+
     client = get_clickhouse()
     client.insert(
         "link_events",
@@ -263,8 +266,8 @@ def record_click(
             slug,
             datetime.now(timezone.utc),
             ip_address,
-            "",   # country - enriquecimento futuro via GeoIP
-            "",   # city
+            country,
+            city,
             device_type,
             browser,
             os_name,

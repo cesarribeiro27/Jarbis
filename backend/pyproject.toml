@@ -46,6 +46,9 @@ dependencies = [
     # ClickHouse (banco de eventos de links)
     "clickhouse-connect>=0.7.0",
 
+    # GeoIP (lookup offline de país/cidade a partir de IP)
+    "geoip2>=4.8.0",
+
     # Utilitários
     "python-slugify>=8.0.0",
     "pendulum>=3.0.0",

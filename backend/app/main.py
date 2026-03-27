@@ -221,10 +221,12 @@ async def _refresh_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.core.clickhouse import ensure_tables
+    from app.core.geoip import init_geoip
     try:
         ensure_tables()
     except Exception as e:
         print(f"[ClickHouse] Aviso: não foi possível criar tabelas — {e}")
+    init_geoip()
     print(f"[Jarbis] Iniciando API v{settings.app_version} ({settings.environment})")
     task = asyncio.create_task(_refresh_loop())
     yield
