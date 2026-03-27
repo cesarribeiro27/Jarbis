@@ -24,10 +24,12 @@ from app.modules.links.schemas import (
     CampaignAnalytics,
     CampaignCreate,
     CampaignResponse,
+    ClicksByBrowser,
     ClicksByCountry,
     ClicksByDay,
     ClicksByDevice,
     ClicksByHour,
+    ClicksByOS,
     LinkAnalytics,
     ShortLinkCreate,
     ShortLinkResponse,
@@ -306,6 +308,12 @@ def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
     by_hour = _ch_query(
         f"SELECT toHour(clicked_at) as h, count() as c {base} GROUP BY h ORDER BY h"
     )
+    by_browser = _ch_query(
+        f"SELECT browser, count() as c {base} AND browser != '' GROUP BY browser ORDER BY c DESC LIMIT 10"
+    )
+    by_os = _ch_query(
+        f"SELECT os, count() as c {base} AND os != '' GROUP BY os ORDER BY c DESC LIMIT 10"
+    )
 
     return LinkAnalytics(
         link_id=link_id,
@@ -315,6 +323,8 @@ def get_link_analytics(link_id: str, days: int = 30) -> LinkAnalytics:
         by_country=[ClicksByCountry(country=r[0] or "Desconhecido", clicks=r[1]) for r in by_country],
         by_device=[ClicksByDevice(device_type=r[0] or "Desconhecido", clicks=r[1]) for r in by_device],
         by_hour=[ClicksByHour(hour=r[0], clicks=r[1]) for r in by_hour],
+        by_browser=[ClicksByBrowser(browser=r[0] or "Outro", clicks=r[1]) for r in by_browser],
+        by_os=[ClicksByOS(os=r[0] or "Outro", clicks=r[1]) for r in by_os],
     )
 
 
@@ -347,6 +357,15 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
     by_device = _ch_query(
         f"SELECT device_type, count() as c {base} GROUP BY device_type ORDER BY c DESC"
     )
+    by_hour = _ch_query(
+        f"SELECT toHour(clicked_at) as h, count() as c {base} GROUP BY h ORDER BY h"
+    )
+    by_browser = _ch_query(
+        f"SELECT browser, count() as c {base} AND browser != '' GROUP BY browser ORDER BY c DESC LIMIT 10"
+    )
+    by_os = _ch_query(
+        f"SELECT os, count() as c {base} AND os != '' GROUP BY os ORDER BY c DESC LIMIT 10"
+    )
 
     return CampaignAnalytics(
         campaign_id=campaign_id,
@@ -355,4 +374,7 @@ def get_campaign_analytics(campaign_id: str, link_ids: list[str], days: int = 30
         by_day=[ClicksByDay(date=r[0], clicks=r[1]) for r in by_day],
         by_country=[ClicksByCountry(country=r[0] or "Desconhecido", clicks=r[1]) for r in by_country],
         by_device=[ClicksByDevice(device_type=r[0] or "Desconhecido", clicks=r[1]) for r in by_device],
+        by_hour=[ClicksByHour(hour=r[0], clicks=r[1]) for r in by_hour],
+        by_browser=[ClicksByBrowser(browser=r[0] or "Outro", clicks=r[1]) for r in by_browser],
+        by_os=[ClicksByOS(os=r[0] or "Outro", clicks=r[1]) for r in by_os],
     )

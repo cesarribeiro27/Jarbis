@@ -20,9 +20,12 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select as _select
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user
-from app.modules.tenants.models import User
+from app.modules.tenants.models import User, Tenant as TenantModel
+from app.modules.billing.guards import check_link_campaign_limit, check_link_per_campaign_limit
+from app.modules.billing.plan_limits import PLANS
 from app.modules.links import service
 from app.modules.links.schemas import (
     CampaignAnalytics,
@@ -76,6 +79,8 @@ async def create_campaign(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(_select(TenantModel).where(TenantModel.id == user.tenant_id))
+    await check_link_campaign_limit(db, user.tenant_id, tenant.plan or "free")
     return await service.create_campaign(db, user.tenant_id, data)
 
 
@@ -100,6 +105,8 @@ async def create_link(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(_select(TenantModel).where(TenantModel.id == user.tenant_id))
+    await check_link_per_campaign_limit(db, user.tenant_id, campaign_id, tenant.plan or "free")
     return await service.create_link(db, user.tenant_id, campaign_id, data)
 
 
@@ -164,8 +171,14 @@ async def update_link(
 async def link_analytics(
     link_id: uuid.UUID,
     days: int = 30,
+    db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(_select(TenantModel).where(TenantModel.id == user.tenant_id))
+    limits = PLANS.get(tenant.plan or "free", PLANS["free"])
+    if not limits.allow_link_analytics:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Analytics de links disponível apenas em planos pagos.")
     result = await asyncio.to_thread(
         service.get_link_analytics, str(link_id), days
     )
@@ -183,6 +196,11 @@ async def campaign_analytics(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ):
+    tenant = await db.scalar(_select(TenantModel).where(TenantModel.id == user.tenant_id))
+    limits = PLANS.get(tenant.plan or "free", PLANS["free"])
+    if not limits.allow_link_analytics:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Analytics de links disponível apenas em planos pagos.")
     links = await service.list_links(db, user.tenant_id, campaign_id)
     link_ids = [str(lnk.id) for lnk in links]
     result = await asyncio.to_thread(

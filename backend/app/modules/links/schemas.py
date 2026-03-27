@@ -98,6 +98,16 @@ class ClicksByHour(BaseModel):
     clicks: int
 
 
+class ClicksByBrowser(BaseModel):
+    browser: str
+    clicks: int
+
+
+class ClicksByOS(BaseModel):
+    os: str
+    clicks: int
+
+
 class LinkAnalytics(BaseModel):
     link_id: str
     total_clicks: int
@@ -106,6 +116,8 @@ class LinkAnalytics(BaseModel):
     by_country: list[ClicksByCountry]
     by_device: list[ClicksByDevice]
     by_hour: list[ClicksByHour]
+    by_browser: list[ClicksByBrowser] = []
+    by_os: list[ClicksByOS] = []
 
 
 class CampaignAnalytics(BaseModel):
@@ -115,3 +127,6 @@ class CampaignAnalytics(BaseModel):
     by_day: list[ClicksByDay]
     by_country: list[ClicksByCountry]
     by_device: list[ClicksByDevice]
+    by_hour: list[ClicksByHour] = []
+    by_browser: list[ClicksByBrowser] = []
+    by_os: list[ClicksByOS] = []

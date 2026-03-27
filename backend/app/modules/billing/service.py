@@ -678,6 +678,14 @@ class BillingService:
             )
         ) or 0
 
+        from app.modules.links.models import LinkCampaign, ShortLink
+        link_campaign_count = await self.db.scalar(
+            select(func.count()).select_from(LinkCampaign).where(LinkCampaign.tenant_id == tenant_id)
+        ) or 0
+        link_count = await self.db.scalar(
+            select(func.count()).select_from(ShortLink).where(ShortLink.tenant_id == tenant_id)
+        ) or 0
+
         return {
             "plan": plan,
             "plan_name": PLAN_NAMES.get(plan, plan),
@@ -700,5 +708,7 @@ class BillingService:
                 "users": user_count,
                 "alerts": alert_count,
                 "rows": max_row_count,
+                "link_campaigns": link_campaign_count,
+                "links": link_count,
             },
         }

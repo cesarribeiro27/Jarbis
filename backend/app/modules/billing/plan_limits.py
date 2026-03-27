@@ -21,8 +21,11 @@ class PlanLimits:
     max_rows_per_dataset: int = -1       # -1 = ilimitado
     max_ai_queries_monthly: int = 0      # 0 = sem acesso, -1 = ilimitado
     max_halp_monthly: int = 0            # 0 = FAQ fixo (sem IA), -1 = ilimitado
+    max_link_campaigns: int = 1          # campanhas de link por tenant (-1 = ilimitado)
+    max_links_per_campaign: int = 5      # links por campanha (-1 = ilimitado)
     allow_embed: bool = False
     allow_ai: bool = False
+    allow_link_analytics: bool = False   # acesso aos analytics de cliques
     allow_white_label: bool = False
     sla: bool = False
 
@@ -40,8 +43,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=5_000,
         max_ai_queries_monthly=10,   # split: 3 gerações + 7 perguntas
         max_halp_monthly=0,
+        max_link_campaigns=1,
+        max_links_per_campaign=5,
         allow_embed=False,
         allow_ai=True,
+        allow_link_analytics=False,
         allow_white_label=False,
         sla=False,
     ),
@@ -55,8 +61,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=100_000,
         max_ai_queries_monthly=60,   # split: 10 gerações + 50 perguntas
         max_halp_monthly=20,
+        max_link_campaigns=5,
+        max_links_per_campaign=20,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=False,
         sla=False,
     ),
@@ -70,8 +79,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=500_000,
         max_ai_queries_monthly=225,  # split: 25 gerações + 200 perguntas
         max_halp_monthly=40,
+        max_link_campaigns=15,
+        max_links_per_campaign=50,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=False,
         sla=False,
     ),
@@ -85,8 +97,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=2_000_000,
         max_ai_queries_monthly=550,  # split: 50 gerações + 500 perguntas
         max_halp_monthly=-1,
+        max_link_campaigns=-1,
+        max_links_per_campaign=-1,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=True,
         sla=False,                   # SLA apenas no Enterprise
     ),
@@ -100,8 +115,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=-1,
         max_ai_queries_monthly=-1,
         max_halp_monthly=-1,
+        max_link_campaigns=-1,
+        max_links_per_campaign=-1,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=True,
         sla=True,
     ),
@@ -116,8 +134,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=-1,
         max_ai_queries_monthly=-1,
         max_halp_monthly=-1,
+        max_link_campaigns=-1,
+        max_links_per_campaign=-1,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=True,
         sla=True,
     ),
@@ -132,8 +153,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=100_000,
         max_ai_queries_monthly=60,
         max_halp_monthly=20,
+        max_link_campaigns=5,
+        max_links_per_campaign=20,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=False,
         sla=False,
     ),
@@ -147,8 +171,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=500_000,
         max_ai_queries_monthly=225,
         max_halp_monthly=40,
+        max_link_campaigns=15,
+        max_links_per_campaign=50,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=False,
         sla=False,
     ),
@@ -162,8 +189,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=2_000_000,
         max_ai_queries_monthly=550,
         max_halp_monthly=-1,
+        max_link_campaigns=-1,
+        max_links_per_campaign=-1,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=True,
         sla=False,
     ),
@@ -177,8 +207,11 @@ PLANS: dict[str, PlanLimits] = {
         max_rows_per_dataset=100_000,
         max_ai_queries_monthly=60,
         max_halp_monthly=20,
+        max_link_campaigns=5,
+        max_links_per_campaign=20,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=False,
         sla=False,
     ),
@@ -191,8 +224,12 @@ PLANS: dict[str, PlanLimits] = {
         max_alerts=10,
         max_rows_per_dataset=500_000,
         max_ai_queries_monthly=225,
+        max_halp_monthly=40,
+        max_link_campaigns=15,
+        max_links_per_campaign=50,
         allow_embed=True,
         allow_ai=True,
+        allow_link_analytics=True,
         allow_white_label=False,
         sla=False,
     ),
@@ -237,32 +274,38 @@ def get_effective_limits(
     if not has_addons:
         return base
     return {
-        "dashboards":  base["dashboards"] + addon_packs * ADDON_PACK_DASHBOARDS + addon_dashboards * ADDON_DASH_DASHBOARDS if base["dashboards"] != -1 else -1,
-        "datasets":    base["datasets"]   + addon_packs * ADDON_PACK_DATASETS   + addon_datasets   * ADDON_DATASET_DATASETS if base["datasets"]   != -1 else -1,
-        "users":       base["users"]      + addon_packs * ADDON_PACK_USERS      if base["users"]      != -1 else -1,
-        "alerts":      base["alerts"],
-        "ai_queries":  base.get("ai_queries", 0) + addon_ai_queries * ADDON_AI_QUESTIONS if base.get("ai_queries", 0) != -1 else -1,
-        "rows":        base.get("rows", -1) + addon_row_packs * ADDON_ROW_PACK_ROWS if base.get("rows", -1) != -1 else -1,
-        "white_label": base["white_label"],
-        "ai":          base["ai"],
-        "embed":       base["embed"],
-        "sla":         base["sla"],
+        "dashboards":         base["dashboards"] + addon_packs * ADDON_PACK_DASHBOARDS + addon_dashboards * ADDON_DASH_DASHBOARDS if base["dashboards"] != -1 else -1,
+        "datasets":           base["datasets"]   + addon_packs * ADDON_PACK_DATASETS   + addon_datasets   * ADDON_DATASET_DATASETS if base["datasets"]   != -1 else -1,
+        "users":              base["users"]      + addon_packs * ADDON_PACK_USERS      if base["users"]      != -1 else -1,
+        "alerts":             base["alerts"],
+        "ai_queries":         base.get("ai_queries", 0) + addon_ai_queries * ADDON_AI_QUESTIONS if base.get("ai_queries", 0) != -1 else -1,
+        "rows":               base.get("rows", -1) + addon_row_packs * ADDON_ROW_PACK_ROWS if base.get("rows", -1) != -1 else -1,
+        "link_campaigns":     base.get("link_campaigns", 1),
+        "links_per_campaign": base.get("links_per_campaign", 5),
+        "white_label":        base["white_label"],
+        "ai":                 base["ai"],
+        "link_analytics":     base.get("link_analytics", False),
+        "embed":              base["embed"],
+        "sla":                base["sla"],
     }
 
 # ── Dicts legados usados em partes do código que ainda lêem como dict ────────
 
 PLAN_LIMITS: dict[str, dict] = {
     key: {
-        "dashboards":    p.max_dashboards,
-        "datasets":      p.max_datasets,
-        "users":         p.max_users,
-        "alerts":        p.max_alerts,
-        "rows":          p.max_rows_per_dataset,
-        "ai_queries":    p.max_ai_queries_monthly,
-        "white_label":   p.allow_white_label,
-        "ai":            p.allow_ai,
-        "embed":         p.allow_embed,
-        "sla":           p.sla,
+        "dashboards":          p.max_dashboards,
+        "datasets":            p.max_datasets,
+        "users":               p.max_users,
+        "alerts":              p.max_alerts,
+        "rows":                p.max_rows_per_dataset,
+        "ai_queries":          p.max_ai_queries_monthly,
+        "link_campaigns":      p.max_link_campaigns,
+        "links_per_campaign":  p.max_links_per_campaign,
+        "white_label":         p.allow_white_label,
+        "ai":                  p.allow_ai,
+        "link_analytics":      p.allow_link_analytics,
+        "embed":               p.allow_embed,
+        "sla":                 p.sla,
     }
     for key, p in PLANS.items()
 }

@@ -171,6 +171,47 @@ async def check_ai_query_limit(
         )
 
 
+async def check_link_campaign_limit(
+    db: AsyncSession, tenant_id: uuid.UUID, plan: str
+) -> None:
+    from app.modules.links.models import LinkCampaign
+    limits = PLANS.get(plan, PLANS["free"])
+    max_campaigns = limits.max_link_campaigns
+    if max_campaigns == -1:
+        return
+    count = await db.scalar(
+        select(func.count()).select_from(LinkCampaign).where(LinkCampaign.tenant_id == tenant_id)
+    )
+    if (count or 0) >= max_campaigns:
+        next_plan = _next_plan(plan)
+        raise PlanLimitError(
+            f"Limite de {max_campaigns} campanha(s) de links atingido no plano {PLAN_NAMES.get(plan, plan)}. "
+            f"Faça upgrade para o plano {next_plan}."
+        )
+
+
+async def check_link_per_campaign_limit(
+    db: AsyncSession, tenant_id: uuid.UUID, campaign_id: uuid.UUID, plan: str
+) -> None:
+    from app.modules.links.models import ShortLink
+    limits = PLANS.get(plan, PLANS["free"])
+    max_links = limits.max_links_per_campaign
+    if max_links == -1:
+        return
+    count = await db.scalar(
+        select(func.count()).select_from(ShortLink).where(
+            ShortLink.campaign_id == campaign_id,
+            ShortLink.tenant_id == tenant_id,
+        )
+    )
+    if (count or 0) >= max_links:
+        next_plan = _next_plan(plan)
+        raise PlanLimitError(
+            f"Limite de {max_links} link(s) por campanha atingido no plano {PLAN_NAMES.get(plan, plan)}. "
+            f"Faça upgrade para o plano {next_plan}."
+        )
+
+
 async def check_halp_limit(
     db: AsyncSession, tenant_id: uuid.UUID, plan: str
 ) -> None:

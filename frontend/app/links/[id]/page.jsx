@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useToast } from '@/lib/toast'
@@ -9,6 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://jarbis.cc'
 const DEVICE_COLORS = { mobile: '#7c3aed', desktop: '#a78bfa', tablet: '#ddd6fe', Outro: '#e5e7eb' }
+const BROWSER_COLORS = ['#7c3aed', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
 
 // ── Ícones ─────────────────────────────────────────────────────────────────
 function IconBack() {
@@ -29,6 +31,15 @@ function IconEdit() {
 function IconExternalLink() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
 }
+function IconLock() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+}
+function IconX() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+}
+function IconChevronRight() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+}
 
 // ── Copy Button ─────────────────────────────────────────────────────────────
 function CopyButton({ text, label = 'Copiar' }) {
@@ -47,7 +58,7 @@ function CopyButton({ text, label = 'Copiar' }) {
 }
 
 // ── Modal: Adicionar link ───────────────────────────────────────────────────
-function AddLinkModal({ campaignId, onClose, onCreated }) {
+function AddLinkModal({ campaignId, planLimits, currentLinksCount, onClose, onCreated }) {
   const [originalUrl, setOriginalUrl] = useState('')
   const [name, setName] = useState('')
   const [customSlug, setCustomSlug] = useState('')
@@ -55,6 +66,9 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
   const [loading, setLoading] = useState(false)
   const [slugError, setSlugError] = useState('')
   const toast = useToast()
+
+  const maxLinks = planLimits?.links_per_campaign ?? 5
+  const atLimit = maxLinks !== -1 && currentLinksCount >= maxLinks
 
   function validateSlug(v) {
     if (!v) { setSlugError(''); return }
@@ -88,22 +102,30 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Adicionar link</h2>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">Links não podem ser removidos após criados — fazem parte do banco de dados da campanha.</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">Links não podem ser removidos após criados - fazem parte do banco de dados da campanha.</p>
+
+        {atLimit && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Limite de {maxLinks} links por campanha atingido no seu plano.</p>
+            <Link href="/configuracoes/planos" className="text-xs text-amber-700 dark:text-amber-400 underline">Fazer upgrade</Link>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">URL de destino *</label>
-            <input autoFocus type="url" value={originalUrl} onChange={e => setOriginalUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            <input autoFocus type="url" value={originalUrl} onChange={e => setOriginalUrl(e.target.value)} placeholder="https://..." disabled={atLimit} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nome identificador *</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="ex: claro_26_03_whatsapp_dark_post" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="ex: claro_26_03_whatsapp_dark_post" disabled={atLimit} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50" />
             <p className="text-xs text-gray-400 mt-1">Use um nome que facilite o De/Para com seus relatórios.</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Slug do link</label>
             <div className="flex gap-2 mb-3">
-              <button type="button" onClick={() => setSlugMode('auto')} className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-colors ${slugMode === 'auto' ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'}`}>Gerar automaticamente</button>
-              <button type="button" onClick={() => setSlugMode('custom')} className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-colors ${slugMode === 'custom' ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'}`}>Personalizar</button>
+              <button type="button" disabled={atLimit} onClick={() => setSlugMode('auto')} className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-colors ${slugMode === 'auto' ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'}`}>Gerar automaticamente</button>
+              <button type="button" disabled={atLimit} onClick={() => setSlugMode('custom')} className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-colors ${slugMode === 'custom' ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'}`}>Personalizar</button>
             </div>
             {slugMode === 'custom' && (
               <div>
@@ -117,7 +139,7 @@ function AddLinkModal({ campaignId, onClose, onCreated }) {
           </div>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancelar</button>
-            <button type="submit" disabled={loading || !originalUrl.trim() || !name.trim() || (slugMode === 'custom' && !!slugError)} className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-sm font-medium text-white transition-colors">{loading ? 'Criando...' : 'Criar link'}</button>
+            <button type="submit" disabled={loading || atLimit || !originalUrl.trim() || !name.trim() || (slugMode === 'custom' && !!slugError)} className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-sm font-medium text-white transition-colors">{loading ? 'Criando...' : 'Criar link'}</button>
           </div>
         </form>
       </div>
@@ -196,15 +218,126 @@ function EditLinkModal({ link, onClose, onSaved }) {
   )
 }
 
-// ── Link Row ────────────────────────────────────────────────────────────────
-function LinkRow({ link, onEdit }) {
-  const shortUrl = `${FRONTEND_URL}/l/${link.slug}`
+// ── Modal: Ver mais analytics ───────────────────────────────────────────────
+function MoreAnalyticsModal({ analytics, label, onClose }) {
+  if (!analytics) return null
+
+  const totalForBrowser = analytics.by_browser?.reduce((s, b) => s + b.clicks, 0) || 0
+  const totalForOS = analytics.by_os?.reduce((s, b) => s + b.clicks, 0) || 0
+
   return (
-    <div className="py-4 border-b border-gray-100 dark:border-gray-800 last:border-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Analytics detalhado</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{label} - últimos 30 dias</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <IconX />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Cliques por hora */}
+          {analytics.by_hour?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Cliques por hora do dia</p>
+              <ResponsiveContainer width="100%" height={100}>
+                <BarChart data={analytics.by_hour} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
+                  <XAxis dataKey="hour" tick={{ fontSize: 9, fill: '#9ca3af' }} tickFormatter={h => `${h}h`} />
+                  <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} />
+                  <Tooltip formatter={v => [v.toLocaleString('pt-BR'), 'Cliques']} labelFormatter={h => `${h}h`} contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                  <Bar dataKey="clicks" fill="#7c3aed" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Navegadores */}
+          {analytics.by_browser?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Navegadores</p>
+              <div className="flex flex-col gap-2">
+                {analytics.by_browser.map((b, i) => (
+                  <div key={b.browser} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
+                    <span className="text-xs text-gray-700 dark:text-gray-300 w-20 truncate">{b.browser}</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${Math.round((b.clicks / (totalForBrowser || 1)) * 100)}%`, background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right tabular-nums">{b.clicks}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sistemas operacionais */}
+          {analytics.by_os?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Sistemas operacionais</p>
+              <div className="flex flex-col gap-2">
+                {analytics.by_os.map((o, i) => (
+                  <div key={o.os} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
+                    <span className="text-xs text-gray-700 dark:text-gray-300 w-20 truncate">{o.os}</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${Math.round((o.clicks / (totalForOS || 1)) * 100)}%`, background: BROWSER_COLORS[i % BROWSER_COLORS.length] }} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right tabular-nums">{o.clicks}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Países completo */}
+          {analytics.by_country?.filter(c => c.country && c.country !== 'Desconhecido').length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Países</p>
+              <div className="flex flex-col gap-2">
+                {analytics.by_country.slice(0, 10).map(c => (
+                  <div key={c.country} className="flex items-center gap-2">
+                    <span className="text-xs text-gray-700 dark:text-gray-300 w-24 truncate">{c.country || 'Desconhecido'}</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-violet-400 rounded-full" style={{ width: `${Math.round((c.clicks / analytics.by_country[0].clicks) * 100)}%` }} />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right tabular-nums">{c.clicks}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Link Row ────────────────────────────────────────────────────────────────
+function LinkRow({ link, clicksFromCH, isSelected, canSeeAnalytics, onSelect, onEdit }) {
+  const shortUrl = `${FRONTEND_URL}/l/${link.slug}`
+  const clicks = clicksFromCH ?? link.clicks_cached
+
+  return (
+    <div
+      className={`py-4 border-b border-gray-100 dark:border-gray-800 last:border-0 rounded-xl transition-colors ${isSelected ? 'bg-violet-50 dark:bg-violet-900/10 -mx-2 px-2' : ''}`}
+    >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{link.name}</p>
+            <button
+              onClick={() => canSeeAnalytics && onSelect(link)}
+              className={`text-sm font-semibold truncate text-left transition-colors ${canSeeAnalytics ? 'cursor-pointer hover:text-violet-600 dark:hover:text-violet-400' : 'cursor-default'} ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-gray-900 dark:text-gray-100'}`}
+            >
+              {link.name}
+            </button>
+            {canSeeAnalytics && (
+              <span className={`text-xs shrink-0 transition-colors ${isSelected ? 'text-violet-500' : 'text-gray-300 dark:text-gray-600'}`}>
+                <IconChevronRight />
+              </span>
+            )}
             <button onClick={() => onEdit(link)} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors shrink-0">
               <IconEdit />
             </button>
@@ -222,7 +355,7 @@ function LinkRow({ link, onEdit }) {
           </div>
         </div>
         <div className="text-right shrink-0 pt-1">
-          <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{link.clicks_cached.toLocaleString('pt-BR')}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{clicks.toLocaleString('pt-BR')}</p>
           <p className="text-xs text-gray-400">cliques</p>
         </div>
       </div>
@@ -231,7 +364,22 @@ function LinkRow({ link, onEdit }) {
 }
 
 // ── Analytics Panel ─────────────────────────────────────────────────────────
-function AnalyticsPanel({ analytics, loading }) {
+function AnalyticsPanel({ analytics, loading, canSeeAnalytics, onShowMore }) {
+  if (!canSeeAnalytics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4 text-violet-500">
+          <IconLock />
+        </div>
+        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Analytics bloqueado</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">Veja de onde vêm os cliques, quais dispositivos e muito mais em qualquer plano pago.</p>
+        <Link href="/configuracoes/planos" className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-xs font-semibold text-white transition-colors">
+          Ver planos
+        </Link>
+      </div>
+    )
+  }
+
   if (loading) return (
     <div className="space-y-3">
       {[80, 120, 100].map((h, i) => <div key={i} style={{ height: h }} className="rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />)}
@@ -254,7 +402,7 @@ function AnalyticsPanel({ analytics, loading }) {
     <div className="space-y-5">
       <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-xl p-4 text-center">
         <p className="text-3xl font-bold text-white tabular-nums">{analytics.total_clicks.toLocaleString('pt-BR')}</p>
-        <p className="text-xs text-violet-200 mt-0.5">cliques totais · últimos 30 dias</p>
+        <p className="text-xs text-violet-200 mt-0.5">cliques totais - últimos 30 dias</p>
       </div>
 
       {analytics.by_day.length > 0 && (
@@ -309,6 +457,13 @@ function AnalyticsPanel({ analytics, loading }) {
           </div>
         </div>
       )}
+
+      <button
+        onClick={onShowMore}
+        className="w-full py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 hover:border-violet-300 hover:text-violet-600 dark:hover:border-violet-700 dark:hover:text-violet-400 transition-colors"
+      >
+        Ver mais dados
+      </button>
     </div>
   )
 }
@@ -319,42 +474,92 @@ export default function CampaignPage({ params }) {
   const router = useRouter()
   const [campaign, setCampaign] = useState(null)
   const [links, setLinks] = useState([])
-  const [analytics, setAnalytics] = useState(null)
+  const [billing, setBilling] = useState(null)
+  const [analytics, setAnalytics] = useState(null)          // campanha
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
+  const [selectedLink, setSelectedLink] = useState(null)
+  const [linkAnalytics, setLinkAnalytics] = useState(null)  // link individual
+  const [linkAnalyticsLoading, setLinkAnalyticsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState(null)
+  const [showMoreModal, setShowMoreModal] = useState(false)
+
+  const canSeeAnalytics = billing?.limits?.link_analytics === true
+
+  // Contagem de cliques por link vinda do ClickHouse (fonte de verdade para pagantes)
+  function getClickCount(link) {
+    if (analytics?.links) {
+      const found = analytics.links.find(l => l.link_id === link.id)
+      if (found !== undefined) return found.clicks
+    }
+    return link.clicks_cached
+  }
+
+  // Analytics ativo: link selecionado ou campanha
+  const activeAnalytics = selectedLink ? linkAnalytics : analytics
+  const activeAnalyticsLoading = selectedLink ? linkAnalyticsLoading : analyticsLoading
+  const activeLabel = selectedLink ? selectedLink.name : (campaign?.name || 'Campanha')
 
   useEffect(() => {
     Promise.all([
       api.fetch(`/links/campaigns`),
       api.fetch(`/links/campaigns/${id}/links`),
-    ]).then(([campaigns, linksData]) => {
+      api.billing.status(),
+    ]).then(([campaigns, linksData, billingData]) => {
       setCampaign(campaigns.find(c => c.id === id) || null)
       setLinks(linksData)
+      setBilling(billingData)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [id])
 
   useEffect(() => {
     if (!loading) {
+      if (canSeeAnalytics) {
+        api.fetch(`/links/campaigns/${id}/analytics?days=30`)
+          .then(data => { setAnalytics(data); setAnalyticsLoading(false) })
+          .catch(() => setAnalyticsLoading(false))
+      } else {
+        setAnalyticsLoading(false)
+      }
+    }
+  }, [id, loading, canSeeAnalytics])
+
+  function handleSelectLink(link) {
+    if (!canSeeAnalytics) return
+    if (selectedLink?.id === link.id) {
+      // Deseleciona - volta para campanha
+      setSelectedLink(null)
+      setLinkAnalytics(null)
+      return
+    }
+    setSelectedLink(link)
+    setLinkAnalytics(null)
+    setLinkAnalyticsLoading(true)
+    api.fetch(`/links/${link.id}/analytics?days=30`)
+      .then(data => { setLinkAnalytics(data); setLinkAnalyticsLoading(false) })
+      .catch(() => setLinkAnalyticsLoading(false))
+  }
+
+  function handleLinkCreated(link) {
+    setLinks(prev => [link, ...prev])
+    if (canSeeAnalytics) {
+      setAnalyticsLoading(true)
       api.fetch(`/links/campaigns/${id}/analytics?days=30`)
         .then(data => { setAnalytics(data); setAnalyticsLoading(false) })
         .catch(() => setAnalyticsLoading(false))
     }
-  }, [id, loading])
-
-  function handleLinkCreated(link) {
-    setLinks(prev => [link, ...prev])
-    setAnalyticsLoading(true)
-    api.fetch(`/links/campaigns/${id}/analytics?days=30`)
-      .then(data => { setAnalytics(data); setAnalyticsLoading(false) })
-      .catch(() => setAnalyticsLoading(false))
   }
 
   function handleLinkSaved(updated) {
     setLinks(prev => prev.map(l => l.id === updated.id ? updated : l))
+    if (selectedLink?.id === updated.id) {
+      setSelectedLink(updated)
+    }
   }
+
+  const maxLinks = billing?.limits?.links_per_campaign ?? 5
 
   return (
     <AppLayout>
@@ -383,12 +588,20 @@ export default function CampaignPage({ params }) {
 
         {/* Layout */}
         <div className="flex flex-col xl:flex-row gap-6">
-          {/* Links - ocupa o espaço principal */}
+          {/* Links - espaço principal */}
           <div className="flex-1 min-w-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Links da campanha</h2>
-              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{links.length} {links.length === 1 ? 'link' : 'links'}</span>
+              <div className="flex items-center gap-2">
+                {maxLinks !== -1 && (
+                  <span className="text-xs text-gray-400">{links.length}/{maxLinks}</span>
+                )}
+                <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{links.length} {links.length === 1 ? 'link' : 'links'}</span>
+              </div>
             </div>
+            {canSeeAnalytics && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">Clique no nome do link para ver os dados individuais.</p>
+            )}
 
             {loading ? (
               <div className="space-y-4">{[1, 2].map(i => <div key={i} className="h-20 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />)}</div>
@@ -400,23 +613,66 @@ export default function CampaignPage({ params }) {
                 </button>
               </div>
             ) : (
-              links.map(link => <LinkRow key={link.id} link={link} onEdit={setEditingLink} />)
+              links.map(link => (
+                <LinkRow
+                  key={link.id}
+                  link={link}
+                  clicksFromCH={canSeeAnalytics ? (analytics?.links?.find(l => l.link_id === link.id)?.clicks ?? null) : null}
+                  isSelected={selectedLink?.id === link.id}
+                  canSeeAnalytics={canSeeAnalytics}
+                  onSelect={handleSelectLink}
+                  onEdit={setEditingLink}
+                />
+              ))
             )}
           </div>
 
           {/* Analytics - coluna fixa à direita */}
           <div className="w-full xl:w-72 shrink-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Analytics</h2>
-              <span className="text-xs text-gray-400">30 dias</span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate">
+                  {selectedLink ? `Analytics: ${selectedLink.name}` : 'Analytics'}
+                </h2>
+                {!selectedLink && <span className="text-xs text-gray-400">30 dias</span>}
+              </div>
+              {selectedLink && (
+                <button
+                  onClick={() => { setSelectedLink(null); setLinkAnalytics(null) }}
+                  className="ml-2 p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
+                  title="Voltar ao total da campanha"
+                >
+                  <IconX />
+                </button>
+              )}
             </div>
-            <AnalyticsPanel analytics={analytics} loading={analyticsLoading} />
+            <AnalyticsPanel
+              analytics={activeAnalytics}
+              loading={activeAnalyticsLoading}
+              canSeeAnalytics={canSeeAnalytics}
+              onShowMore={() => setShowMoreModal(true)}
+            />
           </div>
         </div>
       </div>
 
-      {showAddModal && <AddLinkModal campaignId={id} onClose={() => setShowAddModal(false)} onCreated={handleLinkCreated} />}
+      {showAddModal && (
+        <AddLinkModal
+          campaignId={id}
+          planLimits={billing?.limits}
+          currentLinksCount={links.length}
+          onClose={() => setShowAddModal(false)}
+          onCreated={handleLinkCreated}
+        />
+      )}
       {editingLink && <EditLinkModal link={editingLink} onClose={() => setEditingLink(null)} onSaved={handleLinkSaved} />}
+      {showMoreModal && (
+        <MoreAnalyticsModal
+          analytics={activeAnalytics}
+          label={activeLabel}
+          onClose={() => setShowMoreModal(false)}
+        />
+      )}
     </AppLayout>
   )
 }
