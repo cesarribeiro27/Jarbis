@@ -58,17 +58,22 @@ async def redirect_link(slug: str, request: Request, db: AsyncSession = Depends(
     await db.commit()
 
     # Registra clique sem bloquear o redirect
-    asyncio.create_task(
-        asyncio.to_thread(
-            service.record_click,
-            str(link.tenant_id),
-            str(link.id),
-            slug,
-            ip,
-            user_agent,
-            referrer,
-        )
-    )
+    async def _record():
+        try:
+            await asyncio.to_thread(
+                service.record_click,
+                str(link.tenant_id),
+                str(link.id),
+                slug,
+                ip,
+                user_agent,
+                referrer,
+            )
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error("[ClickHouse] Task falhou para slug=%s: %s", slug, exc, exc_info=True)
+
+    asyncio.create_task(_record())
 
     return RedirectResponse(url=link.original_url, status_code=302)
 

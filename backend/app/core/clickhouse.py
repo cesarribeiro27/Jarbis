@@ -5,14 +5,17 @@ Usado exclusivamente pelo módulo links para registrar e consultar
 eventos de clique com alta performance.
 """
 
+import logging
 import clickhouse_connect
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _client = None
 
 
 def get_clickhouse():
-    """Retorna cliente ClickHouse singleton (conexão HTTPS)."""
+    """Retorna cliente ClickHouse singleton (conexão HTTPS). Reseta em caso de falha."""
     global _client
     if _client is None:
         _client = clickhouse_connect.get_client(
@@ -24,6 +27,12 @@ def get_clickhouse():
             secure=True,
         )
     return _client
+
+
+def reset_clickhouse():
+    """Força reconexão na próxima chamada a get_clickhouse()."""
+    global _client
+    _client = None
 
 
 def ensure_tables():

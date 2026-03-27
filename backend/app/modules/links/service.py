@@ -8,10 +8,13 @@ Responsabilidades:
 """
 
 import asyncio
+import logging
 import random
 import string
 import uuid
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -249,38 +252,45 @@ def record_click(
     Deve ser chamado via asyncio.to_thread para não bloquear o event loop.
     """
     if not settings.clickhouse_host:
+        logger.warning("[ClickHouse] CLICKHOUSE_HOST não configurado — clique não registrado (link_id=%s)", link_id)
         return
 
-    device_type, browser = _parse_user_agent(user_agent)
-    os_name = _parse_os(user_agent)
+    try:
+        device_type, browser = _parse_user_agent(user_agent)
+        os_name = _parse_os(user_agent)
 
-    from app.core.geoip import lookup as _geoip_lookup
-    country, city = _geoip_lookup(ip_address)
+        from app.core.geoip import lookup as _geoip_lookup
+        country, city = _geoip_lookup(ip_address)
 
-    client = get_clickhouse()
-    client.insert(
-        "link_events",
-        [[
-            str(uuid.uuid4()),
-            tenant_id,
-            link_id,
-            slug,
-            datetime.now(timezone.utc),
-            ip_address,
-            country,
-            city,
-            device_type,
-            browser,
-            os_name,
-            referrer,
-            user_agent,
-        ]],
-        column_names=[
-            "event_id", "tenant_id", "link_id", "slug", "clicked_at",
-            "ip_address", "country", "city", "device_type", "browser",
-            "os", "referrer", "user_agent",
-        ],
-    )
+        client = get_clickhouse()
+        client.insert(
+            "link_events",
+            [[
+                str(uuid.uuid4()),
+                tenant_id,
+                link_id,
+                slug,
+                datetime.now(timezone.utc),
+                ip_address,
+                country,
+                city,
+                device_type,
+                browser,
+                os_name,
+                referrer,
+                user_agent,
+            ]],
+            column_names=[
+                "event_id", "tenant_id", "link_id", "slug", "clicked_at",
+                "ip_address", "country", "city", "device_type", "browser",
+                "os", "referrer", "user_agent",
+            ],
+        )
+        logger.debug("[ClickHouse] Clique registrado link_id=%s slug=%s", link_id, slug)
+    except Exception as exc:
+        from app.core.clickhouse import reset_clickhouse
+        reset_clickhouse()
+        logger.error("[ClickHouse] Falha ao registrar clique link_id=%s: %s", link_id, exc, exc_info=True)
 
 
 # ── Analytics ──────────────────────────────────────────────────────────────
