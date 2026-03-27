@@ -70,6 +70,7 @@ class DatasetSummary(BaseModel):
     columns: list[str]
     row_count: int
     column_types: dict | None = None
+    column_semantics: dict | None = None
     is_demo: bool = False
     api_url: str | None = None
     last_synced_at: str | None = None
@@ -724,24 +725,26 @@ async def list_datasets(
                 datasets.append(ds)
     else:
         datasets = await service.list(current_user.tenant_id)
-    from .query_engine import detect_column_types
-    return [
-        DatasetSummary(
+    from .query_engine import detect_column_types, infer_column_semantics
+    result = []
+    for ds in datasets:
+        col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
+        result.append(DatasetSummary(
             id=ds.id,
             name=ds.name,
             type=ds.type,
             columns=ds.columns or [],
             row_count=ds.row_count,
-            column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+            column_types=col_types,
+            column_semantics=infer_column_semantics(col_types, ds.type, ds.columns),
             is_demo=bool(ds.is_demo),
             api_url=ds.api_url,
             last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
             refresh_interval_minutes=ds.refresh_interval_minutes,
             next_refresh_at=ds.next_refresh_at.isoformat() if ds.next_refresh_at else None,
             computed_columns=ds.computed_columns or [],
-        )
-        for ds in datasets
-    ]
+        ))
+    return result
 
 
 @router.get(
@@ -754,15 +757,17 @@ async def get_onboarding_dataset(
     current_user: User = Depends(get_current_active_user),
 ):
     from .onboarding import ensure_onboarding_dataset
-    from .query_engine import detect_column_types
+    from .query_engine import detect_column_types, infer_column_semantics
     ds = await ensure_onboarding_dataset(current_user.tenant_id, db)
+    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
     return DatasetSummary(
         id=ds.id,
         name=ds.name,
         type=ds.type,
         columns=ds.columns or [],
         row_count=ds.row_count,
-        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        column_types=col_types,
+        column_semantics=infer_column_semantics(col_types, ds.type, ds.columns),
         is_demo=True,
     )
 
@@ -958,11 +963,13 @@ async def upload_dataset(
     max_rows = _limits.get("rows", -1)
     service = DatasetService(db)
     ds = await service.create_from_file(effective_tenant_id, name, filename, content, sheet_name=sheet_name, max_rows=max_rows)
-    from .query_engine import detect_column_types
+    from .query_engine import detect_column_types, infer_column_semantics
+    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
-        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        column_types=col_types,
+        column_semantics=infer_column_semantics(col_types, ds.type, ds.columns),
     )
 
 
@@ -1140,11 +1147,13 @@ async def create_links_dataset(
     await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     service = DatasetService(db)
     ds = await service.create_from_links_campaign(current_user.tenant_id, campaign_id, name, days)
-    from .query_engine import detect_column_types
+    from .query_engine import detect_column_types, infer_column_semantics
+    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
-        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        column_types=col_types,
+        column_semantics=infer_column_semantics(col_types, ds.type, ds.columns),
         last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
     )
 
@@ -1174,11 +1183,13 @@ async def sync_links_dataset(
     except Exception:
         pass
 
-    from .query_engine import detect_column_types
+    from .query_engine import detect_column_types, infer_column_semantics
+    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
-        column_types=detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {},
+        column_types=col_types,
+        column_semantics=infer_column_semantics(col_types, ds.type, ds.columns),
         last_synced_at=ds.last_synced_at.isoformat() if ds.last_synced_at else None,
     )
 

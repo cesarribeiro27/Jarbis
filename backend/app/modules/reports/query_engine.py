@@ -497,6 +497,61 @@ def detect_column_types(rows: list[dict], sample_size: int = 50) -> dict[str, st
             result[col] = "number"
             continue
 
+        # Testar se é booleano (Sim/Não, True/False, etc.)
+        _BOOL_VALS = {'sim', 'não', 'nao', 'yes', 'no', 'true', 'false', 'ativo', 'inativo'}
+        unique_lower = {v.strip().lower() for v in str_vals}
+        if len(unique_lower) <= 2 and unique_lower.issubset(_BOOL_VALS):
+            result[col] = "boolean"
+            continue
+
         result[col] = "text"
 
+    return result
+
+
+# Semântica predefinida para datasets de Links (colunas fixas e conhecidas)
+_LINKS_SEMANTICS: dict[str, str] = {
+    "data":        "date",
+    "link":        "identifier",
+    "ativo":       "boolean",
+    "dispositivo": "category",
+    "navegador":   "category",
+    "sistema":     "category",
+    "pais":        "category",
+    "cidade":      "category",
+    "fonte":       "category",
+    "cliques":     "metric",
+}
+
+
+def infer_column_semantics(
+    column_types: dict[str, str],
+    dataset_type: str = "",
+    columns: list[str] | None = None,
+) -> dict[str, str]:
+    """
+    Deriva a semântica de cada coluna a partir do tipo detectado.
+
+    Tipos semânticos:
+    - 'metric'     → número agregável (soma, média) — ex: cliques, receita
+    - 'identifier' → texto que identifica uma entidade única — ex: nome do link, produto
+    - 'category'   → dimensão categórica — ex: dispositivo, país
+    - 'date'       → dimensão temporal
+    - 'boolean'    → filtro binário — ex: ativo, pago
+    """
+    if dataset_type == "links":
+        return {c: _LINKS_SEMANTICS.get(c, "category") for c in (columns or [])}
+
+    result: dict[str, str] = {}
+    cols = columns or list(column_types.keys())
+    for col in cols:
+        t = column_types.get(col, "text")
+        if t == "number":
+            result[col] = "metric"
+        elif t == "date":
+            result[col] = "date"
+        elif t == "boolean":
+            result[col] = "boolean"
+        else:
+            result[col] = "category"
     return result

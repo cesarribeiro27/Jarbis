@@ -2858,13 +2858,15 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
     { value: 'none',  label: t('agg.none') },
   ]
   const [colTypes, setColTypes] = useState({})
+  const [colSemantics, setColSemantics] = useState({})
 
   useEffect(() => {
     const ds = datasets.find(d => d.id === block.dataset_id)
-    if (!isUUID(block.dataset_id) || !ds) { setColTypes({}); return }
+    if (!isUUID(block.dataset_id) || !ds) { setColTypes({}); setColSemantics({}); return }
     // Usa column_types que já vem no DatasetSummary da API
     if (ds.column_types && Object.keys(ds.column_types).length > 0) {
       setColTypes(ds.column_types)
+      setColSemantics(ds.column_semantics || {})
       return
     }
     // Fallback: busca do endpoint dedicado se não veio no summary
@@ -2885,6 +2887,13 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
     onChange({ ...block, label_col: col || null, config: { ...(block.config || {}), dim_type: detectedType, granularity: detectedType === 'date' ? (block.config?.granularity || 'month') : null } })
   }
 
+  function selectValueCol(col) {
+    // Sugere agregação padrão baseada na semântica: identifier → count_distinct, metric → sum
+    const semantic = colSemantics[col]
+    const suggestedAgg = semantic === 'identifier' ? 'count_distinct' : semantic === 'boolean' ? 'count' : undefined
+    onChange({ ...block, value_col: col || null, ...(suggestedAgg ? { agg: suggestedAgg } : {}) })
+  }
+
   const selectedDataset = datasets.find(d => d.id === block.dataset_id)
   const columns = selectedDataset?.columns || []
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
@@ -2892,6 +2901,13 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
   const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary', 'histogram', 'bullet', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type)
   const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked', 'heatmap', 'waterfall', 'radar'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
+
+  // Ícone semântico para seletores de coluna
+  const SEMANTIC_ICON = { metric: '#', identifier: '⊞', category: 'Abc', date: '📅', boolean: '◎' }
+  const getColLabel = (col) => {
+    const sem = colSemantics[col]
+    return sem ? `${SEMANTIC_ICON[sem] || ''} ${col}` : col
+  }
 
   const COL_TYPE_BADGE = { text: 'Aa', number: '#', date: '📅' }
   const [configTab, setConfigTab] = useState(() => block.dataset_id ? 'visual' : 'dados')
@@ -3085,7 +3101,7 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
                     onChange={e => selectLabelCol(e.target.value || '')}
                   >
                     <option value="">— Selecione —</option>
-                    {dimColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                    {dimColumns.map(c => <option key={c} value={c}>{getColLabel(c)}</option>)}
                   </select>
                   {isDimDate && (
                     <div className="flex gap-1 mt-1.5">
@@ -3110,11 +3126,11 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
                     <select
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
                       value={block.value_col || ''}
-                      onChange={e => upd('value_col', e.target.value || null)}
+                      onChange={e => e.target.value ? selectValueCol(e.target.value) : upd('value_col', null)}
                     >
                       <option value="">— Selecione —</option>
                       <option value="__count__">Contagem de linhas</option>
-                      {metricColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                      {metricColumns.map(c => <option key={c} value={c}>{getColLabel(c)}</option>)}
                     </select>
                     {block.value_col && block.value_col !== '__count__' && (
                       <select
@@ -5339,9 +5355,19 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
                   <div className="divide-y divide-gray-50">
                     {filtered.map(col => {
                       const type = colTypes[col] || 'text'
+                      const semantic = (ds.column_semantics || {})[col] || (type === 'number' ? 'metric' : type === 'date' ? 'date' : type === 'boolean' ? 'boolean' : 'category')
                       const isDateCol = type === 'date'
                       const key = `${ds.id}:${col}`
                       const isExpanded = expandedDates.has(key)
+
+                      const SEMANTIC_STYLE = {
+                        metric:     { cls: 'text-violet-700 bg-violet-50', icon: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>, tip: 'Métrica - use Soma ou Média' },
+                        identifier: { cls: 'text-teal-700 bg-teal-50',    icon: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8M12 3v4"/></svg>, tip: 'Identificador - use Contagem distinta' },
+                        category:   { cls: 'text-blue-700 bg-blue-50',    icon: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/></svg>, tip: 'Categoria - use como Dimensão' },
+                        date:       { cls: 'text-amber-700 bg-amber-50',  icon: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, tip: 'Data - use como eixo temporal' },
+                        boolean:    { cls: 'text-emerald-700 bg-emerald-50', icon: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>, tip: 'Booleano - use como Filtro' },
+                      }
+                      const { cls, icon, tip } = SEMANTIC_STYLE[semantic] || SEMANTIC_STYLE.category
 
                       return (
                         <div key={col}>
@@ -5369,10 +5395,8 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
                               }}
                               className="flex-1 flex items-center gap-2 px-3 py-1.5 text-left"
                             >
-                              <span className={`text-[11px] font-bold w-5 text-center shrink-0 rounded px-0.5 ${
-                                type === 'number' ? 'text-green-600 bg-green-50' : type === 'date' ? 'text-orange-600 bg-orange-50' : 'text-blue-600 bg-blue-50'
-                              }`}>
-                                {type === 'number' ? '#' : type === 'date' ? '📅' : 'A'}
+                              <span title={tip} className={`w-5 h-5 flex items-center justify-center shrink-0 rounded ${cls}`}>
+                                {icon}
                               </span>
                               <span className="text-xs text-gray-700 flex-1 truncate">{col}</span>
                               {isDateCol && (
