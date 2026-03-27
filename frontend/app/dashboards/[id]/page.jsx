@@ -3111,8 +3111,8 @@ export default function DashboardDetailPage() {
         </div>
         {showAiPanel && <AiPanel datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} blocks={blocks} onClose={() => setShowAiPanel(false)} onAddBlock={addBlockObject} onAddBlocks={addMultipleBlocks} onSetDateCol={(col) => setGlobalDateFilter(f => ({ ...f, dateCol: col }))} onShowDateFilter={setShowDateFilter} />}
         {showDiagnostico && <DiagnosticoPanel reportId={report.id} datasets={datasets} onClose={() => setShowDiagnostico(false)} onAddBlock={addBlockObject} onExportInsights={exportInsightsToDashboard} />}
-        {showColumnDiscovery && <ColumnDiscovery datasets={datasets} onClose={() => setShowColumnDiscovery(false)} onAddBlock={addBlockObject} onOpenAdvanced={() => { setShowColumnDiscovery(false); setShowAddBlockDialog(true) }} />}
-        {showAddBlockDialog && <AddBlockDialog datasets={datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
+        {showColumnDiscovery && <ColumnDiscovery datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} onClose={() => setShowColumnDiscovery(false)} onAddBlock={addBlockObject} onOpenAdvanced={() => { setShowColumnDiscovery(false); setShowAddBlockDialog(true) }} />}
+        {showAddBlockDialog && <AddBlockDialog datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
 
         {showVersions && (
           <div className="fixed inset-0 z-[200] flex">
