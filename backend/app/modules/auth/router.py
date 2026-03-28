@@ -407,22 +407,34 @@ async def reset_password(
 
 # ─── OAuth endpoints ──────────────────────────────────────────────────────────
 
-from app.modules.auth.oauth import PROVIDERS, get_authorization_url, exchange_code_for_profile
+from app.modules.auth.oauth import PROVIDERS, get_authorization_url, exchange_code_for_profile, generate_csrf_token
 
 
 @router.get("/oauth/{provider}/authorize", summary="Retorna URL de autorização OAuth")
-async def oauth_authorize(provider: str):
+async def oauth_authorize(provider: str, ref: str | None = None):
+    from fastapi.responses import JSONResponse
     if provider not in PROVIDERS:
         raise HTTPException(status_code=400, detail=f"Provedor '{provider}' não suportado.")
     cfg = PROVIDERS[provider]
     if not cfg["client_id"]():
         raise HTTPException(status_code=503, detail=f"Provedor '{provider}' não configurado.")
-    url = get_authorization_url(provider)
-    return {"url": url}
+    csrf_token = generate_csrf_token()
+    url = get_authorization_url(provider, csrf_token=csrf_token, ref_code=ref)
+    response = JSONResponse({"url": url})
+    response.set_cookie(
+        key="oauth_csrf",
+        value=csrf_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=600,  # 10 minutos — tempo suficiente para completar o fluxo OAuth
+        path="/",
+    )
+    return response
 
 
 @router.get("/oauth/{provider}/callback", summary="Callback OAuth — troca code por JWT", include_in_schema=False)
-async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(get_db), state: str | None = None):
+async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(get_db), state: str | None = None, request: Request = None):
     """
     Recebe o code do provedor, busca/cria usuário e redireciona para o frontend
     com token JWT como query param.
@@ -430,10 +442,23 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     from fastapi.responses import RedirectResponse
     from app.core.security import create_access_token
     from app.modules.tenants.models import Tenant
-    import secrets
+    import secrets as _secrets
 
     if provider not in PROVIDERS:
         raise HTTPException(status_code=400, detail="Provedor inválido.")
+
+    # Validação CSRF: state deve conter o token que foi enviado no cookie
+    csrf_cookie = request.cookies.get("oauth_csrf") if request else None
+    if not csrf_cookie or not state:
+        redirect_url = f"{settings.frontend_url}/auth/callback?error=csrf_missing"
+        return RedirectResponse(url=redirect_url)
+
+    # State format: {csrf_token} ou {csrf_token}:{ref_code}
+    state_parts = state.split(":", 1)
+    state_csrf = state_parts[0]
+    if not _secrets.compare_digest(state_csrf, csrf_cookie):
+        redirect_url = f"{settings.frontend_url}/auth/callback?error=csrf_invalid"
+        return RedirectResponse(url=redirect_url)
 
     try:
         profile = await exchange_code_for_profile(provider, code)
@@ -456,13 +481,13 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     if not user:
         # Cria tenant + usuário
         slug_base = email.split("@")[0].lower().replace(".", "-")
-        slug = f"{slug_base}-{secrets.token_hex(3)}"
+        slug = f"{slug_base}-{_secrets.token_hex(3)}"
         name = profile.get("name") or slug_base
 
-        # state pode conter "provider:REF_CODE" para rastreamento de afiliado
+        # state pode conter ref_code para rastreamento de afiliado: {csrf}:{REF_CODE}
         affiliate_ref = None
-        if state and ":" in state:
-            affiliate_ref = state.split(":", 1)[1].upper() or None
+        if len(state_parts) > 1:
+            affiliate_ref = state_parts[1].upper() or None
 
         from datetime import datetime, timezone, timedelta
         trial_ends = datetime.now(timezone.utc) + timedelta(days=7)
@@ -492,4 +517,6 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     from urllib.parse import quote
     user_data = {"id": str(user.id), "email": user.email, "full_name": user.full_name, "role": user.role}
     redirect_url = f"{settings.frontend_url}/auth/callback?token={token}&user={quote(json.dumps(user_data))}"
-    return RedirectResponse(url=redirect_url)
+    response = RedirectResponse(url=redirect_url)
+    response.delete_cookie("oauth_csrf", path="/")
+    return response

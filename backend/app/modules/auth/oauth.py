@@ -5,6 +5,7 @@ Provedores suportados: google, microsoft, github
 Fluxo: authorization code grant via httpx (sem nova dependência — já no projeto).
 """
 
+import secrets
 import httpx
 from urllib.parse import urlencode
 
@@ -45,15 +46,24 @@ def _redirect_uri(provider: str) -> str:
     return f"{settings.backend_url}/auth/oauth/{provider}/callback"
 
 
-def get_authorization_url(provider: str) -> str:
-    """Retorna a URL de autorização do provedor."""
+def generate_csrf_token() -> str:
+    """Gera um token CSRF aleatório de 32 bytes."""
+    return secrets.token_hex(32)
+
+
+def get_authorization_url(provider: str, csrf_token: str, ref_code: str | None = None) -> str:
+    """
+    Retorna a URL de autorização do provedor.
+    State format: {csrf_token} ou {csrf_token}:{ref_code}
+    """
     cfg = PROVIDERS[provider]
+    state = f"{csrf_token}:{ref_code}" if ref_code else csrf_token
     params = {
         "client_id":     cfg["client_id"](),
         "redirect_uri":  _redirect_uri(provider),
         "scope":         cfg["scopes"],
         "response_type": "code",
-        "state":         provider,  # simples — produção deve usar CSRF token
+        "state":         state,
     }
     if provider == "google":
         params["access_type"] = "online"

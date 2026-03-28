@@ -11,11 +11,15 @@ from fastapi import HTTPException
 
 def _get_fernet():
     from cryptography.fernet import Fernet
+    import hashlib
     key = os.environ.get("DB_ENCRYPTION_KEY", "")
     if not key:
-        # Generate a stable key from SECRET_KEY
-        import hashlib
-        secret = os.environ.get("SECRET_KEY", "jarbis-secret-key-default")
+        secret = os.environ.get("SECRET_KEY", "")
+        if not secret:
+            raise RuntimeError(
+                "DB_ENCRYPTION_KEY (ou SECRET_KEY) não configurado. "
+                "Defina DB_ENCRYPTION_KEY nas variáveis de ambiente antes de usar conectores de banco externo."
+            )
         raw = hashlib.sha256(secret.encode()).digest()
         key = base64.urlsafe_b64encode(raw).decode()
     return Fernet(key.encode() if isinstance(key, str) else key)
