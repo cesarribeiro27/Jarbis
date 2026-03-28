@@ -611,6 +611,7 @@ async def get_public_report(token: str, db: AsyncSession = Depends(get_db)):
 )
 @limiter.limit("200/hour")
 async def public_query_dataset(
+    request: Request,
     token: str,
     dataset_id: uuid.UUID,
     label_col: str,
@@ -940,6 +941,7 @@ async def get_excel_sheets(
 )
 @limiter.limit("10/hour")
 async def upload_dataset(
+    request: Request,
     file: Annotated[UploadFile, File()],
     sheet_name: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
@@ -1465,6 +1467,7 @@ async def get_warp_status(
 )
 @limiter.limit("200/hour")
 async def public_query_dataset_v2(
+    request: Request,
     token: str,
     dataset_id: uuid.UUID,
     req: QueryRequest,
@@ -1754,6 +1757,7 @@ _AI_MODEL_GENERATE = "claude-sonnet-4-6"
 @router.post("/ai-query", summary="Consulta dataset com linguagem natural via IA (Claude)")
 @limiter.limit("20/hour")
 async def ai_query_endpoint(
+    request: Request,
     data: AiQueryRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
