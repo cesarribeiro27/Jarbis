@@ -456,10 +456,10 @@ function DbDatasetModal({ onClose, onCreated }) {
     setError(null)
     setTestResult(null)
     try {
-      const token = localStorage.getItem('jarbis_token')
       const resp = await fetch(`${API_URL}/reports/datasets/database/test`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: form.name || 'test',
           db_type: form.db_type,
@@ -485,10 +485,10 @@ function DbDatasetModal({ onClose, onCreated }) {
     setLoading(true)
     setError(null)
     try {
-      const token = localStorage.getItem('jarbis_token')
       const resp = await fetch(`${API_URL}/reports/datasets/database`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: form.name,
           db_type: form.db_type,
@@ -947,10 +947,9 @@ export default function DatasetsPage() {
   async function handleDbSync(id) {
     setSyncingId(id)
     try {
-      const token = localStorage.getItem('jarbis_token')
       const resp = await fetch(`${API_URL}/reports/datasets/${id}/database/sync`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({ detail: 'Erro ao sincronizar' }))

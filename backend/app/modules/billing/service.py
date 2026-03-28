@@ -427,6 +427,22 @@ class BillingService:
         except stripe.error.SignatureVerificationError:
             raise ValueError("Assinatura do webhook inválida.")
 
+        # Replay protection: rejeita eventos já processados nas últimas 24h
+        event_id = event.get("id", "")
+        if event_id:
+            from app.core.cache import get_redis
+            try:
+                redis = get_redis()
+                redis_key = f"stripe_event:{event_id}"
+                already_processed = await redis.get(redis_key)
+                if already_processed:
+                    return  # idempotente — ignora evento duplicado
+                # Marca como processado com TTL de 24 horas
+                await redis.set(redis_key, "1", ex=86400)
+                await redis.aclose()
+            except Exception:
+                pass  # Redis indisponível — processa mesmo assim (fail open)
+
         etype = event["type"]
         data = event["data"]["object"]
 

@@ -3,11 +3,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 async function apiFetch(path, options = {}) {
   const { _noSuborg, ...fetchOptions } = options
   options = fetchOptions
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
   const suborgId = !_noSuborg && typeof window !== 'undefined' ? localStorage.getItem('jarbis_suborg_id') : null
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(suborgId ? { 'X-Suborg-ID': suborgId } : {}),
     ...options.headers,
   }

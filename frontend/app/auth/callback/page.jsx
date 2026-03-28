@@ -11,7 +11,6 @@ function OAuthCallback() {
   const params = useSearchParams()
 
   useEffect(() => {
-    const token = params.get('token')
     const userRaw = params.get('user')
     const error = params.get('error')
 
@@ -20,13 +19,8 @@ function OAuthCallback() {
       return
     }
 
-    if (!token) {
-      router.replace('/login')
-      return
-    }
-
     async function finishAuth() {
-      localStorage.setItem('jarbis_token', token)
+      // Cookie httpOnly já foi setado pelo backend no redirect OAuth — não precisamos do token aqui
       if (userRaw) {
         try {
           const user = JSON.parse(decodeURIComponent(userRaw))
@@ -40,7 +34,7 @@ function OAuthCallback() {
         try {
           const res = await fetch(`${API_BASE}/reports/preview/${previewToken}/claim`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include',  // usa cookie httpOnly — sem token em memória
           })
           if (res.ok) {
             const claimed = await res.json()

@@ -516,7 +516,9 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     import json
     from urllib.parse import quote
     user_data = {"id": str(user.id), "email": user.email, "full_name": user.full_name, "role": user.role}
-    redirect_url = f"{settings.frontend_url}/auth/callback?token={token}&user={quote(json.dumps(user_data))}"
+    redirect_url = f"{settings.frontend_url}/auth/callback?user={quote(json.dumps(user_data))}"
     response = RedirectResponse(url=redirect_url)
+    # Seta httpOnly cookie com o JWT (mesmo padrão do login regular)
+    _set_auth_cookie(response, token)
     response.delete_cookie("oauth_csrf", path="/")
     return response

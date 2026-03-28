@@ -32,6 +32,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import cache_get, cache_set, get_redis, _sanitize_for_json
+from app.core.rate_limit import limiter
 from app.database import get_db
 from app.modules.auth.dependencies import get_current_active_user, get_effective_tenant_id
 from app.modules.tenants.models import User
@@ -608,6 +609,7 @@ async def get_public_report(token: str, db: AsyncSession = Depends(get_db)):
     "/public/{token}/datasets/{dataset_id}/query",
     summary="Query pública de dataset via share token (sem autenticação)",
 )
+@limiter.limit("200/hour")
 async def public_query_dataset(
     token: str,
     dataset_id: uuid.UUID,
@@ -936,6 +938,7 @@ async def get_excel_sheets(
     status_code=201,
     summary="Upload CSV ou Excel para criar dataset",
 )
+@limiter.limit("10/hour")
 async def upload_dataset(
     file: Annotated[UploadFile, File()],
     sheet_name: str | None = Form(None),
@@ -1460,6 +1463,7 @@ async def get_warp_status(
     response_model=QueryResult,
     summary="Query pública v2 via share token (sem autenticação)",
 )
+@limiter.limit("200/hour")
 async def public_query_dataset_v2(
     token: str,
     dataset_id: uuid.UUID,
@@ -1748,6 +1752,7 @@ _AI_MODEL_GENERATE = "claude-sonnet-4-6"
 
 
 @router.post("/ai-query", summary="Consulta dataset com linguagem natural via IA (Claude)")
+@limiter.limit("20/hour")
 async def ai_query_endpoint(
     data: AiQueryRequest,
     db: AsyncSession = Depends(get_db),

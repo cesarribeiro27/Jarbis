@@ -165,8 +165,8 @@ export default function LandingPage() {
   }, [])
 
   function handlePlanCta(key) {
-    const token = localStorage.getItem('jarbis_token')
-    if (token) {
+    const isLoggedIn = localStorage.getItem('jarbis_user')
+    if (isLoggedIn) {
       router.push(`/checkout?plan=${key}`)
     } else {
       router.push(`/signup?plan=${key}`)
