@@ -263,7 +263,7 @@ function AiCreateModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -865,25 +865,25 @@ export default function DashboardsPage() {
                 {/* ✨ Card hero — Criar com IA */}
                 <div
                   onClick={() => setShowAiCreate(true)}
-                  className="relative rounded-2xl border border-dashed border-violet-300 bg-gradient-to-br from-violet-50 to-violet-100/40 shadow-sm cursor-pointer hover:shadow-md hover:border-violet-500 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+                  className="relative rounded-2xl border border-dashed border-violet-300 dark:border-violet-700 bg-gradient-to-br from-violet-50 to-violet-100/40 dark:from-violet-950/60 dark:to-violet-900/20 shadow-sm cursor-pointer hover:shadow-md hover:border-violet-500 dark:hover:border-violet-500 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
                 >
                   <div className="h-36 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                      <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                       </div>
-                      <span className="text-xs text-violet-500 font-medium">Clique para gerar</span>
+                      <span className="text-xs text-violet-500 dark:text-violet-400 font-medium">Clique para gerar</span>
                     </div>
                   </div>
                   <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl bg-violet-400" />
-                  <div className="px-4 py-3 border-t border-violet-100">
+                  <div className="px-4 py-3 border-t border-violet-100 dark:border-violet-800/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-violet-700">Criar com IA</span>
+                      <span className="text-sm font-bold text-violet-700 dark:text-violet-400">Gerar com Jarbis IA</span>
                       <span className="text-[10px] bg-violet-600 text-white font-semibold px-2 py-0.5 rounded-full">Novo</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">IA analisa seus dados e gera automaticamente</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">IA analisa seus dados e gera automaticamente</p>
                   </div>
                 </div>
 

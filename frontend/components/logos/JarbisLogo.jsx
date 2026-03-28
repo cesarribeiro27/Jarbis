@@ -169,19 +169,20 @@ export function LogoE({ size = 36, color = '#6D28D9', light = false }) {
 
 // ─── LogoWithText — Logo + wordmark ────────────────────────────────────────
 export function LogoWithText({ size = 32, light = false, className = '' }) {
-  const textColor = light ? '#fff' : '#1A1A2E'
-  const bColor    = light ? '#A78BFA' : '#6D28D9'
+  const bColor = light ? '#A78BFA' : '#6D28D9'
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoComet size={size} light={light} />
-      <span style={{
-        color: textColor,
-        fontWeight: 900,
-        fontSize: size * 0.56,
-        letterSpacing: '-0.05em',
-        lineHeight: 1,
-        fontFamily: 'Inter, sans-serif',
-      }}>
+      <span
+        className={light ? 'text-white' : 'text-[#1A1A2E] dark:text-gray-100'}
+        style={{
+          fontWeight: 900,
+          fontSize: size * 0.56,
+          letterSpacing: '-0.05em',
+          lineHeight: 1,
+          fontFamily: 'Inter, sans-serif',
+        }}
+      >
         jar<span style={{ color: bColor }}>b</span>is
       </span>
     </span>

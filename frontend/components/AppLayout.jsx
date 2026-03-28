@@ -10,6 +10,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
 import UpgradeModal from '@/components/UpgradeModal'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useTheme } from '@/components/ThemeProvider'
 
 const Icons = {
   Dashboard: () => (
@@ -48,8 +49,7 @@ const Icons = {
   Settings: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
-      <path d="M12 2v2m0 18v-2M2 12h2m18 0h-2m-2.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41m12.73 0-1.41-1.41M6.34 6.34 4.93 4.93" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   ),
   Logout: () => (
@@ -89,6 +89,59 @@ const Icons = {
       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   ),
+}
+
+function ThemeToggleRow({ collapsed }) {
+  const { theme, toggleTheme } = useTheme()
+  const isDark = theme === 'dark'
+
+  if (collapsed) {
+    return (
+      <div className="flex justify-center py-1">
+        <button
+          onClick={toggleTheme}
+          title={isDark ? 'Modo claro' : 'Modo escuro'}
+          className="p-2 rounded-xl text-gray-400 dark:text-gray-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30 transition-colors"
+        >
+          {isDark ? (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="flex items-center justify-between px-2.5 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 w-full transition-all duration-150 group"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex-shrink-0">
+          {isDark ? (
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10A5 5 0 0012 7z" />
+            </svg>
+          ) : (
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </span>
+        <span className="truncate">{isDark ? 'Modo claro' : 'Modo escuro'}</span>
+      </div>
+      {/* Toggle pill */}
+      <div className={`relative w-8 h-4.5 rounded-full transition-colors duration-200 flex-shrink-0 ${isDark ? 'bg-violet-600' : 'bg-gray-200 dark:bg-gray-700'}`} style={{ height: '18px', width: '32px' }}>
+        <span className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform duration-200 ${isDark ? 'translate-x-[14px]' : 'translate-x-0.5'}`} />
+      </div>
+    </button>
+  )
 }
 
 const IconLinkChain = () => (
@@ -144,7 +197,7 @@ const PLAN_BADGES = {
   enterprise:   { label: 'Enterprise', bg: 'bg-amber-100',  text: 'text-amber-700'  },
 }
 
-function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initials, isAdmin, pathname, logout, onClose, unreadCount, onBellClick }) {
+function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initials, isAdmin, pathname, logout, onClose, unreadCount, onBellClick, mounted }) {
   const t = useTranslations('app')
   const NAV = NAV_KEYS.map(n => ({ ...n, label: n.label || t(`nav.${n.key}`) }))
   const NAV_ADMIN = NAV_ADMIN_KEYS.map(n => ({ ...n, label: n.label || t(`nav.${n.key}`) }))
@@ -224,7 +277,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
 
       {/* Footer */}
       <div className="p-2 border-t border-gray-100/80 dark:border-gray-800 space-y-0.5">
-        {!collapsed && user && (
+        {!collapsed && mounted && user && (
           <Link href="/configuracoes" onClick={onClose} className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
             <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black flex-shrink-0">
               {initials}
@@ -240,7 +293,7 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
             )}
           </Link>
         )}
-        {collapsed && user && (
+        {collapsed && mounted && user && (
           <Link href="/configuracoes" title="Configurações" className="flex items-center justify-center w-full py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-black">
               {initials}
@@ -250,14 +303,9 @@ function SidebarContent({ collapsed, onToggleCollapse, user, plan, badge, initia
         {!collapsed && (
           <div className="px-2.5 py-1 flex items-center gap-2">
             <LanguageSwitcher dropUp />
-            <ThemeToggle />
           </div>
         )}
-        {collapsed && (
-          <div className="flex justify-center py-1">
-            <ThemeToggle />
-          </div>
-        )}
+        <ThemeToggleRow collapsed={collapsed} />
         <button
           onClick={onBellClick}
           title={collapsed ? 'Notificações' : undefined}
@@ -314,8 +362,10 @@ export default function AppLayout({ children }) {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [suborgContext, setSuborgContext] = useState(null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const impBy = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_by') : null
     const impTenant = typeof window !== 'undefined' ? localStorage.getItem('jarbis_impersonated_tenant') : null
     if (impBy) setImpersonation({ email: impBy, tenant: impTenant })
@@ -462,14 +512,14 @@ export default function AppLayout({ children }) {
     router.push('/login')
   }
 
-  const isAdmin = user?.role === 'owner' || user?.role === 'admin'
+  const isAdmin = mounted && (user?.role === 'owner' || user?.role === 'admin')
   const initials = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
   const badge = PLAN_BADGES[plan] || null
   const showTrial = trialDays !== null && trialDays <= 7
 
-  const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, onBellClick: () => setNotifOpen(o => !o) }
+  const sidebarProps = { user, plan, badge, initials, isAdmin, pathname, logout, unreadCount, mounted, onBellClick: () => setNotifOpen(o => !o) }
 
   return (
     <div className="flex min-h-screen lg:h-screen bg-[#f8f7fc] dark:bg-gray-950">
@@ -723,9 +773,9 @@ export default function AppLayout({ children }) {
       {/* ── Bottom navigation mobile (< md) ── */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 z-30 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16">
-          {NAV_KEYS.map(({ href, key, Icon }) => {
+          {NAV_KEYS.map(({ href, key, label: staticLabel, Icon }) => {
             const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
-            const label = t(`nav.${key}`)
+            const label = staticLabel || t(`nav.${key}`)
             return (
               <Link
                 key={href}

@@ -1279,12 +1279,12 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
 
   return (
     <div className="space-y-4">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('filters.title')}</p>
+      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('filters.title')}</p>
 
       {/* Filtro de data global */}
-      <div className={`rounded-xl border p-3 space-y-2.5 ${hasDateFilter ? 'bg-violet-50 border-violet-200' : 'bg-gray-50 border-gray-100'}`}>
+      <div className={`rounded-xl border p-3 space-y-2.5 ${hasDateFilter ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>
             {t('filters.dateFilterLabel')}
           </span>
@@ -1295,15 +1295,15 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
         <select
           value={globalDateFilter.dateCol || ''}
           onChange={e => onGlobalDateFilterChange({ ...globalDateFilter, dateCol: e.target.value })}
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
         >
           <option value="">{t('filters.dateColPlaceholder')}</option>
           {dateColOptions.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <div className="flex gap-2">
-          <input type="date" value={globalDateFilter.dateFrom || ''} onChange={e => onGlobalDateFilterChange({ ...globalDateFilter, dateFrom: e.target.value })} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
-          <span className="text-xs text-gray-400 self-center">{t('dateTo')}</span>
-          <input type="date" value={globalDateFilter.dateTo || ''} onChange={e => onGlobalDateFilterChange({ ...globalDateFilter, dateTo: e.target.value })} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
+          <input type="date" value={globalDateFilter.dateFrom || ''} onChange={e => onGlobalDateFilterChange({ ...globalDateFilter, dateFrom: e.target.value })} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-800 dark:text-gray-200" />
+          <span className="text-xs text-gray-400 dark:text-gray-500 self-center">{t('dateTo')}</span>
+          <input type="date" value={globalDateFilter.dateTo || ''} onChange={e => onGlobalDateFilterChange({ ...globalDateFilter, dateTo: e.target.value })} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-800 dark:text-gray-200" />
         </div>
         <div className="flex gap-1 flex-wrap">
           {[
@@ -1313,7 +1313,7 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
             { key: 'month', fn: () => { const d = new Date(); return { dateFrom: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`, dateTo: d.toISOString().slice(0,10) } } },
             { key: 'year', fn: () => { const d = new Date(); return { dateFrom: `${d.getFullYear()}-01-01`, dateTo: d.toISOString().slice(0,10) } } },
           ].map(p => (
-            <button key={p.key} onClick={() => onGlobalDateFilterChange({ ...globalDateFilter, ...p.fn() })} className="px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-white hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">{t(`filters.presets.${p.key}`)}</button>
+            <button key={p.key} onClick={() => onGlobalDateFilterChange({ ...globalDateFilter, ...p.fn() })} className="px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-300 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">{t(`filters.presets.${p.key}`)}</button>
           ))}
         </div>
 
@@ -1325,7 +1325,7 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
                 className={`w-8 h-4 rounded-full transition-colors relative ${globalDateFilter.comparePrevious ? 'bg-violet-500' : 'bg-gray-200'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${globalDateFilter.comparePrevious ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
-              <span className="text-xs text-gray-700 font-medium">{t('filters.comparePrevious')}</span>
+              <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">{t('filters.comparePrevious')}</span>
             </label>
             {globalDateFilter.comparePrevious && (
               <p className="text-[10px] text-violet-600">{t('filters.autoDeltaHint')}</p>
@@ -1336,15 +1336,15 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
 
       {/* Filtros ativos por dataset */}
       {Object.keys(filterSummary).length > 0 && (
-        <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-1.5">
+        <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 p-3 space-y-1.5">
           <p className="text-[10px] font-semibold text-violet-600 uppercase tracking-wider">Filtros ativos</p>
           {Object.entries(filterSummary).map(([dsId, count]) => {
             const ds = datasets.find(d => d.id === dsId)
             return (
-              <div key={dsId} className="flex items-center justify-between bg-white rounded-lg border border-violet-100 px-2.5 py-1.5">
+              <div key={dsId} className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg border border-violet-100 dark:border-violet-800/50 px-2.5 py-1.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[10px] font-bold bg-violet-100 text-violet-600 rounded-full w-5 h-5 flex items-center justify-center shrink-0">{count}</span>
-                  <span className="text-xs text-gray-700 truncate">{ds?.name || 'Dataset'}</span>
+                  <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{ds?.name || 'Dataset'}</span>
                 </div>
                 <button
                   onClick={() => onClearDatasetFilters?.(dsId)}
@@ -1361,7 +1361,7 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
       {/* Blocos de filtro configurados */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Blocos de filtro</p>
+          <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Blocos de filtro</p>
         </div>
 
         {/* Ação rápida: adicionar filtro de período com 1 clique */}
@@ -1373,7 +1373,7 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
               if (!ds) return
               onAddPreset([{ id: crypto.randomUUID(), type: 'filter', title: 'Período', dataset_id: ds.id, filter_col: dateCol, filter_label: 'Período', config: { date_mode: true }, layout: { w: 4, h: 2 } }])
             }}
-            className="w-full flex items-center justify-center gap-2 py-2 mb-3 text-xs font-semibold text-violet-600 border border-violet-200 border-dashed rounded-xl hover:bg-violet-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 mb-3 text-xs font-semibold text-violet-600 border border-violet-200 dark:border-violet-800 border-dashed rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             Adicionar filtro de período
@@ -1383,8 +1383,8 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
         {filterBlocks.length === 0 ? (
           <div className="text-center py-4 px-2">
             <svg className="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            <p className="text-xs text-gray-400 font-medium">Nenhum bloco de filtro</p>
-            <p className="text-[10px] text-gray-300 mt-1 leading-relaxed">Use o botão acima ou adicione um bloco "Filtro" ao dashboard</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Nenhum bloco de filtro</p>
+            <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1 leading-relaxed">Use o botão acima ou adicione um bloco "Filtro" ao dashboard</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -1394,9 +1394,9 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
               const col = isSlider ? (block.config?.range_col || block.config?.filter_col) : block.config?.filter_col
               const dsActive = (filterSummary[block.dataset_id] || 0) > 0
               return (
-                <div key={block.id} className={`rounded-lg border p-2.5 transition-colors ${dsActive ? 'border-violet-200 bg-violet-50' : 'border-gray-100 bg-gray-50'}`}>
+                <div key={block.id} className={`rounded-lg border p-2.5 transition-colors ${dsActive ? 'border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-gray-800 truncate">{block.title || (isSlider ? 'Slider' : 'Filtro')}</span>
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{block.title || (isSlider ? 'Slider' : 'Filtro')}</span>
                     {dsActive && (
                       <button
                         onClick={() => onClearDatasetFilters?.(block.dataset_id)}
@@ -1410,9 +1410,9 @@ function FiltersPanel({ blocks, datasets, globalDateFilter, onGlobalDateFilterCh
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isSlider ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>
                       {isSlider ? 'Slider' : 'Filtro'}
                     </span>
-                    {col && <span className="text-[10px] text-gray-500 truncate">coluna: <span className="font-medium text-gray-700">{col}</span></span>}
+                    {col && <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">coluna: <span className="font-medium text-gray-700 dark:text-gray-300">{col}</span></span>}
                   </div>
-                  {ds && <p className="text-[10px] text-gray-400 mt-1 truncate">{ds.name}</p>}
+                  {ds && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate">{ds.name}</p>}
                 </div>
               )
             })}
@@ -1458,14 +1458,14 @@ function CommentsPanel({ blocks, onBlocksChange }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('comments.title')}</p>
+      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('comments.title')}</p>
 
       {/* Add comment form */}
-      <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 space-y-2">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 space-y-2">
         <select
           value={targetBlockId || dataBlocks[0]?.id || ''}
           onChange={e => setTargetBlockId(e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
         >
           <option value="">{t('comments.selectBlock')}</option>
           {dataBlocks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
@@ -1476,7 +1476,7 @@ function CommentsPanel({ blocks, onBlocksChange }) {
           onKeyDown={e => e.key === 'Enter' && e.ctrlKey && addComment()}
           placeholder={t('comments.placeholder')}
           rows={3}
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white resize-none"
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-700 dark:text-gray-200 resize-none"
         />
         <button
           onClick={addComment}
@@ -1491,12 +1491,12 @@ function CommentsPanel({ blocks, onBlocksChange }) {
       {allAnnotations.length === 0 ? (
         <div className="text-center py-6">
           <svg className="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>
-          <p className="text-xs text-gray-400">{t('comments.empty')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">{t('comments.empty')}</p>
         </div>
       ) : (
         <div className="space-y-2">
           {allAnnotations.map(a => (
-            <div key={a.id} className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+            <div key={a.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm">
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <span className="text-[10px] font-bold text-violet-600 truncate flex-1">{a.blockTitle}</span>
                 <button
@@ -1507,8 +1507,8 @@ function CommentsPanel({ blocks, onBlocksChange }) {
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
-              <p className="text-xs text-gray-700 leading-relaxed">{a.text}</p>
-              <p className="text-[10px] text-gray-400 mt-1.5">{fmtDate(a.ts)}</p>
+              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{a.text}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">{fmtDate(a.ts)}</p>
             </div>
           ))}
         </div>
@@ -2038,17 +2038,17 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
               </svg>
             </div>
-            <span className="font-semibold text-gray-800 text-sm">Adicionar bloco</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Adicionar bloco</span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2061,11 +2061,11 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
           {/* Dataset selector (only if multiple) */}
           {datasets.length > 1 && (
             <div>
-              <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Dataset</label>
+              <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Dataset</label>
               <select
                 value={dsId}
                 onChange={e => setDsId(e.target.value)}
-                className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2 bg-white outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+                className="w-full text-sm rounded-xl border border-gray-200 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-200 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
               >
                 {datasets.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
@@ -2074,7 +2074,7 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
 
           {/* Text input */}
           <div>
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">O que quer ver aqui?</label>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1.5">O que quer ver aqui?</label>
             <textarea
               ref={inputRef}
               value={text}
@@ -2082,7 +2082,7 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && text.trim()) { e.preventDefault(); createWithAI() } }}
               placeholder="Ex: faturamento por mês, top 10 clientes, distribuição por categoria..."
               rows={2}
-              className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2.5 resize-none outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 placeholder:text-gray-300"
+              className="w-full text-sm rounded-xl border border-gray-200 dark:border-gray-600 px-3 py-2.5 resize-none outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-white dark:bg-gray-800 dark:text-gray-200"
             />
           </div>
 
@@ -2093,7 +2093,7 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
                 <button
                   key={s}
                   onClick={() => setText(s)}
-                  className="text-[11px] px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors border border-violet-100"
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors border border-violet-100 dark:border-violet-800"
                 >
                   {s}
                 </button>
@@ -2130,7 +2130,7 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
             <div className="relative">
               <button
                 onClick={() => setShowBlankMenu(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Em branco
                 <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2138,12 +2138,12 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
                 </svg>
               </button>
               {showBlankMenu && (
-                <div className="absolute bottom-full right-0 mb-1.5 w-40 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-2 gap-1">
+                <div className="absolute bottom-full right-0 mb-1.5 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 z-50 grid grid-cols-2 gap-1">
                   {BLANK_TYPES.map(bt => (
                     <button
                       key={bt.type}
                       onClick={() => { createBlank(bt.type); setShowBlankMenu(false) }}
-                      className="text-xs text-left px-2.5 py-2 rounded-lg hover:bg-violet-50 hover:text-violet-700 text-gray-700 transition-colors font-medium"
+                      className="text-xs text-left px-2.5 py-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 text-gray-700 dark:text-gray-300 transition-colors font-medium"
                     >
                       {bt.label}
                     </button>
@@ -3111,8 +3111,8 @@ export default function DashboardDetailPage() {
             bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800
             flex flex-col shrink-0 overflow-hidden
             transition-transform sm:transition-[width] duration-200`}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-              <span className="text-xs font-semibold text-gray-700 uppercase tracking-widest">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 shrink-0">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-widest">
                 {sidePanel === 'dados' ? t('sidePanel.dados') :
                  sidePanel === 'filtros' ? t('sidePanel.filtros') :
                  sidePanel === 'comentarios' ? t('sidePanel.comentarios') :
@@ -3153,20 +3153,52 @@ export default function DashboardDetailPage() {
         {showColumnDiscovery && <ColumnDiscovery datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} onClose={() => setShowColumnDiscovery(false)} onAddBlock={addBlockObject} onOpenAdvanced={() => { setShowColumnDiscovery(false); setShowAddBlockDialog(true) }} />}
         {showAddBlockDialog && <AddBlockDialog datasets={reportDatasetIds !== null ? datasets.filter(d => reportDatasetIds.includes(d.id)) : datasets} onClose={() => setShowAddBlockDialog(false)} onAddBlock={addBlockObject} />}
 
+        {shareData && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShareData(null)}>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                  <h2 className="font-bold text-gray-900 dark:text-gray-100">Compartilhar dashboard</h2>
+                </div>
+                <button onClick={() => setShareData(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-lg leading-none">✕</button>
+              </div>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">{t('shareLinkLang')}</span>
+                {SHARE_LANGS.map(l => (
+                  <button key={l.code} onClick={() => setShareLanguage(l.code)} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${shareLanguage === l.code ? 'bg-violet-100 text-violet-700 font-semibold' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400'}`}>
+                    <span>{l.flag}</span><span className="ml-1">{l.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input readOnly value={`${shareData.share_url}?lang=${shareLanguage}`} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 focus:outline-none" />
+                <button
+                  onClick={async () => { await navigator.clipboard.writeText(`${shareData.share_url}?lang=${shareLanguage}`); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                  className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-lg hover:bg-violet-700 transition-colors shrink-0"
+                >
+                  {copied ? t('copied') : t('copyLink')}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">Qualquer pessoa com o link pode visualizar este dashboard.</p>
+            </div>
+          </div>
+        )}
+
         {showVersions && (
           <div className="fixed inset-0 z-[200] flex">
             <div className="flex-1" onClick={() => setShowVersions(false)} />
-            <div className="w-80 bg-white shadow-2xl border-l flex flex-col">
-              <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900">Histórico de versões</h2>
-                <button onClick={() => setShowVersions(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            <div className="w-80 bg-white dark:bg-gray-900 shadow-2xl border-l dark:border-gray-700 flex flex-col">
+              <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900 dark:text-gray-100">Histórico de versões</h2>
+                <button onClick={() => setShowVersions(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {versions.length === 0 && <p className="text-sm text-gray-400 text-center mt-8">Nenhuma versão salva ainda.<br/>Edite e salve para criar snapshots.</p>}
+                {versions.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500 text-center mt-8">Nenhuma versão salva ainda.<br/>Edite e salve para criar snapshots.</p>}
                 {versions.map(v => (
-                  <div key={v.id} className="border rounded-lg p-3 hover:border-purple-300 transition-colors">
-                    <p className="text-sm font-medium text-gray-800">{v.label || v.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{new Date(v.created_at).toLocaleString('pt-BR')}</p>
+                  <div key={v.id} className="border dark:border-gray-700 rounded-lg p-3 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{v.label || v.title}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{new Date(v.created_at).toLocaleString('pt-BR')}</p>
                     <button
                       onClick={() => restoreVersion(v.id)}
                       className="mt-2 text-xs text-purple-600 hover:underline"

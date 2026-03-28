@@ -65,7 +65,7 @@ function ExcelSheetPickerModal({ sheets, sheetsMeta = [], onConfirm, onClose }) 
         )}
 
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+          <button onClick={onClose} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
           <button onClick={() => onConfirm(selected)} className="flex-1 bg-violet-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-violet-700">Importar</button>
         </div>
       </div>
@@ -266,12 +266,12 @@ function ApiDatasetModal({ onClose, onCreated }) {
                         type="button"
                         onClick={() => setSelectedSheet(s)}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left transition-colors ${
-                          isSelected ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:border-violet-300'
+                          isSelected ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-violet-300 dark:hover:border-violet-500'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-violet-500' : 'bg-gray-300'}`} />
-                          <span className="text-xs text-gray-800 truncate">{s}</span>
+                          <span className="text-xs text-gray-800 dark:text-gray-200 truncate">{s}</span>
                           {meta.suggested && <span className="text-[9px] text-emerald-600 shrink-0">✦ sugerida</span>}
                         </div>
                         {meta.type === 'data' && <span className="text-[10px] text-emerald-600 shrink-0">banco de dados</span>}
@@ -288,8 +288,8 @@ function ApiDatasetModal({ onClose, onCreated }) {
                 <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Modo de sincronização</label>
-                <select value={form.sync_mode || 'replace'} onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modo de sincronização</label>
+                <select value={form.sync_mode || 'replace'} onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
                   <option value="replace">Substituir (replace) — apaga e reimporta tudo</option>
                   <option value="append">Acumular (append) — adiciona novas linhas</option>
                 </select>
@@ -321,8 +321,8 @@ function ApiDatasetModal({ onClose, onCreated }) {
                 <input type="number" min="1" value={form.refresh_interval_minutes} onChange={e => setForm(f => ({ ...f, refresh_interval_minutes: e.target.value }))} placeholder={t('modal.intervalPlaceholder')} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Modo de sincronização</label>
-                <select value={form.sync_mode || 'replace'} onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modo de sincronização</label>
+                <select value={form.sync_mode || 'replace'} onChange={e => setForm(f => ({ ...f, sync_mode: e.target.value }))} className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
                   <option value="replace">Substituir (replace) — apaga e reimporta tudo</option>
                   <option value="append">Acumular (append) — adiciona novas linhas</option>
                 </select>
@@ -373,38 +373,38 @@ function GADatasetModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           Conectar Google Analytics
         </h2>
         <p className="text-xs text-gray-500 mb-4">Você será redirecionado para autorizar o acesso com sua conta Google.</p>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Nome do dataset</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do dataset</label>
+            <input className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm"
               value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Property ID (GA4)</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Property ID (GA4)</label>
+            <input className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm font-mono"
               placeholder="ex: 123456789"
               value={form.property_id} onChange={e => setForm(f => ({...f, property_id: e.target.value}))} />
             <p className="text-xs text-gray-400 mt-0.5">Google Analytics → Administrador → Propriedade → ID da propriedade</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Dimensões (separadas por vírgula)</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dimensões (separadas por vírgula)</label>
+            <input className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm font-mono"
               value={form.dimensions} onChange={e => setForm(f => ({...f, dimensions: e.target.value}))} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Métricas (separadas por vírgula)</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Métricas (separadas por vírgula)</label>
+            <input className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm font-mono"
               value={form.metrics} onChange={e => setForm(f => ({...f, metrics: e.target.value}))} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Período</label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Período</label>
+            <select className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm"
               value={form.date_range_days} onChange={e => setForm(f => ({...f, date_range_days: e.target.value}))}>
               <option value={7}>Últimos 7 dias</option>
               <option value={30}>Últimos 30 dias</option>
@@ -415,9 +415,9 @@ function GADatasetModal({ onClose }) {
           {error && <p className="text-red-600 text-sm">{error}</p>}
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-50">Cancelar</button>
+          <button onClick={onClose} className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">Cancelar</button>
           <button onClick={handleConnect} disabled={loading || !form.property_id}
-            className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-gray-200 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 text-gray-700">
+            className="flex-1 flex items-center justify-center gap-2 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 text-gray-700 dark:text-gray-200">
             {loading ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
               : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>}
             {loading ? 'Redirecionando...' : 'Continuar com Google'}
@@ -655,7 +655,7 @@ function DbDatasetModal({ onClose, onCreated }) {
               type="button"
               onClick={handleTest}
               disabled={testing || !form.host || !form.database || !form.username}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
             >
               {testing ? 'Testando...' : 'Testar conexão'}
             </button>
@@ -756,7 +756,7 @@ function LinksDatasetModal({ onClose, onCreated }) {
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5">Campanha</label>
             {loadingCampaigns ? (
-              <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 animate-pulse bg-gray-50">Carregando campanhas...</div>
+              <div className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-400 dark:text-gray-500 animate-pulse bg-gray-50 dark:bg-gray-700">Carregando campanhas...</div>
             ) : campaigns.length === 0 ? (
               <div className="w-full border border-amber-200 bg-amber-50 rounded-lg px-3 py-2 text-sm text-amber-700">
                 Nenhuma campanha encontrada. Crie uma campanha em <strong>Links</strong> primeiro.
@@ -795,7 +795,7 @@ function LinksDatasetModal({ onClose, onCreated }) {
           )}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 border border-gray-200 rounded-lg py-2.5 text-sm text-gray-600 hover:bg-gray-50 font-semibold">
+            <button type="button" onClick={onClose} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold">
               Cancelar
             </button>
             <button
@@ -1071,7 +1071,7 @@ export default function DatasetsPage() {
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
           >
-            <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-violet-50 dark:bg-violet-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <ellipse cx="12" cy="5" rx="9" ry="3"/>
                 <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
@@ -1085,22 +1085,22 @@ export default function DatasetsPage() {
               <button onClick={() => fileRef.current?.click()} className="px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors">
                 {t('uploadBtn2')}
               </button>
-              <button onClick={() => setShowApiModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+              <button onClick={() => setShowApiModal(true)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 {t('connectBtn')}
               </button>
-              <button onClick={() => setShowDbModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <button onClick={() => setShowDbModal(true)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
                 </svg>
                 Conectar banco de dados
               </button>
-              <button onClick={() => setShowGaModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <button onClick={() => setShowGaModal(true)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
                 </svg>
                 Google Analytics
               </button>
-              <button onClick={() => setShowLinksModal(true)} className="px-5 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <button onClick={() => setShowLinksModal(true)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                 </svg>
@@ -1200,7 +1200,7 @@ export default function DatasetsPage() {
                   </div>
 
                   {/* Ícone */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50' : ds.type === 'database' ? 'bg-emerald-50' : ds.type === 'google-analytics' ? 'bg-orange-50' : ds.type === 'links' ? 'bg-teal-50' : 'bg-violet-50'}`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${ds.type === 'api' ? 'bg-blue-50 dark:bg-blue-900/30' : ds.type === 'database' ? 'bg-emerald-50 dark:bg-emerald-900/30' : ds.type === 'google-analytics' ? 'bg-orange-50 dark:bg-orange-900/30' : ds.type === 'links' ? 'bg-teal-50 dark:bg-teal-900/30' : 'bg-violet-50 dark:bg-violet-900/30'}`}>
                     {ds.type === 'api' ? (
                       <svg className="w-4.5 h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     ) : ds.type === 'database' ? (
@@ -1223,7 +1223,7 @@ export default function DatasetsPage() {
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500">{formatRows(ds.row_count)}</span>
                       {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} {t('columns')}</span>}
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 text-blue-600' : ds.type === 'database' ? 'bg-emerald-50 text-emerald-700' : ds.type === 'google-analytics' ? 'bg-orange-50 text-orange-600' : ds.type === 'links' ? 'bg-teal-50 text-teal-700' : 'bg-violet-50 text-violet-600'}`}>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ds.type === 'database' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ds.type === 'google-analytics' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : ds.type === 'links' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400'}`}>
                         {ds.type === 'api' ? t('typeApi') : ds.type === 'database' ? 'DB' : ds.type === 'google-analytics' ? 'Analytics' : ds.type === 'links' ? 'Links' : t('typeFile')}
                       </span>
                     </div>
@@ -1236,7 +1236,7 @@ export default function DatasetsPage() {
                         onClick={() => handleSync(ds.id)}
                         disabled={syncingId === ds.id}
                         title={t('refreshBtn')}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30 transition-colors disabled:opacity-50"
                       >
                         <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1248,7 +1248,7 @@ export default function DatasetsPage() {
                         onClick={() => handleDbSync(ds.id)}
                         disabled={syncingId === ds.id}
                         title="Re-executar query e atualizar dados"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors disabled:opacity-50"
                       >
                         <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1260,7 +1260,7 @@ export default function DatasetsPage() {
                         onClick={() => handleLinksSync(ds.id)}
                         disabled={syncingId === ds.id}
                         title="Atualizar dados de links"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors disabled:opacity-50"
                       >
                         <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1272,7 +1272,7 @@ export default function DatasetsPage() {
                         onClick={() => handleGASync(ds.id)}
                         disabled={syncingId === ds.id}
                         title="Buscar dados atualizados do Google Analytics"
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50"
                       >
                         <svg className={`w-4 h-4 ${syncingId === ds.id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1280,14 +1280,14 @@ export default function DatasetsPage() {
                       </button>
                     )}
                     {deleteConfirmId === ds.id ? (
-                      <div className="flex items-center gap-1 bg-red-50 rounded-lg px-2 py-1">
+                      <div className="flex items-center gap-1 bg-red-50 dark:bg-red-900/30 rounded-lg px-2 py-1">
                         <span className="text-xs text-gray-500 hidden sm:inline mr-1">{t('deleteConfirm')}</span>
                         <button onClick={() => handleDelete(ds.id)} className="text-xs text-red-600 font-bold hover:underline">{t('yes')}</button>
                         <span className="text-gray-300">·</span>
                         <button onClick={() => setDeleteConfirmId(null)} className="text-xs text-gray-400 hover:underline">{t('no')}</button>
                       </div>
                     ) : (
-                      <button onClick={() => setDeleteConfirmId(ds.id)} title="Excluir" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors">
+                      <button onClick={() => setDeleteConfirmId(ds.id)} title="Excluir" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>

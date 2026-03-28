@@ -4430,7 +4430,7 @@ export function CanvasConfigPanel({ config, onChange }) {
         <div className="flex gap-1.5 flex-wrap mb-2">
           {colors.map(c => (
             <button key={c} onClick={() => upd(field, c)}
-              className={`w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 ${config[field] === c ? 'border-violet-500 scale-110' : 'border-gray-200'}`}
+              className={`w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110 ${config[field] === c ? 'border-violet-500 scale-110' : 'border-gray-200 dark:border-gray-600'}`}
               style={{ backgroundColor: c }} title={c}
             />
           ))}
@@ -4438,10 +4438,10 @@ export function CanvasConfigPanel({ config, onChange }) {
         <div className="flex items-center gap-2">
           <input type="color" value={config[field] || placeholder}
             onChange={e => upd(field, e.target.value)}
-            className="w-8 h-8 rounded-lg cursor-pointer border border-gray-200 p-0.5 shrink-0" />
+            className="w-8 h-8 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-600 p-0.5 shrink-0" />
           <input type="text" value={config[field] || ''} onChange={e => upd(field, e.target.value)}
             placeholder={placeholder}
-            className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400" />
+            className="flex-1 border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-800 dark:text-gray-200" />
           {config[field] && (
             <button onClick={() => upd(field, '')} className="text-gray-300 hover:text-gray-500 shrink-0">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -4463,7 +4463,7 @@ export function CanvasConfigPanel({ config, onChange }) {
 
   return (
     <div className="space-y-5">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('canvas.title')}</p>
+      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('canvas.title')}</p>
 
       {/* APLICAR MARCA */}
       <button
@@ -4495,27 +4495,27 @@ export function CanvasConfigPanel({ config, onChange }) {
 
       {/* TEMA RÁPIDO */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">{t('canvas.quickTheme')}</label>
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('canvas.quickTheme')}</label>
         <div className="grid grid-cols-3 gap-1.5">
           {QUICK_THEMES.map(t => (
             <button key={t.name}
               onClick={() => { upd('sheetBgColor', t.sheet); upd('bgColor', t.bg); upd('accentColor', t.accent) }}
-              className="flex flex-col items-center gap-1 p-2 rounded-lg border border-gray-200 hover:border-violet-300 hover:bg-violet-50/30 transition-colors"
+              className="flex flex-col items-center gap-1 p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-violet-300 hover:bg-violet-50/30 transition-colors"
             >
               <div className="flex gap-0.5">
                 <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: t.sheet }} />
                 <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: t.bg }} />
                 <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: t.accent }} />
               </div>
-              <span className="text-[9px] text-gray-500 font-medium leading-none">{t.name}</span>
+              <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium leading-none">{t.name}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Sheet */}
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-2">{t('canvas.sheetColor')}</label>
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('canvas.sheetColor')}</label>
         <SwatchPicker
           field="sheetBgColor"
           colors={['#ffffff', '#f8fafc', '#fafafa', '#fffbeb', '#f0fdf4', '#eef2ff', '#1e1e2e']}
@@ -4523,8 +4523,8 @@ export function CanvasConfigPanel({ config, onChange }) {
         />
       </div>
 
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-2">{t('canvas.bgColor')}</label>
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('canvas.bgColor')}</label>
         <SwatchPicker
           field="bgColor"
           colors={['#f3f4f6', '#e5e7eb', '#dbeafe', '#ede9fe', '#dcfce7', '#fef3c7', '#18181b']}
@@ -4533,18 +4533,18 @@ export function CanvasConfigPanel({ config, onChange }) {
       </div>
 
       {/* Arredondamento folha */}
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-2">{t('canvas.borderRadius')}</label>
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('canvas.borderRadius')}</label>
         <div className="flex items-center gap-3">
           <input type="range" min="0" max="32" value={config.sheetRadius ?? 0} onChange={e => upd('sheetRadius', +e.target.value)} className="flex-1 accent-violet-600" />
-          <span className="text-xs text-gray-500 w-10 text-right">{config.sheetRadius ?? 0}px</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right">{config.sheetRadius ?? 0}px</span>
         </div>
       </div>
 
       {/* Tipografia */}
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-2">{t('canvas.typography')}</label>
-        <select value={config.fontFamily || 'inter'} onChange={e => upd('fontFamily', e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('canvas.typography')}</label>
+        <select value={config.fontFamily || 'inter'} onChange={e => upd('fontFamily', e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400">
           <option value="inter">{t('canvas.fontDefault')}</option>
           <option value="roboto">Roboto</option>
           <option value="poppins">Poppins</option>
@@ -4555,20 +4555,20 @@ export function CanvasConfigPanel({ config, onChange }) {
       </div>
 
       {/* Grade */}
-      <div className="border-t border-gray-100 pt-4">
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
         <label className="flex items-center gap-2 cursor-pointer">
-          <div onClick={() => upd('showGrid', !config.showGrid)} className={`w-8 h-4 rounded-full transition-colors relative ${config.showGrid ? 'bg-violet-500' : 'bg-gray-200'}`}>
+          <div onClick={() => upd('showGrid', !config.showGrid)} className={`w-8 h-4 rounded-full transition-colors relative ${config.showGrid ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-600'}`}>
             <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${config.showGrid ? 'translate-x-4' : 'translate-x-0.5'}`} />
           </div>
-          <span className="text-xs font-medium text-gray-700">{t('canvas.showGrid')}</span>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{t('canvas.showGrid')}</span>
         </label>
-        <p className="text-[10px] text-gray-400 mt-1">{t('canvas.showGridHint')}</p>
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{t('canvas.showGridHint')}</p>
       </div>
 
       {/* Idioma do link público */}
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-2">{t('canvas.publicLang')}</label>
-        <select value={config.language || 'pt-BR'} onChange={e => upd('language', e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('canvas.publicLang')}</label>
+        <select value={config.language || 'pt-BR'} onChange={e => upd('language', e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400">
           <option value="pt-BR">🇧🇷 Português</option>
           <option value="es">🇪🇸 Español</option>
           <option value="en">🇺🇸 English</option>
@@ -4578,14 +4578,14 @@ export function CanvasConfigPanel({ config, onChange }) {
           <option value="zh">🇨🇳 中文</option>
           <option value="ja">🇯🇵 日本語</option>
         </select>
-        <p className="text-[10px] text-gray-400 mt-1">{t('canvas.publicLangHint')}</p>
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{t('canvas.publicLangHint')}</p>
       </div>
 
       {/* Fuso horário */}
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-2">Fuso horário</label>
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Fuso horário</label>
         <select
-          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 dark:text-gray-200"
           value={config.timezone || 'America/Sao_Paulo'}
           onChange={e => upd('timezone', e.target.value)}
         >
@@ -4611,15 +4611,15 @@ export function CanvasConfigPanel({ config, onChange }) {
       </div>
 
       {/* CSS Customizado */}
-      <div className="border-t border-gray-100 pt-4">
-        <label className="block text-xs font-medium text-gray-700 mb-1">CSS Customizado</label>
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">CSS Customizado</label>
         <textarea
-          className="w-full text-xs font-mono border border-gray-300 rounded p-2 h-32 resize-none"
+          className="w-full text-xs font-mono border border-gray-300 dark:border-gray-600 rounded p-2 h-32 resize-none bg-white dark:bg-gray-800 dark:text-gray-200"
           placeholder=".block-container { border-radius: 12px; } .recharts-text { font-family: 'Inter'; }"
           value={config.custom_css || ''}
           onChange={e => upd('custom_css', e.target.value)}
         />
-        <p className="text-xs text-gray-400 mt-1">CSS aplicado globalmente ao canvas deste dashboard.</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">CSS aplicado globalmente ao canvas deste dashboard.</p>
       </div>
     </div>
   )
@@ -4791,18 +4791,18 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
 
   return (
     <div className="space-y-4">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{t('dataset.title')}</p>
+      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('dataset.title')}</p>
 
       {displayedDatasets.length > 0 && (
         <div className="space-y-2">
           {displayedDatasets.map(ds => (
-            <div key={ds.id} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+            <div key={ds.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : ds.type === 'links' ? 'bg-teal-100 text-teal-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
-                  <p className="text-xs font-semibold text-gray-800 truncate">{ds.name}</p>
+                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{ds.name}</p>
                   {ds.is_demo && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 shrink-0">DEMO</span>}
-                  <span className="text-[10px] text-gray-400 shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {(ds.type === 'api' || ds.type === 'google-analytics' || ds.type === 'links') && (
@@ -4827,7 +4827,7 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
                     value={ds.refresh_interval_minutes ?? ''}
                     disabled={scheduleSaving === ds.id}
                     onChange={e => handleSchedule(ds.id, e.target.value === '' ? null : parseInt(e.target.value))}
-                    className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="flex-1 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
                     title={t('dataset.refreshTitle')}
                   >
                     <option value="">{t('dataset.noRefresh')}</option>
@@ -4838,7 +4838,7 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
                     <option value="1440">{t('dataset.refresh24h')}</option>
                   </select>
                   {ds.next_refresh_at && (
-                    <span className="text-[10px] text-gray-400 shrink-0" title={t('dataset.nextRefresh')}>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0" title={t('dataset.nextRefresh')}>
                       ↻ {new Date(ds.next_refresh_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
@@ -4853,20 +4853,20 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
       {reportDatasetIds !== null && onPinDataset && unpinnedDatasets.length > 0 && (
         <div>
           {showAddPicker ? (
-            <div className="border border-violet-200 rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 bg-violet-50 border-b border-violet-100">
-                <span className="text-xs font-semibold text-violet-700">Adicionar fonte existente</span>
+            <div className="border border-violet-200 dark:border-violet-800 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-violet-50 dark:bg-violet-950/30 border-b border-violet-100 dark:border-violet-800">
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">Adicionar fonte existente</span>
                 <button onClick={() => setShowAddPicker(false)} className="text-gray-400 hover:text-gray-600">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {unpinnedDatasets.map(ds => (
                   <button key={ds.id} onClick={() => { onPinDataset(ds.id); setShowAddPicker(false) }}
-                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-violet-50 text-left transition-colors">
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-left transition-colors bg-white dark:bg-gray-800">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${ds.type === 'api' ? 'bg-blue-100 text-blue-700' : ds.type === 'google-analytics' ? 'bg-orange-100 text-orange-700' : ds.type === 'database' ? 'bg-emerald-100 text-emerald-700' : ds.type === 'links' ? 'bg-teal-100 text-teal-700' : 'bg-violet-100 text-violet-700'}`}>{ds.type === 'google-analytics' ? 'GA' : ds.type === 'database' ? 'DB' : ds.type.toUpperCase()}</span>
-                    <span className="text-xs text-gray-700 truncate">{ds.name}</span>
-                    <span className="text-[10px] text-gray-400 ml-auto shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{ds.name}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto shrink-0">{(ds.row_count || 0).toLocaleString()} lin.</span>
                   </button>
                 ))}
               </div>
@@ -4881,11 +4881,11 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="flex border-b border-gray-100">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div className="flex border-b border-gray-100 dark:border-gray-700">
           {['upload', 'api', 'links'].map(tabKey => (
             <button key={tabKey} onClick={() => { setTab(tabKey); if (tabKey === 'links') handleLinksTabOpen() }}
-              className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tabKey ? 'bg-white text-gray-800' : 'bg-gray-50 text-gray-400 hover:text-gray-600'}`}>
+              className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tabKey ? 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
               {tabKey === 'upload' ? t('dataset.uploadTab') : tabKey === 'api' ? t('dataset.apiTab') : 'Links'}
             </button>
           ))}
@@ -4895,10 +4895,10 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
 
         {tab === 'upload' && (
           <div className="p-3">
-            <p className="text-xs text-gray-400 mb-2">{t('dataset.uploadHint')}</p>
-            <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg p-4 cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">{t('dataset.uploadHint')}</p>
+            <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg p-4 cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              <span className="text-xs text-gray-500">{uploading ? t('dataset.uploading') : t('dataset.clickToSelect')}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{uploading ? t('dataset.uploading') : t('dataset.clickToSelect')}</span>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleUpload} />
             </label>
           </div>
@@ -4906,17 +4906,17 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
 
         {tab === 'links' && (
           <div className="p-3 space-y-2">
-            <p className="text-xs text-gray-400">Importe dados de cliques de uma campanha de links como dataset para usar nos seus dashboards.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Importe dados de cliques de uma campanha de links como dataset para usar nos seus dashboards.</p>
             {linksCampaigns === null ? (
-              <p className="text-xs text-gray-400 py-2 text-center">Carregando campanhas...</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 py-2 text-center">Carregando campanhas...</p>
             ) : linksCampaigns.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2 text-center">Nenhuma campanha de links encontrada.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 py-2 text-center">Nenhuma campanha de links encontrada.</p>
             ) : (
               <form onSubmit={handleLinksCreate} className="space-y-2">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Campanha</label>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Campanha</label>
                   <select
-                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400"
+                    className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400 bg-white dark:bg-gray-800 dark:text-gray-200"
                     value={linksForm.campaignId}
                     onChange={e => {
                       const camp = linksCampaigns.find(c => c.id === e.target.value)
@@ -4928,13 +4928,13 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Nome do dataset</label>
-                  <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" placeholder="Ex: Links - Campanha Verao" value={linksForm.name} onChange={e => setLinksForm(f => ({ ...f, name: e.target.value }))} required />
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Nome do dataset</label>
+                  <input className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400 bg-white dark:bg-gray-800 dark:text-gray-200" placeholder="Ex: Links - Campanha Verao" value={linksForm.name} onChange={e => setLinksForm(f => ({ ...f, name: e.target.value }))} required />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Periodo retroativo</label>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Periodo retroativo</label>
                   <select
-                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400"
+                    className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400 bg-white dark:bg-gray-800 dark:text-gray-200"
                     value={linksForm.days}
                     onChange={e => setLinksForm(f => ({ ...f, days: parseInt(e.target.value) }))}
                   >
@@ -4956,12 +4956,12 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
         {tab === 'api' && (
           <form onSubmit={handleApiCreate} className="p-3 space-y-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('dataset.apiName')}</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder={t('dataset.apiNamePlaceholder')} value={apiForm.name} onChange={e => setApiForm(f => ({ ...f, name: e.target.value }))} required />
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('dataset.apiName')}</label>
+              <input className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-800 dark:text-gray-200" placeholder={t('dataset.apiNamePlaceholder')} value={apiForm.name} onChange={e => setApiForm(f => ({ ...f, name: e.target.value }))} required />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('dataset.apiUrl')}</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder={t('dataset.apiUrlPlaceholder')} value={apiForm.api_url} onChange={e => handleApiUrlChange(e.target.value)} required />
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('dataset.apiUrl')}</label>
+              <input className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-800 dark:text-gray-200" placeholder={t('dataset.apiUrlPlaceholder')} value={apiForm.api_url} onChange={e => handleApiUrlChange(e.target.value)} required />
               {isGoogleSheets && (
                 <div className="mt-1 flex items-center gap-2">
                   <span className="text-[10px] text-violet-600">Google Sheets detectado</span>
@@ -4971,19 +4971,19 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
                 </div>
               )}
               {sheets.length > 0 && (
-                <select value={selectedSheet} onChange={e => setSelectedSheet(e.target.value)} className="mt-1.5 w-full border border-violet-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400">
+                <select value={selectedSheet} onChange={e => setSelectedSheet(e.target.value)} className="mt-1.5 w-full border border-violet-200 dark:border-violet-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white dark:bg-gray-800 dark:text-gray-200">
                   {sheets.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               )}
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('dataset.apiHeaders')}</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono" placeholder='{"Authorization":"Bearer token"}' value={apiForm.api_headers} onChange={e => setApiForm(f => ({ ...f, api_headers: e.target.value }))} />
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('dataset.apiHeaders')}</label>
+              <input className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono bg-white dark:bg-gray-800 dark:text-gray-200" placeholder='{"Authorization":"Bearer token"}' value={apiForm.api_headers} onChange={e => setApiForm(f => ({ ...f, api_headers: e.target.value }))} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('dataset.apiPath')}</label>
-              <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono" placeholder={t('dataset.apiPathPlaceholder')} value={apiForm.api_data_path} onChange={e => setApiForm(f => ({ ...f, api_data_path: e.target.value }))} />
-              <p className="text-xs text-gray-400 mt-1">{t('dataset.apiPathHint')}</p>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('dataset.apiPath')}</label>
+              <input className="w-full border border-gray-200 dark:border-gray-600 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 font-mono bg-white dark:bg-gray-800 dark:text-gray-200" placeholder={t('dataset.apiPathPlaceholder')} value={apiForm.api_data_path} onChange={e => setApiForm(f => ({ ...f, api_data_path: e.target.value }))} />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('dataset.apiPathHint')}</p>
             </div>
             <button type="submit" disabled={apiSaving} className="w-full py-2 bg-violet-600 text-white text-xs font-semibold rounded hover:bg-violet-700 disabled:opacity-50 mt-1">{apiSaving ? t('dataset.apiConnecting') : t('dataset.apiConnect')}</button>
           </form>
@@ -4992,9 +4992,9 @@ export function DatasetPanel({ datasets, onDatasetsChange, reportDatasetIds = nu
 
       {excelSheetPicker && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setExcelSheetPicker(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="font-semibold text-gray-800 mb-1">Qual aba contém os dados?</h2>
-            <p className="text-xs text-gray-400 mb-4">O arquivo tem {excelSheetPicker.sheets.length} abas. Escolha qual importar como dataset.</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Qual aba contém os dados?</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">O arquivo tem {excelSheetPicker.sheets.length} abas. Escolha qual importar como dataset.</p>
             <ExcelSheetPickerInline sheets={excelSheetPicker.sheets} sheetsMeta={excelSheetPicker.sheetsMeta} defaultSheet={excelSheetPicker.defaultSheet} onConfirm={handleExcelSheetConfirm} onClose={() => setExcelSheetPicker(null)} />
           </div>
         </div>
@@ -5223,10 +5223,10 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
   return (
     <div className="space-y-2">
       {/* Tabs */}
-      <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+      <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         {[{ k: 'colunas', l: 'Dados' }, { k: 'gerenciar', l: 'Gerenciar' }].map(tk => (
           <button key={tk.k} onClick={() => setTab(tk.k)}
-            className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tk.k ? 'bg-white text-gray-800' : 'bg-gray-50 text-gray-400 hover:text-gray-600'}`}>
+            className={`flex-1 py-2 text-xs font-semibold transition-colors ${tab === tk.k ? 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
             {tk.l}
           </button>
         ))}
@@ -5237,16 +5237,16 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
 
           {/* ── Seção: Sugestões inteligentes ───────────────────────────── */}
           {allPresets.length > 0 && onAddPreset && (
-            <div className="border border-violet-100 rounded-xl overflow-hidden">
+            <div className="border border-violet-100 dark:border-violet-800 rounded-xl overflow-hidden">
               <button
                 onClick={() => setExpandedPresets(p => !p)}
-                className="w-full flex items-center justify-between px-3 py-2.5 bg-violet-50 hover:bg-violet-100 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 bg-violet-50 dark:bg-violet-950/30 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <svg className="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wide">Sugestões inteligentes</span>
+                  <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wide">Sugestões inteligentes</span>
                 </div>
                 <svg className={`w-3.5 h-3.5 text-violet-400 transition-transform ${expandedPresets ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -5254,18 +5254,18 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
               </button>
 
               {expandedPresets && (
-                <div className="divide-y divide-violet-50">
+                <div className="divide-y divide-violet-50 dark:divide-violet-900/30">
                   {allPresets.map(preset => (
-                    <div key={`${preset.dsId}-${preset.id}`} className="flex items-center gap-2 px-3 py-2.5 bg-white hover:bg-violet-50/60 transition-colors group">
-                      <span className="shrink-0 w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500">
+                    <div key={`${preset.dsId}-${preset.id}`} className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-gray-800 hover:bg-violet-50/60 dark:hover:bg-violet-950/40 transition-colors group">
+                      <span className="shrink-0 w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center text-violet-500">
                         {preset.id === 'faturamento' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4v16" /></svg>}
                         {preset.id === 'clientes' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M16 3.13a4 4 0 010 7.75" /></svg>}
                         {preset.id === 'categoria' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>}
                         {preset.id === 'date_filter' && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 2v4M8 2v4M3 10h18" /></svg>}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-700 leading-none truncate">{preset.title}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5 leading-none truncate">{preset.desc}</p>
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 leading-none truncate">{preset.title}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 leading-none truncate">{preset.desc}</p>
                       </div>
                       <button
                         onClick={() => onAddPreset(preset.blocks)}
@@ -5286,16 +5286,16 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
           {/* ── Busca ──────────────────────────────────────────────────── */}
           <div className="relative">
             <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar coluna..." className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-all" />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar coluna..." className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:text-gray-200 rounded-lg outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-all" />
           </div>
 
           {!selectedBlockId && !search && (
-            <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">
+            <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800 rounded-lg px-2.5 py-1.5">
               Selecione um bloco para atribuir colunas manualmente
             </p>
           )}
           {hiddenCount > 0 && !search && (
-            <p className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg px-2.5 py-1.5">
               {hiddenCount} fonte{hiddenCount > 1 ? 's' : ''} não usada{hiddenCount > 1 ? 's' : ''} neste dashboard — disponível em <button onClick={() => setTab('gerenciar')} className="text-violet-600 underline font-medium">Gerenciar</button>
             </p>
           )}
@@ -5304,7 +5304,7 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
           {reportDatasetIds !== null && displayDatasets.length === 0 && !search && (
             <div className="text-center py-6 px-3">
               <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg>
-              <p className="text-xs text-gray-400 mb-3">Nenhuma fonte vinculada a este dashboard</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">Nenhuma fonte vinculada a este dashboard</p>
               {unpinnedDatasets.length > 0 && onPinDataset && (
                 <button onClick={() => setShowAddPicker(true)} className="text-xs text-violet-600 font-semibold hover:underline">+ Adicionar fonte de dados</button>
               )}
@@ -5312,7 +5312,7 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
           )}
 
           {displayDatasets.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">Nenhum dataset — vá em Gerenciar para adicionar</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-6">Nenhum dataset — vá em Gerenciar para adicionar</p>
           ) : displayDatasets.map(ds => {
             const cols = ds.columns || []
             const colTypes = ds.column_types || {}
@@ -5321,9 +5321,9 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
             const isOpen = expandedDatasets.has(ds.id) || !!search
 
             return (
-              <div key={ds.id} className="border border-gray-200 rounded-xl overflow-hidden">
+              <div key={ds.id} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 {/* Dataset header — accordion toggle */}
-                <div className="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   <button
                     onClick={() => toggleDataset(ds.id)}
                     className="flex items-center gap-2 px-3 py-2.5 text-left flex-1 min-w-0"
@@ -5332,9 +5332,9 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
                       <ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5" />
                     </svg>
-                    <span className="text-[11px] font-bold text-gray-600 flex-1 truncate">{ds.name}</span>
+                    <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300 flex-1 truncate">{ds.name}</span>
                     {ds.is_demo && <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-amber-100 text-amber-600 shrink-0">DEMO</span>}
-                    <span className="text-[9px] text-gray-400 shrink-0">{cols.length} cols</span>
+                    <span className="text-[9px] text-gray-400 dark:text-gray-500 shrink-0">{cols.length} cols</span>
                     <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -5352,7 +5352,7 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
 
                 {/* Columns list */}
                 {isOpen && (
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
                     {filtered.map(col => {
                       const type = colTypes[col] || 'text'
                       const semantic = (ds.column_semantics || {})[col] || (type === 'number' ? 'metric' : type === 'date' ? 'date' : type === 'boolean' ? 'boolean' : 'category')
@@ -5372,7 +5372,7 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
                       return (
                         <div key={col}>
                           <div
-                            className={`group flex items-center gap-1 hover:bg-violet-50 transition-colors ${onColumnDragStart ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                            className={`group flex items-center gap-1 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors ${onColumnDragStart ? 'cursor-grab active:cursor-grabbing' : ''}`}
                             draggable={!!onColumnDragStart}
                             onDragStart={onColumnDragStart ? e => {
                               e.dataTransfer.effectAllowed = 'copy'
@@ -5398,7 +5398,7 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
                               <span title={tip} className={`w-5 h-5 flex items-center justify-center shrink-0 rounded ${cls}`}>
                                 {icon}
                               </span>
-                              <span className="text-xs text-gray-700 flex-1 truncate">{col}</span>
+                              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{col}</span>
                               {isDateCol && (
                                 <svg className={`w-3 h-3 text-gray-300 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                               )}
@@ -5419,9 +5419,9 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
                               {GRANULARITIES.map(g => (
                                 <button key={g.value}
                                   onClick={() => onAssignColumn?.(col, 'date', g.value, ds.id)}
-                                  className="w-full flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-50 text-left transition-colors">
+                                  className="w-full flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-left transition-colors">
                                   <span className="text-[9px] text-blue-300 w-4">↳</span>
-                                  <span className="text-xs text-gray-500">{g.label}</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">{g.label}</span>
                                 </button>
                               ))}
                             </div>
@@ -5441,27 +5441,27 @@ export function ColumnsPanel({ datasets = [], blocks = [], selectedBlockId, onAs
       {tab === 'colunas' && reportDatasetIds !== null && unpinnedDatasets.length > 0 && onPinDataset && (
         <div className="pt-1">
           {showAddPicker ? (
-            <div className="border border-violet-200 rounded-xl overflow-hidden">
-              <div className="px-3 py-2 bg-violet-50 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-violet-700">Adicionar fonte</span>
+            <div className="border border-violet-200 dark:border-violet-800 rounded-xl overflow-hidden">
+              <div className="px-3 py-2 bg-violet-50 dark:bg-violet-950/30 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400">Adicionar fonte</span>
                 <button onClick={() => setShowAddPicker(false)} className="text-gray-400 hover:text-gray-600">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {unpinnedDatasets.map(ds => (
                   <button key={ds.id} onClick={() => { onPinDataset(ds.id); setShowAddPicker(false) }}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-violet-50 transition-colors text-left">
+                    className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors text-left bg-white dark:bg-gray-800">
                     <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" strokeWidth={1.5}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5v5c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 10v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg>
-                    <span className="text-xs text-gray-700 flex-1 truncate">{ds.name}</span>
-                    <span className="text-[10px] text-gray-400">{(ds.row_count || 0).toLocaleString()} linhas</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{ds.name}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{(ds.row_count || 0).toLocaleString()} linhas</span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
             <button onClick={() => setShowAddPicker(true)}
-              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-violet-600 font-semibold hover:bg-violet-50 rounded-xl border border-dashed border-violet-200 transition-colors">
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-violet-600 font-semibold hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl border border-dashed border-violet-200 dark:border-violet-800 transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/></svg>
               Adicionar fonte de dados
             </button>
