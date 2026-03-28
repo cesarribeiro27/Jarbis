@@ -2034,11 +2034,13 @@ DOMAIN_TEMPLATES = {
     },
     "links": {
         "name": "Auditoria de Links / Rastreamento de Campanhas",
-        "signals": ["dispositivo", "navegador", "sistema", "pais", "cidade", "cliques_unicos"],
+        "signals": ["dispositivo", "navegador", "sistema", "pais", "cidade", "cliques_unicos_periodo"],
         "insights_focus": "volume de cliques totais vs únicos (deduplicação por IP), performance por link, origem do tráfego, distribuição geográfica e de dispositivos",
         "kpi_hints": (
             "KPI 1: total de cliques — value_col='cliques', agg='sum', título='Cliques Totais'. "
-            "KPI 2: cliques únicos — value_col='cliques_unicos', agg='sum', título='Cliques Únicos'. "
+            "KPI 2: cliques únicos no período — value_col='cliques_unicos_periodo', agg='max', título='Cliques Únicos'. "
+            "  ATENÇÃO: 'cliques_unicos_periodo' é o mesmo em todas as linhas do mesmo link (total deduplicado). "
+            "  Use SEMPRE agg='max' para este KPI — NUNCA agg='sum' (sum inflaria o número incorretamente). "
             "KPI 3: links ativos — value_col='link', agg='count_distinct' com filtro ativo=Sim, título='Links Ativos'. "
             "KPI 4: fontes de tráfego — value_col='fonte', agg='count_distinct', título='Fontes de Tráfego'."
         ),
@@ -2046,13 +2048,12 @@ DOMAIN_TEMPLATES = {
             "ATO 2 herói: evolução temporal de cliques por data — type='line', label_col='data', value_col='cliques', agg='sum', w=12. "
             "ATO 3: ranking por fonte de tráfego — type='bar_h', label_col='fonte', value_col='cliques', agg='sum'. "
             "ATO 3: distribuição por dispositivo — type='pie', label_col='dispositivo', value_col='cliques', agg='sum'. "
-            "ATO 3: performance por link (compare cliques totais vs únicos) — type='bar_h', label_col='link', value_col='cliques', agg='sum'. "
+            "ATO 3: performance por link — type='bar_h', label_col='link', value_col='cliques', agg='sum'. "
             "ATO 4: ranking por país — type='bar_h', label_col='pais', value_col='cliques', agg='sum'. "
-            "ATO 4: ranking por cidade — type='bar_h', label_col='cidade', value_col='cliques_unicos', agg='sum'. "
+            "ATO 4: ranking por cidade — type='bar_h', label_col='cidade', value_col='cliques', agg='sum'. "
             "ATO 4: filtro por link ativo — type='filter', label_col='ativo'. "
-            "REGRA IMPORTANTE: 'link' é identifier — use count_distinct ou label_col. "
-            "NUNCA some 'link' — ele não é numérico. "
-            "A coluna 'cliques_unicos' mede IPs únicos por combinação de dimensão — use agg='sum' para agregar."
+            "REGRA IMPORTANTE: 'link' é identifier — use count_distinct ou label_col, NUNCA some diretamente. "
+            "REGRA IMPORTANTE: 'cliques_unicos_periodo' usa agg='max' (não sum) — é a deduplicação correta por IP."
         ),
         "optional_improvements": [
             {"col": "navegador", "impact": "Análise de compatibilidade por browser (Safari vs Chrome vs Firefox)"},

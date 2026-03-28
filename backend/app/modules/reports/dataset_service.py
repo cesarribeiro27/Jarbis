@@ -531,6 +531,8 @@ class DatasetService:
 
         ids_str = ", ".join(f"'{lid}'" for lid in link_ids)
         ch = get_clickhouse()
+
+        # Query 1: granular rows (para gráficos por dispositivo/país/fonte/data)
         rows_raw = ch.query(f"""
             SELECT
                 formatDateTime(clicked_at, '%Y-%m-%d') as data,
@@ -552,8 +554,7 @@ class DatasetService:
                     referrer LIKE '%youtube%' OR referrer LIKE '%youtu.be%', 'YouTube',
                     'Outro'
                 ) as fonte,
-                count() as cliques,
-                countDistinct(ip_address) as cliques_unicos
+                count() as cliques
             FROM link_events
             WHERE tenant_id = '{str(tenant_id)}'
               AND link_id IN ({ids_str})
@@ -562,7 +563,21 @@ class DatasetService:
             ORDER BY data DESC
         """).result_rows
 
-        columns = ["data", "link", "ativo", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques", "cliques_unicos"]
+        # Query 2: total de cliques únicos por link no período (countDistinct sem agrupamento dimensional)
+        # Este valor é o mesmo para todas as linhas do mesmo link — deve ser usado com agg=max no dashboard
+        unicos_raw = ch.query(f"""
+            SELECT
+                link_id,
+                countDistinct(ip_address) as cliques_unicos_periodo
+            FROM link_events
+            WHERE tenant_id = '{str(tenant_id)}'
+              AND link_id IN ({ids_str})
+              AND clicked_at >= now() - INTERVAL {days} DAY
+            GROUP BY link_id
+        """).result_rows
+        unicos_map = {str(r[0]): int(r[1]) for r in unicos_raw}
+
+        columns = ["data", "link", "ativo", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques", "cliques_unicos_periodo"]
         rows = [
             {
                 "data": r[0],
@@ -575,7 +590,7 @@ class DatasetService:
                 "cidade": r[6] or "Desconhecido",
                 "fonte": r[7],
                 "cliques": r[8],
-                "cliques_unicos": r[9],
+                "cliques_unicos_periodo": unicos_map.get(str(r[1]), 0),
             }
             for r in rows_raw
         ]
