@@ -448,6 +448,11 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     # Busca usuário existente pelo email
     user = await db.scalar(select(User).where(User.email == email))
 
+    if user and not user.email_verified:
+        # Usuário existente com email não verificado — OAuth confirma o email automaticamente
+        user.email_verified = True
+        await db.commit()
+
     if not user:
         # Cria tenant + usuário
         slug_base = email.split("@")[0].lower().replace(".", "-")
