@@ -20,13 +20,23 @@ from app.modules.tenants.models import User
 
 
 def _extract_token(request: Request) -> str:
-    """Extrai o JWT do cookie httpOnly ou do header Authorization Bearer."""
-    token = request.cookies.get("jarbis_token")
-    if token:
-        return token
+    """
+    Extrai o JWT para autenticação, em ordem de prioridade:
+    1. Bearer header — usado pelo painel admin (jarbis_admin_token) para garantir
+       isolamento durante impersonação.
+    2. Cookie jarbis_impersonation_token — sessão temporária de impersonação (15 min),
+       setado pelo endpoint /admin/tenants/{id}/impersonate.
+    3. Cookie jarbis_token — sessão regular do usuário.
+    """
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         return auth_header[7:]
+    token = request.cookies.get("jarbis_impersonation_token")
+    if token:
+        return token
+    token = request.cookies.get("jarbis_token")
+    if token:
+        return token
     raise UnauthorizedError("Token de autenticação não fornecido.")
 
 

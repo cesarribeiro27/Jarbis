@@ -385,10 +385,8 @@ export default function AppLayout({ children }) {
       if (ageDays < 30) return
       const dismissed = localStorage.getItem('jarbis_nps_dismissed')
       if (dismissed) return
-      const token = localStorage.getItem('jarbis_token')
-      if (!token) return
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'}/admin/nps/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include',
       }).then(r => r.ok ? r.json() : null).then(d => {
         if (d && !d.submitted) setTimeout(() => setNpsModal(true), 3000)
       }).catch(() => {})
@@ -399,10 +397,10 @@ export default function AppLayout({ children }) {
     if (npsScore === null) return
     setNpsSending(true)
     try {
-      const token = localStorage.getItem('jarbis_token')
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'}/admin/nps/submit`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ score: npsScore, comment: npsComment }),
       })
       setNpsDone(true)
@@ -417,10 +415,13 @@ export default function AppLayout({ children }) {
     setNpsModal(false)
   }
 
-  function exitImpersonation() {
-    const backup = localStorage.getItem('jarbis_token_impersonation_backup')
-    if (backup) localStorage.setItem('jarbis_token', backup)
-    localStorage.removeItem('jarbis_token_impersonation_backup')
+  async function exitImpersonation() {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'}/admin/tenants/impersonate/end`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch { /* ignora falhas de rede */ }
     localStorage.removeItem('jarbis_impersonated_by')
     localStorage.removeItem('jarbis_impersonated_tenant')
     window.close()

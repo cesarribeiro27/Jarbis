@@ -193,7 +193,7 @@ export default function AdminTenantDetailPage() {
   }
 
   async function impersonate() {
-    if (!confirm(`Entrar como cliente "${tenant.name}"? O token expira em 15 minutos.`)) return
+    if (!confirm(`Entrar como cliente "${tenant.name}"? A sessão expira em 15 minutos.`)) return
     setImpersonating(true)
     try {
       const r = await fetch(`${API_URL}/admin/tenants/${id}/impersonate`, {
@@ -201,10 +201,7 @@ export default function AdminTenantDetailPage() {
       })
       if (!r.ok) { alert('Falha ao iniciar impersonação'); return }
       const d = await r.json()
-      // Abre o app em nova aba com o token de impersonação
-      const url = new URL(window.location.origin + '/dashboard')
-      localStorage.setItem('jarbis_token_impersonation_backup', localStorage.getItem('jarbis_token') || '')
-      localStorage.setItem('jarbis_token', d.token)
+      // Cookie jarbis_impersonation_token foi setado pelo backend (httpOnly, 15 min)
       localStorage.setItem('jarbis_impersonated_by', d.owner_email)
       localStorage.setItem('jarbis_impersonated_tenant', d.tenant_name)
       window.open('/dashboard', '_blank')

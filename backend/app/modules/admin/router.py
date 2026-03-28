@@ -21,7 +21,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import Date, cast, delete, func, select
@@ -2858,12 +2858,14 @@ async def list_audit_log(
 @router.post("/tenants/{tenant_id}/impersonate")
 async def impersonate_tenant(
     tenant_id: uuid.UUID,
+    response: Response,
     user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Gera um token JWT de curta duração (15 min) que autentica como o owner do tenant.
-    Permite que um admin entre no sistema como se fosse o cliente para diagnóstico.
+    Seta um cookie httpOnly jarbis_impersonation_token (15 min) que autentica
+    como o owner do tenant. O painel admin continua usando jarbis_admin_token
+    Bearer, portanto não é afetado pelo cookie de impersonação.
     Apenas role 'full' pode impersonar.
     """
     role = await _get_admin_role(user.email, db)
@@ -2890,6 +2892,17 @@ async def impersonate_tenant(
         expires_delta=timedelta(minutes=15),
     )
 
+    is_prod = settings.is_production
+    response.set_cookie(
+        key="jarbis_impersonation_token",
+        value=token,
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        max_age=15 * 60,
+        path="/",
+    )
+
     await _audit(
         db, user.email, "impersonate", "tenant", str(tenant_id), tenant.name,
         f"Impersonou {owner.email} por 15 min"
@@ -2897,11 +2910,22 @@ async def impersonate_tenant(
     await db.commit()
 
     return {
-        "token": token,
         "tenant_name": tenant.name,
         "owner_email": owner.email,
         "expires_in_minutes": 15,
     }
+
+
+@router.post("/tenants/impersonate/end")
+async def end_impersonation(response: Response):
+    """Encerra a sessão de impersonação limpando o cookie jarbis_impersonation_token."""
+    is_prod = settings.is_production
+    response.delete_cookie(
+        key="jarbis_impersonation_token",
+        path="/",
+        samesite="none" if is_prod else "lax",
+    )
+    return {"ok": True}
 
 
 # ── Fase 6 — API Keys ─────────────────────────────────────────────────────────
