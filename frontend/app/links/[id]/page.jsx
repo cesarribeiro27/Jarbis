@@ -102,8 +102,8 @@ function AddLinkModal({ campaignId, planLimits, currentLinksCount, onClose, onCr
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg sm:mx-4 max-h-[90dvh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{prefill ? 'Clonar link' : 'Adicionar link'}</h2>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">Links não podem ser removidos após criados - fazem parte do banco de dados da campanha.</p>
 
@@ -187,8 +187,8 @@ function EditLinkModal({ link, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg sm:mx-4 max-h-[90dvh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Editar link</h2>
         <p className="text-xs text-gray-400 mb-5">O slug (<span className="font-mono text-violet-500">/l/{link.slug}</span>) é permanente e não pode ser alterado.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -255,8 +255,8 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-xl sm:mx-4 max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
           <div>

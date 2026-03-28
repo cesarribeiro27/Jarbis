@@ -285,8 +285,8 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[88vh]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg sm:mx-4 flex flex-col overflow-hidden max-h-[90dvh] sm:max-h-[88vh]" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
@@ -369,7 +369,7 @@ function AiPanel({ datasets, blocks, onClose, onAddBlock, onAddBlocks, onSetDate
         </div>
 
         {/* ── Content ── */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
 
           {/* ════════ TAB: GERAR ════════ */}
           {activeTab === 'generate' && (
