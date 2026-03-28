@@ -52,23 +52,19 @@ class Report(Base):
     share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
     is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     share_view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    # Expiração do link público. None = sem expiração (tokens legados). Novos tokens: 90 dias.
+    # Expiração do link público — controlada pelo usuário via revogação manual.
+    # Coluna mantida por compatibilidade; novos tokens não recebem data de expiração.
     share_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
-    def generate_share_token(self, expires_days: int = 90):
-        from datetime import timedelta
+    def generate_share_token(self):
         self.share_token = secrets.token_urlsafe(24)
         self.is_shared = True
-        self.share_token_expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+        self.share_token_expires_at = None  # sem expiração — usuário controla via revogação
 
     @property
     def share_token_valid(self) -> bool:
-        """Retorna True se o token existe, está ativo e não expirou."""
-        if not self.is_shared or not self.share_token:
-            return False
-        if self.share_token_expires_at and self.share_token_expires_at < datetime.now(timezone.utc):
-            return False
-        return True
+        """Retorna True se o token existe e está ativo. Expiração manual via is_shared=False."""
+        return bool(self.is_shared and self.share_token)

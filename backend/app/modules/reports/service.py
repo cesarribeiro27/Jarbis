@@ -155,7 +155,7 @@ class ReportService:
             "token": report.share_token,
             "share_url": share_url,
             "view_count": report.share_view_count,
-            "expires_at": report.share_token_expires_at.isoformat() if report.share_token_expires_at else None,
+            "expires_at": None,
         }
 
     async def get_public(self, token: str) -> Report | None:
