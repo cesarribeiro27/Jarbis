@@ -110,6 +110,16 @@ export default function AdminAfiliadoDetailPage() {
     setSavingPayment(false)
   }
 
+  const handleDelete = async () => {
+    const referralCount = (data.referrals || []).length
+    const msg = referralCount > 0
+      ? `Excluir "${data.name}" permanentemente? Este afiliado tem ${referralCount} indicação(ões). Os pagamentos de comissão também serão removidos.`
+      : `Excluir "${data.name}" permanentemente?`
+    if (!confirm(msg)) return
+    await fetch(`${API_URL}/admin/affiliates/${id}`, { method: 'DELETE', headers: authHeaders() })
+    router.replace('/admin/afiliados')
+  }
+
   const save = async () => {
     setSaving(true)
     setMsg(null)
@@ -166,12 +176,21 @@ export default function AdminAfiliadoDetailPage() {
             </div>
             <p className="text-gray-500 text-sm mt-0.5">{data.email}</p>
           </div>
-          <button
-            onClick={() => { setEditing(v => !v); setMsg(null) }}
-            className="text-sm text-violet-400 hover:text-violet-300 border border-violet-800/50 px-3 py-1.5 rounded-xl transition-colors"
-          >
-            {editing ? 'Cancelar' : 'Editar'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setEditing(v => !v); setMsg(null) }}
+              className="text-sm text-violet-400 hover:text-violet-300 border border-violet-800/50 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              {editing ? 'Cancelar' : 'Editar'}
+            </button>
+            <button
+              onClick={handleDelete}
+              className="text-sm text-red-500 hover:text-red-400 border border-red-900/50 px-3 py-1.5 rounded-xl transition-colors"
+              title="Excluir afiliado"
+            >
+              Excluir
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

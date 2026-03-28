@@ -1056,6 +1056,24 @@ async def admin_update_affiliate(
     return {"ok": True}
 
 
+@router.delete("/affiliates/{affiliate_id}", summary="Excluir afiliado")
+async def admin_delete_affiliate(
+    affiliate_id: uuid.UUID,
+    admin_data: tuple = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _, role = admin_data
+    _check_roles(role, {"full"})
+
+    affiliate = await db.scalar(select(Affiliate).where(Affiliate.id == affiliate_id))
+    if not affiliate:
+        raise HTTPException(status_code=404, detail="Afiliado não encontrado.")
+
+    await db.delete(affiliate)
+    await db.commit()
+    return {"ok": True}
+
+
 # ─── /admin/coupons ───────────────────────────────────────────────────────────
 
 @router.get("/coupons", summary="Listar cupons")
