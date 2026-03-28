@@ -11,10 +11,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up
 function OnboardingChecklist({ onDismiss }) {
   const [data, setData] = useState(null)
   useEffect(() => {
-    const token = localStorage.getItem('jarbis_token')
-    if (!token) return
     fetch(`${API_URL}/admin/onboarding/me`, {
-      headers: { Authorization: `Bearer ${token}` }
+      credentials: 'include',
     }).then(r => r.ok ? r.json() : null).then(d => d && setData(d)).catch(() => {})
   }, [])
 

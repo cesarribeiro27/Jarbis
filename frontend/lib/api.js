@@ -126,11 +126,9 @@ export const api = {
     datasets: {
       list: () => apiFetch('/reports/datasets'),
       upload: (formData) => {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
         return fetch(`${API_URL}/reports/datasets/upload`, {
           method: 'POST',
           credentials: 'include',
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: formData,
         }).then(async (r) => {
           if (r.status === 401) { localStorage.removeItem('jarbis_user'); window.location.href = '/login'; return }
@@ -141,11 +139,9 @@ export const api = {
       fetchGoogleSheets: (url) =>
         apiFetch(`/reports/datasets/google-sheets-sheets?url=${encodeURIComponent(url)}`),
       getExcelSheets: (formData) => {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
         return fetch(`${API_URL}/reports/datasets/excel-sheets`, {
           method: 'POST',
           credentials: 'include',
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: formData,
         }).then(async (r) => {
           if (!r.ok) { const e = await r.json().catch(() => ({ detail: 'Erro' })); throw new Error(e.detail) }

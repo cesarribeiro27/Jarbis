@@ -5,10 +5,7 @@ import AppLayout from '@/components/AppLayout'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
-function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-}
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState([])
@@ -23,14 +20,14 @@ export default function WebhooksPage() {
 
   useEffect(() => {
     load()
-    fetch(`${API_URL}/billing/status`, { headers: authHeaders() })
+    fetch(`${API_URL}/billing/status`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null).then(d => { if (d) setPlan(d.plan) })
   }, [])
 
   async function load() {
     setLoading(true)
     try {
-      const r = await fetch(`${API_URL}/reports/tenant/webhooks`, { headers: authHeaders() })
+      const r = await fetch(`${API_URL}/reports/tenant/webhooks`, { credentials: 'include' })
       if (r.ok) { const d = await r.json(); setWebhooks(d.items || []) }
     } finally { setLoading(false) }
   }
@@ -41,7 +38,8 @@ export default function WebhooksPage() {
     try {
       const r = await fetch(`${API_URL}/reports/tenant/webhooks`, {
         method: 'POST',
-        headers: authHeaders(),
+        credentials: 'include',
+        headers: JSON_HEADERS,
         body: JSON.stringify({ url: newUrl.trim(), events: newEvents }),
       })
       if (r.ok) {
@@ -59,7 +57,8 @@ export default function WebhooksPage() {
   async function toggleActive(id, current) {
     await fetch(`${API_URL}/reports/tenant/webhooks/${id}`, {
       method: 'PATCH',
-      headers: authHeaders(),
+      credentials: 'include',
+      headers: JSON_HEADERS,
       body: JSON.stringify({ is_active: !current }),
     })
     await load()
@@ -67,7 +66,7 @@ export default function WebhooksPage() {
 
   async function deleteWebhook(id) {
     if (!confirm('Remover este webhook?')) return
-    await fetch(`${API_URL}/reports/tenant/webhooks/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await fetch(`${API_URL}/reports/tenant/webhooks/${id}`, { method: 'DELETE', credentials: 'include' })
     await load()
   }
 
@@ -75,7 +74,7 @@ export default function WebhooksPage() {
     setTesting(t => ({ ...t, [id]: true }))
     try {
       const r = await fetch(`${API_URL}/reports/tenant/webhooks/${id}/test`, {
-        method: 'POST', headers: authHeaders()
+        method: 'POST', credentials: 'include'
       })
       const d = await r.json()
       setTestResults(t => ({ ...t, [id]: d }))

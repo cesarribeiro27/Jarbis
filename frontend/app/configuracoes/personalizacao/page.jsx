@@ -5,10 +5,7 @@ import AppLayout from '@/components/AppLayout'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
-function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-}
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 const PRESET_COLORS = [
   '#7c3aed', '#2563eb', '#059669', '#dc2626', '#d97706',
@@ -31,7 +28,7 @@ export default function PersonalizacaoPage() {
   async function load() {
     setLoading(true)
     try {
-      const r = await fetch(`${API_URL}/reports/tenant/customization`, { headers: authHeaders() })
+      const r = await fetch(`${API_URL}/reports/tenant/customization`, { credentials: 'include', headers: JSON_HEADERS })
       if (r.ok) {
         const d = await r.json()
         setData(d)
@@ -47,7 +44,8 @@ export default function PersonalizacaoPage() {
     try {
       const r = await fetch(`${API_URL}/reports/tenant/customization`, {
         method: 'PATCH',
-        headers: authHeaders(),
+        credentials: 'include',
+        headers: JSON_HEADERS,
         body: JSON.stringify({ billing_name: billingName.trim() || null }),
       })
       if (r.ok) {
@@ -65,7 +63,8 @@ export default function PersonalizacaoPage() {
     try {
       const r = await fetch(`${API_URL}/reports/tenant/customization`, {
         method: 'PATCH',
-        headers: authHeaders(),
+        credentials: 'include',
+        headers: JSON_HEADERS,
         body: JSON.stringify({
           custom_logo_url: logoUrl.trim() || null,
           primary_color: color,

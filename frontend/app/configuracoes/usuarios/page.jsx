@@ -8,10 +8,7 @@ import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
-function authHeaders() {
-  const t = localStorage.getItem('jarbis_token')
-  return { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) }
-}
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 const ROLES = [
   { value: 'admin',  label: 'Admin',        desc: 'Gerencia usuários e configurações' },
@@ -44,7 +41,8 @@ function InviteModal({ onClose, onCreated }) {
       if (mode === 'email') {
         const res = await fetch(`${API_URL}/auth/users/invite-email`, {
           method: 'POST',
-          headers: authHeaders(),
+          credentials: 'include',
+          headers: JSON_HEADERS,
           body: JSON.stringify({ full_name: form.full_name, email: form.email, role: form.role }),
         })
         if (!res.ok) {
@@ -201,7 +199,8 @@ export default function UsuariosPage() {
     try {
       const res = await fetch(`${API_URL}/auth/users/${u.id}/resend-invite`, {
         method: 'POST',
-        headers: authHeaders(),
+        credentials: 'include',
+        headers: JSON_HEADERS,
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))

@@ -7,10 +7,7 @@ import { useToast } from '@/lib/toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-}
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 const FREQ_LABELS = {
   daily: 'Diário',
@@ -35,7 +32,8 @@ function CreateModal({ dashboards, onClose, onCreated }) {
     try {
       const r = await fetch(`${API_URL}/reports/scheduled`, {
         method: 'POST',
-        headers: authHeaders(),
+        credentials: 'include',
+        headers: JSON_HEADERS,
         body: JSON.stringify({
           report_id: form.report_id,
           frequency: form.frequency,
@@ -134,7 +132,7 @@ export default function RelatoriosAgendadosPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_URL}/reports/scheduled`, { headers: authHeaders() }).then(r => r.ok ? r.json() : []),
+      fetch(`${API_URL}/reports/scheduled`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
       api.reports.list(),
     ])
       .then(([sched, dashes]) => {
@@ -150,7 +148,8 @@ export default function RelatoriosAgendadosPage() {
     try {
       const r = await fetch(`${API_URL}/reports/scheduled/${item.id}`, {
         method: 'PUT',
-        headers: authHeaders(),
+        credentials: 'include',
+        headers: JSON_HEADERS,
         body: JSON.stringify({ is_active: !item.is_active }),
       })
       if (!r.ok) throw new Error('Erro ao atualizar')
@@ -168,7 +167,7 @@ export default function RelatoriosAgendadosPage() {
     try {
       const r = await fetch(`${API_URL}/reports/scheduled/${id}`, {
         method: 'DELETE',
-        headers: authHeaders(),
+        credentials: 'include',
       })
       if (!r.ok) throw new Error('Erro ao excluir')
       setScheduled(prev => prev.filter(s => s.id !== id))

@@ -6,12 +6,7 @@ import AppLayout from '@/components/AppLayout'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
-function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-  const h = { 'Content-Type': 'application/json' }
-  if (token) h['Authorization'] = `Bearer ${token}`
-  return h
-}
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 function fmtDate(s) {
   if (!s) return '—'
@@ -30,7 +25,7 @@ export default function ApiKeysPage() {
   async function load() {
     setLoading(true)
     const r = await fetch(`${API_URL}/reports/api-keys`, {
-      headers: authHeaders(),
+      credentials: 'include',
     })
     if (r.ok) setKeys(await r.json())
     setLoading(false)
@@ -44,7 +39,7 @@ export default function ApiKeysPage() {
     const body = { name: form.name, scopes: form.scopes }
     if (form.expires_in_days) body.expires_in_days = parseInt(form.expires_in_days)
     const r = await fetch(`${API_URL}/reports/api-keys`, {
-      method: 'POST', headers: authHeaders(),
+      method: 'POST', credentials: 'include', headers: JSON_HEADERS,
       body: JSON.stringify(body),
     })
     if (r.ok) {
@@ -60,7 +55,7 @@ export default function ApiKeysPage() {
   async function revokeKey(keyId) {
     if (!confirm('Revogar esta API key? Integrações que a usam vão parar de funcionar.')) return
     await fetch(`${API_URL}/reports/api-keys/${keyId}`, {
-      method: 'DELETE', headers: authHeaders(),
+      method: 'DELETE', credentials: 'include',
     })
     load()
   }

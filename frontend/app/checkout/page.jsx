@@ -320,8 +320,8 @@ function CheckoutContent() {
   }
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_token') : null
-    if (!token) { router.replace('/login'); return }
+    const user = typeof window !== 'undefined' ? localStorage.getItem('jarbis_user') : null
+    if (!user) { router.replace('/login'); return }
     // Carrega perfil fiscal existente para pré-preencher
     api.billing.getFiscalProfile()
       .then(data => setFiscal(f => ({ ...f, ...data })))
