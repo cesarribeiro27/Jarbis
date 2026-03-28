@@ -892,7 +892,7 @@ export default function DashboardsPage() {
                   return (
                     <div
                       key={r.id}
-                      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 dark:hover:border-gray-600 hover:-translate-y-0.5 transition-all duration-200 relative group"
+                      className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm cursor-pointer hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] hover:border-gray-200 dark:hover:border-gray-600 hover:-translate-y-0.5 transition-all duration-200 relative group ${menuOpen === r.id ? 'z-20' : ''}`}
                       onClick={() => router.push(`/dashboards/${r.id}`)}
                     >
                       {/* Preview / Capa */}
