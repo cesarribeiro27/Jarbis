@@ -6102,10 +6102,10 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
                 </svg>
               )}
               {readOnly ? (
-                <span className="text-xs font-semibold text-[#1A1A2E] dark:text-gray-200 flex-1 truncate leading-none">{block.title}</span>
+                <span className="text-xs font-semibold text-[#1A1A2E] flex-1 truncate leading-none">{block.title}</span>
               ) : (
                 <input
-                  className="text-xs font-semibold text-[#1A1A2E] dark:text-gray-200 flex-1 bg-transparent outline-none min-w-0 leading-none placeholder:text-gray-300"
+                  className="text-xs font-semibold text-[#1A1A2E] flex-1 bg-transparent outline-none min-w-0 leading-none placeholder:text-gray-300"
                   value={block.title}
                   onChange={e => onChange(blocks.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))}
                   onClick={e => e.stopPropagation()}
