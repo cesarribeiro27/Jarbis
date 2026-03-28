@@ -155,6 +155,7 @@ class ReportService:
             "token": report.share_token,
             "share_url": share_url,
             "view_count": report.share_view_count,
+            "expires_at": report.share_token_expires_at.isoformat() if report.share_token_expires_at else None,
         }
 
     async def get_public(self, token: str) -> Report | None:
@@ -167,6 +168,10 @@ class ReportService:
         )
         report = result.scalar_one_or_none()
         if not report:
+            return None
+
+        # Rejeita token expirado
+        if not report.share_token_valid:
             return None
 
         report.share_view_count += 1
@@ -182,4 +187,7 @@ class ReportService:
                 Report.is_shared.is_(True),
             )
         )
-        return result.scalar_one_or_none()
+        report = result.scalar_one_or_none()
+        if report and not report.share_token_valid:
+            return None
+        return report
