@@ -895,6 +895,8 @@ export default function DatasetsPage() {
   const [showLinksModal, setShowLinksModal] = useState(false)
   const [syncingId, setSyncingId] = useState(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [renamingId, setRenamingId] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
@@ -1052,6 +1054,19 @@ export default function DatasetsPage() {
     } catch (err) {
       toast(err.message || 'Erro ao sincronizar Google Analytics', 'error')
     } finally { setSyncingId(null) }
+  }
+
+  async function handleRename(id) {
+    const name = renameValue.trim()
+    if (!name) { setRenamingId(null); return }
+    try {
+      const updated = await api.reports.datasets.update(id, { name })
+      setDatasets(prev => prev.map(d => d.id === id ? { ...d, name: updated.name } : d))
+    } catch (err) {
+      toast(err.message || 'Erro ao renomear', 'error')
+    } finally {
+      setRenamingId(null)
+    }
   }
 
   async function handleDelete(id) {
@@ -1283,12 +1298,36 @@ export default function DatasetsPage() {
                   </div>
 
                   {/* Info — clique navega para detalhe */}
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/datasets/${ds.id}`)}>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900 dark:text-gray-100 truncate text-sm hover:text-violet-700 dark:hover:text-violet-400 transition-colors">{ds.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      {renamingId === ds.id ? (
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          onBlur={() => handleRename(ds.id)}
+                          onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setRenamingId(null) }}
+                          className="flex-1 min-w-0 text-sm font-bold px-2 py-0.5 rounded-lg border border-[#7C3AED] bg-violet-50 dark:bg-violet-900/20 text-[#1A1A2E] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-violet-400"
+                          onClick={e => e.stopPropagation()}
+                        />
+                      ) : (
+                        <p
+                          className="font-bold text-gray-900 dark:text-gray-100 truncate text-sm hover:text-violet-700 dark:hover:text-violet-400 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/datasets/${ds.id}`)}
+                        >{ds.name}</p>
+                      )}
+                      {!renamingId || renamingId !== ds.id ? (
+                        <button
+                          onClick={e => { e.stopPropagation(); setRenamingId(ds.id); setRenameValue(ds.name) }}
+                          className="shrink-0 text-[#CBD5E1] hover:text-[#6D28D9] transition-colors"
+                          title="Renomear"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                      ) : null}
                       {ds.is_demo && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 shrink-0">DEMO</span>}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap cursor-pointer" onClick={() => router.push(`/datasets/${ds.id}`)}>
                       <span className="text-xs text-gray-500">{formatRows(ds.row_count)}</span>
                       {ds.columns && <span className="text-xs text-gray-400">{ds.columns.length} {t('columns')}</span>}
                       <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${ds.type === 'api' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ds.type === 'database' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ds.type === 'google-analytics' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : ds.type === 'links' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400'}`}>
