@@ -505,13 +505,15 @@ class DatasetService:
         """
         Busca dados de cliques do ClickHouse para uma campanha de links.
         Retorna (rows, columns) para materializar como dataset.
-        Colunas: data, link, dispositivo, navegador, sistema, cliques
+        Colunas: data, hora, dia_semana, campanha, link, ativo, dispositivo,
+                 navegador, sistema, pais, cidade, fonte, cliques, cliques_unicos_periodo
         """
-        from app.modules.links.models import ShortLink
+        from app.modules.links.models import ShortLink, LinkCampaign
         from app.config import settings as _settings
         from app.core.clickhouse import get_clickhouse
         import uuid as _uuid
 
+        # Busca links da campanha (PostgreSQL)
         result = await self.db.scalars(
             select(ShortLink).where(
                 ShortLink.campaign_id == _uuid.UUID(campaign_id),
@@ -521,6 +523,12 @@ class DatasetService:
         links = result.all()
         if not links:
             return [], []
+
+        # Busca nome da campanha (PostgreSQL)
+        campaign_obj = await self.db.scalar(
+            select(LinkCampaign).where(LinkCampaign.id == _uuid.UUID(campaign_id))
+        )
+        campaign_name = campaign_obj.name if campaign_obj else "Desconhecida"
 
         link_ids = [str(lnk.id) for lnk in links]
         name_map = {str(lnk.id): lnk.name for lnk in links}
@@ -532,10 +540,14 @@ class DatasetService:
         ids_str = ", ".join(f"'{lid}'" for lid in link_ids)
         ch = get_clickhouse()
 
-        # Query 1: granular rows (para gráficos por dispositivo/país/fonte/data)
+        _DIAS = {1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado', 7: 'Domingo'}
+
+        # Query 1: granular rows com hora e dia da semana
         rows_raw = ch.query(f"""
             SELECT
                 formatDateTime(clicked_at, '%Y-%m-%d') as data,
+                toHour(clicked_at) as hora,
+                toDayOfWeek(clicked_at) as dia_semana_num,
                 link_id,
                 device_type,
                 browser,
@@ -559,12 +571,11 @@ class DatasetService:
             WHERE tenant_id = '{str(tenant_id)}'
               AND link_id IN ({ids_str})
               AND clicked_at >= now() - INTERVAL {days} DAY
-            GROUP BY data, link_id, device_type, browser, os, country, city, fonte
-            ORDER BY data DESC
+            GROUP BY data, hora, dia_semana_num, link_id, device_type, browser, os, country, city, fonte
+            ORDER BY data DESC, hora
         """).result_rows
 
-        # Query 2: total de cliques únicos por link no período (countDistinct sem agrupamento dimensional)
-        # Este valor é o mesmo para todas as linhas do mesmo link — deve ser usado com agg=max no dashboard
+        # Query 2: cliques únicos por link no período
         unicos_raw = ch.query(f"""
             SELECT
                 link_id,
@@ -577,20 +588,27 @@ class DatasetService:
         """).result_rows
         unicos_map = {str(r[0]): int(r[1]) for r in unicos_raw}
 
-        columns = ["data", "link", "ativo", "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte", "cliques", "cliques_unicos_periodo"]
+        columns = [
+            "data", "hora", "dia_semana", "campanha", "link", "ativo",
+            "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte",
+            "cliques", "cliques_unicos_periodo",
+        ]
         rows = [
             {
                 "data": r[0],
-                "link": name_map.get(r[1], r[1]),
-                "ativo": "Sim" if active_map.get(r[1], True) else "Não",
-                "dispositivo": r[2] or "Outro",
-                "navegador": r[3] or "Outro",
-                "sistema": r[4] or "Outro",
-                "pais": r[5] or "Desconhecido",
-                "cidade": r[6] or "Desconhecido",
-                "fonte": r[7],
-                "cliques": r[8],
-                "cliques_unicos_periodo": unicos_map.get(str(r[1]), 0),
+                "hora": int(r[1]),
+                "dia_semana": _DIAS.get(int(r[2]), ''),
+                "campanha": campaign_name,
+                "link": name_map.get(str(r[3]), str(r[3])),
+                "ativo": "Sim" if active_map.get(str(r[3]), True) else "Não",
+                "dispositivo": r[4] or "Outro",
+                "navegador": r[5] or "Outro",
+                "sistema": r[6] or "Outro",
+                "pais": r[7] or "Desconhecido",
+                "cidade": r[8] or "Desconhecido",
+                "fonte": r[9],
+                "cliques": int(r[10]),
+                "cliques_unicos_periodo": unicos_map.get(str(r[3]), 0),
             }
             for r in rows_raw
         ]

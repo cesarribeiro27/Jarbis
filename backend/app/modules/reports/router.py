@@ -3692,12 +3692,52 @@ from app.modules.reports.connectors.ga_connector import fetch_ga_report, fetch_g
 from app.modules.reports.connectors.db_connector import encrypt_password, decrypt_password
 
 
+GA_TEMPLATES: dict[str, dict] = {
+    "acquisition": {
+        "label": "Aquisição de Tráfego",
+        "dimensions": ["date", "sessionDefaultChannelGrouping", "sessionSource", "sessionMedium", "sessionCampaignName", "deviceCategory", "country"],
+        "metrics": ["sessions", "activeUsers", "newUsers", "bounceRate", "engagementRate"],
+    },
+    "behavior": {
+        "label": "Comportamento no Site",
+        "dimensions": ["date", "pagePath", "pageTitle", "sessionDefaultChannelGrouping", "deviceCategory"],
+        "metrics": ["screenPageViews", "averageSessionDuration", "bounceRate", "sessions"],
+    },
+    "conversions": {
+        "label": "Conversões e Eventos",
+        "dimensions": ["date", "eventName", "sessionCampaignName", "sessionDefaultChannelGrouping"],
+        "metrics": ["eventCount", "conversions", "sessions"],
+    },
+    "audience": {
+        "label": "Audiência e Geo",
+        "dimensions": ["date", "country", "city", "region", "language", "deviceCategory"],
+        "metrics": ["activeUsers", "newUsers", "sessions"],
+    },
+    "technology": {
+        "label": "Tecnologia",
+        "dimensions": ["date", "deviceCategory", "operatingSystem", "browser"],
+        "metrics": ["sessions", "activeUsers", "bounceRate"],
+    },
+}
+
+
 class GAAuthInit(BaseModel):
     name: str
     property_id: str
+    template: str | None = None
     dimensions: list[str] = ["date", "sessionDefaultChannelGrouping", "deviceCategory", "country", "city", "sessionCampaignName", "language"]
     metrics: list[str] = ["sessions", "activeUsers", "newUsers", "screenPageViews", "averageSessionDuration", "bounceRate", "engagementRate"]
     date_range_days: int = 90
+
+    def resolved_dimensions(self) -> list[str]:
+        if self.template and self.template in GA_TEMPLATES:
+            return GA_TEMPLATES[self.template]["dimensions"]
+        return self.dimensions
+
+    def resolved_metrics(self) -> list[str]:
+        if self.template and self.template in GA_TEMPLATES:
+            return GA_TEMPLATES[self.template]["metrics"]
+        return self.metrics
 
 
 @router.post("/datasets/google-analytics/auth", status_code=200)
@@ -3714,8 +3754,8 @@ async def ga_auth_init(
         "tenant_id": str(user.tenant_id),
         "name": body.name,
         "property_id": body.property_id,
-        "dimensions": body.dimensions,
-        "metrics": body.metrics,
+        "dimensions": body.resolved_dimensions(),
+        "metrics": body.resolved_metrics(),
         "date_range_days": body.date_range_days,
         "exp": int(time.time()) + 600,
         "nonce": str(uuid.uuid4()),
