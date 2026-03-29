@@ -36,7 +36,6 @@ export default async function RootLayout({ children }) {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'GT-NCNR47TR');
-          gtag('config', 'G-LX3PPJWZH6');
         `}</Script>
         <GoogleAdsConfig />
         <NextIntlClientProvider locale={locale} messages={messages}>
