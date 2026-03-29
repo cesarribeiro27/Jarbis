@@ -4,7 +4,7 @@ import { ToastProvider } from '@/lib/toast'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import ThemeProvider from '@/components/ThemeProvider'
-import { GoogleAnalytics } from '@next/third-parties/google'
+import Script from 'next/script'
 import GoogleAdsConfig from '@/components/GoogleAdsConfig'
 
 const inter = Inter({
@@ -30,7 +30,14 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale} className={inter.variable}>
       <body className="antialiased">
-        <GoogleAnalytics gaId="G-LX3PPJWZH6" />
+        <Script src="https://www.googletagmanager.com/gtag/js?id=GT-NCNR47TR" strategy="afterInteractive" />
+        <Script id="gtag-init" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'GT-NCNR47TR');
+          gtag('config', 'G-LX3PPJWZH6');
+        `}</Script>
         <GoogleAdsConfig />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
