@@ -3695,9 +3695,9 @@ from app.modules.reports.connectors.db_connector import encrypt_password, decryp
 class GAAuthInit(BaseModel):
     name: str
     property_id: str
-    dimensions: list[str] = ["date", "sessionDefaultChannelGrouping", "country"]
-    metrics: list[str] = ["sessions", "activeUsers", "bounceRate"]
-    date_range_days: int = 30
+    dimensions: list[str] = ["date", "sessionDefaultChannelGrouping", "deviceCategory", "country", "city", "sessionCampaignName", "language"]
+    metrics: list[str] = ["sessions", "activeUsers", "newUsers", "screenPageViews", "averageSessionDuration", "bounceRate", "engagementRate"]
+    date_range_days: int = 90
 
 
 @router.post("/datasets/google-analytics/auth", status_code=200)

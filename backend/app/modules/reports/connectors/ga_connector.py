@@ -17,7 +17,7 @@ async def _run_ga_report(access_token: str, property_id: str, dimensions: list[s
         "dateRanges": [{"startDate": start_date, "endDate": end_date}],
         "dimensions": [{"name": d} for d in dimensions],
         "metrics": [{"name": m} for m in metrics],
-        "limit": 10000,
+        "limit": 25000,
     }
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {access_token}"}
     async with httpx.AsyncClient(timeout=30) as client:

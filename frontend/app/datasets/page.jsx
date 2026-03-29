@@ -344,9 +344,9 @@ function GADatasetModal({ onClose }) {
   const [form, setForm] = useState({
     name: 'Google Analytics',
     property_id: '',
-    dimensions: 'date,sessionDefaultChannelGrouping,country',
-    metrics: 'sessions,activeUsers,bounceRate',
-    date_range_days: 30,
+    dimensions: 'date,sessionDefaultChannelGrouping,deviceCategory,country,city,sessionCampaignName,language',
+    metrics: 'sessions,activeUsers,newUsers,screenPageViews,averageSessionDuration,bounceRate,engagementRate',
+    date_range_days: 90,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

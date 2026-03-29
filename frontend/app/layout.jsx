@@ -6,6 +6,7 @@ import { getLocale, getMessages } from 'next-intl/server'
 import ThemeProvider from '@/components/ThemeProvider'
 import Script from 'next/script'
 import GoogleAdsConfig from '@/components/GoogleAdsConfig'
+import Analytics from '@/components/Analytics'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,10 +35,12 @@ export default async function RootLayout({ children }) {
         <Script id="gtag-init" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', wait_for_update: 2000 });
           gtag('js', new Date());
           gtag('config', 'GT-NCNR47TR');
         `}</Script>
         <GoogleAdsConfig />
+        <Analytics />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
             <ToastProvider>{children}</ToastProvider>
