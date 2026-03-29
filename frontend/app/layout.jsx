@@ -30,7 +30,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale} className={inter.variable}>
       <body className="antialiased">
-        <GoogleAnalytics gaId="G-VNGGHC0DS1" />
+        <GoogleAnalytics gaId="G-LX3PPJWZH6" />
         <GoogleAdsConfig />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
