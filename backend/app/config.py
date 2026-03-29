@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     stripe_price_starter: str = ""
     stripe_price_enterprise: str = ""
     frontend_url: str = "https://jarbis.cc"
-    backend_url: str = "https://jarbis-production.up.railway.app"
+    backend_url: str = "https://api.jarbis.cc"
     # Declarar como str para evitar que pydantic-settings tente JSON-decode
     # antes do field_validator (que ocorre com list[str]).
     # O router acessa via settings.admin_emails (lista derivada abaixo).
