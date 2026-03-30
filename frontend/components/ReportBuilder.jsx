@@ -2081,7 +2081,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             <Bar dataKey="value" name={block.title || vs.value} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}>
-              {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+              {processedData.map((d, i) => {
+                const fill = (() => {
+                  if (config.color_by_value) {
+                    const t = config.value_threshold != null && config.value_threshold !== '' ? parseFloat(config.value_threshold) : 0
+                    return d.value >= t ? (config.color_above || '#10b981') : (config.color_below || '#ef4444')
+                  }
+                  if (config.auto_negative && d.value < 0) return '#ef4444'
+                  return palette[i % palette.length]
+                })()
+                return <Cell key={i} fill={fill} opacity={getOpacity(d.label)} />
+              })}
               {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
@@ -2119,7 +2129,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             <Bar dataKey="value" name={block.title || vs.value} radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
-              {processedData.map((d, i) => <Cell key={i} fill={palette[i % palette.length]} opacity={getOpacity(d.label)} />)}
+              {processedData.map((d, i) => {
+                const fill = (() => {
+                  if (config.color_by_value) {
+                    const t = config.value_threshold != null && config.value_threshold !== '' ? parseFloat(config.value_threshold) : 0
+                    return d.value >= t ? (config.color_above || '#10b981') : (config.color_below || '#ef4444')
+                  }
+                  if (config.auto_negative && d.value < 0) return '#ef4444'
+                  return palette[i % palette.length]
+                })()
+                return <Cell key={i} fill={fill} opacity={getOpacity(d.label)} />
+              })}
               {config.show_data_labels && <LabelList dataKey="value" position="right" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
             </Bar>
             {config.reference_value != null && config.reference_value !== '' && (
@@ -2295,7 +2315,18 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               data={pieData} dataKey="value" nameKey="label"
               cx="50%" cy={pieCY} outerRadius={pieOuter} innerRadius={pieInner}
               labelLine={false}
-              label={config.show_labels ? ({ cx: pcx, cy: pcy, midAngle, outerRadius: pr, percent }) => {
+              label={config.label_inside ? ({ cx: pcx, cy: pcy, midAngle, innerRadius: ir, outerRadius: pr, percent, name }) => {
+                if (percent < 0.06) return null
+                const RADIAN = Math.PI / 180
+                const r = ir + (pr - ir) * 0.55
+                const x = pcx + r * Math.cos(-midAngle * RADIAN)
+                const y = pcy + r * Math.sin(-midAngle * RADIAN)
+                return (
+                  <text x={x} y={y} textAnchor="middle" dominantBaseline="central" style={{ fontSize: 9, fill: '#fff', fontWeight: 700, pointerEvents: 'none' }}>
+                    {`${(percent * 100).toFixed(0)}%`}
+                  </text>
+                )
+              } : config.show_labels ? ({ cx: pcx, cy: pcy, midAngle, outerRadius: pr, percent }) => {
                 const RADIAN = Math.PI / 180
                 const radius = pr * 1.2
                 const x = pcx + radius * Math.cos(-midAngle * RADIAN)
@@ -4145,6 +4176,45 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
               Brush filter (seleção de intervalo)
             </label>
           )}
+          {/* Color by value — bar, bar_h */}
+          {['bar', 'bar_h'].includes(block.type) && (
+            <div className="border border-gray-100 rounded-xl p-3 space-y-2.5 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div onClick={() => updConfig('color_by_value', !block.config?.color_by_value)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.color_by_value ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.color_by_value ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-xs text-gray-600">Colorir por valor</span>
+              </label>
+              {block.config?.color_by_value && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Limiar</label>
+                    <input type="number" step="any" value={block.config?.value_threshold ?? 0}
+                      onChange={e => updConfig('value_threshold', e.target.value === '' ? null : e.target.value)}
+                      className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">Acima/igual</label>
+                      <input type="color" value={block.config?.color_above || '#10b981'} onChange={e => updConfig('color_above', e.target.value)} className="w-full h-8 rounded cursor-pointer border border-gray-200 p-0.5" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">Abaixo</label>
+                      <input type="color" value={block.config?.color_below || '#ef4444'} onChange={e => updConfig('color_below', e.target.value)} className="w-full h-8 rounded cursor-pointer border border-gray-200 p-0.5" />
+                    </div>
+                  </div>
+                </>
+              )}
+              {!block.config?.color_by_value && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div onClick={() => updConfig('auto_negative', !block.config?.auto_negative)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.auto_negative ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.auto_negative ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                  <span className="text-xs text-gray-600">Negativos em vermelho</span>
+                </label>
+              )}
+            </div>
+          )}
         </ConfigSection>
       )}
 
@@ -4172,12 +4242,24 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
               <span className="text-xs text-gray-500 w-10 text-right">{block.config?.pie_cy ?? 54}%</span>
             </div>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <div onClick={() => updConfig('show_labels', !block.config?.show_labels)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_labels ? 'bg-violet-500' : 'bg-gray-200'}`}>
-              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_labels ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          <div>
+            <label className="block text-xs text-gray-500 mb-1.5">Labels de percentual</label>
+            <div className="flex gap-1">
+              {[{ v: 'none', l: 'Nenhum' }, { v: 'outside', l: 'Fora' }, { v: 'inside', l: 'Dentro' }].map(o => {
+                const active = o.v === 'inside' ? block.config?.label_inside : o.v === 'outside' ? (block.config?.show_labels && !block.config?.label_inside) : (!block.config?.show_labels && !block.config?.label_inside)
+                return (
+                  <button key={o.v} onClick={() => {
+                    if (o.v === 'inside') { updConfig('label_inside', true); updConfig('show_labels', false) }
+                    else if (o.v === 'outside') { updConfig('show_labels', true); updConfig('label_inside', false) }
+                    else { updConfig('show_labels', false); updConfig('label_inside', false) }
+                  }}
+                    className={`flex-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all ${active ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                    {o.l}
+                  </button>
+                )
+              })}
             </div>
-            <span className="text-xs text-gray-600">{t('block.toggleShowPercent')}</span>
-          </label>
+          </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <div onClick={() => updConfig('show_legend', block.config?.show_legend === false ? undefined : false)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_legend !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
               <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_legend !== false ? 'translate-x-4' : 'translate-x-0.5'}`} />
