@@ -2085,7 +2085,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       ? (sparkData[sparkData.length - 1]?.value > sparkData[0]?.value ? 'up' : 'down')
       : 'flat'
     const sparkColor = sparkTrend === 'up' ? '#10b981' : sparkTrend === 'down' ? '#ef4444' : accentColor
-    const kpiAlign = config.align === 'left' ? 'items-start text-left' : config.align === 'right' ? 'items-end text-right' : 'items-start text-left'
+    const kpiAlign = config.align === 'center' ? 'items-center text-center' : config.align === 'right' ? 'items-end text-right' : 'items-start text-left'
     return (
       <div className={`flex flex-col gap-0 pt-0.5 h-full ${kpiAlign}`}>
         <div className="flex-1 min-h-0 w-full">
@@ -2163,7 +2163,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
+          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 52 : 42 }} style={{ cursor: config.click_url ? 'pointer' : 'default', overflow: 'visible' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
             <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
@@ -2259,7 +2259,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
+          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 52 : 42 }} style={{ overflow: 'visible' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
             <defs>
               <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={config.fill_opacity != null && config.fill_opacity !== '' ? config.fill_opacity / 100 : 0.25} />
@@ -2316,7 +2316,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
             {showGrad ? (
-              <AreaChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }}>
+              <AreaChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 52 : 42 }} style={{ overflow: 'visible' }}>
                 <defs>
                   <linearGradient id={`linegrad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={color} stopOpacity={0.18} />
@@ -2350,7 +2350,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 )}
               </AreaChart>
             ) : (
-              <LineChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
+              <LineChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 52 : 42 }} style={{ overflow: 'visible' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
@@ -2488,7 +2488,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={displayData} margin={{ top: 8, right: comboSecondary ? 40 : 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }}>
+            <ComposedChart data={displayData} margin={{ top: 8, right: comboSecondary ? 40 : 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 52 : 42 }} style={{ overflow: 'visible' }}>
               <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
               <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
@@ -2766,7 +2766,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={waterfallData} barSize={32} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }}
+            <BarChart data={waterfallData} barSize={32} margin={{ top: 8, right: 8, left: 8, bottom: 42 }} style={{ overflow: 'visible', cursor: config.click_url ? 'pointer' : 'default' }}
               onClick={d => { if (d?.activePayload?.[0]?.payload?.label) handleClick(d.activePayload[0].payload.label) }}>
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
@@ -2840,7 +2840,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={pivotData} margin={{ top: config.show_stack_total ? 18 : 8, right: 8, left: 8, bottom: 32 }}>
+            <BarChart data={pivotData} margin={{ top: config.show_stack_total ? 18 : 8, right: 8, left: 8, bottom: 42 }} style={{ overflow: 'visible' }}>
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
@@ -2864,7 +2864,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={pivotData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <AreaChart data={pivotData} margin={{ top: 8, right: 8, left: 8, bottom: 42 }} style={{ overflow: 'visible' }}>
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
@@ -2896,7 +2896,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     }))
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={buckets} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} barCategoryGap="2%">
+        <BarChart data={buckets} margin={{ top: 8, right: 8, left: 8, bottom: 42 }} style={{ overflow: 'visible' }} barCategoryGap="2%">
           <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
           <XAxis dataKey="range" tick={{ fontSize: 9, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
