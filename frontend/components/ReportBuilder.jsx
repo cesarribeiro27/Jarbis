@@ -26,6 +26,7 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
   const [total, setTotal] = useState(0)
   const [sortCol, setSortCol] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
+  const [rowSearch, setRowSearch] = useState('')
   const limit = 50
 
   useEffect(() => {
@@ -59,12 +60,16 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
       })
     : rows
 
+  const filteredRows = rowSearch
+    ? sortedRows.filter(row => cols.some(col => String(row[col] ?? '').toLowerCase().includes(rowSearch.toLowerCase())))
+    : sortedRows
+
   // Detect numeric columns and compute max for sparkbars
   const numColMax = {}
-  if (sortedRows.length > 0) {
+  if (filteredRows.length > 0) {
     cols.forEach(col => {
-      const vals = sortedRows.map(r => r[col]).filter(v => v != null && v !== '' && !isNaN(parseFloat(v)))
-      if (vals.length / sortedRows.length >= 0.7) {
+      const vals = filteredRows.map(r => r[col]).filter(v => v != null && v !== '' && !isNaN(parseFloat(v)))
+      if (vals.length / filteredRows.length >= 0.7) {
         const nums = vals.map(v => parseFloat(v))
         const mx = Math.max(...nums)
         if (mx > 0) numColMax[col] = mx
@@ -74,6 +79,17 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
 
   return (
     <div className="flex flex-col h-full">
+      {cols.length > 0 && (
+        <div className="px-3 py-1.5 border-b border-gray-100 shrink-0">
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={rowSearch}
+            onChange={e => setRowSearch(e.target.value)}
+            className="w-full text-xs px-2 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400 bg-gray-50 placeholder-gray-300"
+          />
+        </div>
+      )}
       <div className="overflow-auto flex-1">
         <table className="min-w-full text-xs border-separate border-spacing-0">
           <thead className="sticky top-0 z-10">
@@ -97,7 +113,7 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map((row, i) => (
+            {filteredRows.map((row, i) => (
               <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
                 {cols.map(col => {
                   const isNumCol = numColMax[col] != null
@@ -838,16 +854,25 @@ function FilterBlockPreview({ block, activeFilters, onFilterChange, shareToken, 
             })}
           </div>
           {/* Footer */}
-          {hasActive && (
-            <div className="p-2 border-t border-gray-100">
+          <div className="p-2 border-t border-gray-100 flex gap-2">
+            <button
+              onClick={() => {
+                const allVals = filtered.map(r => String(r.label))
+                if (allVals.length > 0) onFilterChange(dsId, col, allVals)
+              }}
+              className="flex-1 text-xs text-violet-500 hover:text-violet-700 transition-colors py-1 font-medium"
+            >
+              Todos
+            </button>
+            {hasActive && (
               <button
                 onClick={() => { onFilterChange(dsId, col, ''); setOpen(false) }}
-                className="w-full text-xs text-gray-400 hover:text-red-500 transition-colors py-1"
+                className="flex-1 text-xs text-gray-400 hover:text-red-500 transition-colors py-1"
               >
-                Limpar seleção
+                Limpar
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>,
         document.body
       )}
@@ -1341,13 +1366,18 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick, vs }
                 onClick={() => handleClick(row.label)}
               >
                 <td className="px-3 py-1.5 text-gray-700 font-medium border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
-                  {tableMode === 'badge' ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: badgeColor + '18', color: badgeColor }}>
-                      {row.label}
-                    </span>
-                  ) : (
-                    <span className="truncate block max-w-[160px]">{row.label}</span>
-                  )}
+                  <span className="flex items-center gap-1.5">
+                    {config.show_rank && (
+                      <span className="text-[10px] text-gray-300 font-mono tabular-nums shrink-0 w-5 text-right">#{i + 1}</span>
+                    )}
+                    {tableMode === 'badge' ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: badgeColor + '18', color: badgeColor }}>
+                        {row.label}
+                      </span>
+                    ) : (
+                      <span className="truncate block max-w-[160px]">{row.label}</span>
+                    )}
+                  </span>
                 </td>
                 <td className="px-3 py-1.5 border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors relative overflow-hidden">
                   {tableMode === 'heat' ? (
@@ -2014,6 +2044,9 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     return (
       <div className="flex flex-col gap-0 pt-0.5 h-full">
         <div className="flex-1 min-h-0">
+          {config.icon && (
+            <span className="block text-2xl leading-none mb-1.5 select-none">{config.icon}</span>
+          )}
           <p className="font-black leading-none tracking-tight tabular-nums overflow-hidden" style={{ color: valueColor, fontSize: valueFontSize }}>
             {formattedValue}
           </p>
@@ -2390,24 +2423,32 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     )
   }
 
-  if (block.type === 'combo') return (
-    <div className="flex flex-col h-full">
-      {DrillChip}
-      <div style={{ flex: 1 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
-            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
-            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} formatter={v => fmt(v, format, config)} />
-            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-            <Bar dataKey="value" name={block.value_col || vs.value} fill={palette[0]} radius={[4, 4, 0, 0]} opacity={0.85} />
-            <Line type="monotone" dataKey="value" name="" stroke={palette[1] || '#ef4444'} strokeWidth={2} dot={{ r: 2 }} legendType="none" />
-          </ComposedChart>
-        </ResponsiveContainer>
+  if (block.type === 'combo') {
+    const comboSecondary = config.use_secondary_y && block.config?.combo_line_col
+    const comboLineCol = block.config?.combo_line_col || 'value'
+    const comboBarCol = block.config?.combo_bar_col || 'value'
+    return (
+      <div className="flex flex-col h-full">
+        {DrillChip}
+        <div style={{ flex: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={displayData} margin={{ top: 8, right: comboSecondary ? 40 : 8, left: 8, bottom: 32 }}>
+              <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+              {comboSecondary && (
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: palette[1] || '#ef4444' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+              )}
+              <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
+              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+              <Bar yAxisId="left" dataKey={comboBarCol} name={block.value_col || vs.value} fill={palette[0]} radius={[4, 4, 0, 0]} opacity={0.85} />
+              <Line yAxisId={comboSecondary ? 'right' : 'left'} type="monotone" dataKey={comboLineCol} name={comboLineCol !== 'value' ? comboLineCol : ''} stroke={palette[1] || '#ef4444'} strokeWidth={2} dot={{ r: 2 }} legendType={comboLineCol !== 'value' ? 'line' : 'none'} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (block.type === 'bubble') {
     const bubbleTopN = config.top_n ? parseInt(config.top_n) : null
@@ -2732,22 +2773,29 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       if (!pivotMap[label]) pivotMap[label] = { label }
       pivotMap[label][series] = (pivotMap[label][series] || 0) + val
     }
-    const pivotData = Object.values(pivotMap)
     const seriesValues = [...new Set(displayData.map(r => String(r[seriesCol] ?? r.series ?? '')))]
+    const pivotData = Object.values(pivotMap).map(row => ({
+      ...row,
+      __total__: seriesValues.reduce((s, k) => s + (row[k] || 0), 0)
+    }))
 
     if (block.type === 'bar_stacked') return (
       <div className="flex flex-col h-full">
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={pivotData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+            <BarChart data={pivotData} margin={{ top: config.show_stack_total ? 18 : 8, right: 8, left: 8, bottom: 32 }}>
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
               <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
               <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
               {seriesValues.map((s, i) => (
-                <Bar key={s} dataKey={s} stackId="a" fill={palette[i % palette.length]} radius={i === seriesValues.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} maxBarSize={52} />
+                <Bar key={s} dataKey={s} stackId="a" fill={palette[i % palette.length]} radius={i === seriesValues.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} maxBarSize={52}>
+                  {i === seriesValues.length - 1 && config.show_stack_total && (
+                    <LabelList dataKey="__total__" position="top" style={{ fontSize: 9, fill: '#374151', fontWeight: 600 }} formatter={v => fmt(v, format, config)} />
+                  )}
+                </Bar>
               ))}
             </BarChart>
           </ResponsiveContainer>
@@ -2792,12 +2840,12 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     }))
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={buckets}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="range" tick={{ fontSize: 10 }} />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="count" fill={config.color || '#7c3aed'} />
+        <BarChart data={buckets} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} barCategoryGap="2%">
+          <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
+          <XAxis dataKey="range" tick={{ fontSize: 9, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+          <Tooltip contentStyle={tooltipStyle} formatter={v => [v, 'Frequência']} />
+          <Bar dataKey="count" fill={config.color || color} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     )
@@ -3990,6 +4038,22 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
               <p className="text-[10px] text-gray-400 mt-1">Coluna com os valores que separam as séries (ex: produto, região)</p>
             </div>
           )}
+          {block.type === 'bar_stacked' && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => updConfig('show_stack_total', !block.config?.show_stack_total)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_stack_total ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_stack_total ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-600">Total no topo da barra</span>
+            </label>
+          )}
+          {block.type === 'combo' && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => updConfig('use_secondary_y', !block.config?.use_secondary_y)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.use_secondary_y ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.use_secondary_y ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-600">Eixo Y secundário (linha)</span>
+            </label>
+          )}
           {['bar', 'bar_h', 'pie', 'scatter', 'combo', 'bubble', 'treemap'].includes(block.type) && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -4434,6 +4498,12 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
               ))}
             </div>
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_rank', !block.config?.show_rank)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_rank ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_rank ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Mostrar ranking (#1, #2...)</span>
+          </label>
           <ColorPicker label={t('block.labelBarColor')} value={block.config?.accent_color || ''} onChange={v => onChange({ ...block, config: { ...block.config, accent_color: v } })} />
           {selectedDataset && columns.length > 0 && (
             <div>
