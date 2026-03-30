@@ -87,7 +87,7 @@ export default function LoginPage() {
   async function handleOAuth(provider) {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
-      const res = await fetch(`${apiBase}/auth/oauth/${provider}/authorize`)
+      const res = await fetch(`${apiBase}/auth/oauth/${provider}/authorize`, { credentials: 'include' })
       const { url } = await res.json()
       window.location.href = url
     } catch {
