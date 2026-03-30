@@ -35,10 +35,13 @@ async def cache_get(redis: Redis, key: str) -> Any | None:
 
 
 def _sanitize_for_json(obj: Any) -> Any:
-    """Remove NaN/Inf floats recursivamente — json.dumps não aceita esses valores."""
+    """Remove NaN/Inf floats e converte datas recursivamente — json.dumps não aceita esses valores."""
     import math
+    from datetime import datetime, date
     if isinstance(obj, float):
         return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
     if isinstance(obj, dict):
         return {k: _sanitize_for_json(v) for k, v in obj.items()}
     if isinstance(obj, list):
