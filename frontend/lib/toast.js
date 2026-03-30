@@ -10,7 +10,9 @@ export function ToastProvider({ children }) {
   const toast = useCallback((msg, type = 'info', duration = 4000) => {
     const id = Date.now() + Math.random()
     setToasts(prev => [...prev, { id, msg, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
+    if (duration > 0) {
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
+    }
   }, [])
 
   const dismiss = useCallback((id) => setToasts(prev => prev.filter(t => t.id !== id)), [])

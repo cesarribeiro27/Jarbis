@@ -344,32 +344,54 @@ const GA_TEMPLATES = [
   {
     id: 'acquisition',
     label: 'Aquisição de Tráfego',
-    description: 'De onde vem seu tráfego — canal, fonte, campanha, dispositivo e país.',
-    columns: ['data', 'canal', 'fonte', 'meio', 'campanha', 'dispositivo', 'país', 'sessões', 'usuários', 'novos usuários', 'bounce', 'engajamento'],
+    description: 'De onde vem cada visita: canal orgânico, pago, direto, fonte, meio e campanha.',
+    columns: ['canal', 'fonte', 'meio', 'campanha', 'país', 'sessões', 'novos usuários', 'bounce', 'engajamento'],
   },
   {
-    id: 'behavior',
-    label: 'Comportamento no Site',
-    description: 'Quais páginas são visitadas, por quanto tempo e por qual canal.',
-    columns: ['data', 'página', 'título', 'canal', 'dispositivo', 'visualizações', 'duração média', 'bounce', 'sessões'],
+    id: 'content',
+    label: 'Páginas e Conteúdo',
+    description: 'Quais páginas retêm usuários: URL, título, landing page e tempo médio de sessão.',
+    columns: ['URL da página', 'título', 'landing page', 'dispositivo', 'visualizações', 'duração média', 'bounce'],
   },
   {
     id: 'conversions',
-    label: 'Conversões e Eventos',
-    description: 'Eventos disparados, conversões e campanhas que convertem.',
-    columns: ['data', 'evento', 'campanha', 'canal', 'total eventos', 'conversões', 'sessões'],
+    label: 'Conversões e Funil',
+    description: 'Eventos e conversões por nome de evento, com frequência por usuário.',
+    columns: ['evento', 'campanha', 'canal', 'total eventos', 'eventos/usuário', 'conversões', 'sessões'],
   },
   {
-    id: 'audience',
-    label: 'Audiência e Geo',
-    description: 'Onde estão seus usuários — país, cidade, região e idioma.',
-    columns: ['data', 'país', 'cidade', 'região', 'idioma', 'dispositivo', 'usuários ativos', 'novos usuários', 'sessões'],
+    id: 'retention',
+    label: 'Audiência e Retenção',
+    description: 'Quem retorna ao site: novos vs. recorrentes, sessões por usuário e localização.',
+    columns: ['novo vs. recorrente', 'país', 'cidade', 'idioma', 'usuários ativos', 'sessões/usuário', 'duração média'],
+  },
+  {
+    id: 'campaigns',
+    label: 'Campanhas e Mídia Paga',
+    description: 'ROI de campanhas com atribuição de primeiro toque e análise de fonte/meio.',
+    columns: ['campanha (sessão)', 'campanha (1° toque)', 'fonte', 'meio', 'sessões', 'conversões', 'bounce'],
   },
   {
     id: 'technology',
-    label: 'Tecnologia',
-    description: 'Como acessam — desktop, mobile, tablet, sistema operacional e navegador.',
-    columns: ['data', 'dispositivo', 'sistema', 'navegador', 'sessões', 'usuários ativos', 'bounce'],
+    label: 'Tecnologia e Dispositivo',
+    description: 'Como acessam: tipo de dispositivo, sistema operacional, navegador e resolução.',
+    columns: ['dispositivo', 'sistema operacional', 'navegador', 'resolução de tela', 'sessões', 'visualizações'],
+  },
+  {
+    id: 'seo',
+    label: 'SEO e Busca Orgânica',
+    description: 'Cliques, impressões e posição média no Google por página e país.',
+    columns: ['URL da página', 'título', 'país', 'dispositivo', 'cliques orgânicos', 'impressões', 'posição média'],
+    requires: 'Requer Google Search Console vinculado ao GA4.',
+    requiresHelp: 'GA4 → Administrador → Vinculações de produto → Search Console',
+  },
+  {
+    id: 'ecommerce',
+    label: 'E-commerce e Receita',
+    description: 'Produtos vendidos, receita, adições ao carrinho e funil de checkout.',
+    columns: ['produto', 'categoria', 'campanha', 'canal', 'receita', 'compras', 'adições ao carrinho', 'checkouts'],
+    requires: 'Requer eventos de e-commerce (purchase) configurados no GA4.',
+    requiresHelp: 'Configure o Enhanced E-commerce ou envie o evento purchase via GTM',
   },
 ]
 
@@ -445,6 +467,18 @@ function GADatasetModal({ onClose }) {
               ))}
             </div>
           </div>
+
+          {/* Aviso de pré-requisito */}
+          {tpl?.requires && (
+            <div className="flex gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40">
+              <svg className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+              <div>
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Pré-requisito</p>
+                <p className="text-xs text-amber-600 dark:text-amber-300 mt-0.5">{tpl.requires}</p>
+                <p className="text-xs text-amber-500/80 dark:text-amber-400/60 mt-0.5">{tpl.requiresHelp}</p>
+              </div>
+            </div>
+          )}
 
           {/* Property ID */}
           <div>
@@ -1050,7 +1084,11 @@ export default function DatasetsPage() {
     try {
       const result = await api.reports.datasets.syncGA(id)
       setDatasets(prev => prev.map(d => d.id === id ? { ...d, row_count: result.row_count } : d))
-      toast(`Google Analytics sincronizado — ${result.row_count?.toLocaleString() || 0} linhas`, 'success')
+      if (result.warning) {
+        toast(result.warning, 'warn', 0)
+      } else {
+        toast(`Google Analytics sincronizado — ${result.row_count?.toLocaleString() || 0} linhas`, 'success')
+      }
     } catch (err) {
       toast(err.message || 'Erro ao sincronizar Google Analytics', 'error')
     } finally { setSyncingId(null) }

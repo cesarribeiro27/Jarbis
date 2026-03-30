@@ -3695,29 +3695,67 @@ from app.modules.reports.connectors.db_connector import encrypt_password, decryp
 GA_TEMPLATES: dict[str, dict] = {
     "acquisition": {
         "label": "Aquisição de Tráfego",
-        "dimensions": ["date", "sessionDefaultChannelGrouping", "sessionSource", "sessionMedium", "sessionCampaignName", "deviceCategory", "country"],
+        "dimensions": ["date", "sessionDefaultChannelGrouping", "sessionSource", "sessionMedium", "sessionCampaignName", "country"],
         "metrics": ["sessions", "activeUsers", "newUsers", "bounceRate", "engagementRate"],
     },
-    "behavior": {
-        "label": "Comportamento no Site",
-        "dimensions": ["date", "pagePath", "pageTitle", "sessionDefaultChannelGrouping", "deviceCategory"],
-        "metrics": ["screenPageViews", "averageSessionDuration", "bounceRate", "sessions"],
+    "content": {
+        "label": "Páginas e Conteúdo",
+        "dimensions": ["date", "pagePath", "pageTitle", "landingPage", "deviceCategory"],
+        "metrics": ["screenPageViews", "activeUsers", "averageSessionDuration", "bounceRate", "engagementRate"],
     },
     "conversions": {
-        "label": "Conversões e Eventos",
+        "label": "Conversões e Funil",
         "dimensions": ["date", "eventName", "sessionCampaignName", "sessionDefaultChannelGrouping"],
-        "metrics": ["eventCount", "conversions", "sessions"],
+        "metrics": ["eventCount", "conversions", "eventCountPerUser", "sessions", "activeUsers"],
+    },
+    "retention": {
+        "label": "Audiência e Retenção",
+        "dimensions": ["date", "newVsReturning", "country", "city", "language"],
+        "metrics": ["activeUsers", "newUsers", "sessions", "sessionsPerUser", "averageSessionDuration"],
+    },
+    "campaigns": {
+        "label": "Campanhas e Mídia Paga",
+        "dimensions": ["date", "sessionCampaignName", "firstUserCampaignName", "sessionSource", "sessionMedium"],
+        "metrics": ["sessions", "activeUsers", "conversions", "bounceRate", "engagementRate"],
+    },
+    "technology": {
+        "label": "Tecnologia e Dispositivo",
+        "dimensions": ["date", "deviceCategory", "operatingSystem", "browser", "screenResolution"],
+        "metrics": ["sessions", "activeUsers", "screenPageViews", "bounceRate", "engagementRate"],
+    },
+    "seo": {
+        "label": "SEO e Busca Orgânica",
+        "dimensions": ["date", "pagePath", "pageTitle", "country", "deviceCategory"],
+        "metrics": ["organicGoogleSearchClicks", "organicGoogleSearchImpressions", "organicGoogleSearchAveragePosition", "sessions", "activeUsers"],
+        "critical_metrics": ["organicGoogleSearchClicks"],
+        "critical_warning": "As métricas de SEO vieram zeradas. Verifique se o Search Console está vinculado ao GA4: Administrador → Vinculações de produto → Search Console.",
+    },
+    "ecommerce": {
+        "label": "E-commerce e Receita",
+        "dimensions": ["date", "itemName", "itemCategory", "sessionCampaignName", "sessionDefaultChannelGrouping"],
+        "metrics": ["itemPurchaseQuantity", "itemRevenue", "addToCarts", "checkouts", "ecommercePurchases", "purchaseRevenue"],
+        "critical_metrics": ["purchaseRevenue"],
+        "critical_warning": "As métricas de receita vieram zeradas. Verifique se os eventos de e-commerce (purchase) estão configurados no GA4.",
+    },
+    # Aliases para datasets criados com templates antigos
+    "behavior": {
+        "label": "Comportamento no Site",
+        "dimensions": ["date", "pagePath", "pageTitle", "landingPage", "deviceCategory"],
+        "metrics": ["screenPageViews", "activeUsers", "averageSessionDuration", "bounceRate", "engagementRate"],
     },
     "audience": {
         "label": "Audiência e Geo",
-        "dimensions": ["date", "country", "city", "region", "language", "deviceCategory"],
-        "metrics": ["activeUsers", "newUsers", "sessions"],
+        "dimensions": ["date", "newVsReturning", "country", "city", "language"],
+        "metrics": ["activeUsers", "newUsers", "sessions", "sessionsPerUser", "averageSessionDuration"],
     },
-    "technology": {
-        "label": "Tecnologia",
-        "dimensions": ["date", "deviceCategory", "operatingSystem", "browser"],
-        "metrics": ["sessions", "activeUsers", "bounceRate"],
-    },
+}
+
+# Mapa de métricas críticas para detecção de pré-requisito ausente
+GA_CRITICAL_METRICS: dict[str, str] = {
+    metric: tpl["critical_warning"]
+    for tpl in GA_TEMPLATES.values()
+    if "critical_metrics" in tpl
+    for metric in tpl["critical_metrics"]
 }
 
 
@@ -3923,7 +3961,17 @@ async def sync_ga_dataset(
     except Exception:
         pass
 
-    return {"row_count": ds.row_count, "columns": ds.columns, "last_synced_at": ds.last_synced_at.isoformat()}
+    # Detecta se métricas críticas vieram zeradas (pré-requisito ausente)
+    warning = None
+    if rows and ds.ga_metrics:
+        for metric in (ds.ga_metrics or []):
+            if metric in GA_CRITICAL_METRICS:
+                all_zero = all(str(row.get(metric, "0")) in ("0", "0.0", "") for row in rows)
+                if all_zero:
+                    warning = GA_CRITICAL_METRICS[metric]
+                    break
+
+    return {"row_count": ds.row_count, "columns": ds.columns, "last_synced_at": ds.last_synced_at.isoformat(), "warning": warning}
 
 
 # ---------------------------------------------------------------------------
