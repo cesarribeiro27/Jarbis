@@ -1498,6 +1498,115 @@ function BubblePackChart({ data, palette, fmt, format, config, onClickBubble }) 
   )
 }
 
+function PivotTableBlock({ block, data, config }) {
+  const [sortCol, setSortCol] = useState(null)
+  const [sortDir, setSortDir] = useState('desc')
+
+  const rowCol = config.row_col || block.label_col
+  const colCol = config.col_col
+  const valCol = config.value_col || block.value_col
+  const agg = config.agg || block.agg || 'sum'
+
+  if (!rowCol || !colCol || !valCol || !data?.length) {
+    return <div className="flex items-center justify-center h-full text-[#94A3B8] text-xs">Configure linha, coluna e valor</div>
+  }
+
+  const pivotRows = [...new Set(data.map(d => String(d[rowCol] ?? '')))]
+  const pivotCols = [...new Set(data.map(d => String(d[colCol] ?? '')))]
+
+  const groups = {}
+  for (const d of data) {
+    const r = String(d[rowCol] ?? ''), c = String(d[colCol] ?? '')
+    const v = parseFloat(d[valCol] ?? 0) || 0
+    const k = `${r}|||${c}`
+    if (!groups[k]) groups[k] = []
+    groups[k].push(v)
+  }
+
+  function aggFn(values) {
+    if (!values?.length) return null
+    if (agg === 'sum') return values.reduce((a, b) => a + b, 0)
+    if (agg === 'avg') return values.reduce((a, b) => a + b, 0) / values.length
+    if (agg === 'count') return values.length
+    if (agg === 'max') return Math.max(...values)
+    if (agg === 'min') return Math.min(...values)
+    return values[0]
+  }
+
+  function fmtCell(v) {
+    if (v == null) return '—'
+    return typeof v === 'number' ? v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : String(v)
+  }
+
+  function getRowTotal(r) { return aggFn(pivotCols.flatMap(c => groups[`${r}|||${c}`] || [])) }
+
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('desc') }
+  }
+
+  const sortedRows = [...pivotRows].sort((a, b) => {
+    let va, vb
+    if (sortCol === '__row__' || !sortCol) {
+      return sortDir === 'asc' ? a.localeCompare(b, 'pt-BR') : b.localeCompare(a, 'pt-BR')
+    }
+    va = sortCol === '__total__' ? (getRowTotal(a) ?? -Infinity) : (aggFn(groups[`${a}|||${sortCol}`]) ?? -Infinity)
+    vb = sortCol === '__total__' ? (getRowTotal(b) ?? -Infinity) : (aggFn(groups[`${b}|||${sortCol}`]) ?? -Infinity)
+    return sortDir === 'desc' ? vb - va : va - vb
+  })
+
+  const colTotals = pivotCols.map(c => aggFn(pivotRows.flatMap(r => groups[`${r}|||${c}`] || [])))
+  const grandTotal = aggFn(Object.values(groups).flat())
+
+  const SortArrow = ({ col }) => (
+    <svg className={`w-2.5 h-2.5 shrink-0 ${sortCol === col ? 'opacity-70' : 'opacity-15'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortCol === col && sortDir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+    </svg>
+  )
+
+  return (
+    <div className="overflow-auto h-full text-xs">
+      <table className="min-w-full border-collapse">
+        <thead>
+          <tr>
+            <th className="border border-[#E2E8F0] bg-[#F8F7FC] p-1.5 text-left font-semibold text-[#6D28D9] min-w-[80px] cursor-pointer select-none hover:bg-violet-50 transition-colors" onClick={() => toggleSort('__row__')}>
+              <span className="flex items-center gap-1">{rowCol}<SortArrow col="__row__"/></span>
+            </th>
+            {pivotCols.map(c => (
+              <th key={c} className="border border-[#E2E8F0] bg-[#F8F7FC] p-1.5 text-right font-semibold text-[#6B7280] min-w-[60px] truncate max-w-[100px] cursor-pointer select-none hover:bg-violet-50 hover:text-[#6D28D9] transition-colors" onClick={() => toggleSort(c)}>
+                <span className="flex items-center justify-end gap-1">{c}<SortArrow col={c}/></span>
+              </th>
+            ))}
+            <th className="border border-[#E2E8F0] bg-violet-50 p-1.5 text-right font-bold text-[#6D28D9] cursor-pointer select-none hover:bg-violet-100 transition-colors" onClick={() => toggleSort('__total__')}>
+              <span className="flex items-center justify-end gap-1">Total<SortArrow col="__total__"/></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedRows.map((r, ri) => (
+            <tr key={r} className={ri % 2 === 0 ? 'bg-white' : 'bg-[#F8F7FC]/60'}>
+              <td className="border border-[#E2E8F0] p-1.5 font-medium text-[#1A1A2E] truncate max-w-[120px]">{r}</td>
+              {pivotCols.map(c => (
+                <td key={c} className="border border-[#E2E8F0] p-1.5 text-right text-[#1A1A2E]">{fmtCell(aggFn(groups[`${r}|||${c}`]))}</td>
+              ))}
+              <td className="border border-[#E2E8F0] bg-violet-50/50 p-1.5 text-right font-semibold text-[#6D28D9]">{fmtCell(getRowTotal(r))}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="bg-violet-50 font-bold">
+            <td className="border border-[#E2E8F0] p-1.5 text-[#6D28D9]">Total</td>
+            {colTotals.map((t, i) => (
+              <td key={i} className="border border-[#E2E8F0] p-1.5 text-right text-[#1A1A2E]">{fmtCell(t)}</td>
+            ))}
+            <td className="border border-[#E2E8F0] bg-violet-100 p-1.5 text-right text-[#6D28D9]">{fmtCell(grandTotal)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  )
+}
+
 function BlockEmptyState({ block, readOnly, onBlockAction }) {
   const BLOCK_LABELS = {
     kpi: 'KPI', bar: 'Barras', bar_h: 'Barras H', line: 'Linha', area: 'Área',
@@ -1909,7 +2018,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
             {config.show_brush && (
-              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
+                onChange={({ startIndex, endIndex }) => {
+                  if (startIndex === 0 && endIndex === processedData.length - 1) {
+                    onRangeChange?.(block.dataset_id, block.label_col, null, null)
+                  } else {
+                    const s = processedData[startIndex]?.label
+                    const e = processedData[endIndex]?.label
+                    if (s != null && e != null) onRangeChange?.(block.dataset_id, block.label_col, s, e)
+                  }
+                }}
+              />
             )}
           </BarChart>
         </ResponsiveContainer>
@@ -1936,7 +2055,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
             {config.show_brush && (
-              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
+                onChange={({ startIndex, endIndex }) => {
+                  if (startIndex === 0 && endIndex === processedData.length - 1) {
+                    onRangeChange?.(block.dataset_id, block.label_col, null, null)
+                  } else {
+                    const s = processedData[startIndex]?.label
+                    const e = processedData[endIndex]?.label
+                    if (s != null && e != null) onRangeChange?.(block.dataset_id, block.label_col, s, e)
+                  }
+                }}
+              />
             )}
           </BarChart>
         </ResponsiveContainer>
@@ -1977,7 +2106,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
             {config.show_brush && (
-              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+              <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
+                onChange={({ startIndex, endIndex }) => {
+                  if (startIndex === 0 && endIndex === processedData.length - 1) {
+                    onRangeChange?.(block.dataset_id, block.label_col, null, null)
+                  } else {
+                    const s = processedData[startIndex]?.label
+                    const e = processedData[endIndex]?.label
+                    if (s != null && e != null) onRangeChange?.(block.dataset_id, block.label_col, s, e)
+                  }
+                }}
+              />
             )}
           </AreaChart>
         </ResponsiveContainer>
@@ -2014,7 +2153,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                   <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
                 )}
                 {config.show_brush && (
-                  <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+                  <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
+                onChange={({ startIndex, endIndex }) => {
+                  if (startIndex === 0 && endIndex === processedData.length - 1) {
+                    onRangeChange?.(block.dataset_id, block.label_col, null, null)
+                  } else {
+                    const s = processedData[startIndex]?.label
+                    const e = processedData[endIndex]?.label
+                    if (s != null && e != null) onRangeChange?.(block.dataset_id, block.label_col, s, e)
+                  }
+                }}
+              />
                 )}
               </AreaChart>
             ) : (
@@ -2031,7 +2180,17 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                   <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
                 )}
                 {config.show_brush && (
-                  <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6} />
+                  <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
+                onChange={({ startIndex, endIndex }) => {
+                  if (startIndex === 0 && endIndex === processedData.length - 1) {
+                    onRangeChange?.(block.dataset_id, block.label_col, null, null)
+                  } else {
+                    const s = processedData[startIndex]?.label
+                    const e = processedData[endIndex]?.label
+                    if (s != null && e != null) onRangeChange?.(block.dataset_id, block.label_col, s, e)
+                  }
+                }}
+              />
                 )}
               </LineChart>
             )}
@@ -2493,88 +2652,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   if (block.type === 'pivot') {
-    const rowCol = config.row_col || block.label_col
-    const colCol = config.col_col
-    const valCol = config.value_col || block.value_col
-    const agg = config.agg || block.agg || 'sum'
-
-    if (!rowCol || !colCol || !valCol || !displayData?.length) {
-      return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Configure linha, coluna e valor</div>
-    }
-
-    const chartData = displayData
-    const rows = [...new Set(chartData.map(d => String(d[rowCol] ?? '')))]
-    const cols = [...new Set(chartData.map(d => String(d[colCol] ?? '')))]
-
-    // Build value map: row × col → [values]
-    const groups = {}
-    for (const d of chartData) {
-      const r = String(d[rowCol] ?? '')
-      const c = String(d[colCol] ?? '')
-      const v = parseFloat(d[valCol] ?? 0) || 0
-      const k = `${r}|||${c}`
-      if (!groups[k]) groups[k] = []
-      groups[k].push(v)
-    }
-
-    function aggregatePivot(values) {
-      if (!values?.length) return '—'
-      if (agg === 'sum') return values.reduce((a, b) => a + b, 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
-      if (agg === 'avg') return (values.reduce((a, b) => a + b, 0) / values.length).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
-      if (agg === 'count') return values.length
-      if (agg === 'max') return Math.max(...values)
-      if (agg === 'min') return Math.min(...values)
-      return values[0]
-    }
-
-    const rowTotals = rows.map(r => {
-      const vals = cols.flatMap(c => groups[`${r}|||${c}`] || [])
-      return aggregatePivot(vals)
-    })
-    const colTotals = cols.map(c => {
-      const vals = rows.flatMap(r => groups[`${r}|||${c}`] || [])
-      return aggregatePivot(vals)
-    })
-
-    return (
-      <div className="overflow-auto h-full text-xs">
-        <table className="min-w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="border border-gray-200 bg-gray-50 p-1.5 text-left font-semibold text-gray-600 min-w-[80px]">{rowCol}</th>
-              {cols.map(c => (
-                <th key={c} className="border border-gray-200 bg-gray-50 p-1.5 text-right font-semibold text-gray-600 min-w-[60px] truncate max-w-[100px]">{c}</th>
-              ))}
-              <th className="border border-gray-200 bg-purple-50 p-1.5 text-right font-bold text-purple-700">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, ri) => (
-              <tr key={r} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-200 p-1.5 font-medium text-gray-700 truncate max-w-[120px]">{r}</td>
-                {cols.map(c => (
-                  <td key={c} className="border border-gray-200 p-1.5 text-right text-gray-800">
-                    {aggregatePivot(groups[`${r}|||${c}`])}
-                  </td>
-                ))}
-                <td className="border border-gray-200 bg-purple-50 p-1.5 text-right font-semibold text-purple-800">{rowTotals[ri]}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="bg-gray-100 font-bold">
-              <td className="border border-gray-200 p-1.5 text-gray-700">Total</td>
-              {colTotals.map((t, i) => (
-                <td key={i} className="border border-gray-200 p-1.5 text-right text-gray-800">{t}</td>
-              ))}
-              <td className="border border-gray-200 bg-purple-100 p-1.5 text-right text-purple-900">
-                {aggregatePivot(Object.values(groups).flat())}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    )
+    return <PivotTableBlock block={block} data={displayData} config={config} />
   }
 
   if (block.type === 'histogram') {
