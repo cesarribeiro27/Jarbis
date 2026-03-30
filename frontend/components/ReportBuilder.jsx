@@ -59,6 +59,19 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
       })
     : rows
 
+  // Detect numeric columns and compute max for sparkbars
+  const numColMax = {}
+  if (sortedRows.length > 0) {
+    cols.forEach(col => {
+      const vals = sortedRows.map(r => r[col]).filter(v => v != null && v !== '' && !isNaN(parseFloat(v)))
+      if (vals.length / sortedRows.length >= 0.7) {
+        const nums = vals.map(v => parseFloat(v))
+        const mx = Math.max(...nums)
+        if (mx > 0) numColMax[col] = mx
+      }
+    })
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="overflow-auto flex-1">
@@ -86,11 +99,23 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
           <tbody>
             {sortedRows.map((row, i) => (
               <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
-                {cols.map(col => (
-                  <td key={col} className="px-3 py-1.5 text-gray-700 border-b border-gray-100 whitespace-nowrap max-w-[200px] truncate">
-                    {row[col] == null ? <span className="text-gray-300">—</span> : String(row[col])}
-                  </td>
-                ))}
+                {cols.map(col => {
+                  const isNumCol = numColMax[col] != null
+                  const numVal = isNumCol ? parseFloat(row[col]) : NaN
+                  const pct = isNumCol && !isNaN(numVal) ? Math.max(0, Math.min(100, (numVal / numColMax[col]) * 100)) : 0
+                  return (
+                    <td key={col} className="px-3 py-1.5 border-b border-gray-100 whitespace-nowrap max-w-[200px] relative overflow-hidden">
+                      {isNumCol && !isNaN(numVal) ? (
+                        <>
+                          <div className="absolute inset-y-0 left-0 bg-violet-400 opacity-[0.10] pointer-events-none rounded-r" style={{ width: `${pct}%` }} />
+                          <span className="relative z-10 tabular-nums text-gray-700 font-medium">{String(row[col])}</span>
+                        </>
+                      ) : (
+                        row[col] == null ? <span className="text-gray-300">—</span> : <span className="text-gray-700 truncate block">{String(row[col])}</span>
+                      )}
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
@@ -1324,8 +1349,13 @@ function TableBlock({ block, data, config, format, getOpacity, handleClick, vs }
                     <span className="truncate block max-w-[160px]">{row.label}</span>
                   )}
                 </td>
-                <td className="px-3 py-1.5 border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors">
-                  {tableMode === 'plain' ? (
+                <td className="px-3 py-1.5 border-b border-gray-50/80 group-hover:bg-violet-50/60 transition-colors relative overflow-hidden">
+                  {tableMode === 'heat' ? (
+                    <>
+                      <div className="absolute inset-0 pointer-events-none transition-all" style={{ backgroundColor: accentColor, opacity: (barPct / 100) * 0.22 }} />
+                      <span className="relative z-10 flex justify-end tabular-nums text-gray-700 font-semibold">{fmt(row.value, format, config)}</span>
+                    </>
+                  ) : tableMode === 'plain' ? (
                     <span className="flex justify-end tabular-nums text-gray-600 font-semibold">{fmt(row.value, format, config)}</span>
                   ) : (
                     <div className="flex items-center gap-2 justify-end">
@@ -4272,7 +4302,7 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">{t('block.labelValueCol')}</label>
             <div className="flex gap-1">
-              {[{ v: 'bar', l: t('block.btnBar') }, { v: 'badge', l: t('block.btnBadge') }, { v: 'plain', l: t('block.btnSimple') }].map(o => (
+              {[{ v: 'bar', l: t('block.btnBar') }, { v: 'heat', l: 'Heat' }, { v: 'badge', l: t('block.btnBadge') }, { v: 'plain', l: t('block.btnSimple') }].map(o => (
                 <button key={o.v} onClick={() => onChange({ ...block, config: { ...block.config, table_mode: o.v } })}
                   className={`flex-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all ${(block.config?.table_mode || 'bar') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                   {o.l}
