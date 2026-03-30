@@ -193,10 +193,12 @@ const BLOCK_TYPES = [
   { type: 'sankey',      label: 'Sankey',      desc: 'Fluxo entre categorias', category: 'chart' },
   { type: 'candlestick', label: 'Candlestick', desc: 'OHLC financeiro', category: 'chart' },
   { type: 'boxplot',     label: 'Box Plot',    desc: 'Distribuição estatística', category: 'chart' },
-  { type: 'text',        label: 'Texto',       desc: 'Comentários' },
+  { type: 'text',        label: 'Texto',       desc: 'Comentários e notas', category: 'layout' },
   { type: 'filter',      label: 'Filtro',      desc: 'Filtrar dados' },
   { type: 'slider',      label: 'Slider',      desc: 'Filtrar por range' },
-  { type: 'image',       label: 'Imagem',      desc: 'Foto ou logo' },
+  { type: 'image',       label: 'Imagem',      desc: 'Foto ou logo', category: 'layout' },
+  { type: 'divider',     label: 'Divisor',     desc: 'Linha separadora', category: 'layout' },
+  { type: 'box',         label: 'Container',   desc: 'Box colorido com texto', category: 'layout' },
 ]
 
 // ─── Drop Zone Config — define os slots de dados por tipo de bloco ───────────
@@ -245,6 +247,8 @@ const TYPE_ICONS = {
   gauge:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0 0v-8" /></svg>,
   speedometer: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C6.48 2 2 6.48 2 12h20c0-5.52-4.48-10-10-10zm0 10l-3-5" /></svg>,
   slider:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>,
+  divider:     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" /></svg>,
+  box:         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>,
   funnel:      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18l-7 9v7l-4-2v-5L3 4z" /></svg>,
   map:         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>,
   bar_stacked: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="14" width="4" height="7" rx="1" strokeWidth={1.5}/><rect x="3" y="9" width="4" height="5" rx="0" strokeWidth={1.5}/><rect x="10" y="10" width="4" height="11" rx="1" strokeWidth={1.5}/><rect x="10" y="5" width="4" height="5" rx="0" strokeWidth={1.5}/><rect x="17" y="12" width="4" height="9" rx="1" strokeWidth={1.5}/><rect x="17" y="7" width="4" height="5" rx="0" strokeWidth={1.5}/></svg>,
@@ -1811,6 +1815,46 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     )
   }
 
+  if (block.type === 'divider') {
+    const divColor = block.config?.color || '#e5e7eb'
+    const divThickness = parseInt(block.config?.thickness || 1)
+    const divStyle = block.config?.divider_style || 'solid'
+    const divLabel = block.config?.label || ''
+    if (divLabel) return (
+      <div className="flex items-center gap-3 h-full w-full">
+        <div className="flex-1" style={{ borderTop: `${divThickness}px ${divStyle} ${divColor}` }} />
+        <span style={{ color: divColor, fontSize: 11, whiteSpace: 'nowrap', fontWeight: 500 }}>{divLabel}</span>
+        <div className="flex-1" style={{ borderTop: `${divThickness}px ${divStyle} ${divColor}` }} />
+      </div>
+    )
+    return (
+      <div className="flex items-center h-full w-full">
+        <div className="w-full" style={{ borderTop: `${divThickness}px ${divStyle} ${divColor}` }} />
+      </div>
+    )
+  }
+
+  if (block.type === 'box') {
+    const boxBg = block.config?.bg_color || '#f9fafb'
+    const boxBorderColor = block.config?.border_color || '#e5e7eb'
+    const boxBorderWidth = parseInt(block.config?.border_width ?? 1)
+    const boxTextColor = block.config?.text_color || '#374151'
+    const boxText = block.config?.text || ''
+    const boxRadius = { none: 0, sm: 6, md: 10, lg: 16 }[block.config?.radius || 'md']
+    return (
+      <div className="w-full h-full overflow-auto"
+        style={{ backgroundColor: boxBg, border: `${boxBorderWidth}px solid ${boxBorderColor}`, borderRadius: boxRadius, padding: '12px 14px' }}
+      >
+        {boxText && (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: boxTextColor }}>{boxText}</p>
+        )}
+        {!boxText && !block.title && (
+          <p className="text-xs text-gray-300 italic">Configure o conteúdo no painel</p>
+        )}
+      </div>
+    )
+  }
+
   if (block.type === 'ai_summary') {
     return <AISummaryBlock block={block} readOnly={readOnly} />
   }
@@ -3248,7 +3292,9 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
   const columns = selectedDataset?.columns || []
   const dimColumns = columns.filter(c => colTypes[c] !== 'number')
   const metricColumns = columns.filter(c => colTypes[c] === 'number' || !colTypes[c])
-  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary', 'histogram', 'bullet', 'gantt', 'sankey', 'candlestick', 'boxplot'].includes(block.type)
+  const LAYOUT_ONLY_TYPES = ['text', 'image', 'divider', 'box']
+  const isLayoutOnly = LAYOUT_ONLY_TYPES.includes(block.type)
+  const hasData = !['text', 'filter', 'image', 'slider', 'pivot', 'ai_summary', 'histogram', 'bullet', 'gantt', 'sankey', 'candlestick', 'boxplot', 'divider', 'box'].includes(block.type)
   const hasVisual = ['kpi', 'bar', 'bar_h', 'area', 'line', 'table', 'scatter', 'combo', 'bubble', 'treemap', 'gauge', 'speedometer', 'bar_stacked', 'area_stacked', 'heatmap', 'waterfall', 'radar'].includes(block.type)
   const isDimDate = block.config?.dim_type === 'date' || (block.label_col && colTypes[block.label_col] === 'date')
 
@@ -3260,18 +3306,23 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
   }
 
   const COL_TYPE_BADGE = { text: 'Aa', number: '#', date: '📅' }
-  const [configTab, setConfigTab] = useState(() => block.dataset_id ? 'visual' : 'dados')
+  const [configTab, setConfigTab] = useState(() => isLayoutOnly ? 'visual' : (block.dataset_id ? 'visual' : 'dados'))
 
-  // Reseta para aba "dados" quando muda o bloco sem dados
+  // Reseta aba ao trocar de bloco
   useEffect(() => {
-    if (!block.dataset_id) setConfigTab('dados')
+    if (LAYOUT_ONLY_TYPES.includes(block.type)) setConfigTab('visual')
+    else if (!block.dataset_id) setConfigTab('dados')
   }, [block.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const visibleTabs = isLayoutOnly
+    ? [{k:'visual',l:'Visual'}]
+    : [{k:'dados',l:'Dados'},{k:'visual',l:'Visual'},{k:'avancado',l:'Avançado'}]
 
   return (
     <div>
-      {/* Abas: Dados | Visual | Avançado */}
+      {/* Abas: contextuais por tipo de bloco */}
       <div className="flex border-b border-gray-100 dark:border-gray-800 -mx-4 px-4 mb-0 shrink-0">
-        {[{k:'dados',l:'Dados'},{k:'visual',l:'Visual'},{k:'avancado',l:'Avançado'}].map(tab => (
+        {visibleTabs.map(tab => (
           <button key={tab.k} onClick={() => setConfigTab(tab.k)}
             className={`px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
               configTab === tab.k
@@ -3738,6 +3789,92 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
 
       {/* ABA: VISUAL */}
       {configTab === 'visual' && <div className="divide-y divide-gray-100 dark:divide-gray-800">
+
+      {/* CONFIG DE LAYOUT — imagem, texto, divisor, box */}
+      {block.type === 'image' && (
+        <ConfigSection title="Imagem">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">URL da imagem</label>
+            <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="https://..." value={block.config?.image_src || ''} onChange={e => updConfig('image_src', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Upload</label>
+            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg p-3 cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-colors">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              <span className="text-xs text-gray-500">Clique para enviar</span>
+              <input type="file" accept="image/*" className="hidden" onChange={e => { const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>updConfig('image_src',ev.target.result); r.readAsDataURL(f) }} />
+            </label>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Ajuste</label>
+            <div className="flex gap-1">
+              {[{v:'contain',l:'Caber'},{v:'cover',l:'Cobrir'},{v:'fill',l:'Esticar'}].map(o => (
+                <button key={o.v} onClick={() => updConfig('object_fit', o.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${(block.config?.object_fit || 'contain') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{o.l}</button>
+              ))}
+            </div>
+          </div>
+        </ConfigSection>
+      )}
+
+      {block.type === 'text' && (
+        <ConfigSection title="Texto">
+          <ColorPicker label="Cor do texto" value={block.config?.text_color || ''} onChange={v => updConfig('text_color', v)} placeholder="#4b5563" />
+        </ConfigSection>
+      )}
+
+      {block.type === 'divider' && (
+        <ConfigSection title="Divisor">
+          <ColorPicker label="Cor" value={block.config?.color || '#e5e7eb'} onChange={v => updConfig('color', v)} placeholder="#e5e7eb" />
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Espessura</label>
+            <div className="flex gap-1">
+              {[{v:1,l:'1px'},{v:2,l:'2px'},{v:4,l:'4px'}].map(o => (
+                <button key={o.v} onClick={() => updConfig('thickness', o.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${parseInt(block.config?.thickness || 1) === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{o.l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Estilo</label>
+            <div className="flex gap-1">
+              {[{v:'solid',l:'Sólido'},{v:'dashed',l:'Tracejado'},{v:'dotted',l:'Pontilhado'}].map(o => (
+                <button key={o.v} onClick={() => updConfig('divider_style', o.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${(block.config?.divider_style || 'solid') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{o.l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Label (opcional)</label>
+            <input className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Ex: Resumo financeiro" value={block.config?.label || ''} onChange={e => updConfig('label', e.target.value)} />
+          </div>
+        </ConfigSection>
+      )}
+
+      {block.type === 'box' && (
+        <ConfigSection title="Container">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Conteúdo</label>
+            <textarea rows={3} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none" placeholder="Texto ou descrição..." value={block.config?.text || ''} onChange={e => updConfig('text', e.target.value)} />
+          </div>
+          <ColorPicker label="Cor de fundo" value={block.config?.bg_color || '#f9fafb'} onChange={v => updConfig('bg_color', v)} placeholder="#f9fafb" />
+          <ColorPicker label="Cor do texto" value={block.config?.text_color || '#374151'} onChange={v => updConfig('text_color', v)} placeholder="#374151" />
+          <ColorPicker label="Cor da borda" value={block.config?.border_color || '#e5e7eb'} onChange={v => updConfig('border_color', v)} placeholder="#e5e7eb" />
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Espessura da borda</label>
+            <div className="flex gap-1">
+              {[{v:0,l:'Nenhuma'},{v:1,l:'1px'},{v:2,l:'2px'}].map(o => (
+                <button key={o.v} onClick={() => updConfig('border_width', o.v)} className={`flex-1 px-2 py-1 rounded border text-xs font-medium transition-all ${parseInt(block.config?.border_width ?? 1) === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{o.l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Cantos</label>
+            <div className="flex gap-1">
+              {[{v:'none',l:'Reto'},{v:'sm',l:'Leve'},{v:'md',l:'Médio'},{v:'lg',l:'Redondo'}].map(o => (
+                <button key={o.v} onClick={() => updConfig('radius', o.v)} className={`flex-1 px-2 py-1 rounded border text-[10px] font-medium transition-all ${(block.config?.radius || 'md') === o.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>{o.l}</button>
+              ))}
+            </div>
+          </div>
+        </ConfigSection>
+      )}
 
       {/* VISUAL */}
       {hasVisual && (

@@ -1981,14 +1981,48 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
     numCols[1] && dimCols[0] && `${numCols[1]} ao longo do tempo`,
   ].filter(Boolean).slice(0, 4)
 
-  const BLANK_TYPES = [
-    { type: 'kpi',  label: 'KPI'    },
-    { type: 'meta', label: '🎯 Meta' },
-    { type: 'bar',  label: 'Barras' },
-    { type: 'line', label: 'Linha'  },
-    { type: 'pie',  label: 'Pizza'  },
-    { type: 'table',label: 'Tabela' },
-    { type: 'text', label: 'Texto'  },
+  const BLANK_CATEGORIES = [
+    { key: 'kpis',     label: 'KPIs & Indicadores', types: [
+      { type: 'kpi',         label: 'KPI'         },
+      { type: 'gauge',       label: 'Gauge'        },
+      { type: 'speedometer', label: 'Velocímetro'  },
+      { type: 'bullet',      label: 'Bullet'       },
+    ]},
+    { key: 'charts',   label: 'Gráficos', types: [
+      { type: 'bar',         label: 'Barras'       },
+      { type: 'bar_h',       label: 'Barras H'     },
+      { type: 'line',        label: 'Linhas'       },
+      { type: 'area',        label: 'Área'         },
+      { type: 'pie',         label: 'Pizza'        },
+      { type: 'combo',       label: 'Combo'        },
+      { type: 'scatter',     label: 'Dispersão'    },
+      { type: 'bubble',      label: 'Bolhas'       },
+      { type: 'treemap',     label: 'Treemap'      },
+      { type: 'funnel',      label: 'Funil'        },
+      { type: 'radar',       label: 'Radar'        },
+      { type: 'waterfall',   label: 'Cascata'      },
+      { type: 'bar_stacked', label: 'Emp.'         },
+      { type: 'area_stacked',label: 'Área Emp.'    },
+      { type: 'histogram',   label: 'Histograma'   },
+      { type: 'heatmap',     label: 'Calor'        },
+    ]},
+    { key: 'tables',   label: 'Tabelas', types: [
+      { type: 'table',       label: 'Tabela'       },
+      { type: 'pivot',       label: 'Pivot'        },
+    ]},
+    { key: 'filters',  label: 'Filtros', types: [
+      { type: 'filter',      label: 'Filtro'       },
+      { type: 'slider',      label: 'Slider'       },
+    ]},
+    { key: 'layout',   label: 'Layout & Conteúdo', types: [
+      { type: 'text',        label: 'Texto'        },
+      { type: 'image',       label: 'Imagem'       },
+      { type: 'divider',     label: 'Divisor'      },
+      { type: 'box',         label: 'Container'    },
+    ]},
+    { key: 'ai',       label: 'IA', types: [
+      { type: 'ai_summary',  label: 'Resumo IA'    },
+    ]},
   ]
 
   async function createWithAI() {
@@ -2021,8 +2055,11 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
 
   function createBlank(type) {
     const isFilter = type === 'filter' || type === 'slider'
-    const isNoData = isFilter || type === 'text' || type === 'image'
+    const isLayoutOnly = ['text', 'image', 'divider', 'box', 'ai_summary'].includes(type)
+    const isNoData = isFilter || isLayoutOnly
     const isGauge = type === 'gauge' || type === 'speedometer'
+    const isDivider = type === 'divider'
+    const isBox = type === 'box'
     const isMeta = type === 'meta'
     onAddBlock({
       id: crypto.randomUUID(),
@@ -2031,14 +2068,18 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
       dataset_id: isNoData ? null : dsId,
       ...(isNoData || isMeta ? {} : { label_col: null, value_col: null, agg: 'sum' }),
       config: {},
-      layout: { x: 0, y: Infinity, w: isFilter ? 4 : isMeta ? 3 : isGauge ? 3 : type === 'kpi' ? 3 : 6, h: isFilter ? 2 : isMeta ? 3 : isGauge ? 4 : type === 'kpi' ? 2 : 4 },
+      layout: {
+        x: 0, y: Infinity,
+        w: isFilter ? 4 : isMeta ? 3 : isGauge ? 3 : type === 'kpi' ? 3 : isDivider ? 12 : isBox ? 4 : 6,
+        h: isFilter ? 2 : isMeta ? 3 : isGauge ? 4 : type === 'kpi' ? 2 : isDivider ? 1 : isBox ? 3 : 4,
+      },
     })
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
@@ -2057,7 +2098,7 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Dataset selector (only if multiple) */}
           {datasets.length > 1 && (
             <div>
@@ -2106,7 +2147,7 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
             <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
           )}
 
-          {/* Actions */}
+          {/* Actions — IA */}
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={createWithAI}
@@ -2125,32 +2166,27 @@ function AddBlockDialog({ datasets, onClose, onAddBlock }) {
               )}
               {loading ? 'Criando...' : 'Criar com IA'}
             </button>
+          </div>
 
-            {/* Blank block dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowBlankMenu(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Em branco
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 9l6 6 6-6"/>
-                </svg>
-              </button>
-              {showBlankMenu && (
-                <div className="absolute bottom-full right-0 mb-1.5 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 z-50 grid grid-cols-2 gap-1">
-                  {BLANK_TYPES.map(bt => (
+          {/* Categorias de blocos */}
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
+            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Ou adicione manualmente</p>
+            {BLANK_CATEGORIES.map(cat => (
+              <div key={cat.key}>
+                <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-600 mb-1.5">{cat.label}</p>
+                <div className="flex flex-wrap gap-1">
+                  {cat.types.map(bt => (
                     <button
                       key={bt.type}
-                      onClick={() => { createBlank(bt.type); setShowBlankMenu(false) }}
-                      className="text-xs text-left px-2.5 py-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 text-gray-700 dark:text-gray-300 transition-colors font-medium"
+                      onClick={() => createBlank(bt.type)}
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-400 text-gray-600 dark:text-gray-400 transition-colors font-medium"
                     >
                       {bt.label}
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
