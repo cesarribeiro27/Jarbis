@@ -2041,15 +2041,19 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       ? (sparkData[sparkData.length - 1]?.value > sparkData[0]?.value ? 'up' : 'down')
       : 'flat'
     const sparkColor = sparkTrend === 'up' ? '#10b981' : sparkTrend === 'down' ? '#ef4444' : accentColor
+    const kpiAlign = config.align === 'left' ? 'items-start text-left' : config.align === 'right' ? 'items-end text-right' : 'items-start text-left'
     return (
-      <div className="flex flex-col gap-0 pt-0.5 h-full">
-        <div className="flex-1 min-h-0">
+      <div className={`flex flex-col gap-0 pt-0.5 h-full ${kpiAlign}`}>
+        <div className="flex-1 min-h-0 w-full">
           {config.icon && (
             <span className="block text-2xl leading-none mb-1.5 select-none">{config.icon}</span>
           )}
           <p className="font-black leading-none tracking-tight tabular-nums overflow-hidden" style={{ color: valueColor, fontSize: valueFontSize }}>
             {formattedValue}
           </p>
+          {config.subtitle && (
+            <p className="text-[11px] text-gray-400 mt-1 leading-tight">{config.subtitle}</p>
+          )}
           {delta && (
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
               <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${deltaPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
@@ -2080,6 +2084,14 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   const tickFmt = v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }
+  const yDomain = (() => {
+    const hasMin = config.y_min != null && config.y_min !== ''
+    const hasMax = config.y_max != null && config.y_max !== ''
+    if (!hasMin && !hasMax) return undefined
+    return [hasMin ? parseFloat(config.y_min) : 'auto', hasMax ? parseFloat(config.y_max) : 'auto']
+  })()
+  const yAxisLabel = config.y_axis_title ? { value: config.y_axis_title, angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 9, fill: '#9ca3af' } } : undefined
+  const xAxisLabel = config.x_axis_title ? { value: config.x_axis_title, position: 'insideBottom', offset: -4, style: { fontSize: 9, fill: '#9ca3af' } } : undefined
   const tooltipStyle = { fontSize: 11, borderRadius: 10, border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(109,40,217,0.12)', padding: '6px 10px', background: '#fff' }
   // Annotation markers for charts (vertical lines with label)
   const annotationLines = (config.annotations || []).map((ann, i) => (
@@ -2107,10 +2119,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: 8, bottom: 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
+          <BarChart data={processedData} margin={{ top: config.show_data_labels ? 18 : 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
             <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             <Bar dataKey="value" name={block.title || vs.value} radius={[6, 6, 0, 0]} maxBarSize={52} onClick={entry => handleClick(entry.label)} style={{ cursor: (hasDrillColumns && drillState.level < (block.config?.drill_columns || []).length) || (hasDrilldown && !drilldown) ? 'zoom-in' : 'pointer' }}>
@@ -2155,10 +2167,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: config.show_data_labels ? 48 : 24, left: 40, bottom: 4 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel) }}>
+          <BarChart data={processedData} layout="vertical" margin={{ top: 4, right: config.show_data_labels ? 48 : 24, left: 40, bottom: xAxisLabel ? 24 : 4 }} style={{ cursor: config.click_url ? 'pointer' : 'default' }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel) }}>
             <CartesianGrid horizontal={false} stroke="#f3f4f6" strokeDasharray="0" />
-            <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
-            <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} />
+            <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={xAxisLabel} />
+            <YAxis dataKey="label" type="category" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} axisLine={false} tickLine={false} label={yAxisLabel} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             {config.show_legend && <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />}
             <Bar dataKey="value" name={block.title || vs.value} radius={[0, 6, 6, 0]} maxBarSize={32} onClick={entry => handleClick(entry.label)} style={{ cursor: hasDrilldown && !drilldown ? 'zoom-in' : 'pointer' }}>
@@ -2203,16 +2215,16 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       {DrillChip}
       <div style={{ flex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
+          <AreaChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
             <defs>
               <linearGradient id={`grad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+                <stop offset="5%" stopColor={color} stopOpacity={config.fill_opacity != null && config.fill_opacity !== '' ? config.fill_opacity / 100 : 0.25} />
                 <stop offset="95%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
             <Area
               type={config.line_curve || (config.smooth ? 'basis' : 'monotone')}
@@ -2260,7 +2272,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
             {showGrad ? (
-              <AreaChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+              <AreaChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }}>
                 <defs>
                   <linearGradient id={`linegrad_${block.id}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={color} stopOpacity={0.18} />
@@ -2268,8 +2280,8 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
                 <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
                 <Area type={lineType} dataKey="value" name={block.title || vs.value} stroke={color} strokeWidth={strokeW} fill={`url(#linegrad_${block.id})`} dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false} activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}>
                   {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
@@ -2294,10 +2306,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 )}
               </AreaChart>
             ) : (
-              <LineChart data={displayData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
+              <LineChart data={displayData} margin={{ top: 8, right: 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }} onClick={d => { if (config.click_url && d?.activeLabel) handleChartClickUrl(d.activeLabel); if (config.custom_event && d?.activeLabel) handleCustomEvent(config.custom_event, d.activeLabel, d?.activePayload?.[0]?.value) }}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="0" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
                 <Tooltip contentStyle={tooltipStyle} formatter={v => fmt(v, format, config)} />
                 <Line type={lineType} dataKey="value" name={block.title || vs.value} stroke={color} strokeWidth={strokeW} dot={showMarkers ? { r: 3.5, fill: 'white', stroke: color, strokeWidth: 2 } : false} activeDot={{ r: 5, fill: color, stroke: 'white', strokeWidth: 2, onClick: (_, payload) => handleClick(payload?.payload?.label) }}>
                   {config.show_data_labels && <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: '#374151' }} formatter={v => fmt(v, format, config)} />}
@@ -2432,10 +2444,10 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
         {DrillChip}
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={displayData} margin={{ top: 8, right: comboSecondary ? 40 : 8, left: 8, bottom: 32 }}>
+            <ComposedChart data={displayData} margin={{ top: 8, right: comboSecondary ? 40 : 8, left: yAxisLabel ? 16 : 8, bottom: xAxisLabel ? 44 : 32 }}>
               <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} label={xAxisLabel} />
+              <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} domain={yDomain} label={yAxisLabel} />
               {comboSecondary && (
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: palette[1] || '#ef4444' }} axisLine={false} tickLine={false} tickFormatter={tickFmt} />
               )}
