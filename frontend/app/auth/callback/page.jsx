@@ -13,6 +13,7 @@ function OAuthCallback() {
   useEffect(() => {
     const userRaw = params.get('user')
     const error = params.get('error')
+    const isNew = params.get('new') === '1'
 
     if (error) {
       router.replace(`/login?error=${encodeURIComponent(error)}`)
@@ -64,7 +65,7 @@ function OAuthCallback() {
         return
       }
 
-      router.replace('/dashboard')
+      router.replace(isNew ? '/dashboard?welcome=1' : '/dashboard')
     }
 
     finishAuth()

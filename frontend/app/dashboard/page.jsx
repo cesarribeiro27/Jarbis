@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { api } from '@/lib/api'
 import { useTranslations, useLocale } from 'next-intl'
+import { useToast } from '@/lib/toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
@@ -122,6 +124,8 @@ const statConfig = [
 export default function DashboardHome() {
   const t = useTranslations('dashboard')
   const locale = useLocale()
+  const router = useRouter()
+  const toast = useToast()
   const [dashboards, setDashboards] = useState([])
   const [datasets, setDatasets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -134,6 +138,13 @@ export default function DashboardHome() {
     Promise.all([api.reports.list(), api.reports.datasets.list()])
       .then(([r, d]) => { setDashboards(r || []); setDatasets(d || []) })
       .finally(() => setLoading(false))
+
+    if (new URLSearchParams(window.location.search).get('welcome') === '1') {
+      const stored = localStorage.getItem('jarbis_user')
+      const name = stored ? JSON.parse(stored)?.full_name?.split(' ')[0] : null
+      toast(name ? `Bem-vindo ao Jarbis, ${name}! Sua conta foi criada com sucesso.` : 'Bem-vindo ao Jarbis! Sua conta foi criada com sucesso.', 'success', 7000)
+      router.replace('/dashboard')
+    }
   }, [])
 
   const firstName = user?.full_name?.split(' ')[0] || null

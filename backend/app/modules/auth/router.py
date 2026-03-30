@@ -472,6 +472,7 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
 
     # Busca usuário existente pelo email
     user = await db.scalar(select(User).where(User.email == email))
+    is_new_user = False
 
     if user and not user.email_verified:
         # Usuário existente com email não verificado — OAuth confirma o email automaticamente
@@ -479,6 +480,7 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
         await db.commit()
 
     if not user:
+        is_new_user = True
         # Cria tenant + usuário
         slug_base = email.split("@")[0].lower().replace(".", "-")
         slug = f"{slug_base}-{_secrets.token_hex(3)}"
@@ -517,6 +519,8 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     from urllib.parse import quote
     user_data = {"id": str(user.id), "email": user.email, "full_name": user.full_name, "role": user.role}
     redirect_url = f"{settings.frontend_url}/auth/callback?user={quote(json.dumps(user_data))}"
+    if is_new_user:
+        redirect_url += "&new=1"
     response = RedirectResponse(url=redirect_url)
     # Seta httpOnly cookie com o JWT (mesmo padrão do login regular)
     _set_auth_cookie(response, token)
