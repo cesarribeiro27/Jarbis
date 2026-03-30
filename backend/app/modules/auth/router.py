@@ -421,12 +421,13 @@ async def oauth_authorize(provider: str, ref: str | None = None):
     csrf_token = generate_csrf_token()
     url = get_authorization_url(provider, csrf_token=csrf_token, ref_code=ref)
     response = JSONResponse({"url": url})
+    is_prod = settings.is_production
     response.set_cookie(
         key="oauth_csrf",
         value=csrf_token,
         httponly=True,
-        secure=True,
-        samesite="lax",
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
         max_age=600,  # 10 minutos — tempo suficiente para completar o fluxo OAuth
         path="/",
     )
@@ -524,5 +525,5 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     response = RedirectResponse(url=redirect_url)
     # Seta httpOnly cookie com o JWT (mesmo padrão do login regular)
     _set_auth_cookie(response, token)
-    response.delete_cookie("oauth_csrf", path="/")
+    response.delete_cookie("oauth_csrf", path="/", samesite="none" if settings.is_production else "lax")
     return response
