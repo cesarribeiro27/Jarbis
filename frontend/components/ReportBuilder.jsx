@@ -1967,20 +1967,42 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
       : charLen <= 14 ? Math.max(14, Math.round(baseFontSize * 0.62))
       : Math.max(12, Math.round(baseFontSize * 0.52))
     const valueFontSize = `${scaledSize}px`
+    const sparkData = !isManualKpi && config.show_sparkline ? (displayData || []) : []
+    const sparkTrend = sparkData.length > 1
+      ? (sparkData[sparkData.length - 1]?.value > sparkData[0]?.value ? 'up' : 'down')
+      : 'flat'
+    const sparkColor = sparkTrend === 'up' ? '#10b981' : sparkTrend === 'down' ? '#ef4444' : accentColor
     return (
-      <div className="flex flex-col gap-0 pt-0.5">
-        <p className="font-black leading-none tracking-tight tabular-nums overflow-hidden" style={{ color: valueColor, fontSize: valueFontSize }}>
-          {formattedValue}
-        </p>
-        {delta && (
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${deltaPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
-              {deltaPositive ? '↑' : '↓'} {deltaPositive && deltaNum > 0 ? '+' : ''}{delta}%
-            </span>
-            <span className="text-[10px] text-gray-400 leading-none">{deltaLabel}</span>
+      <div className="flex flex-col gap-0 pt-0.5 h-full">
+        <div className="flex-1 min-h-0">
+          <p className="font-black leading-none tracking-tight tabular-nums overflow-hidden" style={{ color: valueColor, fontSize: valueFontSize }}>
+            {formattedValue}
+          </p>
+          {delta && (
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${deltaPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                {deltaPositive ? '↑' : '↓'} {deltaPositive && deltaNum > 0 ? '+' : ''}{delta}%
+              </span>
+              <span className="text-[10px] text-gray-400 leading-none">{deltaLabel}</span>
+            </div>
+          )}
+          <div className="h-[3px] rounded-full mt-3 shrink-0" style={{ backgroundColor: accentColor, width: '28px' }} />
+        </div>
+        {sparkData.length > 1 && (
+          <div className="mt-1 -mx-0.5" style={{ height: 44 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={`spark_${block.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={sparkColor} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={sparkColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="value" stroke={sparkColor} strokeWidth={1.5} fill={`url(#spark_${block.id})`} dot={false} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
-        <div className="h-[3px] rounded-full mt-3 shrink-0" style={{ backgroundColor: accentColor, width: '28px' }} />
       </div>
     )
   }
@@ -3752,6 +3774,12 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
               {block.config?.auto_delta && (
                 <p className="text-[10px] text-gray-400 -mt-1">{t('block.hintAutoDelta')}</p>
               )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div onClick={() => updConfig('show_sparkline', !block.config?.show_sparkline)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_sparkline ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_sparkline ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-xs text-gray-600">Mini gráfico de tendência</span>
+              </label>
             </>
           )}
           {block.type === 'meta' && (
@@ -5973,6 +6001,36 @@ function FloatingBlockToolbar({ block, blocks, onChange, datasets, onBlockAction
           </div>
         )}
       </div>
+
+      {/* CSV Export */}
+      {block.dataset_id && !['filter', 'slider', 'text', 'image'].includes(block.type) && (
+        <button
+          title="Exportar CSV"
+          className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          onClick={async () => {
+            try {
+              const result = await api.reports.datasets.queryV2(block.dataset_id, {
+                dimensions: [], metrics: [{ column: '__count__', aggregation: 'count' }], limit: 5000
+              })
+              const raw = result?.data || result || []
+              if (!raw.length) return
+              const keys = Object.keys(raw[0])
+              const csvRows = [keys.join(','), ...raw.map(r => keys.map(k => {
+                const v = r[k] == null ? '' : String(r[k])
+                return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v
+              }).join(','))]
+              const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a'); a.href = url; a.download = `${block.title || 'dados'}.csv`; a.click()
+              URL.revokeObjectURL(url)
+            } catch (e) { console.error('CSV export:', e) }
+          }}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        </button>
+      )}
 
       {/* Inspector — Ver dados brutos */}
       {block.dataset_id && !['filter', 'slider', 'text', 'image'].includes(block.type) && <div className="relative">
