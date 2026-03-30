@@ -60,9 +60,29 @@ function VerificarEmailContent() {
     setError('')
     try {
       const data = await api.verifyEmail(email, fullCode)
+      // accessToken usado apenas em memória para claimPreview — nunca armazenado no localStorage
+      const accessToken = data.tokens?.access_token
       localStorage.setItem('jarbis_user', JSON.stringify(data.user))
       if (data.trial_days_remaining !== null && data.trial_days_remaining !== undefined) {
         localStorage.setItem('jarbis_trial_days', String(data.trial_days_remaining))
+      }
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
+
+      // Helper: claim via Bearer token direto (sem apiFetch) para evitar redirect 401 cross-origin
+      async function claimWithToken(token) {
+        if (!token || !accessToken) return null
+        try {
+          const res = await fetch(`${apiBase}/reports/preview/${token}/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+            credentials: 'include',
+          })
+          if (!res.ok) return null
+          return await res.json()
+        } catch {
+          return null
+        }
       }
 
       // Plano escolhido na home — redireciona para checkout e tenta reclamar preview em background
@@ -74,7 +94,7 @@ function VerificarEmailContent() {
         // Tenta reclamar o preview em background (sem bloquear o redirect)
         if (pendingPreviewToken) {
           localStorage.removeItem('pending_preview_token')
-          api.reports.claimPreview(pendingPreviewToken).catch(() => {})
+          claimWithToken(pendingPreviewToken)
         }
         router.push(`/checkout?plan=${pendingPlan}`)
         return
@@ -83,14 +103,10 @@ function VerificarEmailContent() {
       // Sem plano — verifica preview pendente para reclamar (veio da home antes de criar conta)
       if (pendingPreviewToken) {
         localStorage.removeItem('pending_preview_token')
-        try {
-          const claimed = await api.reports.claimPreview(pendingPreviewToken)
-          if (claimed?.dataset_id) {
-            router.push(`/dashboards/novo?from=preview&dataset_id=${claimed.dataset_id}&ds_name=${encodeURIComponent(claimed.name || 'Meu Dashboard')}`)
-            return
-          }
-        } catch (err) {
-          console.warn('[verificar-email] claimPreview falhou:', err?.message)
+        const claimed = await claimWithToken(pendingPreviewToken)
+        if (claimed?.dataset_id) {
+          router.push(`/dashboards/novo?from=preview&dataset_id=${claimed.dataset_id}&ds_name=${encodeURIComponent(claimed.name || 'Meu Dashboard')}`)
+          return
         }
       }
 
