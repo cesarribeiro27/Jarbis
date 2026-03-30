@@ -1984,7 +1984,16 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
     const autoFormat = (format === 'currency' && Math.abs(total) >= 10000) ? 'compact_currency' : format
     const sizeMap = { lg: '18px', xl: '20px', '2xl': '24px', '4xl': '31px' }
     const baseFontSize = parseInt(sizeMap[config.size || '4xl'] || '31px')
-    const delta = config.delta != null && config.delta !== '' ? String(config.delta) : null
+    const manualDelta = config.delta != null && config.delta !== '' ? String(config.delta) : null
+    const autoDeltaVal = (() => {
+      if (!config.auto_delta || isManualKpi) return null
+      const d = displayData || []
+      if (d.length < 2) return null
+      const last = d[d.length - 1]?.value
+      const prev = d[d.length - 2]?.value
+      return prev != null && prev !== 0 ? ((last - prev) / Math.abs(prev) * 100).toFixed(1) : null
+    })()
+    const delta = autoDeltaVal ?? manualDelta
     const deltaNum = delta ? parseFloat(delta) : null
     const deltaPositive = deltaNum != null ? deltaNum >= 0 : null
     const isDefaultVsMonth = !config.delta_label ||
@@ -2039,6 +2048,15 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
 
   const tickFmt = v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }
   const tooltipStyle = { fontSize: 11, borderRadius: 10, border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(109,40,217,0.12)', padding: '6px 10px', background: '#fff' }
+  // Annotation markers for charts (vertical lines with label)
+  const annotationLines = (config.annotations || []).map((ann, i) => (
+    <ReferenceLine key={`ann_${i}`} x={ann.x} stroke={ann.color || '#f59e0b'} strokeDasharray="4 2" strokeWidth={1.5}
+      label={{ value: ann.text, position: 'insideTopLeft', fontSize: 9, fill: ann.color || '#f59e0b' }} />
+  ))
+  const annotationLinesH = (config.annotations || []).map((ann, i) => (
+    <ReferenceLine key={`ann_${i}`} y={ann.x} stroke={ann.color || '#f59e0b'} strokeDasharray="4 2" strokeWidth={1.5}
+      label={{ value: ann.text, position: 'insideTopLeft', fontSize: 9, fill: ann.color || '#f59e0b' }} />
+  ))
   const showMarkers = config.show_markers !== false
   const topN = config.top_n ? parseInt(config.top_n) : null
   const sortBy = config.sort_by // 'asc' | 'desc' | undefined (keep original)
@@ -2069,6 +2087,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
+            {annotationLines}
             {config.show_brush && (
               <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
                 onChange={({ startIndex, endIndex }) => {
@@ -2106,6 +2125,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine x={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
+            {annotationLinesH}
             {config.show_brush && (
               <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
                 onChange={({ startIndex, endIndex }) => {
@@ -2157,6 +2177,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
             {config.reference_value != null && config.reference_value !== '' && (
               <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
             )}
+            {annotationLines}
             {config.show_brush && (
               <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
                 onChange={({ startIndex, endIndex }) => {
@@ -2204,6 +2225,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 {config.reference_value != null && config.reference_value !== '' && (
                   <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
                 )}
+                {annotationLines}
                 {config.show_brush && (
                   <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
                 onChange={({ startIndex, endIndex }) => {
@@ -2231,6 +2253,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
                 {config.reference_value != null && config.reference_value !== '' && (
                   <ReferenceLine y={parseFloat(config.reference_value)} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: config.reference_label || vs.refLabel, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
                 )}
+                {annotationLines}
                 {config.show_brush && (
                   <Brush dataKey="label" height={20} stroke="#7c3aed" fill="#f3f0ff" travellerWidth={6}
                 onChange={({ startIndex, endIndex }) => {
@@ -2300,6 +2323,22 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
 
   if (block.type === 'scatter') {
     const scatterData = displayData.map(d => ({ x: parseFloat(d.label) || 0, y: d.value }))
+    // Linear regression trendline
+    const trendData = (() => {
+      if (!config.show_trendline || scatterData.length < 2) return null
+      const n = scatterData.length
+      const sumX = scatterData.reduce((s, d) => s + d.x, 0)
+      const sumY = scatterData.reduce((s, d) => s + d.y, 0)
+      const sumXY = scatterData.reduce((s, d) => s + d.x * d.y, 0)
+      const sumX2 = scatterData.reduce((s, d) => s + d.x * d.x, 0)
+      const denom = n * sumX2 - sumX * sumX
+      if (denom === 0) return null
+      const m = (n * sumXY - sumX * sumY) / denom
+      const b = (sumY - m * sumX) / n
+      const xs = scatterData.map(d => d.x)
+      const minX = Math.min(...xs), maxX = Math.max(...xs)
+      return [{ x: minX, y: m * minX + b }, { x: maxX, y: m * maxX + b }]
+    })()
     return (
       <div className="flex flex-col h-full">
         <div style={{ flex: 1 }}>
@@ -2308,8 +2347,11 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
               <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
               <XAxis dataKey="x" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.label_col} axisLine={false} tickLine={false} />
               <YAxis dataKey="y" type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} name={block.value_col} axisLine={false} tickLine={false} tickFormatter={v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }} />
-              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} cursor={{ strokeDasharray: '3 3' }} formatter={v => fmt(v, format, config)} />
-              <Scatter data={scatterData} fill={color} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ strokeDasharray: '3 3' }} formatter={v => fmt(v, format, config)} />
+              <Scatter data={scatterData} fill={color} fillOpacity={0.75} />
+              {trendData && (
+                <Scatter data={trendData} fill="none" line={{ stroke: color, strokeWidth: 1.5, strokeDasharray: '5 3', opacity: 0.6 }} shape={() => null} legendType="none" />
+              )}
             </ScatterChart>
           </ResponsiveContainer>
         </div>
@@ -4394,6 +4436,73 @@ export function BlockConfigPanel({ block: rawBlock, onChange, datasets = [] }) {
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={block.config?.show_markers !== false} onChange={e => onChange({ ...block, config: { ...block.config, show_markers: e.target.checked } })} className="accent-violet-600" />
             <span className="text-xs text-gray-600">{t('block.toggleShowDots')}</span>
+          </label>
+        </ConfigSection>
+      )}
+
+      {/* ANOTAÇÕES */}
+      {['bar', 'bar_h', 'line', 'area', 'area_stacked', 'combo'].includes(block.type) && (
+        <ConfigSection title="Anotações" defaultOpen={false}>
+          <p className="text-[10px] text-gray-400 -mt-1 mb-2">Marque pontos do eixo X com uma linha e texto</p>
+          {(block.config?.annotations || []).map((ann, i) => (
+            <div key={i} className="flex gap-1.5 items-center mb-1.5">
+              <input
+                type="text"
+                placeholder="Label (ex: Jan)"
+                value={ann.x || ''}
+                onChange={e => {
+                  const next = [...(block.config?.annotations || [])]
+                  next[i] = { ...next[i], x: e.target.value }
+                  updConfig('annotations', next)
+                }}
+                className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              />
+              <input
+                type="text"
+                placeholder="Texto"
+                value={ann.text || ''}
+                onChange={e => {
+                  const next = [...(block.config?.annotations || [])]
+                  next[i] = { ...next[i], text: e.target.value }
+                  updConfig('annotations', next)
+                }}
+                className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              />
+              <input
+                type="color"
+                value={ann.color || '#f59e0b'}
+                onChange={e => {
+                  const next = [...(block.config?.annotations || [])]
+                  next[i] = { ...next[i], color: e.target.value }
+                  updConfig('annotations', next)
+                }}
+                className="w-7 h-7 rounded cursor-pointer border border-gray-200 p-0.5 shrink-0"
+              />
+              <button
+                onClick={() => updConfig('annotations', (block.config?.annotations || []).filter((_, j) => j !== i))}
+                className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => updConfig('annotations', [...(block.config?.annotations || []), { x: '', text: '', color: '#f59e0b' }])}
+            className="w-full py-1.5 text-xs text-violet-600 hover:text-violet-800 border border-dashed border-violet-200 rounded-lg hover:border-violet-400 transition-colors"
+          >
+            + Adicionar anotação
+          </button>
+        </ConfigSection>
+      )}
+
+      {/* scatter trendline toggle */}
+      {block.type === 'scatter' && (
+        <ConfigSection title="Tendência" defaultOpen={false}>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => updConfig('show_trendline', !block.config?.show_trendline)} className={`w-8 h-4 rounded-full transition-colors relative ${block.config?.show_trendline ? 'bg-violet-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${block.config?.show_trendline ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs text-gray-600">Linha de tendência (regressão linear)</span>
           </label>
         </ConfigSection>
       )}
