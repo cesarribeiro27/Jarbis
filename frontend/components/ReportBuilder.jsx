@@ -6888,7 +6888,7 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
             )}
 
             {/* Content */}
-            <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' ? 'px-2 py-1 flex flex-col justify-center' : 'px-3 pb-3 pt-0.5'}`}>
+            <div className={`flex-1 min-h-0 ${['bar','bar_h','line','area','combo','scatter','bubble','radar','waterfall','bar_stacked','area_stacked','histogram','bullet','candlestick'].includes(block.type) ? 'overflow-visible' : 'overflow-hidden'} ${block.type === 'filter' ? 'px-2 py-1 flex flex-col justify-center' : 'px-3 pb-3 pt-0.5'}`}>
               <BlockPreview
                 block={block}
                 readOnly={readOnly}
