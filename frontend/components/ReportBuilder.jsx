@@ -24,6 +24,8 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
+  const [sortCol, setSortCol] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
   const limit = 50
 
   useEffect(() => {
@@ -40,6 +42,23 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
 
   const cols = columns.length > 0 ? columns : Object.keys(rows[0] || {})
 
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
+
+  const sortedRows = sortCol
+    ? [...rows].sort((a, b) => {
+        const va = a[sortCol], vb = b[sortCol]
+        const numA = parseFloat(va), numB = parseFloat(vb)
+        const isNum = !isNaN(numA) && !isNaN(numB)
+        if (isNum) return sortDir === 'asc' ? numA - numB : numB - numA
+        return sortDir === 'asc'
+          ? String(va ?? '').localeCompare(String(vb ?? ''), 'pt-BR')
+          : String(vb ?? '').localeCompare(String(va ?? ''), 'pt-BR')
+      })
+    : rows
+
   return (
     <div className="flex flex-col h-full">
       <div className="overflow-auto flex-1">
@@ -47,14 +66,25 @@ function RawTableBlock({ datasetId, columns = [], readOnly }) {
           <thead className="sticky top-0 z-10">
             <tr>
               {cols.map(col => (
-                <th key={col} className="px-3 py-2 text-left font-semibold text-[11px] text-gray-500 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider whitespace-nowrap">
-                  {col}
+                <th
+                  key={col}
+                  className="px-3 py-2 text-left font-semibold text-[11px] text-gray-500 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-violet-600 transition-colors"
+                  onClick={() => toggleSort(col)}
+                >
+                  <span className="flex items-center gap-1">
+                    {col}
+                    {sortCol === col && (
+                      <svg className="w-2.5 h-2.5 opacity-60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortDir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                      </svg>
+                    )}
+                  </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
+            {sortedRows.map((row, i) => (
               <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
                 {cols.map(col => (
                   <td key={col} className="px-3 py-1.5 text-gray-700 border-b border-gray-100 whitespace-nowrap max-w-[200px] truncate">
@@ -1847,7 +1877,7 @@ function BlockPreview({ block, readOnly, onTextChange, activeFilters, crossFilte
   }
 
   const tickFmt = v => { const a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(1)+'M'; if(a>=1e3) return (v/1e3).toFixed(0)+'K'; return v }
-  const tooltipStyle = { fontSize: 11, borderRadius: 10, border: '1px solid #e5e7eb', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '6px 10px' }
+  const tooltipStyle = { fontSize: 11, borderRadius: 10, border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(109,40,217,0.12)', padding: '6px 10px', background: '#fff' }
   const showMarkers = config.show_markers !== false
   const topN = config.top_n ? parseInt(config.top_n) : null
   const sortBy = config.sort_by // 'asc' | 'desc' | undefined (keep original)
@@ -6118,6 +6148,13 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
         const isSelected = selectedBlockId === block.id
         const isHovered = hoveredBlockId === block.id
 
+        // Column mismatch detection
+        const blockDataset = datasets.find(d => d.id === block.dataset_id)
+        const availableCols = blockDataset?.columns || []
+        const missingLabel = block.label_col && availableCols.length > 0 && !availableCols.includes(block.label_col)
+        const missingValue = block.value_col && availableCols.length > 0 && !availableCols.includes(block.value_col)
+        const hasColumnMismatch = !readOnly && (missingLabel || missingValue)
+
         // Cross-filter highlight logic
         const anyCrossActive = Object.keys(crossFilters).length > 0
         const hasDataset = !!block.dataset_id
@@ -6255,6 +6292,24 @@ export default function ReportBuilder({ blocks = [], onChange, readOnly = false,
               )}
             </div>
             )} {/* fim do else: header normal */}
+
+            {/* Column mismatch warning */}
+            {hasColumnMismatch && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 px-4 text-center rounded-2xl bg-amber-50/96 border-2 border-amber-200">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-amber-800 mb-0.5">Coluna não encontrada</p>
+                  {missingLabel && <p className="text-[10px] text-amber-700">Dimensão: <strong>"{block.label_col}"</strong></p>}
+                  {missingValue && <p className="text-[10px] text-amber-700">Métrica: <strong>"{block.value_col}"</strong></p>}
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); onBlockAction?.(block.id, 'config') }}
+                  className="text-[10px] px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-colors"
+                >Corrigir</button>
+              </div>
+            )}
 
             {/* Content */}
             <div className={`flex-1 min-h-0 overflow-hidden ${block.type === 'filter' ? 'px-2 py-1 flex flex-col justify-center' : 'px-3 pb-3 pt-0.5'}`}>
