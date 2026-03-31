@@ -308,18 +308,19 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (pathname === '/admin/login') return
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
-    if (!token) { router.replace('/admin/login'); return }
 
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-
-    fetch(`${API_URL}/admin/me`, { credentials: 'include', headers })
+    // Auth via cookie httpOnly (jarbis_admin_token) — sem localStorage
+    fetch(`${API_URL}/admin/me`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
       .then(r => {
         if (r.status === 401) { router.replace('/admin/login'); return null }
         if (r.status === 403) { router.replace('/dashboard'); return null }
         return r.json()
       })
       .then(data => {
+        if (!data) return
         if (data?.role) {
           setAdminEmail(data.email)
           setAdminRole(data.role)
@@ -328,7 +329,7 @@ export default function AdminLayout({ children }) {
           setAdminEmail(data.email)
           setAdminRole('full')
           setChecking(false)
-        } else if (data) {
+        } else {
           router.replace('/dashboard')
         }
       })
@@ -337,9 +338,7 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (!adminRole) return
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
-    if (!token) return
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+    const headers = { 'Content-Type': 'application/json' }
 
     fetch(`${API_URL}/admin/alerts`, { credentials: 'include', headers })
       .then(r => r.json()).then(d => setAlertCount(d.total || 0)).catch(() => {})
