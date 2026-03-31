@@ -1645,7 +1645,19 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
       icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> },
   ]
 
-  const getInsights = col => col.type === 'number' ? NUM_INSIGHTS : col.type === 'date' ? DATE_INSIGHTS : TEXT_INSIGHTS
+  const getInsights = col => {
+    const all = col.type === 'number' ? NUM_INSIGHTS : col.type === 'date' ? DATE_INSIGHTS : TEXT_INSIGHTS
+    return all.filter(i => {
+      if (!i.needsCompare) return true
+      const opts = allCols.filter(c => {
+        if (i.needsCompare === 'date')   return c.type === 'date'   && c.dsId === col.dsId
+        if (i.needsCompare === 'text')   return c.type !== 'number' && c.type !== 'date' && c.dsId === col.dsId
+        if (i.needsCompare === 'number') return c.type === 'number' && c.dsId === col.dsId
+        return true
+      })
+      return opts.length > 0
+    })
+  }
 
   const getCompareOptions = insight => {
     if (!selectedCol) return []
@@ -1691,7 +1703,7 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
     if (!insight.needsCompare) { buildAndAdd(null, insight); return }
     const opts = getCompareOptions(insight)
     if (opts.length === 1) { buildAndAdd(opts[0], insight); return }
-    if (opts.length === 0) { buildAndAdd(null, insight); return }
+    if (opts.length === 0) return
     setStep('compare')
   }
 

@@ -383,8 +383,19 @@ def execute_query(rows: list[dict], req: QueryRequest) -> QueryResult:
             data.sort(key=lambda r: r.get(col, r.get("value", 0)) or 0, reverse=reverse)
 
     # 7. Ordenação natural de datas (se dimensão de data e sem sort explícito)
-    if dim and dim.type == "date" and not req.sort:
-        data.sort(key=lambda r: r.get("_key", ""))
+    if dim and not req.sort:
+        if dim.type == "date":
+            data.sort(key=lambda r: r.get("_key", ""))
+        else:
+            # Fallback: se os _keys parecem datas ISO (YYYY-MM ou YYYY-MM-DD),
+            # ordena cronologicamente mesmo quando dim_type não foi declarado como date.
+            # Cobre line/area gerados pela IA sem config.dim_type definido.
+            sample = [r.get("_key", "") for r in data[:5] if r.get("_key")]
+            if sample and all(
+                len(k) in (7, 10) and k[:4].isdigit() and k[4:5] == "-"
+                for k in sample
+            ):
+                data.sort(key=lambda r: r.get("_key", ""))
 
     # 8. Limit
     total = len(data)
