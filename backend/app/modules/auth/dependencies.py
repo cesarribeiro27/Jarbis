@@ -71,8 +71,18 @@ async def get_current_user(
 
 
 async def get_current_active_user(
+    request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> User:
+    # Enforce trial expiration on all non-exempt paths
+    _TRIAL_EXEMPT = ("/auth/", "/billing/", "/admin/", "/health", "/docs", "/redoc", "/openapi")
+    if not any(request.url.path.startswith(p) for p in _TRIAL_EXEMPT):
+        from app.modules.tenants.models import Tenant
+        from app.modules.billing.guards import check_trial_active
+        tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
+        if tenant:
+            check_trial_active(tenant)
     return current_user
 
 

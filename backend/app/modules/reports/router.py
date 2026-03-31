@@ -217,8 +217,11 @@ async def _preview_get_meta(token: str, db: "AsyncSession") -> str | None:
 )
 async def preview_excel_sheets(file: Annotated[UploadFile, File()]):
     """Recebe arquivo Excel sem autenticação e retorna as abas disponíveis com metadados."""
+    _MAX = 10 * 1024 * 1024
+    if getattr(file, "size", None) and file.size > _MAX:
+        raise HTTPException(status_code=413, detail="Arquivo muito grande (máx 10 MB)")
     content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
+    if len(content) > _MAX:
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 10 MB)")
     try:
         import io
@@ -295,8 +298,11 @@ async def preview_upload(
     from app.modules.reports.dataset_service import _parse_csv, _parse_excel, _detect_columns
 
     filename = file.filename or "planilha"
+    _MAX = 10 * 1024 * 1024
+    if getattr(file, "size", None) and file.size > _MAX:
+        raise HTTPException(status_code=413, detail="Arquivo muito grande (máx 10 MB)")
     content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
+    if len(content) > _MAX:
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 10 MB)")
 
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -936,8 +942,11 @@ async def get_excel_sheets(
     file: Annotated[UploadFile, File()],
     current_user: User = Depends(get_current_active_user),
 ):
+    _MAX = 20 * 1024 * 1024
+    if getattr(file, "size", None) and file.size > _MAX:
+        raise HTTPException(status_code=413, detail="Arquivo muito grande (máx 20 MB)")
     content = await file.read()
-    if len(content) > 20 * 1024 * 1024:
+    if len(content) > _MAX:
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 20 MB)")
     try:
         import io
@@ -969,8 +978,11 @@ async def upload_dataset(
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
     filename = file.filename or "dataset"
+    _MAX = 20 * 1024 * 1024
+    if getattr(file, "size", None) and file.size > _MAX:
+        raise HTTPException(status_code=413, detail="Arquivo muito grande (máx 20 MB)")
     content = await file.read()
-    if len(content) > 20 * 1024 * 1024:
+    if len(content) > _MAX:
         raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 20 MB)")
     name = filename.rsplit(".", 1)[0] if "." in filename else filename
     from app.modules.billing.plan_limits import get_effective_limits as _get_limits
