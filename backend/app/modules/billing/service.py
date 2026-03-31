@@ -419,7 +419,9 @@ class BillingService:
     async def handle_webhook(self, payload: bytes, signature: str) -> None:
         """Processa evento Stripe e atualiza o tenant no banco."""
         if not _init_stripe():
-            return
+            raise ValueError("Stripe não configurado — webhook rejeitado.")
+        if not settings.stripe_webhook_secret:
+            raise ValueError("STRIPE_WEBHOOK_SECRET não configurado — webhook rejeitado.")
         try:
             event = stripe.Webhook.construct_event(
                 payload, signature, settings.stripe_webhook_secret
@@ -437,8 +439,8 @@ class BillingService:
                 already_processed = await redis.get(redis_key)
                 if already_processed:
                     return  # idempotente — ignora evento duplicado
-                # Marca como processado com TTL de 24 horas
-                await redis.set(redis_key, "1", ex=86400)
+                # Marca como processado com TTL de 72 horas (Stripe retentar por até 3 dias)
+                await redis.set(redis_key, "1", ex=259200)
                 await redis.aclose()
             except Exception:
                 pass  # Redis indisponível — processa mesmo assim (fail open)

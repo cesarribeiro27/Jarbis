@@ -826,8 +826,9 @@ class DatasetService:
         if resp.status_code in (301, 302, 303, 307, 308):
             redirect_url = resp.headers.get("location", "")
             if redirect_url:
-                async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client2:
-                    resp = await client2.get(redirect_url)
+                _validate_ssrf(redirect_url)  # valida destino do redirect antes de seguir
+                async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client2:
+                    resp = await client2.get(redirect_url, headers=headers)
 
         resp.raise_for_status()
         content_type = resp.headers.get("content-type", "")

@@ -27,7 +27,7 @@ from typing import Annotated
 import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -95,15 +95,22 @@ class ComputedColumnResponse(BaseModel):
 
 
 class ApiDatasetCreate(BaseModel):
-    name: str
-    api_url: str
-    method: str = "GET"
+    name: str = Field(max_length=200)
+    api_url: str = Field(max_length=2048)
+    method: str = Field(default="GET", max_length=10)
     headers: dict | None = None          # frontend envia como "headers"
     api_headers: dict | None = None      # alias de compatibilidade
-    body: str | None = None
-    api_data_path: str | None = None
+    body: str | None = Field(default=None, max_length=10_000)
+    api_data_path: str | None = Field(default=None, max_length=500)
     refresh_interval_minutes: int | None = None
-    sync_mode: str = "replace"           # replace | append
+    sync_mode: str = Field(default="replace", max_length=20)
+
+    @field_validator("headers", "api_headers", mode="before")
+    @classmethod
+    def _limit_headers(cls, v: dict | None) -> dict | None:
+        if v and len(str(v)) > 5_000:
+            raise ValueError("Headers excedem o tamanho máximo permitido.")
+        return v
 
     @property
     def resolved_headers(self) -> dict | None:
@@ -237,14 +244,24 @@ async def preview_google_sheets_tabs(request: Request):
     url = (body.get("url") or "").strip()
     if not url:
         raise HTTPException(status_code=400, detail="URL não informada.")
+    if not url.startswith("https://docs.google.com/spreadsheets/"):
+        raise HTTPException(status_code=400, detail="Apenas URLs do Google Sheets são permitidas.")
     m = re.search(r"spreadsheets/d/([a-zA-Z0-9_-]+)", url)
     if not m:
         raise HTTPException(status_code=400, detail="URL do Google Sheets inválida.")
     spreadsheet_id = m.group(1)
+    if not re.fullmatch(r"[a-zA-Z0-9_-]+", spreadsheet_id):
+        raise HTTPException(status_code=400, detail="ID da planilha inválido.")
     export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
     try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
+        async with httpx.AsyncClient(follow_redirects=False, timeout=15) as client:
             resp = await client.get(export_url)
+        if resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get("location", "")
+            if not location.startswith("https://docs.google.com/"):
+                raise HTTPException(status_code=400, detail="Redirecionamento fora do Google Sheets não permitido.")
+            async with httpx.AsyncClient(follow_redirects=False, timeout=15) as client2:
+                resp = await client2.get(location)
         if resp.status_code != 200:
             raise HTTPException(status_code=400, detail="Não foi possível baixar a planilha. Verifique se está pública.")
         import io

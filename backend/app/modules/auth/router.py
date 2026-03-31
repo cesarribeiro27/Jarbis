@@ -143,7 +143,7 @@ async def signup(
 
 
 @router.post("/login", response_model=AuthResponse)
-@limiter.limit("5/minute")
+@limiter.limit("3/minute")
 async def login(request: Request, data: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Autentica um usuário e retorna tokens de acesso."""
     service = AuthService(db)

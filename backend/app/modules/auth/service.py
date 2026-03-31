@@ -170,9 +170,11 @@ class AuthService:
         if not user:
             return  # Silencioso por segurança
 
+        # Sobrescreve qualquer token anterior — apenas 1 token válido por vez
         token = secrets.token_urlsafe(32)
         user.reset_token = token
         user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        user.session_revoked_at = datetime.now(timezone.utc)  # invalida sessões ativas
         await self.db.flush()
 
         reset_url = f"{frontend_url}/nova-senha?token={token}"

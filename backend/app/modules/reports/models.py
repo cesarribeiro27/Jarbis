@@ -60,11 +60,16 @@ class Report(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
     def generate_share_token(self):
+        from datetime import timedelta
         self.share_token = secrets.token_urlsafe(24)
         self.is_shared = True
-        self.share_token_expires_at = None  # sem expiração — usuário controla via revogação
+        self.share_token_expires_at = _utcnow() + timedelta(days=365)
 
     @property
     def share_token_valid(self) -> bool:
-        """Retorna True se o token existe e está ativo. Expiração manual via is_shared=False."""
-        return bool(self.is_shared and self.share_token)
+        """Retorna True se o token existe, está ativo e não expirou."""
+        if not self.is_shared or not self.share_token:
+            return False
+        if self.share_token_expires_at and self.share_token_expires_at < _utcnow():
+            return False
+        return True
