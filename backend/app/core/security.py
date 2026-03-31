@@ -13,6 +13,10 @@ from app.config import settings
 # Contexto de hashing — bcrypt é o padrão seguro para senhas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Hash dummy usado para equalizar tempo de resposta no login quando usuário não existe
+# Previne timing attack (enumeração de usuários por diferença de tempo de resposta)
+_DUMMY_HASH = pwd_context.hash("__dummy_jarbis_timing_guard__")
+
 
 def hash_password(plain_password: str) -> str:
     """Gera o hash bcrypt de uma senha."""

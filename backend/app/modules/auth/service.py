@@ -142,7 +142,11 @@ class AuthService:
             logging.getLogger(__name__).error("login query failed: %s", exc, exc_info=True)
             raise
 
-        if not user or not verify_password(data.password, user.hashed_password):
+        # Sempre executa bcrypt, mesmo sem usuário — previne timing attack
+        from app.core.security import _DUMMY_HASH
+        hash_to_check = user.hashed_password if user else _DUMMY_HASH
+        password_ok = verify_password(data.password, hash_to_check)
+        if not user or not password_ok:
             raise UnauthorizedError("Email ou senha incorretos.")
 
         if not user.is_active:
@@ -168,7 +172,10 @@ class AuthService:
         """
         user = await self.db.scalar(select(User).where(User.email == email))
         if not user:
-            return  # Silencioso por segurança
+            # Executa trabalho dummy para equalizar tempo de resposta (previne timing attack)
+            import asyncio
+            await asyncio.sleep(0.1)
+            return
 
         # Sobrescreve qualquer token anterior — apenas 1 token válido por vez
         token = secrets.token_urlsafe(32)

@@ -52,10 +52,16 @@ async def check_dashboard_limit(
     db: AsyncSession, tenant_id: uuid.UUID, plan: str, addon_packs: int = 0
 ) -> None:
     from app.modules.reports.models import Report
+    from app.modules.tenants.models import Tenant
     limits = get_effective_limits(plan, addon_packs)
     max_dashboards = limits["dashboards"]
     if max_dashboards == -1:
         return
+    # Lock no tenant para prevenir race condition: dois requests simultâneos
+    # passando no check antes de qualquer commit
+    await db.scalar(
+        select(Tenant.id).where(Tenant.id == tenant_id).with_for_update()
+    )
     count = await db.scalar(
         select(func.count()).select_from(Report).where(Report.tenant_id == tenant_id)
     )
@@ -71,10 +77,14 @@ async def check_dataset_limit(
     db: AsyncSession, tenant_id: uuid.UUID, plan: str, addon_packs: int = 0
 ) -> None:
     from app.modules.reports.dataset_models import ReportDataset
+    from app.modules.tenants.models import Tenant
     limits = get_effective_limits(plan, addon_packs)
     max_datasets = limits["datasets"]
     if max_datasets == -1:
         return
+    await db.scalar(
+        select(Tenant.id).where(Tenant.id == tenant_id).with_for_update()
+    )
     count = await db.scalar(
         select(func.count()).select_from(ReportDataset).where(
             ReportDataset.tenant_id == tenant_id,

@@ -237,6 +237,7 @@ async def preview_excel_sheets(file: Annotated[UploadFile, File()]):
     summary="Lista abas de Google Sheets para preview anônimo — sem autenticação",
     include_in_schema=False,
 )
+@limiter.limit("10/minute")
 async def preview_google_sheets_tabs(request: Request):
     """Recebe URL do Google Sheets pública e retorna as abas com metadados de qualidade. Sem autenticação."""
     import re

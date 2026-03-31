@@ -2917,7 +2917,12 @@ async def impersonate_tenant(
 
 
 @router.post("/tenants/impersonate/end")
-async def end_impersonation(response: Response):
+async def end_impersonation(
+    request: Request,
+    response: Response,
+    user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
     """Encerra a sessão de impersonação limpando o cookie jarbis_impersonation_token."""
     is_prod = settings.is_production
     response.delete_cookie(
@@ -2925,6 +2930,8 @@ async def end_impersonation(response: Response):
         path="/",
         samesite="none" if is_prod else "lax",
     )
+    await _audit(db, user.email, "impersonate_end", "tenant", description="Encerrou sessão de impersonação")
+    await db.commit()
     return {"ok": True}
 
 
