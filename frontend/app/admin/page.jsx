@@ -85,6 +85,7 @@ export default function AdminMetricsPage() {
   const [data, setData] = useState(null)
   const [mrrHistory, setMrrHistory] = useState(null)
   const [retention, setRetention] = useState(null)
+  const [threats, setThreats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -98,10 +99,13 @@ export default function AdminMetricsPage() {
         .then(r => r.json()).catch(() => null),
       fetch(`${API_URL}/admin/metrics/retention`, { credentials: 'include', headers })
         .then(r => r.json()).catch(() => null),
-    ]).then(([metrics, mrr, ret]) => {
+      fetch(`${API_URL}/admin/security/threats`, { credentials: 'include', headers })
+        .then(r => r.json()).catch(() => null),
+    ]).then(([metrics, mrr, ret, sec]) => {
       setData(metrics)
       setMrrHistory(mrr)
       setRetention(ret)
+      setThreats(sec)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -390,6 +394,54 @@ export default function AdminMetricsPage() {
                 </div>
               </div>
             )}
+
+          {/* ── Ameaças de Segurança ─────────────────── */}
+          {threats && threats.total > 0 && (
+            <div className="mt-8 rounded-2xl border border-red-900/40 bg-red-950/10 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-red-400 text-lg">&#9888;</span>
+                <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">
+                  Ameaças detectadas (últimas 2h)
+                </h2>
+                <span className="ml-auto text-xs bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full">
+                  {threats.total} IP{threats.total !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs text-gray-500 border-b border-gray-800">
+                      <th className="text-left pb-2 pr-4">IP</th>
+                      <th className="text-left pb-2 pr-4">Reqs bloqueadas</th>
+                      <th className="text-left pb-2 pr-4">Alerta enviado</th>
+                      <th className="text-left pb-2">Últimos endpoints</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {threats.threats.map(t => (
+                      <tr key={t.ip} className="border-b border-gray-800/50">
+                        <td className="py-2 pr-4 font-mono text-white">{t.ip}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`font-bold ${t.hits >= 50 ? 'text-red-400' : t.hits >= 20 ? 'text-amber-400' : 'text-gray-300'}`}>
+                            {t.hits}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4">
+                          {t.alerted
+                            ? <span className="text-xs bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full">Sim</span>
+                            : <span className="text-xs text-gray-600">Não</span>
+                          }
+                        </td>
+                        <td className="py-2 text-gray-400 text-xs font-mono">
+                          {(t.recent_events || []).slice(0, 3).join(' · ')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           </div>
         )}

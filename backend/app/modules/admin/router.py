@@ -3351,3 +3351,53 @@ async def broadcast_notification(
         count += 1
     await db.commit()
     return {"ok": True, "sent_to": count}
+
+
+# ── Security Threats ────────────────────────────────────────────────────────
+
+@router.get("/security/threats", summary="Lista IPs com atividade suspeita (últimas 2h)")
+async def list_security_threats(
+    current_user: User = Depends(get_superadmin),
+):
+    """Lê do Redis os IPs que atingiram rate limit recentemente."""
+    try:
+        from app.core.cache import get_redis
+        import time
+
+        redis = get_redis()
+        try:
+            now = int(time.time())
+            cutoff = now - 7200  # últimas 2h
+
+            # IPs com atividade recente (sorted set por timestamp)
+            raw = await redis.zrangebyscore("threat:ips", cutoff, "+inf", withscores=True)
+            threats = []
+            for ip_bytes, score in raw:
+                ip = ip_bytes.decode() if isinstance(ip_bytes, bytes) else ip_bytes
+                hits_raw = await redis.get(f"threat:hits:{ip}")
+                hits = int(hits_raw) if hits_raw else 0
+                alerted = await redis.exists(f"threat:alerted:{ip}")
+
+                # Últimos eventos
+                events_raw = await redis.lrange(f"threat:events:{ip}", 0, 4)
+                events = []
+                for e in events_raw:
+                    e_str = e.decode() if isinstance(e, bytes) else e
+                    parts = e_str.split("|", 1)
+                    events.append(parts[1] if len(parts) == 2 else e_str)
+
+                threats.append({
+                    "ip": ip,
+                    "hits": hits,
+                    "alerted": bool(alerted),
+                    "last_seen": int(score),
+                    "recent_events": events,
+                })
+
+            # Ordena por hits desc
+            threats.sort(key=lambda x: x["hits"], reverse=True)
+            return {"threats": threats, "total": len(threats)}
+        finally:
+            await redis.aclose()
+    except Exception as e:
+        return {"threats": [], "total": 0, "error": str(e)}
