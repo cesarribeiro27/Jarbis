@@ -7,10 +7,10 @@
     "trialCta": "Kostenlos testen - 7 Tage"
   },
   "hero": {
-    "badge": "KI in jedem Plan enthalten - auch im kostenlosen",
+    "badge": "Kein Code · Kein Analyst · Google Sheets · 7 Tage kostenlos",
     "title1": "Ihre Tabelle wird in 30 Sekunden",
     "title2": "zum professionellen Dashboard.",
-    "subtitle": "Laden Sie Ihr Excel oder CSV hoch und die KI von Jarbis analysiert alles: KPIs, Diagramme und Berichte werden automatisch generiert - ohne Programmierung.",
+    "subtitle": "Verbinde Excel, CSV oder Google Sheets und Jarbis KI analysiert alles. Erstelle Dashboards, KPIs und Berichte in Sekunden. Ohne Programmierung, ohne Analyst.",
     "ctaPrimary": "Kostenlos starten",
     "ctaSecondary": "Sehen wie es funktioniert",
     "freeBadge": "7 Tage kostenlos · Keine Karte · Jederzeit kündbar",
@@ -114,16 +114,16 @@
         "desc": "Importieren Sie Excel, CSV oder verbinden Sie Google Sheets. Ihre Daten sind in Sekunden bereit."
       },
       {
-        "title": "KI die Ihre Sprache spricht",
-        "desc": "Fragen Sie \"Was ist mein meistverkauftes Produkt?\" und erhalten Sie sofort die Antwort."
+        "title": "Jarbis KI spricht deine Sprache",
+        "desc": "Frag \"Was ist mein meistverkauftes Produkt?\" und Jarbis KI antwortet sofort, ohne Formeln."
       },
       {
         "title": "Mit einem Link teilen",
         "desc": "Generieren Sie einen öffentlichen Link und teilen Sie ihn. Ihr Kunde sieht das Dashboard ohne Konto."
       },
       {
-        "title": "Automatische Benachrichtigungen",
-        "desc": "Richten Sie Benachrichtigungen ein und erhalten Sie Meldungen, wenn der Umsatz sinkt."
+        "title": "Verfolge deine Kampagnen-Links",
+        "desc": "Erstelle getrackte Links für jeden Kanal. Sieh, woher die Klicks kommen, welche Städte, Geräte und Zeiten. Ohne andere Tools."
       },
       {
         "title": "In Ihr System einbetten",
@@ -288,6 +288,14 @@
       {
         "q": "Kann ich Diagramme meinen Kunden zeigen?",
         "a": "Ja. Generieren Sie einen öffentlichen Link und senden Sie ihn per E-Mail. Ihr Kunde sieht Live-Daten ohne Konto. Im Unbegrenzt-Plan erscheinen Dashboards mit Ihrem Branding."
+      },
+      {
+        "q": "Kann ich Klicks auf meine Marketing-Links verfolgen?",
+        "a": "Ja. Das Links-Modul von Jarbis erstellt getrackte Links für deine Kampagnen. Du siehst, woher die Klicks kommen, welche Städte, Geräte, Zeiten und Traffic-Quellen, alles in einem Kampagnen-Dashboard."
+      },
+      {
+        "q": "Hat Jarbis eine mobile App?",
+        "a": "Jarbis funktioniert direkt im Browser deines Smartphones, ohne Installation. Alle Dashboards und Berichte sind vollständig responsiv."
       }
     ]
   },

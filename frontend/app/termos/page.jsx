@@ -26,7 +26,7 @@ export default function TermosPage() {
         <div className="mb-10">
           <p className="text-violet-600 font-semibold text-sm mb-3 uppercase tracking-wide">Legal</p>
           <h1 className="text-4xl font-black text-gray-900 mb-4">Termos de Uso</h1>
-          <p className="text-gray-500 text-sm">Última atualização: 18 de março de 2026</p>
+          <p className="text-gray-500 text-sm">Última atualização: 31 de março de 2026</p>
         </div>
 
         <div className="prose prose-gray max-w-none space-y-8 text-gray-700 leading-relaxed">
@@ -41,7 +41,7 @@ export default function TermosPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">2. Descrição do Serviço</h2>
             <p>
-              O Jarbis é uma plataforma de Business Intelligence (BI) embarcado que permite criar dashboards interativos, conectar fontes de dados, gerar relatórios e compartilhar visualizações. O serviço é oferecido pela <strong>Mazzel Tech</strong>, empresa do grupo Mazzel AG.
+              O Jarbis é uma plataforma de Business Intelligence (BI) embarcado que permite criar dashboards interativos, conectar fontes de dados, gerar relatórios, compartilhar visualizações e rastrear links de campanhas de marketing. O serviço é oferecido pela <strong>Mazzel Tech</strong>, empresa do grupo Mazzel AG.
             </p>
           </section>
 

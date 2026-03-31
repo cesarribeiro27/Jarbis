@@ -7,10 +7,10 @@
     "trialCta": "Começar grátis"
   },
   "hero": {
-    "badge": "Sem código · Sem analista · 7 dias grátis",
+    "badge": "Sem código · Sem analista · Google Sheets · 7 dias grátis",
     "title1": "Sua planilha vira dashboard",
     "title2": "profissional em 30 segundos.",
-    "subtitle": "Sobe seu Excel ou CSV e o Jarbis analisa tudo. Gera KPIs, gráficos e relatórios em segundos. Sem programação, sem analista de dados.",
+    "subtitle": "Conecte Excel, CSV ou Google Sheets e o Jarbis analisa tudo. Crie dashboards, KPIs e relatórios em segundos com o Jarbis IA. Sem programação, sem analista de dados.",
     "ctaPrimary": "Criar minha conta grátis",
     "ctaSecondary": "Ver como funciona",
     "freeBadge": "7 dias grátis · Sem cartão · Cancele quando quiser",
@@ -115,16 +115,16 @@
         "desc": "Importe Excel, CSV ou conecte o Google Sheets. Seus dados ficam prontos em segundos, sem mexer em código."
       },
       {
-        "title": "IA que fala português",
-        "desc": "Pergunte \"qual meu produto mais vendido?\" e receba a resposta na hora, em português, sem fórmulas."
+        "title": "Jarbis IA que fala português",
+        "desc": "Pergunte \"qual meu produto mais vendido?\" e o Jarbis IA responde na hora, em português, sem fórmulas."
       },
       {
         "title": "Compartilhe com um link",
         "desc": "Gere um link público e envie pelo WhatsApp. Seu cliente vê o dashboard sem precisar criar conta."
       },
       {
-        "title": "Alertas automáticos",
-        "desc": "Configure alertas e receba notificação quando as vendas caírem ou o estoque estiver baixo."
+        "title": "Rastreie seus links de campanha",
+        "desc": "Crie links rastreados para cada canal. Veja de onde vêm os cliques, quais cidades, dispositivos e horários. Sem depender de outras ferramentas."
       },
       {
         "title": "Incorpore no seu sistema",
@@ -290,6 +290,14 @@
       {
         "q": "Posso mostrar os gráficos para meus clientes?",
         "a": "Sim. Você gera um link público e envia pelo WhatsApp ou e-mail. Seu cliente vê os dados em tempo real, sem precisar criar conta. No plano Ilimitado, os dashboards aparecem com a sua marca."
+      },
+      {
+        "q": "Posso rastrear os cliques dos meus links de marketing?",
+        "a": "Sim. O módulo Links do Jarbis gera links rastreados para suas campanhas. Você vê de onde vêm os cliques, quais cidades, dispositivos, horários e fontes de tráfego, tudo em um painel de campanha."
+      },
+      {
+        "q": "O Jarbis tem aplicativo para celular?",
+        "a": "O Jarbis funciona direto no navegador do seu celular, sem precisar instalar nada. Todos os dashboards e relatórios são responsivos."
       }
     ]
   },

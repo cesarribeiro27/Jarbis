@@ -7,10 +7,10 @@
     "trialCta": "Start free"
   },
   "hero": {
-    "badge": "No code · No analyst · 7 days free",
+    "badge": "No code · No analyst · Google Sheets · 7 days free",
     "title1": "Your data.",
     "title2": "Your vision.",
-    "subtitle": "Turn spreadsheets into professional dashboards in seconds. Upload a file or connect your sheet — Jarbis does the rest.",
+    "subtitle": "Connect Excel, CSV, or Google Sheets and Jarbis AI analyzes everything. Build dashboards, KPIs and reports in seconds. No coding, no analyst needed.",
     "ctaPrimary": "Start for free",
     "ctaSecondary": "See how it works",
     "freeBadge": "7 days free · No credit card · Cancel anytime",
@@ -115,16 +115,16 @@
         "desc": "Import Excel, CSV, or connect Google Sheets. Your data is ready in seconds, no code required."
       },
       {
-        "title": "AI that speaks your language",
-        "desc": "Ask \"what's my best-selling product?\" and get the answer instantly, without formulas."
+        "title": "Jarbis AI speaks your language",
+        "desc": "Ask \"what's my best-selling product?\" and Jarbis AI answers instantly, without formulas."
       },
       {
         "title": "Share with a link",
         "desc": "Generate a public link and share it. Your client sees the dashboard without creating an account."
       },
       {
-        "title": "Automatic alerts",
-        "desc": "Set alerts and get notified when sales drop or inventory runs low."
+        "title": "Track your campaign links",
+        "desc": "Create tracked links for each channel. See where clicks come from, which cities, devices and times. No extra tools needed."
       },
       {
         "title": "Embed in your system",
@@ -289,6 +289,14 @@
       {
         "q": "Can I show charts to my clients?",
         "a": "Yes. Generate a public link and send it by email. Your client sees live data without creating an account. On the Unlimited plan, dashboards show your own branding."
+      },
+      {
+        "q": "Can I track clicks on my marketing links?",
+        "a": "Yes. Jarbis Links generates tracked links for your campaigns. You see where clicks come from, which cities, devices, times and traffic sources, all in one campaign dashboard."
+      },
+      {
+        "q": "Does Jarbis have a mobile app?",
+        "a": "Jarbis works directly in your phone's browser with no installation needed. All dashboards and reports are fully responsive."
       }
     ]
   },

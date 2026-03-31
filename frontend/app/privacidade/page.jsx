@@ -26,7 +26,7 @@ export default function PrivacidadePage() {
         <div className="mb-10">
           <p className="text-violet-600 font-semibold text-sm mb-3 uppercase tracking-wide">Legal</p>
           <h1 className="text-4xl font-black text-gray-900 mb-4">Política de Privacidade</h1>
-          <p className="text-gray-500 text-sm">Última atualização: 18 de março de 2026</p>
+          <p className="text-gray-500 text-sm">Última atualização: 31 de março de 2026</p>
         </div>
 
         <div className="prose prose-gray max-w-none space-y-8 text-gray-700 leading-relaxed">
@@ -47,6 +47,7 @@ export default function PrivacidadePage() {
               <li><strong>Dados de pagamento:</strong> processados pelo Stripe — não armazenamos dados de cartão;</li>
               <li><strong>Dados técnicos:</strong> endereço IP, tipo de navegador, sistema operacional, logs de acesso;</li>
               <li><strong>Cookies:</strong> essenciais para autenticação e preferências do usuário.</li>
+              <li><strong>Dados de cliques em links rastreados:</strong> endereço IP (anonimizado), cidade, país, dispositivo, navegador e sistema operacional de visitantes que acessam links criados pelo usuário na plataforma.</li>
             </ul>
           </section>
 
@@ -84,6 +85,7 @@ export default function PrivacidadePage() {
               <li><strong>Railway:</strong> infraestrutura de servidores (backend);</li>
               <li><strong>Vercel:</strong> infraestrutura de servidores (frontend);</li>
               <li><strong>Resend:</strong> envio de e-mails transacionais.</li>
+              <li><strong>MaxMind:</strong> geolocalização aproximada de visitantes de links rastreados (sem identificação pessoal).</li>
             </ul>
             <p className="mt-3">Todos os parceiros seguem políticas de privacidade compatíveis com a LGPD e GDPR.</p>
           </section>

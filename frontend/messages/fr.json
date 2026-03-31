@@ -7,10 +7,10 @@
     "trialCta": "Essai gratuit - 7 jours"
   },
   "hero": {
-    "badge": "IA incluse dans tous les plans - même le gratuit",
+    "badge": "Sans code · Sans analyste · Google Sheets · 7 jours gratuits",
     "title1": "Votre tableur devient un tableau de",
     "title2": "bord professionnel en 30 secondes.",
-    "subtitle": "Importez votre Excel ou CSV et l'IA de Jarbis analyse tout : KPIs, graphiques et rapports générés automatiquement - sans programmation, sans analyste.",
+    "subtitle": "Connectez Excel, CSV ou Google Sheets et Jarbis IA analyse tout. Créez des dashboards, KPIs et rapports en quelques secondes. Sans programmation, sans analyste.",
     "ctaPrimary": "Commencer gratuitement",
     "ctaSecondary": "Voir comment ça marche",
     "freeBadge": "7 jours gratuits · Sans carte · Annulez quand vous voulez",
@@ -114,16 +114,16 @@
         "desc": "Importez Excel, CSV ou connectez Google Sheets. Vos données sont prêtes en secondes."
       },
       {
-        "title": "IA qui parle votre langue",
-        "desc": "Demandez \"quel est mon produit le plus vendu ?\" et obtenez la réponse instantanément."
+        "title": "Jarbis IA parle votre langue",
+        "desc": "Demandez \"quel est mon produit le plus vendu ?\" et Jarbis IA répond instantanément, sans formules."
       },
       {
         "title": "Partagez avec un lien",
         "desc": "Générez un lien public et partagez-le. Votre client voit le tableau de bord sans créer de compte."
       },
       {
-        "title": "Alertes automatiques",
-        "desc": "Configurez des alertes et soyez notifié quand les ventes baissent ou les stocks sont bas."
+        "title": "Suivez vos liens de campagne",
+        "desc": "Créez des liens trackés pour chaque canal. Voyez d'où viennent les clics, quelles villes, appareils et horaires. Sans dépendre d'autres outils."
       },
       {
         "title": "Intégrez dans votre système",
@@ -288,6 +288,14 @@
       {
         "q": "Puis-je montrer les graphiques à mes clients ?",
         "a": "Oui. Générez un lien public et envoyez-le par e-mail. Votre client voit les données en temps réel sans créer de compte."
+      },
+      {
+        "q": "Puis-je suivre les clics de mes liens marketing ?",
+        "a": "Oui. Le module Links de Jarbis génère des liens trackés pour vos campagnes. Vous voyez d'où viennent les clics, quelles villes, appareils, horaires et sources de trafic, le tout dans un tableau de bord de campagne."
+      },
+      {
+        "q": "Jarbis a-t-il une application mobile ?",
+        "a": "Jarbis fonctionne directement dans le navigateur de votre téléphone, sans installation. Tous les dashboards et rapports sont responsifs."
       }
     ]
   },
