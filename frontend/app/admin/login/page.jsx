@@ -66,8 +66,17 @@ export default function AdminLoginPage() {
         return
       }
 
-      // 3. Salvar token e redirecionar
-      localStorage.setItem('jarbis_admin_token', token)
+      // 3. Setar cookie httpOnly jarbis_admin_token via backend
+      const sessionRes = await fetch(`${API_URL}/admin/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+      })
+      if (!sessionRes.ok) {
+        setError('Não foi possível criar sessão segura.')
+        return
+      }
+
       window.location.href = '/admin'
     } catch {
       setError('Erro de conexão. Tente novamente.')

@@ -163,9 +163,7 @@ const STATUS_OPTIONS = [
 ]
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
   const h = { 'Content-Type': 'application/json' }
-  if (token) h['Authorization'] = `Bearer ${token}`
   return h
 }
 
@@ -213,6 +211,7 @@ export default function AdminEmailsPage() {
     setPreview(null)
     try {
       const r = await fetch(`${API_URL}/admin/emails/preview`, {
+        credentials: 'include',
         method: 'POST',
         credentials: 'include',
         headers: authHeaders(),
@@ -234,6 +233,7 @@ export default function AdminEmailsPage() {
     setResult(null)
     try {
       const r = await fetch(`${API_URL}/admin/emails/send-campaign`, {
+        credentials: 'include',
         method: 'POST',
         credentials: 'include',
         headers: authHeaders(),

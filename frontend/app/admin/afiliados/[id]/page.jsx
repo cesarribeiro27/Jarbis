@@ -42,12 +42,11 @@ export default function AdminAfiliadoDetailPage() {
   const [paymentMsg, setPaymentMsg] = useState(null)
 
   function authHeaders() {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
-    return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      return { 'Content-Type': 'application/json' }
   }
 
   async function loadPayments() {
-    const r = await fetch(`${API_URL}/admin/affiliates/${id}/payments`, { headers: authHeaders() })
+    const r = await fetch(`${API_URL}/admin/affiliates/${id}/payments`, { credentials: 'include', headers: authHeaders() })
     if (r.ok) {
       const d = await r.json()
       setPayments(d.items || [])
@@ -57,7 +56,7 @@ export default function AdminAfiliadoDetailPage() {
   useEffect(() => {
     // Backend returns flat object: {id, name, email, code, commission_percent, is_active, notes,
     //   referral_link, referrals: [{tenant_id, name, plan, plan_name, ...}], total_commission_estimated, created_at}
-    fetch(`${API_URL}/admin/affiliates/${id}`, { headers: authHeaders() })
+    fetch(`${API_URL}/admin/affiliates/${id}`, { credentials: 'include', headers: authHeaders() })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => {
         setData(d)
@@ -90,7 +89,7 @@ export default function AdminAfiliadoDetailPage() {
     if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) return
     setSavingPayment(true)
     setPaymentMsg(null)
-    const r = await fetch(`${API_URL}/admin/affiliates/${id}/payments`, {
+    const r = await fetch(`${API_URL}/admin/affiliates/${id}/payments`, { credentials: 'include',
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
@@ -116,14 +115,14 @@ export default function AdminAfiliadoDetailPage() {
       ? `Excluir "${data.name}" permanentemente? Este afiliado tem ${referralCount} indicação(ões). Os pagamentos de comissão também serão removidos.`
       : `Excluir "${data.name}" permanentemente?`
     if (!confirm(msg)) return
-    await fetch(`${API_URL}/admin/affiliates/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await fetch(`${API_URL}/admin/affiliates/${id}`, { credentials: 'include', method: 'DELETE', headers: authHeaders() })
     router.replace('/admin/afiliados')
   }
 
   const save = async () => {
     setSaving(true)
     setMsg(null)
-    const r = await fetch(`${API_URL}/admin/affiliates/${id}`, {
+    const r = await fetch(`${API_URL}/admin/affiliates/${id}`, { credentials: 'include',
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify(form),

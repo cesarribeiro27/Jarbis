@@ -8,8 +8,7 @@ import { useAdminRole } from '@/components/AdminLayout'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  return { 'Content-Type': 'application/json' }
 }
 
 function fmtDate(s) {
@@ -50,7 +49,7 @@ export default function AdminAfiliadosPage() {
       ? `Excluir "${a.name}" permanentemente? Este afiliado tem ${a.referral_count} indicação(ões). Os pagamentos de comissão também serão removidos.`
       : `Excluir "${a.name}" permanentemente?`
     if (!confirm(msg)) return
-    await fetch(`${API_URL}/admin/affiliates/${a.id}`, { method: 'DELETE', headers: authHeaders() })
+    await fetch(`${API_URL}/admin/affiliates/${a.id}`, { credentials: 'include', method: 'DELETE', headers: authHeaders() })
     load()
   }
 

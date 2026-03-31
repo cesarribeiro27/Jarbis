@@ -39,9 +39,7 @@ export default function AdminAlertasPage() {
   const [loading, setLoading] = useState(true)
 
   function authHeaders() {
-    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
-    if (token) h['Authorization'] = `Bearer ${token}`
     return h
   }
 

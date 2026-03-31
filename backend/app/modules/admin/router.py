@@ -98,6 +98,46 @@ def _check_roles(role: str, allowed: set[str]) -> None:
         )
 
 
+# ─── Admin Session (httpOnly cookie) ─────────────────────────────────────────
+
+@router.post("/session", summary="Seta jarbis_admin_token como httpOnly cookie")
+async def create_admin_session(
+    response: Response,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Verifica que o usuário é admin e seta cookie httpOnly jarbis_admin_token."""
+    role = await _get_admin_role(current_user.email, db)
+    # _get_admin_role já lança 403 se não for admin
+    token = create_access_token(
+        {"sub": str(current_user.id), "tenant_id": str(current_user.tenant_id), "role": current_user.role}
+    )
+    is_prod = settings.is_production
+    response.set_cookie(
+        key="jarbis_admin_token",
+        value=token,
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        max_age=8 * 3600,  # 8h
+        path="/",
+    )
+    return {"ok": True, "admin_role": role}
+
+
+@router.delete("/session", summary="Remove cookie jarbis_admin_token (logout admin)")
+async def delete_admin_session(response: Response):
+    is_prod = settings.is_production
+    response.delete_cookie(
+        key="jarbis_admin_token",
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        path="/",
+    )
+    return {"ok": True}
+
+
 # ─── Schemas ──────────────────────────────────────────────────────────────────
 
 class TenantUpdateInput(BaseModel):

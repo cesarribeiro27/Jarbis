@@ -21,9 +21,7 @@ const PLAN_LABELS = {
 }
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
   const h = { 'Content-Type': 'application/json' }
-  if (token) h['Authorization'] = `Bearer ${token}`
   return h
 }
 
@@ -47,6 +45,7 @@ export default function AdminCrmPage() {
   async function moveStage(tenantId, newStage) {
     setMoving(tenantId)
     await fetch(`${API_URL}/admin/tenants/${tenantId}`, {
+      credentials: 'include',
       method: 'PATCH',
       credentials: 'include',
       headers: authHeaders(),

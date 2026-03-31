@@ -40,9 +40,7 @@ function fmtDate(s) {
 }
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
   const h = { 'Content-Type': 'application/json' }
-  if (token) h['Authorization'] = `Bearer ${token}`
   return h
 }
 
@@ -63,6 +61,7 @@ export default function AuditLogPage() {
     if (filterEntity) params.set('entity_type', filterEntity)
 
     const r = await fetch(`${API_URL}/admin/audit-log?${params}`, {
+      credentials: 'include',
       credentials: 'include', headers: authHeaders(),
     })
     if (r.ok) {

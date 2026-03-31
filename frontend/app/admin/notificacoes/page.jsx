@@ -6,8 +6,7 @@ import { useState, useEffect } from 'react'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+  return { 'Content-Type': 'application/json' }
 }
 
 const NOTIF_TYPES = [
@@ -24,7 +23,7 @@ export default function NotificacoesAdminPage() {
   const [result, setResult] = useState(null)
 
   useEffect(() => {
-    fetch(`${API_URL}/admin/tenants?page_size=500`, { headers: authHeaders() })
+    fetch(`${API_URL}/admin/tenants?page_size=500`, { credentials: 'include', headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setTenants(d.items || []) })
   }, [])
@@ -41,7 +40,7 @@ export default function NotificacoesAdminPage() {
         link: form.link.trim() || null,
         tenant_id: form.tenant_id || null,
       }
-      const r = await fetch(`${API_URL}/admin/notifications/broadcast`, {
+      const r = await fetch(`${API_URL}/admin/notifications/broadcast`, { credentials: 'include',
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify(body),

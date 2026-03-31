@@ -35,6 +35,7 @@ export default function AdminNovoAfiliadoPage() {
     setSaving(true)
     setError(null)
     const r = await fetch(`${API_URL}/admin/affiliates`, {
+      credentials: 'include',
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

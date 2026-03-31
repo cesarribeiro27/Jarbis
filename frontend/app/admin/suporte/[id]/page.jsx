@@ -27,9 +27,7 @@ function fmtDate(s) {
 }
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
   const h = { 'Content-Type': 'application/json' }
-  if (token) h['Authorization'] = `Bearer ${token}`
   return h
 }
 
@@ -43,6 +41,7 @@ export default function TicketDetailPage() {
 
   async function load() {
     const r = await fetch(`${API_URL}/admin/support/tickets/${id}`, {
+      credentials: 'include',
       credentials: 'include', headers: authHeaders()
     })
     if (r.ok) setTicket(await r.json())
@@ -54,6 +53,7 @@ export default function TicketDetailPage() {
   async function updateTicket(patch) {
     setSaving(true)
     await fetch(`${API_URL}/admin/support/tickets/${id}`, {
+      credentials: 'include',
       method: 'PATCH', credentials: 'include', headers: authHeaders(),
       body: JSON.stringify(patch),
     })
@@ -66,6 +66,7 @@ export default function TicketDetailPage() {
     if (!comment.trim()) return
     setAddingComment(true)
     await fetch(`${API_URL}/admin/support/tickets/${id}/comments`, {
+      credentials: 'include',
       method: 'POST', credentials: 'include', headers: authHeaders(),
       body: JSON.stringify({ content: comment }),
     })

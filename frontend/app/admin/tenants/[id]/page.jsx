@@ -90,14 +90,12 @@ export default function AdminTenantDetailPage() {
   const [fiscalMsg, setFiscalMsg] = useState(null)
 
   function authHeaders() {
-    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
-    if (token) h['Authorization'] = `Bearer ${token}`
     return h
   }
 
   async function loadNotes() {
-    const r = await fetch(`${API_URL}/admin/tenants/${id}/notes`, { headers: authHeaders() })
+    const r = await fetch(`${API_URL}/admin/tenants/${id}/notes`, { credentials: 'include', headers: authHeaders() })
     if (r.ok) setNotes(await r.json())
   }
 
@@ -123,7 +121,7 @@ export default function AdminTenantDetailPage() {
       })
     loadNotes()
     // Onboarding + NF-e em paralelo
-    fetch(`${API_URL}/admin/tenants/${id}/onboarding`, { headers: authHeaders() })
+    fetch(`${API_URL}/admin/tenants/${id}/onboarding`, { credentials: 'include', headers: authHeaders() })
       .then(r => r.ok ? r.json() : null).then(d => d && setOnboarding(d)).catch(() => {})
     fetch(`${API_URL}/admin/tenants/${id}/nfe`, { credentials: 'include', headers: authHeaders() })
       .then(r => r.ok ? r.json() : []).then(d => setNfeDocs(d)).catch(() => {})
@@ -151,7 +149,7 @@ export default function AdminTenantDetailPage() {
     if (!newNote.trim()) return
     setSavingNote(true)
     try {
-      const r = await fetch(`${API_URL}/admin/tenants/${id}/notes`, {
+      const r = await fetch(`${API_URL}/admin/tenants/${id}/notes`, { credentials: 'include',
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ content: newNote.trim() }),
@@ -167,7 +165,7 @@ export default function AdminTenantDetailPage() {
 
   async function deleteNote(noteId) {
     if (!confirm('Deletar esta nota?')) return
-    await fetch(`${API_URL}/admin/tenants/${id}/notes/${noteId}`, {
+    await fetch(`${API_URL}/admin/tenants/${id}/notes/${noteId}`, { credentials: 'include',
       method: 'DELETE',
       headers: authHeaders(),
     })
@@ -178,7 +176,7 @@ export default function AdminTenantDetailPage() {
     e.preventDefault()
     setSavingFiscal(true)
     setFiscalMsg(null)
-    const r = await fetch(`${API_URL}/admin/tenants/${id}/fiscal`, {
+    const r = await fetch(`${API_URL}/admin/tenants/${id}/fiscal`, { credentials: 'include',
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify(fiscal),
@@ -212,7 +210,7 @@ export default function AdminTenantDetailPage() {
 
   async function deleteTenant() {
     if (!confirm(`⚠️ DELETAR "${tenant.name}" permanentemente?\n\nIsso remove todos os usuários, dashboards e dados. Esta ação é irreversível.`)) return
-    const r = await fetch(`${API_URL}/admin/tenants/${id}`, {
+    const r = await fetch(`${API_URL}/admin/tenants/${id}`, { credentials: 'include',
       method: 'DELETE',
       headers: authHeaders(),
     })
@@ -225,7 +223,7 @@ export default function AdminTenantDetailPage() {
   }
 
   async function resetUserPassword(userId) {
-    const r = await fetch(`${API_URL}/admin/tenants/${id}/users/${userId}/reset-password`, {
+    const r = await fetch(`${API_URL}/admin/tenants/${id}/users/${userId}/reset-password`, { credentials: 'include',
       method: 'POST',
       headers: authHeaders(),
     })
@@ -236,7 +234,7 @@ export default function AdminTenantDetailPage() {
 
   async function revokeUserSessions(userId, userName) {
     if (!confirm(`Revogar todas as sessões de "${userName}"?\nO usuário será desconectado imediatamente.`)) return
-    const r = await fetch(`${API_URL}/admin/tenants/${id}/users/${userId}/revoke-sessions`, {
+    const r = await fetch(`${API_URL}/admin/tenants/${id}/users/${userId}/revoke-sessions`, { credentials: 'include',
       method: 'POST',
       headers: authHeaders(),
     })

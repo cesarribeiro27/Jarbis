@@ -19,8 +19,7 @@ const PLAN_LABELS = {
 }
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  return { 'Content-Type': 'application/json' }
 }
 
 function fmtBRL(val) {
@@ -65,7 +64,7 @@ export default function AdminFinanceiroPage() {
         status: filterStatus,
         ...(filterMonth && { month: filterMonth }),
       })
-      const r = await fetch(`${API_URL}/admin/invoices?${params}`, { headers: authHeaders() })
+      const r = await fetch(`${API_URL}/admin/invoices?${params}`, { credentials: 'include', headers: authHeaders() })
       const data = await r.json()
       setInvoices(data.items || [])
       setTotal(data.total || 0)
@@ -85,7 +84,7 @@ export default function AdminFinanceiroPage() {
         status: filterStatus || 'paid',
         ...(filterMonth && { month: filterMonth }),
       })
-      const r = await fetch(`${API_URL}/admin/invoices/export?${params}`, { headers: authHeaders() })
+      const r = await fetch(`${API_URL}/admin/invoices/export?${params}`, { credentials: 'include', headers: authHeaders() })
       if (!r.ok) return
       const blob = await r.blob()
       const url = URL.createObjectURL(blob)

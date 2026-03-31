@@ -36,9 +36,7 @@ export default function CustomerSuccessPage() {
   const [search, setSearch] = useState('')
 
   function authHeaders() {
-    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
-    if (token) h['Authorization'] = `Bearer ${token}`
     return h
   }
 
@@ -51,6 +49,7 @@ export default function CustomerSuccessPage() {
   useEffect(() => {
     setLoading(true)
     fetch(`${API_URL}/admin/customer-success?limit=200${riskOnly ? '&risk_only=true' : ''}`, {
+      credentials: 'include',
       credentials: 'include',
       headers: authHeaders(),
     })

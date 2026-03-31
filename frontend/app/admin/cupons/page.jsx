@@ -13,8 +13,7 @@ const PLAN_OPTIONS = [
 ]
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  return { 'Content-Type': 'application/json' }
 }
 
 function StatusBadge({ coupon }) {
@@ -58,7 +57,7 @@ export default function AdminCuponsPage() {
   async function load() {
     setLoading(true)
     try {
-      const r = await fetch(`${API_URL}/admin/coupons`, { headers: authHeaders() })
+      const r = await fetch(`${API_URL}/admin/coupons`, { credentials: 'include', headers: authHeaders() })
       const data = await r.json()
       setCoupons(data.items || [])
     } finally {
@@ -110,7 +109,7 @@ export default function AdminCuponsPage() {
   }
 
   async function toggleActive(coupon) {
-    await fetch(`${API_URL}/admin/coupons/${coupon.id}`, {
+    await fetch(`${API_URL}/admin/coupons/${coupon.id}`, { credentials: 'include',
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ is_active: !coupon.is_active }),
@@ -120,7 +119,7 @@ export default function AdminCuponsPage() {
 
   async function handleDelete(coupon) {
     if (!confirm(`Deletar o cupom "${coupon.code}" permanentemente?`)) return
-    await fetch(`${API_URL}/admin/coupons/${coupon.id}`, {
+    await fetch(`${API_URL}/admin/coupons/${coupon.id}`, { credentials: 'include',
       method: 'DELETE',
       headers: authHeaders(),
     })

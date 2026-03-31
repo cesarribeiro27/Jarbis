@@ -25,9 +25,7 @@ function fmtDate(s) {
 }
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : null
   const h = { 'Content-Type': 'application/json' }
-  if (token) h['Authorization'] = `Bearer ${token}`
   return h
 }
 
@@ -54,6 +52,7 @@ export default function SupportTicketsPage() {
     if (statusFilter) params.set('status', statusFilter)
     if (priorityFilter) params.set('priority', priorityFilter)
     const r = await fetch(`${API_URL}/admin/support/tickets?${params}`, {
+      credentials: 'include',
       credentials: 'include', headers: authHeaders()
     })
     const d = await r.json()
@@ -67,6 +66,7 @@ export default function SupportTicketsPage() {
   async function searchTenants(q) {
     if (!q || q.length < 2) { setTenantSuggestions([]); return }
     const r = await fetch(`${API_URL}/admin/tenants?search=${encodeURIComponent(q)}&page_size=5`, {
+      credentials: 'include',
       credentials: 'include', headers: authHeaders()
     })
     const d = await r.json()
@@ -78,6 +78,7 @@ export default function SupportTicketsPage() {
     if (!tenantId) return
     setCreating(true)
     await fetch(`${API_URL}/admin/support/tickets`, {
+      credentials: 'include',
       method: 'POST',
       credentials: 'include',
       headers: authHeaders(),

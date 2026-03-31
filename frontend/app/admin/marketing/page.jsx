@@ -6,8 +6,7 @@ import { useState, useEffect } from 'react'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://jarbis-production.up.railway.app'
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  return { 'Content-Type': 'application/json' }
 }
 
 function KPICard({ label, value, sub, color = '#6D28D9' }) {
@@ -39,7 +38,7 @@ export default function AdminMarketingPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch(`${API_URL}/admin/marketing`, { headers: authHeaders() })
+    fetch(`${API_URL}/admin/marketing`, { credentials: 'include', headers: authHeaders() })
       .then(r => r.json())
       .then(d => {
         if (d.detail) throw new Error(d.detail)

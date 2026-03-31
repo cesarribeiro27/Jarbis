@@ -28,6 +28,11 @@ def _extract_token(request: Request) -> str:
        setado pelo endpoint /admin/tenants/{id}/impersonate.
     3. Cookie jarbis_token — sessão regular do usuário.
     """
+    # jarbis_admin_token (httpOnly cookie) tem prioridade máxima no painel admin
+    # para garantir isolamento mesmo durante sessões de impersonação
+    token = request.cookies.get("jarbis_admin_token")
+    if token:
+        return token
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         return auth_header[7:]

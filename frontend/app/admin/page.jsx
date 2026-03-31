@@ -89,9 +89,7 @@ export default function AdminMetricsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('jarbis_admin_token')
     const headers = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
 
     Promise.all([
       fetch(`${API_URL}/admin/metrics`, { credentials: 'include', headers }).then(r => r.json()),

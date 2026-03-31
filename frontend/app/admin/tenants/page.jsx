@@ -56,9 +56,7 @@ export default function AdminTenantsPage() {
   const pageSize = 20
 
   function authHeaders() {
-    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
-    if (token) h['Authorization'] = `Bearer ${token}`
     return h
   }
 
@@ -83,9 +81,7 @@ export default function AdminTenantsPage() {
 
   // Carrega health scores uma vez (independente do filtro)
   useEffect(() => {
-    const token = localStorage.getItem('jarbis_admin_token')
     const h = { 'Content-Type': 'application/json' }
-    if (token) h['Authorization'] = `Bearer ${token}`
     fetch(`${API_URL}/admin/customer-success?limit=500`, { credentials: 'include', headers: h })
       .then(r => r.json())
       .then(d => {
@@ -114,6 +110,7 @@ export default function AdminTenantsPage() {
     if (!selected.size) return
     setBulking(true)
     const r = await fetch(`${API_URL}/admin/tenants/bulk-extend-trial`, {
+      credentials: 'include',
       method: 'POST',
       credentials: 'include',
       headers: authHeaders(),
@@ -130,6 +127,7 @@ export default function AdminTenantsPage() {
     setToggling(t.id)
     const newActive = !t.is_active
     const r = await fetch(`${API_URL}/admin/tenants/${t.id}`, {
+      credentials: 'include',
       method: 'PATCH',
       credentials: 'include',
       headers: authHeaders(),

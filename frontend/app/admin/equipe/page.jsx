@@ -22,8 +22,7 @@ const ROLE_BADGE = {
 }
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jarbis_admin_token') : ''
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  return { 'Content-Type': 'application/json' }
 }
 
 export default function AdminEquipePage() {
@@ -39,7 +38,7 @@ export default function AdminEquipePage() {
   async function load() {
     setLoading(true)
     try {
-      const r = await fetch(`${API_URL}/admin/equipe`, { headers: authHeaders() })
+      const r = await fetch(`${API_URL}/admin/equipe`, { credentials: 'include', headers: authHeaders() })
       const data = await r.json()
       setTeam(data.items || [])
     } finally {
@@ -55,7 +54,7 @@ export default function AdminEquipePage() {
     setError('')
     setSuccess('')
     try {
-      const r = await fetch(`${API_URL}/admin/equipe`, {
+      const r = await fetch(`${API_URL}/admin/equipe`, { credentials: 'include',
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify(form),
@@ -73,7 +72,7 @@ export default function AdminEquipePage() {
 
   async function toggleActive(member) {
     if (member.is_env_admin) return
-    await fetch(`${API_URL}/admin/equipe/${member.id}`, {
+    await fetch(`${API_URL}/admin/equipe/${member.id}`, { credentials: 'include',
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ is_active: !member.is_active }),
@@ -83,7 +82,7 @@ export default function AdminEquipePage() {
 
   async function changeRole(member, newRole) {
     if (member.is_env_admin) return
-    await fetch(`${API_URL}/admin/equipe/${member.id}`, {
+    await fetch(`${API_URL}/admin/equipe/${member.id}`, { credentials: 'include',
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ role: newRole }),
@@ -94,7 +93,7 @@ export default function AdminEquipePage() {
   async function sendAccessLink(member) {
     setLinkSent(prev => ({ ...prev, [member.email]: 'sending' }))
     try {
-      const r = await fetch(`${API_URL}/admin/equipe/${member.id}/send-invite`, {
+      const r = await fetch(`${API_URL}/admin/equipe/${member.id}/send-invite`, { credentials: 'include',
         method: 'POST',
         headers: authHeaders(),
       })
@@ -108,7 +107,7 @@ export default function AdminEquipePage() {
   async function handleRemove(member) {
     if (member.is_env_admin) return
     if (!confirm(`Remover acesso de ${member.email}?`)) return
-    await fetch(`${API_URL}/admin/equipe/${member.id}`, {
+    await fetch(`${API_URL}/admin/equipe/${member.id}`, { credentials: 'include',
       method: 'DELETE',
       headers: authHeaders(),
     })
