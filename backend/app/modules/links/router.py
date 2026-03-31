@@ -52,7 +52,7 @@ def _is_whatsapp_url(url: str) -> bool:
         return False
 
 
-def _whatsapp_landing_html(dest_url: str) -> str:
+def _whatsapp_landing_html(dest_url: str, slug: str = "") -> str:
     """
     Página intermediária para links WhatsApp.
 
@@ -95,9 +95,17 @@ def _whatsapp_landing_html(dest_url: str) -> str:
     </div>
     <h1>Abrindo WhatsApp...</h1>
     <p>Você está sendo redirecionado.<br>Se não abrir automaticamente, toque no botão abaixo.</p>
-    <a href="{safe_attr}">Abrir WhatsApp</a>
+    <a href="{safe_attr}" id="btn" onclick="trackAndOpen(event)">Abrir WhatsApp</a>
   </div>
-  <script>window.location.href={safe_js};</script>
+  <script>
+    var dest={safe_js};
+    function trackAndOpen(e){{
+      e.preventDefault();
+      fetch('/l/{slug}/wa-open',{{method:'POST',keepalive:true}}).catch(function(){{}});
+      setTimeout(function(){{window.location.href=dest;}},80);
+    }}
+    window.location.href=dest;
+  </script>
 </body>
 </html>"""
 
@@ -139,9 +147,20 @@ async def redirect_link(slug: str, request: Request, db: AsyncSession = Depends(
     asyncio.create_task(_record())
 
     if _is_whatsapp_url(link.original_url):
-        return HTMLResponse(content=_whatsapp_landing_html(link.original_url))
+        return HTMLResponse(content=_whatsapp_landing_html(link.original_url, slug))
 
     return RedirectResponse(url=link.original_url, status_code=302)
+
+
+@router.post("/l/{slug}/wa-open", include_in_schema=False)
+async def whatsapp_button_click(slug: str, db: AsyncSession = Depends(get_db)):
+    """Registra clique manual no botão 'Abrir WhatsApp' da landing page intermediária."""
+    from app.modules.links.models import ShortLink
+    link = await db.scalar(_select(ShortLink).where(ShortLink.slug == slug))
+    if link:
+        link.whatsapp_button_clicks = (link.whatsapp_button_clicks or 0) + 1
+        await db.commit()
+    return {"ok": True}
 
 
 # ── Campanhas ──────────────────────────────────────────────────────────────
@@ -252,9 +271,12 @@ async def link_analytics(
     if not limits.allow_link_analytics:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Analytics de links disponível apenas em planos pagos.")
+    from app.modules.links.models import ShortLink
+    link = await db.scalar(_select(ShortLink).where(ShortLink.id == link_id, ShortLink.tenant_id == user.tenant_id))
     result = await asyncio.to_thread(
         service.get_link_analytics, str(link_id), days
     )
+    result.whatsapp_button_clicks = (link.whatsapp_button_clicks or 0) if link else 0
     return result
 
 

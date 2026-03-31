@@ -69,6 +69,7 @@ class ShortLinkResponse(BaseModel):
     original_url: str
     name: str
     clicks_cached: int
+    whatsapp_button_clicks: int = 0
     is_active: bool
     created_at: datetime
     short_url: str = ""
@@ -128,6 +129,7 @@ class LinkAnalytics(BaseModel):
     link_id: str
     total_clicks: int
     unique_clicks: int = 0
+    whatsapp_button_clicks: int = 0
     unique_countries: int
     by_day: list[ClicksByDay]
     by_country: list[ClicksByCountry]
