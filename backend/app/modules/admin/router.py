@@ -138,6 +138,118 @@ async def delete_admin_session(response: Response):
     return {"ok": True}
 
 
+# ─── 2FA / TOTP ───────────────────────────────────────────────────────────────
+
+@router.post("/totp/setup", summary="Gera secret TOTP e retorna QR code (base64)")
+async def totp_setup(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Gera novo secret TOTP para o admin logado. Retorna QR code em base64 e URI."""
+    await _get_admin_role(current_user.email, db)
+    import pyotp, qrcode, io, base64
+    secret = pyotp.random_base32()
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=current_user.email,
+        issuer_name="Jarbis Admin",
+    )
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+
+    # Salva secret pendente (totp_enabled permanece False até confirmar)
+    current_user.totp_secret = secret
+    await db.commit()
+
+    return {"secret": secret, "uri": uri, "qr_base64": qr_b64}
+
+
+@router.post("/totp/confirm", summary="Confirma TOTP e ativa 2FA")
+async def totp_confirm(
+    data: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Valida o primeiro código OTP para confirmar configuração e ativar 2FA."""
+    await _get_admin_role(current_user.email, db)
+    import pyotp
+    code = str(data.get("code", "")).strip()
+    if not current_user.totp_secret:
+        raise HTTPException(status_code=400, detail="Inicie o setup primeiro.")
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(code, valid_window=1):
+        raise HTTPException(status_code=400, detail="Código inválido. Tente novamente.")
+    current_user.totp_enabled = True
+    await db.commit()
+    return {"ok": True, "message": "2FA ativado com sucesso."}
+
+
+@router.post("/totp/disable", summary="Desativa 2FA (requer código OTP válido)")
+async def totp_disable(
+    data: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_admin_role(current_user.email, db)
+    import pyotp
+    code = str(data.get("code", "")).strip()
+    if not current_user.totp_enabled or not current_user.totp_secret:
+        raise HTTPException(status_code=400, detail="2FA não está ativo.")
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(code, valid_window=1):
+        raise HTTPException(status_code=400, detail="Código inválido.")
+    current_user.totp_secret = None
+    current_user.totp_enabled = False
+    await db.commit()
+    return {"ok": True, "message": "2FA desativado."}
+
+
+@router.post("/totp/verify", summary="Verifica código OTP durante login admin (pré-cookie)")
+async def totp_verify(
+    data: dict,
+    response: Response,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verificação do código TOTP durante o fluxo de login.
+    Se válido, seta o cookie jarbis_admin_token (completa o login).
+    """
+    role = await _get_admin_role(current_user.email, db)
+    import pyotp
+    code = str(data.get("code", "")).strip()
+    if not current_user.totp_enabled or not current_user.totp_secret:
+        raise HTTPException(status_code=400, detail="2FA não configurado.")
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(code, valid_window=1):
+        raise HTTPException(status_code=400, detail="Código inválido.")
+
+    token = create_access_token(
+        {"sub": str(current_user.id), "tenant_id": str(current_user.tenant_id), "role": current_user.role}
+    )
+    is_prod = settings.is_production
+    response.set_cookie(
+        key="jarbis_admin_token",
+        value=token,
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        max_age=8 * 3600,
+        path="/",
+    )
+    return {"ok": True, "admin_role": role}
+
+
+@router.get("/totp/status", summary="Retorna se o admin tem 2FA ativo")
+async def totp_status(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_admin_role(current_user.email, db)
+    return {"totp_enabled": bool(current_user.totp_enabled)}
+
+
 # ─── Schemas ──────────────────────────────────────────────────────────────────
 
 class TenantUpdateInput(BaseModel):
