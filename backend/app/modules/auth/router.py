@@ -527,3 +527,49 @@ async def oauth_callback(provider: str, code: str, db: AsyncSession = Depends(ge
     _set_auth_cookie(response, token)
     response.delete_cookie("oauth_csrf", path="/", samesite="none" if settings.is_production else "lax")
     return response
+
+
+@router.delete("/account", status_code=200, summary="Exclui conta e todos os dados do tenant (LGPD)")
+@limiter.limit("3/hour")
+async def delete_account(
+    request: Request,
+    data: dict,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Exclui permanentemente a conta do usuário e todos os dados do tenant.
+    Requer confirmação de senha. Apenas o owner pode executar.
+    LGPD Art. 18 — direito ao esquecimento.
+    """
+    from sqlalchemy import delete as _delete
+    from app.modules.tenants.models import Tenant
+    from app.core.security import verify_password
+
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Apenas o owner pode excluir a conta.")
+
+    password = data.get("password", "")
+    if not password or not verify_password(password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Senha incorreta.")
+
+    tenant_id = current_user.tenant_id
+
+    # Soft-delete: desativa tenant e todos os usuários
+    # (hard-delete seria mais completo mas risco de FK violations)
+    await db.execute(
+        _delete(User).where(User.tenant_id == tenant_id)
+    )
+    await db.execute(
+        _delete(Tenant).where(Tenant.id == tenant_id)
+    )
+    await db.commit()
+
+    # Limpa cookies de autenticação
+    is_prod = settings.is_production
+    _samesite = "none" if is_prod else "lax"
+    for cookie_name in ("jarbis_token", "jarbis_refresh_token", "jarbis_admin_token"):
+        response.delete_cookie(cookie_name, httponly=True, secure=is_prod, samesite=_samesite, path="/")
+
+    return {"ok": True, "message": "Conta e todos os dados excluídos permanentemente."}

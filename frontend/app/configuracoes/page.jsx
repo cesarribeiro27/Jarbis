@@ -354,6 +354,20 @@ export default function ConfiguracoesPage() {
             </Link>
           </div>
         </div>
+
+        {/* Zona de Perigo — LGPD */}
+        <div className="mt-10 rounded-2xl border border-red-200 dark:border-red-900/40 p-6 bg-red-50 dark:bg-red-950/10">
+          <h2 className="font-bold text-red-700 dark:text-red-400 mb-1">Zona de perigo</h2>
+          <p className="text-sm text-red-600/70 dark:text-red-400/60 mb-4">
+            A exclusao de conta e permanente e irreversivel. Todos os dados, dashboards e datasets serao removidos.
+          </p>
+          <Link
+            href="/configuracoes/excluir-conta"
+            className="inline-block px-4 py-2 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-semibold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          >
+            Excluir minha conta
+          </Link>
+        </div>
       </div>
     </AppLayout>
   )
