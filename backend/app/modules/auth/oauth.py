@@ -67,6 +67,7 @@ def get_authorization_url(provider: str, csrf_token: str, ref_code: str | None =
     }
     if provider == "google":
         params["access_type"] = "online"
+        params["prompt"] = "select_account"
     return f"{cfg['auth_url']}?{urlencode(params)}"
 
 
