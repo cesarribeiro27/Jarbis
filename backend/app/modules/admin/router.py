@@ -2918,7 +2918,6 @@ async def impersonate_tenant(
 
 @router.post("/tenants/impersonate/end")
 async def end_impersonation(
-    request: Request,
     response: Response,
     user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
