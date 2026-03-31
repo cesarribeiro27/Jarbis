@@ -1646,17 +1646,7 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
   ]
 
   const getInsights = col => {
-    const all = col.type === 'number' ? NUM_INSIGHTS : col.type === 'date' ? DATE_INSIGHTS : TEXT_INSIGHTS
-    return all.filter(i => {
-      if (!i.needsCompare) return true
-      const opts = allCols.filter(c => {
-        if (i.needsCompare === 'date')   return c.type === 'date'   && c.dsId === col.dsId
-        if (i.needsCompare === 'text')   return c.type !== 'number' && c.type !== 'date' && c.dsId === col.dsId
-        if (i.needsCompare === 'number') return c.type === 'number' && c.dsId === col.dsId
-        return true
-      })
-      return opts.length > 0
-    })
+    return col.type === 'number' ? NUM_INSIGHTS : col.type === 'date' ? DATE_INSIGHTS : TEXT_INSIGHTS
   }
 
   const getCompareOptions = insight => {
@@ -1684,12 +1674,14 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
       block = { id: crypto.randomUUID(), type: insight.blockType, title: baseTitle, dataset_id: dsId, label_col: compareCol?.col || null, value_col: col.col, agg: 'sum', config: { granularity: 'month', dim_type: 'date' }, layout: { x: 0, y: Infinity, w: 6, h: 4 } }
     } else if (insight.blockType === 'bar_h') {
       const labelCol = col.type === 'number' ? compareCol?.col : col.col
-      const valueCol = col.type === 'number' ? col.col : compareCol?.col
-      block = { id: crypto.randomUUID(), type: 'bar_h', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: 'sum', config: { sort_by: 'desc', top_n: 10 }, layout: { x: 0, y: Infinity, w: 6, h: 4 } }
+      const valueCol = col.type === 'number' ? col.col : (compareCol?.col ?? '__count__')
+      const aggVal   = col.type === 'number' ? 'sum' : (compareCol ? 'sum' : 'count')
+      block = { id: crypto.randomUUID(), type: 'bar_h', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: aggVal, config: { sort_by: 'desc', top_n: 10 }, layout: { x: 0, y: Infinity, w: 6, h: 4 } }
     } else if (insight.blockType === 'pie') {
       const labelCol = col.type === 'number' ? compareCol?.col : col.col
-      const valueCol = col.type === 'number' ? col.col : compareCol?.col
-      block = { id: crypto.randomUUID(), type: 'pie', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: 'sum', config: {}, layout: { x: 0, y: Infinity, w: 4, h: 4 } }
+      const valueCol = col.type === 'number' ? col.col : (compareCol?.col ?? '__count__')
+      const aggVal   = col.type === 'number' ? 'sum' : (compareCol ? 'sum' : 'count')
+      block = { id: crypto.randomUUID(), type: 'pie', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: aggVal, config: {}, layout: { x: 0, y: Infinity, w: 4, h: 4 } }
     }
     if (block) {
       onAddBlock(block)
@@ -1702,8 +1694,8 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
     setSelectedInsight(insight)
     if (!insight.needsCompare) { buildAndAdd(null, insight); return }
     const opts = getCompareOptions(insight)
+    if (opts.length === 0) { buildAndAdd(null, insight); return }  // sem coluna disponível → usa count
     if (opts.length === 1) { buildAndAdd(opts[0], insight); return }
-    if (opts.length === 0) return
     setStep('compare')
   }
 
