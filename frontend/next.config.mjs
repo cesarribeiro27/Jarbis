@@ -13,10 +13,6 @@ const nextConfig = {
         destination: `${apiUrl}/:path*`,
       },
       {
-        source: '/l/:slug/wa-open',
-        destination: `${apiUrl}/l/:slug/wa-open`,
-      },
-      {
         source: '/l/:slug',
         destination: `${apiUrl}/l/:slug`,
       },

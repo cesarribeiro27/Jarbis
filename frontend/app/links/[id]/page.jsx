@@ -278,7 +278,7 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
 
         <div className="p-6 space-y-6">
           {/* KPIs */}
-          <div className={`grid gap-3 ${analytics.whatsapp_button_clicks > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-gradient-to-br from-[#6D28D9] to-[#7C3AED] rounded-2xl p-4 text-center shadow-[0_2px_8px_rgba(109,40,217,0.25)]">
               <p className="text-2xl font-bold text-white tabular-nums">{totalCliques.toLocaleString('pt-BR')}</p>
               <p className="text-xs text-violet-200 mt-0.5">cliques totais</p>
@@ -289,14 +289,6 @@ function MoreAnalyticsModal({ analytics, label, onClose }) {
                 únicos {totalCliques > 0 && <span className="text-[#6D28D9] font-semibold">{uniquePct}%</span>}
               </p>
             </div>
-            {analytics.whatsapp_button_clicks > 0 && (
-              <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{analytics.whatsapp_button_clicks.toLocaleString('pt-BR')}</p>
-                <p className="text-xs text-[#6B7280] dark:text-[#94A3B8] mt-0.5">
-                  abriram WA {totalCliques > 0 && <span className="text-emerald-600 font-semibold">{Math.round((analytics.whatsapp_button_clicks / totalCliques) * 100)}%</span>}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Evolução diária */}
@@ -516,7 +508,7 @@ function AnalyticsPanel({ analytics, loading, canSeeAnalytics, onShowMore }) {
 
   return (
     <div className="space-y-5">
-      <div className={`grid gap-2 ${analytics.whatsapp_button_clicks > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <div className="grid grid-cols-2 gap-2">
         <div className="bg-gradient-to-br from-violet-600 to-violet-700 rounded-xl p-3 text-center">
           <p className="text-2xl font-bold text-white tabular-nums">{analytics.total_clicks.toLocaleString('pt-BR')}</p>
           <p className="text-[11px] text-violet-200 mt-0.5">cliques totais</p>
@@ -528,15 +520,6 @@ function AnalyticsPanel({ analytics, loading, canSeeAnalytics, onShowMore }) {
             {analytics.total_clicks > 0 && <span className="ml-1 font-semibold">{Math.round(((analytics.unique_clicks ?? 0) / analytics.total_clicks) * 100)}%</span>}
           </p>
         </div>
-        {analytics.whatsapp_button_clicks > 0 && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{analytics.whatsapp_button_clicks.toLocaleString('pt-BR')}</p>
-            <p className="text-[11px] text-emerald-500 mt-0.5">
-              abriram WA
-              {analytics.total_clicks > 0 && <span className="ml-1 font-semibold">{Math.round((analytics.whatsapp_button_clicks / analytics.total_clicks) * 100)}%</span>}
-            </p>
-          </div>
-        )}
       </div>
 
       {analytics.by_day.length > 0 && (
