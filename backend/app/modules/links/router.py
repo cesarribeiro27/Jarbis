@@ -301,4 +301,5 @@ async def campaign_analytics(
     result = await asyncio.to_thread(
         service.get_campaign_analytics, str(campaign_id), link_ids, days
     )
+    result.whatsapp_button_clicks = sum(lnk.whatsapp_button_clicks or 0 for lnk in links)
     return result

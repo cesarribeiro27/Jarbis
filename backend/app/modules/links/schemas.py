@@ -146,6 +146,7 @@ class CampaignAnalytics(BaseModel):
     campaign_id: str
     total_clicks: int
     unique_clicks: int = 0
+    whatsapp_button_clicks: int = 0
     links: list[dict]
     by_day: list[ClicksByDay]
     by_country: list[ClicksByCountry]
