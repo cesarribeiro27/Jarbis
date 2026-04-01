@@ -46,7 +46,9 @@ def _is_whatsapp_url(url: str) -> bool:
     from urllib.parse import urlparse
     try:
         p = urlparse(url)
-        host = p.netloc.lower().lstrip("www.")
+        host = p.netloc.lower()
+        if host.startswith("www."):
+            host = host[4:]
         return p.scheme == "whatsapp" or host in ("wa.me", "api.whatsapp.com", "web.whatsapp.com")
     except Exception:
         return False
