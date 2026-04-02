@@ -458,10 +458,13 @@ DATE_PATTERNS = [
 ]
 
 
-def detect_column_types(rows: list[dict], sample_size: int = 50) -> dict[str, str]:
+def detect_column_types(rows: list[dict], sample_size: int = 50, force_numeric: set | None = None) -> dict[str, str]:
     """
     Detecta o tipo de cada coluna com base em amostra de linhas.
     Retorna dict {coluna: tipo} onde tipo é 'text' | 'number' | 'date'
+
+    force_numeric: conjunto de nomes de colunas que devem sempre ser 'number',
+    independente da heurística de cardinalidade (útil para métricas pré-agregadas).
     """
     if not rows:
         return {}
@@ -517,6 +520,11 @@ def detect_column_types(rows: list[dict], sample_size: int = 50) -> dict[str, st
 
         result[col] = "text"
 
+    if force_numeric:
+        for col in force_numeric:
+            if col in result:
+                result[col] = "number"
+
     return result
 
 
@@ -535,6 +543,12 @@ _LINKS_SEMANTICS: dict[str, str] = {
     "cliques_unicos_periodo":   "metric",
     "cliques_unicos_campanha":  "metric",
 }
+
+# Colunas do dataset "links" que devem ser sempre tratadas como number,
+# mesmo que tenham baixa cardinalidade (são métricas pré-agregadas).
+LINKS_FORCE_NUMERIC: set[str] = {
+    col for col, sem in _LINKS_SEMANTICS.items() if sem == "metric"
+} | {"hora"}
 
 
 def infer_column_semantics(

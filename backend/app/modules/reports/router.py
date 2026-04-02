@@ -132,6 +132,15 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 _CACHE_TTL = 300  # 5 minutos
 
 
+def _detect_col_types(ds, sample_size: int = 30) -> dict:
+    """Detecta tipos de coluna aplicando force_numeric para datasets com métricas pré-agregadas."""
+    if not ds.rows:
+        return {}
+    from .query_engine import detect_column_types, LINKS_FORCE_NUMERIC
+    fn = LINKS_FORCE_NUMERIC if ds.type == "links" else None
+    return detect_column_types(ds.rows, sample_size=sample_size, force_numeric=fn)
+
+
 def _make_cache_key(dataset_id: str, query_params: dict, version: str = "") -> str:
     """Gera chave MD5 determinística para cache de query de dataset.
 
@@ -752,10 +761,10 @@ async def list_datasets(
                 datasets.append(ds)
     else:
         datasets = await service.list(current_user.tenant_id)
-    from .query_engine import detect_column_types, infer_column_semantics
+    from .query_engine import infer_column_semantics
     result = []
     for ds in datasets:
-        col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
+        col_types = _detect_col_types(ds)
         result.append(DatasetSummary(
             id=ds.id,
             name=ds.name,
@@ -784,9 +793,9 @@ async def get_onboarding_dataset(
     current_user: User = Depends(get_current_active_user),
 ):
     from .onboarding import ensure_onboarding_dataset
-    from .query_engine import detect_column_types, infer_column_semantics
+    from .query_engine import infer_column_semantics
     ds = await ensure_onboarding_dataset(current_user.tenant_id, db)
-    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
+    col_types = _detect_col_types(ds)
     return DatasetSummary(
         id=ds.id,
         name=ds.name,
@@ -998,8 +1007,8 @@ async def upload_dataset(
     max_rows = _limits.get("rows", -1)
     service = DatasetService(db)
     ds = await service.create_from_file(effective_tenant_id, name, filename, content, sheet_name=sheet_name, max_rows=max_rows)
-    from .query_engine import detect_column_types, infer_column_semantics
-    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
+    from .query_engine import infer_column_semantics
+    col_types = _detect_col_types(ds)
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
@@ -1180,10 +1189,13 @@ async def create_links_dataset(
         raise HTTPException(status_code=400, detail="campaign_id é obrigatório")
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
     await check_dataset_limit(db, current_user.tenant_id, tenant.plan if tenant else "free", tenant.addon_packs if tenant else 0)
+    from app.modules.billing.plan_limits import get_plan as _get_plan
+    plan_limits = _get_plan(tenant.plan if tenant else "free")
+    sync_interval = plan_limits.links_sync_interval_minutes
     service = DatasetService(db)
-    ds = await service.create_from_links_campaign(current_user.tenant_id, campaign_id, name, days)
-    from .query_engine import detect_column_types, infer_column_semantics
-    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
+    ds = await service.create_from_links_campaign(current_user.tenant_id, campaign_id, name, days, sync_interval)
+    from .query_engine import infer_column_semantics
+    col_types = _detect_col_types(ds)
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
@@ -1218,8 +1230,8 @@ async def sync_links_dataset(
     except Exception:
         pass
 
-    from .query_engine import detect_column_types, infer_column_semantics
-    col_types = detect_column_types(ds.rows or [], sample_size=30) if ds.rows else {}
+    from .query_engine import infer_column_semantics
+    col_types = _detect_col_types(ds)
     return DatasetSummary(
         id=ds.id, name=ds.name, type=ds.type,
         columns=ds.columns or [], row_count=ds.row_count,
@@ -1381,7 +1393,7 @@ async def query_dataset(
 # Query Engine v2 — motor de query estruturado
 # ---------------------------------------------------------------------------
 
-from .query_engine import QueryRequest, QueryResult, detect_column_types
+from .query_engine import QueryRequest, QueryResult
 
 
 @router.post(
@@ -1588,7 +1600,7 @@ async def get_dataset_columns(
     ds = await service.get(dataset_id, current_user.tenant_id)
     if not ds:
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
-    types = detect_column_types(ds.rows or [])
+    types = _detect_col_types(ds)
     return {
         "dataset_id": str(dataset_id),
         "name": ds.name,
@@ -2073,13 +2085,13 @@ DOMAIN_TEMPLATES = {
     },
     "links": {
         "name": "Auditoria de Links / Rastreamento de Campanhas",
-        "signals": ["dispositivo", "navegador", "sistema", "pais", "cidade", "cliques_unicos_periodo"],
+        "signals": ["dispositivo", "navegador", "sistema", "pais", "cidade", "cliques_unicos_periodo", "cliques_unicos_campanha"],
         "insights_focus": "volume de cliques totais vs únicos (deduplicação por IP), performance por link, origem do tráfego, distribuição geográfica e de dispositivos",
         "kpi_hints": (
             "KPI 1: total de cliques — value_col='cliques', agg='sum', título='Cliques Totais'. "
-            "KPI 2: cliques únicos no período — value_col='cliques_unicos_periodo', agg='max', título='Cliques Únicos'. "
-            "  ATENÇÃO: 'cliques_unicos_periodo' é o mesmo em todas as linhas do mesmo link (total deduplicado). "
-            "  Use SEMPRE agg='max' para este KPI — NUNCA agg='sum' (sum inflaria o número incorretamente). "
+            "KPI 2: únicos da campanha (cross-links) — value_col='cliques_unicos_campanha', agg='max', título='Cliques Únicos'. "
+            "  'cliques_unicos_campanha' é o total de IPs únicos que clicaram em QUALQUER link da campanha (dedup cross-links). "
+            "  É o mesmo valor em todas as linhas do dataset — use SEMPRE agg='max'. "
             "KPI 3: links ativos — value_col='link', agg='count_distinct' com filtro ativo=Sim, título='Links Ativos'. "
             "KPI 4: fontes de tráfego — value_col='fonte', agg='count_distinct', título='Fontes de Tráfego'."
         ),
@@ -2092,7 +2104,8 @@ DOMAIN_TEMPLATES = {
             "ATO 4: ranking por cidade — type='bar_h', label_col='cidade', value_col='cliques', agg='sum'. "
             "ATO 4: filtro por link ativo — type='filter', label_col='ativo'. "
             "REGRA IMPORTANTE: 'link' é identifier — use count_distinct ou label_col, NUNCA some diretamente. "
-            "REGRA IMPORTANTE: 'cliques_unicos_periodo' usa agg='max' (não sum) — é a deduplicação correta por IP."
+            "REGRA IMPORTANTE: 'cliques_unicos_campanha' usa agg='max' — é o total de IPs únicos cross-links. "
+            "REGRA IMPORTANTE: 'cliques_unicos_periodo' usa agg='max' — é o total de IPs únicos por link individual."
         ),
         "optional_improvements": [
             {"col": "navegador", "impact": "Análise de compatibilidade por browser (Safari vs Chrome vs Firefox)"},
@@ -2252,13 +2265,13 @@ async def generate_dashboard_endpoint(
         return stats
 
     # ── Computa col_stats por dataset ────────────────────────────────────────
-    from .query_engine import detect_column_types, infer_column_semantics as _infer_semantics
+    from .query_engine import infer_column_semantics as _infer_semantics
 
     per_ds_stats: list[dict] = []  # [{id, name, columns, rows, col_stats, semantics, sample}]
     for ds_item in all_datasets:
         ds_cols = ds_item.columns or []
         ds_rows = ds_item.rows or []
-        _col_types = detect_column_types(ds_rows)
+        _col_types = _detect_col_types(ds_item)
         per_ds_stats.append({
             "id": str(ds_item.id),
             "name": ds_item.name,
@@ -3286,8 +3299,8 @@ async def create_webhook(
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await db.scalar(select(Tenant).where(Tenant.id == current_user.tenant_id))
-    if tenant and tenant.plan not in ("ilimitado", "enterprise"):
-        raise HTTPException(status_code=403, detail="Webhooks disponíveis apenas no plano Ilimitado.")
+    if tenant and tenant.plan not in ("business", "enterprise"):
+        raise HTTPException(status_code=403, detail="Webhooks disponíveis apenas no plano Business ou Enterprise.")
     secret = secrets.token_hex(32)
     webhook = TenantWebhook(
         tenant_id=current_user.tenant_id,
@@ -3416,7 +3429,7 @@ async def get_customization(
         "brand_colors": brand_colors_parsed,
         "billing_name": tenant.billing_name,
         "plan": tenant.plan,
-        "white_label_enabled": tenant.plan in ("ilimitado", "business", "enterprise"),
+        "white_label_enabled": tenant.plan in ("business", "enterprise"),
     }
 
 
@@ -3447,7 +3460,7 @@ async def update_customization(
 
     # white-label: apenas Business/Enterprise
     if data.custom_logo_url is not None or data.primary_color is not None:
-        if tenant.plan not in ("ilimitado", "business", "enterprise"):
+        if tenant.plan not in ("business", "enterprise"):
             raise HTTPException(status_code=403, detail="White-label disponível apenas no plano Business ou Enterprise.")
         if data.custom_logo_url is not None:
             tenant.custom_logo_url = data.custom_logo_url
