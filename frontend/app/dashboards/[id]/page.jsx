@@ -690,15 +690,19 @@ function DiagnosticoPanel({ reportId, datasets, onClose, onAddBlock, onExportIns
   const [chatHistory, setChatHistory] = useState([])
   const chatEndRef = useRef(null)
 
-  useEffect(() => {
+  function fetchHistory() {
+    setHistoryLoading(true)
     api.reports.diagnoseHistory(reportId)
-      .then(data => {
-        setHistory(data)
-        // Não auto-navega — o usuário escolhe o que quer fazer na tela de opções
-      })
-      .catch(() => {})
+      .then(data => setHistory(data))
+      .catch(() => setHistory([]))
       .finally(() => setHistoryLoading(false))
-  }, [reportId])
+  }
+
+  useEffect(() => { fetchHistory() }, [reportId])
+
+  useEffect(() => {
+    if (tab === 'historico') fetchHistory()
+  }, [tab])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
