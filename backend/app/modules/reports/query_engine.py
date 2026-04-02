@@ -531,8 +531,9 @@ _LINKS_SEMANTICS: dict[str, str] = {
     "pais":        "category",
     "cidade":      "category",
     "fonte":       "category",
-    "cliques":                "metric",
-    "cliques_unicos_periodo": "metric",
+    "cliques":                  "metric",
+    "cliques_unicos_periodo":   "metric",
+    "cliques_unicos_campanha":  "metric",
 }
 
 
