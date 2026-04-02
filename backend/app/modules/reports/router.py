@@ -4694,7 +4694,7 @@ async def diagnose_history_endpoint(
             "missing_blocks": s.missing_blocks,
             "suggestions": s.suggestions,
         }
-        for s in snaps
+        for s in snaps.all()
     ]
 
 
