@@ -540,14 +540,14 @@ _LINKS_SEMANTICS: dict[str, str] = {
     "cidade":      "category",
     "fonte":       "category",
     "cliques":                  "metric",
-    "cliques_unicos_periodo":   "metric",
-    "cliques_unicos_campanha":  "metric",
+    "cliques_unicos_periodo":   "aggregate",  # pré-agregado por link — usar MAX, não SUM
+    "cliques_unicos_campanha":  "aggregate",  # pré-agregado da campanha — usar MAX, não SUM
 }
 
 # Colunas do dataset "links" que devem ser sempre tratadas como number,
 # mesmo que tenham baixa cardinalidade (são métricas pré-agregadas).
 LINKS_FORCE_NUMERIC: set[str] = {
-    col for col, sem in _LINKS_SEMANTICS.items() if sem == "metric"
+    col for col, sem in _LINKS_SEMANTICS.items() if sem in ("metric", "aggregate")
 } | {"hora"}
 
 

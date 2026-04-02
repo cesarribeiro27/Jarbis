@@ -1536,6 +1536,7 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
     datasets.flatMap(ds =>
       Object.entries(ds.column_types || {}).map(([col, type]) => ({
         col, type: (type === 'string' || type === 'text' || type === 'category') ? 'text' : type,
+        semantic: (ds.column_semantics || {})[col] || null,
         dsId: ds.id, dsName: ds.name,
       }))
     ), [datasets])
@@ -1644,8 +1645,16 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
     { id: 'periodo',  label: 'Filtro de período', desc: 'Selecionar intervalo de datas', blockType: 'filter', isDateFilter: true, needsCompare: null,
       icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> },
   ]
+  // Colunas pré-agregadas (ex: cliques_unicos_periodo) — somente MAX faz sentido
+  const AGGREGATE_INSIGHTS = [
+    { id: 'unico',    label: 'Únicos',      desc: 'Total de valores únicos (pré-calculado)', blockType: 'kpi', agg: 'max', needsCompare: null,
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg> },
+    { id: 'ranking',  label: 'Ranking',     desc: 'Quem tem mais deste valor',              blockType: 'bar_h', agg: 'max', needsCompare: 'text',
+      icon: <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><rect x="3" y="5" width="16" height="3" rx="1.5"/><rect x="3" y="10" width="11" height="3" rx="1.5"/><rect x="3" y="15" width="7" height="3" rx="1.5"/></svg> },
+  ]
 
   const getInsights = col => {
+    if (col.type === 'number' && col.semantic === 'aggregate') return AGGREGATE_INSIGHTS
     return col.type === 'number' ? NUM_INSIGHTS : col.type === 'date' ? DATE_INSIGHTS : TEXT_INSIGHTS
   }
 
@@ -1675,7 +1684,7 @@ function ColumnDiscovery({ datasets, onClose, onAddBlock, onOpenAdvanced }) {
     } else if (insight.blockType === 'bar_h') {
       const labelCol = col.type === 'number' ? compareCol?.col : col.col
       const valueCol = col.type === 'number' ? col.col : (compareCol?.col ?? '__count__')
-      const aggVal   = col.type === 'number' ? 'sum' : (compareCol ? 'sum' : 'count')
+      const aggVal   = insight.agg || (col.type === 'number' ? 'sum' : (compareCol ? 'sum' : 'count'))
       block = { id: crypto.randomUUID(), type: 'bar_h', title: baseTitle, dataset_id: dsId, label_col: labelCol, value_col: valueCol, agg: aggVal, config: { sort_by: 'desc', top_n: 10 }, layout: { x: 0, y: Infinity, w: 6, h: 4 } }
     } else if (insight.blockType === 'pie') {
       const labelCol = col.type === 'number' ? compareCol?.col : col.col
