@@ -4675,6 +4675,7 @@ async def diagnose_history_endpoint(
     current_user: User = Depends(get_current_active_user),
     effective_tenant_id: uuid.UUID = Depends(get_effective_tenant_id),
 ):
+    from .diagnosis_models import DiagnosisSnapshot
     snaps = await db.scalars(
         select(DiagnosisSnapshot)
         .where(
