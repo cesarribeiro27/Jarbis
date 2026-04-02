@@ -506,7 +506,9 @@ class DatasetService:
         Busca dados de cliques do ClickHouse para uma campanha de links.
         Retorna (rows, columns) para materializar como dataset.
         Colunas: data, hora, dia_semana, campanha, link, ativo, dispositivo,
-                 navegador, sistema, pais, cidade, fonte, cliques, cliques_unicos_periodo
+                 navegador, sistema, pais, cidade, fonte, cliques,
+                 cliques_unicos_periodo (unique IPs por link),
+                 cliques_unicos_campanha (unique IPs cross-links, dedup na campanha inteira)
         """
         from app.modules.links.models import ShortLink, LinkCampaign
         from app.config import settings as _settings
@@ -575,7 +577,7 @@ class DatasetService:
             ORDER BY data DESC, hora
         """).result_rows
 
-        # Query 2: cliques únicos por link no período
+        # Query 2: cliques únicos por link no período (dedup por IP, por link)
         unicos_raw = ch.query(f"""
             SELECT
                 link_id,
@@ -588,10 +590,21 @@ class DatasetService:
         """).result_rows
         unicos_map = {str(r[0]): int(r[1]) for r in unicos_raw}
 
+        # Query 3: cliques únicos da campanha inteira (dedup cross-links por IP)
+        # Um mesmo IP que clicou em dois links conta como 1 único na campanha.
+        campanha_unicos_raw = ch.query(f"""
+            SELECT countDistinct(ip_address)
+            FROM link_events
+            WHERE tenant_id = '{str(tenant_id)}'
+              AND link_id IN ({ids_str})
+              AND clicked_at >= now() - INTERVAL {days} DAY
+        """).result_rows
+        cliques_unicos_campanha = int(campanha_unicos_raw[0][0]) if campanha_unicos_raw else 0
+
         columns = [
             "data", "hora", "dia_semana", "campanha", "link", "ativo",
             "dispositivo", "navegador", "sistema", "pais", "cidade", "fonte",
-            "cliques", "cliques_unicos_periodo",
+            "cliques", "cliques_unicos_periodo", "cliques_unicos_campanha",
         ]
         rows = [
             {
@@ -609,6 +622,7 @@ class DatasetService:
                 "fonte": r[9],
                 "cliques": int(r[10]),
                 "cliques_unicos_periodo": unicos_map.get(str(r[3]), 0),
+                "cliques_unicos_campanha": cliques_unicos_campanha,
             }
             for r in rows_raw
         ]
@@ -620,8 +634,11 @@ class DatasetService:
         campaign_id: str,
         name: str,
         days: int = 90,
+        sync_interval_minutes: int | None = None,
     ) -> "ReportDataset":
+        from datetime import timedelta
         rows, columns = await self._fetch_links_data(tenant_id, campaign_id, days)
+        now = _utcnow()
         ds = ReportDataset(
             tenant_id=tenant_id,
             name=name,
@@ -631,7 +648,9 @@ class DatasetService:
             row_count=len(rows),
             links_campaign_id=campaign_id,
             links_days=days,
-            last_synced_at=_utcnow(),
+            last_synced_at=now,
+            refresh_interval_minutes=sync_interval_minutes,
+            next_refresh_at=now + timedelta(minutes=sync_interval_minutes) if sync_interval_minutes else None,
         )
         self.db.add(ds)
         await self.db.commit()
@@ -647,12 +666,16 @@ class DatasetService:
         ds = await self.get(dataset_id, tenant_id)
         if not ds or ds.type != "links" or not ds.links_campaign_id:
             return None
+        from datetime import timedelta
         days = ds.links_days or 90
         rows, columns = await self._fetch_links_data(tenant_id, ds.links_campaign_id, days)
+        now = _utcnow()
         ds.rows = rows
         ds.columns = columns
         ds.row_count = len(rows)
-        ds.last_synced_at = _utcnow()
+        ds.last_synced_at = now
+        if ds.refresh_interval_minutes:
+            ds.next_refresh_at = now + timedelta(minutes=ds.refresh_interval_minutes)
         flag_modified(ds, "rows")
         flag_modified(ds, "columns")
         await self.db.commit()
