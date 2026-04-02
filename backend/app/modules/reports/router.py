@@ -4496,7 +4496,7 @@ async def diagnose_dashboard_endpoint(
     # Buscar snapshot anterior ANTES da chamada à IA — para incluir no contexto histórico
     prev_snapshot = await db.scalar(
         select(DiagnosisSnapshot)
-        .where(DiagnosisSnapshot.report_id == report_id, DiagnosisSnapshot.tenant_id == current_user.tenant_id)
+        .where(DiagnosisSnapshot.report_id == report_id, DiagnosisSnapshot.tenant_id == effective_tenant_id)
         .order_by(DiagnosisSnapshot.created_at.desc())
         .limit(1)
     )
@@ -4640,7 +4640,7 @@ async def diagnose_dashboard_endpoint(
     if not _is_duplicate:
         snapshot = DiagnosisSnapshot(
             report_id=report_id,
-            tenant_id=current_user.tenant_id,
+            tenant_id=effective_tenant_id,
             health_score=health_score,
             domain=domain_key,
             domain_name=domain_tpl["name"],
@@ -4679,7 +4679,7 @@ async def diagnose_history_endpoint(
         select(DiagnosisSnapshot)
         .where(
             DiagnosisSnapshot.report_id == report_id,
-            DiagnosisSnapshot.tenant_id == current_user.tenant_id,
+            DiagnosisSnapshot.tenant_id == effective_tenant_id,
         )
         .order_by(DiagnosisSnapshot.created_at.desc())
         .limit(10)
